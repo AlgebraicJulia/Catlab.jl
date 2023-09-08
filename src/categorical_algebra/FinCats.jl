@@ -543,19 +543,13 @@ The resulting ob_map and hom_map are guaranteed to have
 valtype or eltype, as appropriate, equal to Ob and Hom,
 respectively. 
 """
-function force(F::FinDomFunctor, Obtype::Type=Any, Homtype::Type=Any;params=Dict())
+function force(F::FinDomFunctor, Obtype::Type=Any, Homtype::Type=Any)
   C = dom(F)
   FinDomFunctor(
     make_map(x -> ob_map(F, x), ob_generators(C), Obtype),
-    make_map(hom_generators(C), Homtype) do f 
-     haskey(params,hom_generator_name(C,f)) ? params[hom_generator_name(C,f)] : hom_map(F,f) end , 
+    make_map(f -> hom_map(F,f), hom_generators(C), Homtype), 
     C)
 end
-force(F::FinDomFunctorMap) = 
-  FinDomFunctor(F.ob_map,
-    mapvals(F.hom_map,keys=true) do h,f
-    haskey(params,h) ? params[h] : hom_map(F,h) end,
-    F.dom,F.codom)
 
 function Categories.do_compose(F::FinDomFunctorMap, G::FinDomFunctorMap)
   FinDomFunctor(mapvals(x -> ob_map(G, x), F.ob_map),

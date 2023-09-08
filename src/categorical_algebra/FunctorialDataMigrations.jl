@@ -1,11 +1,12 @@
 """ Functorial data migration for attributed C-sets.
 """
-module DataMigrations
-export DataMigration, SigmaMigration, DeltaMigration, migrate, migrate!,
-  representable, yoneda, colimit_representables, subobject_classifier, 
+module FunctorialDataMigrations
+export SigmaMigration, DeltaMigration, migrate, migrate!,
+  representable, yoneda, subobject_classifier, 
   internal_hom, SigmaMigrationFunctor, DeltaMigrationFunctor, 
   DataMigrationFunctor, functor
 
+#maybe should only define DeltaMigrationFunctor at this point
 using ACSets
 using ACSets.DenseACSets: constructor, datatypes
 using ...GATs
@@ -25,79 +26,31 @@ using MLStyle: @match
 # Data types
 ############
 
-""" Conjunctive query over schema ``C``.
-
-The diagram comprising the query specifies a finite limit.
-"""
-const ConjQuery{C<:FinCat} = Diagram{op,C}
-
-""" Gluing or agglomerative query over schema ``C``.
-
-The diagram comprising the query specifies a finite colimit. In the important
-special case that the diagram has discrete shape, it specifies a finite
-coproduct and the query is called "linear" or "disjunctive".
-"""
-const GlueQuery{C<:FinCat} = Diagram{id,C}
-
-""" "Gluc query" (gluing of conjunctive queries) over schema ``C``.
-
-The diagram of diagrams comprising the query specifies a finite colimit of
-finite limits. In the important special case that the outer diagram has discrete
-shape, it specifies a finite coproduct of finite limits and the query is called
-a "duc query" (disjoint union of conjunctive queries).
-"""
-const GlucQuery{C<:FinCat} = Diagram{id,<:TypeCat{<:Diagram{op,C}}}
-
 """ A data migration is guaranteed to contain a functor between
 schemas that can be used to migrate data between acsets
-on those schemas. This functor ``F`` may be partial, in which case
-it contains extra data describing how to use it to execute a migration. The
+on those schemas. The
 migration may be a pullback data migration ([`DeltaMigration`](@ref)), specified by a
-functor ``D → C`` between the schemas, or a conjunctive, gluing,
-duc, or gluc (contravariant) data migration. Alternatively, ``F`` may
-be a schema functor specifying a ``Σ`` migration in the covariant direction.
+functor ``D → C`` between the schemas, or ``F`` may
+be a schema functor specifying a ``Σ`` migration in the covariant direction. Other data migration types are defined in 
+`DataMigrations.jl`.
 """
 abstract type AbstractDataMigration{F<:FinDomFunctor} end
 functor(M::AbstractDataMigration) = M.functor
 abstract type ContravariantMigration{F<:FinDomFunctor} <: AbstractDataMigration{F} end
 abstract type CovariantMigration{F<:FinDomFunctor} <: AbstractDataMigration{F} end
 
-"""
-A contravariant data migration whose functor ``F`` may not be fully defined. Instead,
-the migration ``F⋅X`` for an acset ``X`` can only be constructed once we have access
-to ``X``'s attribute types. The dictionary of parameters contains anonymous 
-functions acting on ``X``'s attributes using Julia functions defined on 
-these attribute types.
-"""
-#The same, except for the supertype and the variance parameter T, as a QueryDiagram in older code.
-#(Instead, `C` itself is probably a category of queries, which thus contain the information of T further down.)
-struct DataMigration{F<:FinDomFunctor,Params<:AbstractDict} <: ContravariantMigration{F}
-  functor::F
-  params::Params
-end
-DataMigration(F::FinDomFunctor) = DataMigration(F,Dict{Any,Union{}}())
 """ Schema-level functor defining a pullback or delta data migration.
+
+Given a functor ``F: C → D``, the delta migration ``Δ_F`` 
+is a functor from ``C``-sets to ``D``-sets that simply sends
+a ``C``-set ``X`` to the ``D``-set ``X∘F``.
 """
-const DeltaSchemaMigration{D<:FinCat,C<:FinCat} = ContravariantMigration{<:FinFunctor{D,C}}
+const DeltaSchemaMigration{F<:FinFunctor} = ContravariantMigration{F}
 #This only exists for the acset to acset migrate! method which is performance-optimized for 
 #the easy Delta case
-const DeltaMigration{D<:FinCat,C<:FinCat} = DataMigration{<:FinFunctor{D,C},<:AbstractDict{<:Any,Union{}}}
-
-""" Schema-level functor defining a contravariant data migration using conjunctive queries.
-"""
-const ConjSchemaMigration{D<:FinCat,C<:FinCat} =
-  ContravariantMigration{<:FinDomFunctor{D,<:TypeCat{<:ConjQuery{C}}}}
-
-""" Schema-level functor defining a contravariant data migration using gluing queries.
-"""
-const GlueSchemaMigration{D<:FinCat,C<:FinCat} =
-  ContravariantMigration{<:FinDomFunctor{D,<:TypeCat{<:GlueQuery{C}}}}
-
-""" Schema-level functor defining a contravariant data migration using gluc queries.
-"""
-const GlucSchemaMigration{D<:FinCat,C<:FinCat} =
-  ContravariantMigration{<:FinDomFunctor{D,<:TypeCat{<:GlucQuery{C}}}}
-
+struct DeltaMigration{F<:FinFunctor} <: DeltaSchemaMigration{F}
+  functor::F
+end
 """ Sigma or left pushforward functorial data migration between acsets.
 
   Given a functor ``F: C → D``, the sigma data migration ``Σ_F`` is a functor from
@@ -112,8 +65,6 @@ const SigmaSchemaMigration{F<:FinFunctor} = CovariantMigration{F}
 struct SigmaMigration{F<:FinFunctor} <: SigmaSchemaMigration{F}
   functor::F
 end
-# Contravariant migration
-#########################
 
 """ Contravariantly migrate data from the acset `Y` to a new acset of type `T`.
 
@@ -135,43 +86,19 @@ function migrate!(X::ACSet, Y::ACSet, M::AbstractDataMigration; kw...)
   copy_parts!(X, migrate(Y, M; kw...))
 end
 
-
 # Delta migration
 #----------------
-function migrate(X::FinDomFunctor,M::DeltaSchemaMigration)
-  F = functor(M)
-  tgt_schema = dom(F)
-  src_schema = get_src_schema(F)
-  obs = make_map(ob_generators(tgt_schema)) do c
-    Fc = ob_map(F,c)
-    ob_map(X,Fc)
-  end
-  homs = hom_generators(src_schema)
-  homfuns = map(x->hom_map(X,x),homs)
-  params = M.params
-  funcs = make_map(hom_generators(tgt_schema)) do f
-    Ff, c, d = hom_map(F, f), dom(tgt_schema, f), codom(tgt_schema, f)
-    if head(Ff) == :zeromap
-      domain = obs[c]
-      codomain = obs[d]
-      FinDomFunction(params[nameof(f)](homfuns...),domain,codomain)
-    else 
-      hom_map(X,Ff)
-    end
-  end
-  FinDomFunctor(
-      obs,
-      funcs,
-      dom(F),
-      codom(X)
-    )
-end
-
+"""
+Apply a ``Δ`` migration by simple precomposition.
+"""
+migrate(X::FinDomFunctor,M::DeltaSchemaMigration) = X∘functor(M)
 migrate(::Type{T}, X::ACSet, M::DeltaMigration) where T <: ACSet =
   migrate!(T(), X, M)
 migrate(::Type{T}, X::ACSet, FOb, FHom) where T <: ACSet =
   migrate!(T(), X, FOb, FHom)
 
+
+#Expected usage is with `X` empty.
 function migrate!(X::StructACSet{S}, Y::ACSet, M::DeltaMigration) where S
   F = functor(M)
   partsX = Dict(c => add_parts!(X, c, nparts(Y, nameof(ob_map(F,c))))
@@ -186,131 +113,15 @@ function migrate!(X::StructACSet{S}, Y::ACSet, M::DeltaMigration) where S
 end
 
 function migrate!(X::ACSet, Y::ACSet, FOb, FHom)
-  M = DataMigration(FinFunctor(FOb, FHom, FinCat(Presentation(X)), FinCat(Presentation(Y))))
+  M = DeltaMigration(FinFunctor(FOb, FHom, FinCat(Presentation(X)), FinCat(Presentation(Y))))
   migrate!(X, Y, M)
-end
-
-"""
-Get the source schema of a data migration functor, recursing in the case
-that the proximate codomain is a diagram category.
-"""
-function get_src_schema(F::Functor{<:Cat,<:TypeCat{<:Diagram}})
-  obs = collect(keys(F.ob_map))
-    length(obs) > 0 || return FinCat(0)
-    get_src_schema(diagram(ob_map(F,obs[1])))
-end
-get_src_schema(F::Functor{<:Cat,<:FinCat}) = codom(F)
-
-
-
-# Conjunctive migration
-#----------------------
-function migrate(X::FinDomFunctor, M::ConjSchemaMigration;
-                 return_limits::Bool=false, tabular::Bool=false)
-  F = functor(M)
-  tgt_schema = dom(F)
-  homs = hom_generators(get_src_schema(F))
-  homfuns = map(x->hom_map(X,x), homs)
-  params = M.params
-  limits = make_map(ob_generators(tgt_schema)) do c
-    Fc = ob_map(F, c)
-    J = shape(Fc)
-    # Must supply object/morphism types to handle case of empty diagram.
-    diagram_types = if c isa AttrTypeExpr
-      (TypeSet, SetFunction)
-    elseif isempty(J)
-      (FinSet{Int}, FinFunction{Int})
-    else
-      (SetOb, FinDomFunction{Int})
-    end
-    # Make sure the diagram to be limited is a FinCat{<:Int}.
-    # Disable domain check because acsets don't store schema equations.
-    k = dom_to_graph(diagram(force(compose(Fc, X, strict=false), diagram_types...)))
-    lim = limit(k,SpecializeLimit(fallback=ToBipartiteLimit()))
-    if tabular
-      names = (ob_generator_name(J, j) for j in ob_generators(J))
-      TabularLimit(lim, names=names)
-    else
-      lim
-    end
-  end
-  funcs = make_map(hom_generators(tgt_schema)) do f
-    Ff, c, d = hom_map(F, f), dom(tgt_schema, f), codom(tgt_schema, f)
-    f_params = haskey(params,nameof(f)) ? Dict(nameof(codom(tgt_schema,f)) => params[nameof(f)](homfuns...)) : Dict()
-    # Disable domain check for same reason.
-    # Hand the Julia function form of the not-yet-defined components to compose
-    universal(compose(Ff, X, strict=false,params=f_params), limits[c], limits[d])
-  end
-  Y = FinDomFunctor(mapvals(ob, limits), funcs, tgt_schema)
-  return_limits ? (Y, limits) : Y
-end
-
-# Gluing migration
-#-----------------
-
-function migrate(X::FinDomFunctor, M::GlueSchemaMigration)
-  F = functor(M)
-  tgt_schema = dom(F)
-  homs = hom_generators(get_src_schema(F))
-  homfuns = map(x->hom_map(X,x), homs)
-  params = M.params
-  colimits = make_map(ob_generators(tgt_schema)) do c
-    Fc = ob_map(F, c)
-    diagram_types = c isa AttrTypeExpr ? (TypeSet, SetFunction) :
-      (FinSet{Int}, FinFunction{Int})
-    k = dom_to_graph(diagram(force(compose(Fc, X, strict=false), diagram_types...)))
-    colimit(k,SpecializeColimit())
-  end
-  funcs = make_map(hom_generators(tgt_schema)) do f
-    Ff, c, d = hom_map(F, f), dom(tgt_schema, f), codom(tgt_schema, f)
-    #Get a single anonymous function, if there's one needed and 
-    #the domain of Ff's shape map is a singleton, or else get a dict
-    #of them if the domain is a non-singleton and there are any.
-    f_params = haskey(params,f) ? map(x->x(homfuns...),params[f]) : 
-                isempty(get_params(Ff)) ? Dict() : mapvals(x->x(homfuns...),get_params(Ff))
-    universal(compose(Ff, X, strict=false,params=f_params), colimits[c], colimits[d])
-  end
-  FinDomFunctor(mapvals(ob, colimits), funcs, tgt_schema)
-end
-
-# Gluc migration
-#---------------
-
-function migrate(X::FinDomFunctor, M::GlucSchemaMigration)
-  F = functor(M)
-  tgt_schema = dom(F)
-  homs = hom_generators(get_src_schema(F))
-  homfuns = map(x->hom_map(X,x), homs)
-  colimits_of_limits = make_map(ob_generators(tgt_schema)) do c
-    Fc = ob_map(F, c)
-    m = Fc isa QueryDiagram ? DataMigration(diagram(Fc),Fc.params) : DataMigration(diagram(Fc))
-    Fc_set, limits = migrate(X, m, return_limits=true)
-    (colimit(dom_to_graph(Fc_set), SpecializeColimit()), Fc_set, limits)
-  end
-  funcs = make_map(hom_generators(tgt_schema)) do f
-    Ff, c, d = hom_map(F, f), dom(tgt_schema, f), codom(tgt_schema, f)
-    Fc_colim, Fc_set, Fc_limits = colimits_of_limits[c]
-    Fd_colim, Fd_set, Fd_limits = colimits_of_limits[d]
-    Ff_params = Ff isa DiagramHom ? get_params(Ff) : Dict{Int,Int}()
-    component_funcs = make_map(ob_generators(dom(Fc_set))) do j
-      j′, Ffⱼ = ob_map(Ff, j)
-      Ffⱼ_params = Ffⱼ isa DiagramHom ? 
-        haskey(Ff_params,nameof(j)) ? 
-          Dict(only(keys(components(diagram_map(Ffⱼ))))=>Ff_params[nameof(j)](homfuns...)) :
-          mapvals(x->x(homfuns...),get_params(Ffⱼ)) : Dict{Int,Int}()
-      universal(compose(Ffⱼ, X, strict=false,params = Ffⱼ_params), 
-                Fc_limits[j], Fd_limits[j′])
-    end
-    Ff_set = DiagramHom{id}(shape_map(Ff), component_funcs, Fc_set, Fd_set)
-    universal(Ff_set, Fc_colim, Fd_colim)
-  end
-  FinDomFunctor(mapvals(ob∘first, colimits_of_limits), funcs, tgt_schema)
 end
 
 """ Abstract type for a data migration functor.
 
-This allows the user to have an actual model of the theory of 
-functors, once one knows the exact concrete types Dom and Codom
+This allows a data migration to behave as an actual model of the theory 
+of functors with domain and codomain categories of acsets rather than 
+schemas, once one knows the exact concrete types Dom and Codom
 of the relevant acsets. 
 """
 abstract type AbstractMigrationFunctor{Dom<:ACSet,Codom<:ACSet} <:
@@ -321,6 +132,7 @@ ob_map(F::AbstractMigrationFunctor{Dom,Codom}, X) where {Dom,Codom} =
 
 (F::AbstractMigrationFunctor)(X::ACSet) = ob_map(F, X)
 (F::AbstractMigrationFunctor)(α::ACSetTransformation) = hom_map(F, α)
+
 """
 Data migration functor given contravariantly. Stores a contravariant migration.
 """
@@ -328,20 +140,21 @@ struct DataMigrationFunctor{Dom,Codom,M<:ContravariantMigration} <: AbstractMigr
   migration::M
 end
 migration(F::DataMigrationFunctor) = F.migration
+"""
+Gives the underlying schema functor of a data migration 
+seen as a functor of acset categories.
+"""
 functor(F::DataMigrationFunctor) = functor(migration(F))
 
 DataMigrationFunctor(migration::ContravariantMigration{F}) where {F<:Functor{Dom,Codom} where {Dom,Codom}} = DataMigrationFunctor{Dom,Codom,M}(migration)
-DataMigrationFunctor(functor::F, ::Type{Dom}, ::Type{Codom}) where {F,Dom,Codom} =
-  DataMigrationFunctor{Dom,Codom,DataMigration{F,Dict{Any,Union{}}}}(DataMigration(functor))
-DataMigrationFunctor(functor::F, ::Type{Codom}) where {F,Codom} =
-  DataMigrationFunctor{ACSet,Codom,DataMigration{F,Dict{Any,Union{}}}}(DataMigration(functor))
+DataMigrationFunctor(functor::F, ::Type{Dom}, ::Type{Codom}) where {F<:FinFunctor,Dom,Codom} =
+  DataMigrationFunctor{Dom,Codom,DeltaMigration{F}}(DeltaMigration(functor))
+DataMigrationFunctor(functor::F, ::Type{Codom}) where {F<:FinFunctor,Codom} =
+  DataMigrationFunctor{ACSet,Codom,DeltaMigration{F}}(DeltaMigration(functor))
 
 ob_map(F::DataMigrationFunctor, T::Type, X) = migrate(T, X, migration(F))
 
 const DeltaMigrationFunctor{Dom,Codom} = DataMigrationFunctor{Dom,Codom,<:DeltaSchemaMigration}
-const ConjMigrationFunctor{Dom,Codom} = DataMigrationFunctor{Dom,Codom,<:ConjSchemaMigration}
-const GlueMigrationFunctor{Dom,Codom} = DataMigrationFunctor{Dom,Codom,<:GlueSchemaMigration}
-const GlucMigrationFunctor{Dom,Codom} = DataMigrationFunctor{Dom,Codom,<:GlucSchemaMigration}
 
 # Sigma migration
 #################
@@ -367,7 +180,7 @@ portion of the collage, then run the chase.
 When `return_unit` is true, returns the diagram morphism given by the unit of
 the adjunction between Σ and Δ migration functors.
 """
-#This should be deprecated in terms of a new migrate function if anybody works on sigma migrations sometime.
+#This should be replaced or at least paired with a new migrate function if anybody works on sigma migrations sometime.
 #Also, we probably don't want to construct the collage every time we migrate using M, at least it should
 #be possible to cache.
 function (M::SigmaMigrationFunctor)(d::ACSet; n=100, return_unit::Bool=false)
@@ -605,47 +418,6 @@ end
 yoneda(::Type{T}; kw...) where T <: StructACSet = yoneda(T, Presentation(T); kw...)
 yoneda(X::DynamicACSet; kw...) = yoneda(constructor(X), Presentation(X.schema); kw...)
 
-""" Interpret conjunctive data migration as a colimit of representables.
-
-Given a conjunctive data migration (a functor `J → Diag{op}(C)`) and the Yoneda
-embedding for `C` (a functor `op(C) → C-Set` computed via [`yoneda`](@ref)),
-take colimits of representables to construct a `op(J)`-shaped diagram of C-sets.
-
-Since every C-set is a colimit of representables, this is a generic way of
-constructing diagrams of C-sets.
-"""
-function colimit_representables(M::DeltaSchemaMigration, y)
-  compose(op(functor(M)), y)
-end
-function colimit_representables(M::ConjSchemaMigration, y)
-  F = functor(M)
-  J = dom(F)
-  #Get the constructor for a C-set.
-  ACS = constructor(ob_map(y,first(ob_generators(dom(y)))))
-  colimits = make_map(ob_generators(J)) do j
-    Fj = dom_to_graph(diagram(ob_map(F, j))) #a diagram K to C
-    clim_diag = compose(op(Fj), y) #K^op to C^op to C-Set
-    # modify the diagram we take a colimit of to concretize some vars
-    
-    params = ob_map(F,j) isa SimpleDiagram ? Dict() : ob_map(F,j).params
-    G, om, hm = [f(clim_diag) for f in [graph ∘ dom, ob_map, hom_map]]
-    for (i,val) in collect(params)
-      v = add_vertex!(G; vname=Symbol("param$i"))
-      add_edge!(G, vertex_named(G,i), v, ename=Symbol("param$i"))
-      at = nameof(ob_map(Fj, i)) # attribute type name 
-      h = only(homomorphisms(ob_map(clim_diag,i), ACS(); initial=Dict(at=>[val])))
-      push!(om, ACS())
-      push!(hm, h)
-    end
-    updated_diagram = FinDomFunctor(om, hm, FinCat(G), codom(clim_diag))
-    colimit(updated_diagram) # take colimit
-  end
-  homs = make_map(hom_generators(J)) do f
-    Ff, j, k = hom_map(F, f), dom(J, f), codom(J, f)
-    universal(compose(op(Ff), y), colimits[k], colimits[j])
-  end
-  FinDomFunctor(mapvals(ob, colimits), homs, op(J))
-end
 # Schema translation
 ####################
 
