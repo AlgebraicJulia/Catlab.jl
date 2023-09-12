@@ -347,6 +347,26 @@ end
 
 # Sigma migration
 #################
+"""
+Convert a CSet morphism X->Y into a CSet on the schema C->C 
+(collage of id functor on C).
+"""
+collage(f::ACSetTransformation{S}) where S = collage(f, Presentation(S))
+function collage(f::ACSetTransformation, S::Presentation)
+  colim, col_pres = collage(id(FinCat(S)))
+  colimL, colimR = colim
+  res = AnonACSet(col_pres)
+  for o in ob(Schema(S))
+    add_parts!(res, nameof(ob_map(colimL,o)), nparts(dom(f), o))
+    add_parts!(res, nameof(ob_map(colimR,o)), nparts(codom(f), o))
+    set_subpart!(res, Symbol("α_$o"), collect(f[o]))
+  end
+  for h in homs(Schema(S); just_names=true)
+    set_subpart!(res, nameof(hom_map(colimL,h)), dom(f)[h])
+    set_subpart!(res, nameof(hom_map(colimR,h)), codom(f)[h])
+  end
+  colim, res
+end 
 
 """
 A collage of a functor is a schema encoding the data of the functor

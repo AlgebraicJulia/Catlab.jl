@@ -117,6 +117,25 @@ function migrate!(X::ACSet, Y::ACSet, FOb, FHom)
   migrate!(X, Y, M)
 end
 
+# On morphisms
+migrate(t::Type{T}, f::ACSetTransformation, M::DeltaMigration) where T <: ACSet = 
+  migrate(t, f, M.functor)
+
+migrate(t::Type{T}, f::ACSetTransformation, F::FinFunctor) where T <: ACSet = 
+  migrate(t, f, ob_map(F), hom_map(F))
+
+function migrate(::Type{T}, f::TightACSetTransformation,
+                FOb::AbstractDict, FHom::AbstractDict) where T <: ACSet
+  d = Dict()
+  for (ob_dom,ob_codom) in pairs(FOb)
+    if Symbol(ob_codom) ∈ keys(components(f))
+      d[Symbol(ob_dom)] = f[Symbol(ob_codom)]
+    end
+  end
+  Fd, Fcd = migrate(T, dom(f), FOb, FHom), migrate(T, codom(f), FOb, FHom)
+  TightACSetTransformation(NamedTuple(d), Fd, Fcd)
+end
+
 """ Abstract type for a data migration functor.
 
 This allows a data migration to behave as an actual model of the theory 
