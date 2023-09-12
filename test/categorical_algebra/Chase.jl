@@ -3,7 +3,16 @@ using Test
 
 using Catlab.GATs, Catlab.Theories, Catlab.CategoricalAlgebra, Catlab.Graphs
 using Catlab.CategoricalAlgebra.Chase: egd, tgd, crel_type, pres_to_eds,
-  from_c_rel
+  from_c_rel, collage
+
+# ACSetTransformations as ACSets on the collage
+###############################################
+
+h = homomorphism(path_graph(Graph, 2), path_graph(Graph, 3))
+_, col = collage(h)
+col[Symbol("α_V")] == h[:V] |> collect
+col[Symbol("α_E")] == h[:E] |> collect
+
 
 # Factorizing EDs
 #----------------

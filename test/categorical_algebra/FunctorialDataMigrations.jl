@@ -30,12 +30,23 @@ add_parts!(h, :E, 3, src = [1,2,3], tgt = [2,3,1])
 dds = DDS()
 add_parts!(dds, :X, 3, Φ=[2,3,1])
 X = SchDDS[:X]
-@test h == migrate(Graph, dds, Dict(:V => :X, :E => :X),
-                   Dict(:src => id(X), :tgt => :Φ))
+FOb = Dict(:V => :X, :E => :X)
+FHom = Dict(:src => id(X), :tgt => :Φ)
+F = DeltaMigration(FinFunctor(FOb,FHom,SchGraph,SchDDS))
+Δ(x) = migrate(Graph, x, FOb,FHom)
 
+@test h == Δ(dds)
+
+# test on morphisms
+dds′ = @acset DDS begin X=5; Φ=[2,3,4,4,3] end
+dds2 = @acset DDS begin X=3; Φ=[2,3,3] end 
+f = ACSetTransformation(dds′,dds2; X=[1,2,3,3,3])
+Δf = homomorphism(Δ(dds′),Δ(dds2); initial=(V=[1,2,3,3,3],))
+@test Δf == migrate(Graph, f, F)
+
+# Mutating migration
 h2 = copy(h)
-migrate!(h2, dds, Dict(:V => :X, :E => :X),
-                  Dict(:src => id(X), :tgt => :Φ))
+migrate!(h2, dds, FOb, FHom)
 @test h2 == ob(coproduct(h, h))
 
 # Migrate DDS → DDS by advancing four steps.
