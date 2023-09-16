@@ -55,6 +55,7 @@ makedocs(
         "generated/sketches/meets.md",
         "generated/sketches/smc.md",
         "generated/sketches/cat_elements.md",
+        "generated/sketches/sheaves.md",
         ],
       "Graphs" => Any[
         "generated/graphs/graphs.md",
