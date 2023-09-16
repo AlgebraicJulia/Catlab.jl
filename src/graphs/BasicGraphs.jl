@@ -24,7 +24,7 @@ export HasVertices, HasGraph, AbstractGraph, Graph, SchGraph,
   AbstractLabeledGraph, LabeledGraph, SchLabeledGraph,
   AbstractWeightedGraph, WeightedGraph, SchWeightedGraph, weight,
   AbstractSymmetricWeightedGraph, SymmetricWeightedGraph, SchSymmetricWeightedGraph,
-  SchNamedGraph, AbstractNamedGraph, NamedGraph
+  AbstractNamedGraph, NamedGraph, SchNamedGraph
 
 import Base: inv
 
