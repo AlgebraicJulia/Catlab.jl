@@ -69,4 +69,39 @@ gv = to_graphviz(f)
 @test length(stmts(gv, Graphviz.Subgraph)) == 2
 @test length(stmts(gv, Graphviz.Edge)) == 4
 
+# Diagrams
+##########
+
+# Diagram with anonymous objects in J
+C = FinCat(@acset Graph begin
+  V = 3
+  E = 2
+  src = [1,2]
+  tgt = [3,3]
+end)
+D = FinDomFunctor([:E,:E,:V], [:tgt,:src], C, FinCat(SchSymmetricGraph))
+d = Diagram{id}(D)
+
+gv = to_graphviz(d, node_labels=true)
+
+@test stmts(gv, Graphviz.Node, :label) == ["E","E","V"]
+@test stmts(gv, Graphviz.Edge, :label) == ["tgt","src"]
+
+# Diagram with named objects in J
+C = FinCat(@acset NamedGraph{Symbol,Symbol} begin
+  V = 3
+  E = 2
+  src = [1,2]
+  tgt = [3,3]
+  vname = [:e1,:e2,:v]
+  ename = [:t,:s]
+end)
+D = FinDomFunctor([:E,:E,:V], [:tgt,:src], C, FinCat(SchSymmetricGraph))
+d = Diagram{id}(D)
+
+gv = to_graphviz(d, node_labels=true)
+
+@test stmts(gv, Graphviz.Node, :label) == ["e1:E","e2:E","v:V"]
+@test stmts(gv, Graphviz.Edge, :label) == ["tgt","src"]
+
 end
