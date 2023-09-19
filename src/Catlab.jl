@@ -11,6 +11,7 @@ include("wiring_diagrams/WiringDiagrams.jl")
 include("graphics/Graphics.jl")
 include("programs/Programs.jl")
 include("sheaves/Sheaves.jl")
+include("decorated/Decorated.jl")
 
 @reexport using .GATs
 @reexport using .Theories
@@ -20,5 +21,6 @@ include("sheaves/Sheaves.jl")
 @reexport using .Graphics
 @reexport using .Programs
 @reexport using .Sheaves
+@reexport using .Decorated
 
 end

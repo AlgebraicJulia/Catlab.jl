@@ -1,6 +1,10 @@
 using Test
 
 
+@testset "Decorated" begin
+include("decorated/Decorated.jl")
+end
+
 @testset "GATs" begin
 include("gats/GATs.jl")
 end
