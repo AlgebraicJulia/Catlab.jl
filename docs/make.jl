@@ -85,6 +85,7 @@ makedocs(
       "apis/graphics.md",
       "apis/programs.md",
       "apis/sheaves.md",
+      "apis/decorated.md",
     ],
     "Developer Docs" => Any[
       "devdocs/style.md",
