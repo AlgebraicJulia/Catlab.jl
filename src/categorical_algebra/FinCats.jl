@@ -798,8 +798,8 @@ If `xs` is a UnitRange, make a vector of the desired
 type by mapping `f` over `xs`. Otherwise, make a dictionary
 with the desired valtype.
 """
-make_map(f, xs::UnitRange{Int}, ::Type{Any}) = map(f, xs)
-make_map(f, xs, ::Type{Any}) = Dict(x => f(x) for x in xs)
+#make_map(f, xs::UnitRange{Int}, ::Type{Any}) = map(f, xs)
+#make_map(f, xs, ::Type{Any}) = Dict(x => f(x) for x in xs)
 
 function make_map(f, xs::UnitRange{Int}, ::Type{T}) where T
   if isempty(xs)
@@ -807,7 +807,7 @@ function make_map(f, xs::UnitRange{Int}, ::Type{T}) where T
   else
     ys = map(f, xs)
     eltype(ys) <: T || error("Element(s) of $ys are not instances of $T")
-    T[y for y in ys]
+    ys
   end
 end
 
@@ -817,7 +817,7 @@ function make_map(f, xs, ::Type{T}) where T
   else
     xys = Dict(x => f(x) for x in xs)
     valtype(xys) <: T || error("Value(s) of $xys are not instances of $T")
-    Dict{keytype(xys),T}(x=>y for (x,y) in xys)
+    xys
   end
 end
 
