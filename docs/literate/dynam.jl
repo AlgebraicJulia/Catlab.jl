@@ -170,3 +170,28 @@ traj = hcat(x...)';
 
 using PrettyTables
 pretty_table(traj)
+
+# ## Implementing Corelations for Dynamical Systems
+# Can we define a restriction map on dynamical systems that is given by "solving for equilibrium on the hidden variables"?
+
+using NLsolve
+abstract type EquilibriumProjection <: Functor{FinSetCat, DynamCat} end
+
+range_complement(m::FinFunction) = sort(setdiff(collect(codom(m)), unique(m.(dom(m)))))
+pullback_complement(m::FinFunction) = do_hom_map(FVectPullback(), FinFunction(range_complement(m), codom(m)))
+
+range_complement(FinFunction([1,3], 4))
+@test range_complement(FinFunction([1,3], 4)) == [2,4]
+
+EquilibriumProjection(f::FinFunction) = begin
+  pushforward = do_hom_map(FVectPushforward, f)
+  pullback    = do_hom_map(FVectPullback(),  f)
+  π₂ = pullback_complement(f)
+  (v::DynamElt) -> begin
+    u(y) = begin
+      s̄ = nlsolve(s->π₂(v(s,y)), pushforward(y)).zero
+      pullback(v(s̄, y))
+    end
+    DynamElt(dom(f), u)
+  end
+end
