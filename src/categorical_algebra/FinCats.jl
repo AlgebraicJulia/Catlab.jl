@@ -794,13 +794,11 @@ dicttype(::Type{<:Iterators.Pairs}) = Dict
 @inline make_map(f, xs) = make_map(f, xs, Any)
 
 """
-If `xs` is a UnitRange, make a vector of the desired
-type by mapping `f` over `xs`. Otherwise, make a dictionary
-with the desired valtype.
+Maps `f` over a `UnitRange` to produce a `Vector`,
+or else over anything to produce a `Dict`. The type paramter
+functions to ensure the return type is as desired even when the
+input is empty.
 """
-#make_map(f, xs::UnitRange{Int}, ::Type{Any}) = map(f, xs)
-#make_map(f, xs, ::Type{Any}) = Dict(x => f(x) for x in xs)
-
 function make_map(f, xs::UnitRange{Int}, ::Type{T}) where T
   if isempty(xs)
     T[]
