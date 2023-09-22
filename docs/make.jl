@@ -75,6 +75,9 @@ makedocs(
         "generated/graphics/tikz_wiring_diagrams.md",
         "generated/graphics/layouts_vs_drawings.md",
       ],
+      "Decorated Cospans" => Any[
+        "generated/dynam.md",
+      ],
     ],
     "Modules" => Any[
       "apis/gats.md",

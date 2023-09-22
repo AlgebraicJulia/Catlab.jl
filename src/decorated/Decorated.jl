@@ -71,6 +71,21 @@ function glue(F::Decorator, cospan::CompositePushout, decorations::AbstractVecto
   ϕ(F.laxator(decorations))
 end
 
+function glue(D::Decorator, f::DecoratedCospan, g::DecoratedCospan)
+  # this notation is from Fong 2017 https://arxiv.org/abs/1703.09888 page 13.
+  # invoke the decorated cospans part to build the composite
+  oy = legs(f)[2]
+  iy = legs(g)[1]
+  p = pushout(oy,iy)
+  decorations = [f.decoration, g.decoration]
+  composite = glue(D.action, p, decorations)
+
+  # put the new legs on for the interface.
+  ix = legs(f)[1]
+  oz = legs(g)[2]
+  return typeof(f)(composite, Cospan(ix, oz))
+end
+
 """    FactorizationSystem{C}
 
 An abstract type for representing an orthogonal factorization. Examples include:
