@@ -178,20 +178,46 @@ using NLsolve
 abstract type EquilibriumProjection <: Functor{FinSetCat, DynamCat} end
 
 range_complement(m::FinFunction) = sort(setdiff(collect(codom(m)), unique(m.(dom(m)))))
-pullback_complement(m::FinFunction) = do_hom_map(FVectPullback(), FinFunction(range_complement(m), codom(m)))
+pullback_complement(m::FinFunction) = do_hom_map(FMatPullback(), FinFunction(range_complement(m), codom(m)))
 
 range_complement(FinFunction([1,3], 4))
 @test range_complement(FinFunction([1,3], 4)) == [2,4]
 
+# Assuming that f is a mono from Y to X
+# s:S = X\Y
+# pushforward = do_hom_map(FVectPushforward, f)
+# pullback    = pushforward'
 EquilibriumProjection(f::FinFunction) = begin
-  pushforward = do_hom_map(FVectPushforward, f)
-  pullback    = do_hom_map(FVectPullback(),  f)
+  π₁ = do_hom_map(FMatPullback(), f)
+  i₁ = π₁'
   π₂ = pullback_complement(f)
+  i₂ = π₂'
+  st(s,y) = begin
+    a = i₁*y
+    b = i₂*s
+    c = a+b
+    return c
+  end
+
   (v::DynamElt) -> begin
     u(y) = begin
-      s̄ = nlsolve(s->π₂(v(s,y)), pushforward(y)).zero
-      pullback(v(s̄, y))
+      s̄ = nlsolve(s->π₂*v(st(s,y)),zeros(size(i₂,2))).zero
+      @show s̄
+      π₁*v(st(s̄, y))
     end
-    DynamElt(dom(f), u)
+    DynamElt(dom(f).n, u)
   end
 end
+
+f = FinFunction([1,2], 3)
+u = DynamElt(3, x->[-x[1]*x[3],-x[2]/2, -(x[3]-1/2)*0.999999])
+v = EquilibriumProjection(f)(u)
+
+x = Vector{Float64}[[1,1]]
+Δt = 0.05
+map(1:20) do i
+  xᵢ₊₁ = x[i] + v(x[i])*Δt
+  push!(x, xᵢ₊₁)
+end
+traj = hcat(x...)';
+pretty_table(traj)
