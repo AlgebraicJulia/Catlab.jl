@@ -1,10 +1,9 @@
-module TestSearching
+module TestGraphSearching
 using Test
 
-using Catlab.Graphs.BasicGraphs, Catlab.Graphs.Searching
-import Catlab.Graphs.Searching: tree
-
-# Tests stolen from Graphs.jl
+using Catlab.Graphs.BasicGraphs, Catlab.Graphs.GraphSearching
+using Catlab.Graphs.GraphSearching: tree
+using Catlab.CategoricalAlgebra: @acset, is_isomorphic
 
 # BFS
 #----
@@ -24,8 +23,7 @@ parents = bfs_parents(g, 1)
 t1 = @inferred(bfs_tree(g, 1))
 t2 = tree(parents)
 @test t1 == t2
-@test is_directed(t2)
-@test typeof(t2) <: AbstractGraph
+@test t2 isa AbstractGraph
 @test ne(t2) < nv(t2)
 
 # DFS
@@ -36,6 +34,17 @@ add_edges!(g, [1,2,1,3], [2,3,3,4])
 z = @inferred(dfs_tree(g, 1))
 @test ne(z) == 3 && nv(z) == 4
 @test !has_edge(z, 1, 3)
-@test !is_cyclic(g)
+
+# Trees
+#------
+
+g = tree([1, 1, 1, 2, 2])
+g′ = @acset Graph begin
+  V = 5
+  E = 4
+  src = [1, 1, 2, 2]
+  tgt = [2, 3, 4, 5]
+end
+@test is_isomorphic(g, g′)
 
 end

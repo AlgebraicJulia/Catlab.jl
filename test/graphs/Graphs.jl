@@ -26,4 +26,8 @@ end
   include("GraphGenerators.jl")
 end
 
+@testset "GraphSearching" begin
+  include("GraphSearching.jl")
+end
+
 end

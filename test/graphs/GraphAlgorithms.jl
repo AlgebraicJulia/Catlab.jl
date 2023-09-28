@@ -72,17 +72,4 @@ ep = enumerate_paths(g)
     (2, 3, [3])
     (3, 3, [])]
 
-# Trees
-#######
-
-g = Searching.tree([1, 1, 1, 2, 2])
-g′ = @acset Graph begin
-  V = 5
-  E = 4
-  src = [1, 1, 2, 2]
-  tgt = [2, 3, 4, 5]
-end
-
-@test is_isomorphic(g,g′)
-
 end
