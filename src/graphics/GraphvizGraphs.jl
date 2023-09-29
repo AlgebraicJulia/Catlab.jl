@@ -166,11 +166,11 @@ function to_graphviz_property_graph(g::AbstractGraph;
 end
 
 node_label(g, name::Symbol, v::Int) = Dict(:label => label_to_string(g[v, name]))
-node_label(g, labels::Bool, v::Int) =
+node_label(g::HasVertices, labels::Bool, v::Int) =
   Dict(:label => labels ? label_to_string(vertex_name(g, v)) : "")
 
 edge_label(g, name::Symbol, e::Int) = Dict(:label => label_to_string(g[e, name]))
-edge_label(g, labels::Bool, e::Int) =
+edge_label(g::HasGraph, labels::Bool, e::Int) =
   labels ? Dict(:label => label_to_string(edge_name(g, e))) : Dict{Symbol,String}()
 
 label_to_string(label) = string(label)
@@ -439,6 +439,11 @@ function bipartite_graphviz_nodes(g::HasBipartiteVertices;
 end
 
 default_node_shape(::Tuple{Symbol,Symbol}) = "ellipse"
+
+node_label(g::HasBipartiteVertices, labels::Bool, v::Int) =
+  Dict(:label => labels ? string(v) : "")
+edge_label(g::HasBipartiteVertices, labels::Bool, e::Int) =
+  labels ? Dict(:label => string(e)) : Dict{Symbol,String}()
 
 # Graph homomorphisms
 #####################
