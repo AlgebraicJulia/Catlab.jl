@@ -1,4 +1,4 @@
-module Searching
+module GraphSearching
 export bfs_parents, bfs_tree, dfs_parents, dfs_tree
 
 using ACSets

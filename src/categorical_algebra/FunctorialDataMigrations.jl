@@ -6,22 +6,19 @@ export SigmaMigration, DeltaMigration, migrate, migrate!,
   internal_hom, SigmaMigrationFunctor, DeltaMigrationFunctor, 
   DataMigrationFunctor, functor
 
-#maybe should only define DeltaMigrationFunctor at this point
+using MLStyle: @match
+
 using ACSets
 using ACSets.DenseACSets: constructor, datatypes
 using ...GATs
 using ...Theories: ob, hom, dom, codom, attr, AttrTypeExpr, ⋅
 using ..Categories, ..FinCats, ..Limits, ..Diagrams, ..FinSets, ..CSets, ..HomSearch
 using ...Graphs, ..FreeDiagrams
-using ...Graphs.BasicGraphs: NamedGraph, vertex_named
 import ..Categories: ob_map, hom_map
 import ...GATs: functor
 using ..FinCats: make_map, mapvals, presentation_key
-using ..Diagrams
-import ..FinCats: FinCatPresentation
 using ..Chase: collage, crel_type, pres_to_eds, add_srctgt, chase
 using ..FinSets: VarSet
-using MLStyle: @match
 
 # Data types
 ############
