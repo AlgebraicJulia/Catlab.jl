@@ -6,14 +6,24 @@ graphs. Names are understood to be unique within the graph but are *not* assumed
 to be strings or symbols.
 """
 module NamedGraphs
-export vertex_name, edge_name, vertex_named, edge_named,
-  AbstractNamedGraph, NamedGraph
+export has_vertex_names, has_edge_names, vertex_name, edge_name,
+  vertex_named, edge_named, AbstractNamedGraph, NamedGraph
 
 using ACSets
 using ...GATs, ..BasicGraphs
 
 # Names interface
 #################
+
+""" Whether a graph has vertex names distinct from its vertex IDs.
+"""
+has_vertex_names(g::T) where {T<:HasVertices} = has_vertex_names(T)
+has_vertex_names(::Type{<:HasVertices}) = false
+
+""" Whether a graph has edge names distinct from its edge IDs.
+"""
+has_edge_names(g::T) where {T<:HasGraph} = has_edge_names(T)
+has_edge_names(::Type{<:HasGraph}) = false
 
 """ Name of a vertex in a graph.
 
@@ -59,6 +69,9 @@ end
 """
 @acset_type NamedGraph(SchNamedGraph, index=[:src,:tgt,:ename],
                        unique_index=[:vname]) <: AbstractNamedGraph
+
+has_vertex_names(::Type{<:AbstractNamedGraph}) = true
+has_edge_names(::Type{<:AbstractNamedGraph}) = true
 
 vertex_name(g::AbstractNamedGraph, args...) = subpart(g, args..., :vname)
 edge_name(g::AbstractNamedGraph, args...) = subpart(g, args..., :ename)
