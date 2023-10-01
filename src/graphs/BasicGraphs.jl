@@ -23,8 +23,7 @@ export HasVertices, HasGraph, AbstractGraph, Graph, SchGraph,
   add_dangling_edge!, add_dangling_edges!,
   AbstractLabeledGraph, LabeledGraph, SchLabeledGraph,
   AbstractWeightedGraph, WeightedGraph, SchWeightedGraph, weight,
-  AbstractSymmetricWeightedGraph, SymmetricWeightedGraph, SchSymmetricWeightedGraph,
-  AbstractNamedGraph, NamedGraph, SchNamedGraph
+  AbstractSymmetricWeightedGraph, SymmetricWeightedGraph, SchSymmetricWeightedGraph
 
 import Base: inv
 

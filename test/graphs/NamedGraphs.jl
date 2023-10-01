@@ -26,4 +26,21 @@ g = path_graph(NamedGraph{Symbol,Symbol}, 3,
 @test edge_name(g, 1) == :f
 @test edge_named(g, :f) == 1
 
+# Named graph from Presentation
+###############################
+
+g = NamedGraphs.graph(SchWeightedGraph)
+@test g isa NamedGraph
+@test vertex_name(g) == [:V,:E]
+@test edge_name(g) == [:src,:tgt]
+@test g[:,:src] = [2,2]
+@test g[:,:tgt] = [1,1]
+
+g = NamedGraphs.graph(SchWeightedGraph, :Ob, :Hom)
+@test g isa NamedGraph
+@test vertex_name(g) == [:V,:E]
+@test edge_name(g) == [:src,:tgt]
+@test g[:,:src] = [2,2]
+@test g[:,:tgt] = [1,1]
+
 end
