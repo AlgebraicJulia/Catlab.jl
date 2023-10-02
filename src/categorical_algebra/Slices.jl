@@ -9,7 +9,8 @@ using ...Theories: ThCategory
 import ...Theories: dom, codom, compose, id
 import ..Limits: limit, colimit, universal
 import ..FinSets: force
-
+import ..CSets: is_natural, components
+import ..HomSearch: factorize_constraints, homomorphism, homomorphisms, factorize
 """
 The data of the object of a slice category (say, some category C sliced over an
 object X in Ob(C)) is the data of a homomorphism in Hom(A,X) for some ob A.
@@ -86,6 +87,9 @@ function slice_diagram(f::FreeDiagram)::FreeDiagram
   FreeDiagram(obs,homs)
 end
 
+factorize_constraints(f::SliceHom,g::SliceHom; initial=Dict()) = 
+  factorize_constraints(f.f,g.f; initial=initial)
+
 """
 Convert a limit problem in the slice category to a limit problem of the
 underlying category.
@@ -131,5 +135,52 @@ function universal(lim::SliceLimit, sp::Multispan)
   apx2 = Slice(first(legs(lim.underlying.cone)))
   return SliceHom(apx, apx2, u)
 end
+
+is_natural(x::SliceHom) = is_natural(x.f)
+components(x::SliceHom) = components(x.f)
+Base.getindex(α::SliceHom, c) = x.f[c]
+
+"""
+This could be made more efficient as a constraint *during* homomorphism finding.
+
+This would require implementing a new constraint to homomorphism search that 
+restricts the codomain for each part of A, i.e. ∀ a ∈ A: h(a) ∈ g⁻¹(f(a)).
+"""
+function homomorphisms(X::Slice,Y::Slice; kw...)
+  map(filter(h->force(X.slice)==force(compose(h,Y.slice)),
+         homomorphisms(dom(X), dom(Y); kw...)) ) do h
+    SliceHom(X, Y, h)
+  end |> collect
+end
+
+"""
+Because the constraint isn't incorporated into the search process, we cannot 
+stop early.
+"""
+function homomorphism(X::Slice,Y::Slice; kw...)
+  hs = homomorphisms(X,Y; kw...)
+  return isempty(hs) ? nothing : first(hs)
+end
+
+"""
+Factorizing a cospan is equivalent to looking for a slice morphism. f->g
+
+         B
+  h = ? ↗ ↘ g 
+       A ⟶ C
+         f
+"""
+function factorize(s::Cospan; initial=Dict(), single::Bool=true, kw...)
+  f, g = Slice.(s)
+  search = single ? homomorphism : homomorphisms
+  res = search(f, g; initial=NamedTuple(initial), kw...)
+  if isnothing(res) 
+    return nothing 
+  else 
+    return [x.f for x in res]
+  end
+end
+
+
 
 end # module

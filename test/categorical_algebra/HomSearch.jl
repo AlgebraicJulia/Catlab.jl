@@ -148,6 +148,20 @@ end
 @test_throws ErrorException @acset_transformation g h begin V = [4,3,2,1]; E = [1,2,3,4] end
 
 
+# Factorizing morphisms 
+#----------------------
+
+p2, p3 = path_graph(Graph, 2), path_graph(Graph, 3)
+loop = apex(terminal(Graph))
+f = ACSetTransformation(Graph(2), p3; V=[2,1])
+g1 = ACSetTransformation(Graph(2), p2; V=[1,2])
+g2 = ACSetTransformation(Graph(2), p2; V=[2,1])
+@test isnothing(factorize(Span(f, g1)))
+@test length(factorize(Span(f, g2); single=false)) == 1
+f2 = homomorphism(Graph(2), loop)
+@test isnothing(factorize(Span(f2, id(Graph(2))); monic=true))
+@test factorize(Span(f2, id(Graph(2)))) == f2
+
 # Enumeration of subobjects 
 ###########################
 
