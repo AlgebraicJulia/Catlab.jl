@@ -10,8 +10,7 @@ export has_vertex_names, has_edge_names, vertex_name, edge_name,
   vertex_named, edge_named, AbstractNamedGraph, NamedGraph
 
 using ACSets
-using ...GATs, ...Theories, ..BasicGraphs
-# import ...CategoricalAlgebra.FinCats: graph
+using ...GATs, ..BasicGraphs
 
 # Names interface
 #################
@@ -79,25 +78,5 @@ edge_name(g::AbstractNamedGraph, args...) = subpart(g, args..., :ename)
 
 vertex_named(g::AbstractNamedGraph, name) = only(incident(g, name, :vname))
 edge_named(g::AbstractNamedGraph, name)= only(incident(g, name, :ename))
-
-""" Graph associated to a Presentation
-"""
-function graph(pres::Presentation, Ob::Symbol, Hom::Symbol)
-
-  g = NamedGraph{Symbol,Symbol}()
-
-  obs = generators(pres, Ob)
-  add_vertices!(g, length(obs), vname=first.(obs))
-
-  homs = generators(pres, Hom)
-  add_edges!(g, map(f -> generator_index(pres, first(gat_type_args(f))), homs),
-                 map(f -> generator_index(pres, last(gat_type_args(f))), homs),
-                 ename=first.(homs)
-  )
-  g
-
-end
-
-graph(pres::Presentation{ThSchema}) = graph(pres, :Ob, :Hom)
 
 end
