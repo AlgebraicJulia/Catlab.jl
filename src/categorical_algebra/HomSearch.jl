@@ -198,10 +198,10 @@ function backtracking_search(f, X::ACSet, Y::ACSet;
 
   # Fail early if no monic/isos exist on cardinality grounds.
   if iso isa Bool
-    iso = iso ? Ob : ()
+    iso = iso ? ObAttr : ()
   end
   if monic isa Bool
-    monic = monic ? Ob : ()
+    monic = monic ? ObAttr : ()
   end
   iso_failures = Iterators.filter(c->nparts(X,c)!=nparts(Y,c),iso)
   mono_failures = Iterators.filter(c->nparts(X,c)>nparts(Y,c),monic)  
@@ -655,7 +655,7 @@ function Base.iterate(Sub::OverlapIterator, state=nothing)
     # Get monic maps from Y into each of the objects. The first comes for free
     maps = Vector{ACSetTransformation}[[abs_subobj]]
     for X in Sub.others
-      fs = homomorphisms(Y, X; monic=true)
+      fs = homomorphisms(Y, X; monic=ob(acset_schema(Y)))
       real_fs = Set() # quotient fs via automorphisms of Y
       for f in fs 
         if all(rf->all(σ -> force(σ⋅f) != force(rf),  syms), real_fs)  

@@ -28,9 +28,9 @@ import ..Categories: ob_map
 #####
 
 """Distill the component of a morphism that merges elements together"""
-egd(e::CSetTransformation) = factorize(image(e),e)
+egd(e::ACSetTransformation) = factorize(image(e),e)
 """Distill the component of a morphism that adds new elements"""
-tgd(e::CSetTransformation) = factorize(coimage(e), e)
+tgd(e::ACSetTransformation) = factorize(coimage(e), e)
 """Check if id up to isomorphism"""
 no_change(f) = all(c->is_monic(c) && is_epic(c), components(f))
 
