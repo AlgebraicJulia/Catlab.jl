@@ -1,7 +1,8 @@
 """ Categories of C-sets and attributed C-sets.
 """
 module CSets
-export ACSetTransformation, CSetTransformation, StructACSetTransformation,
+export ACSetMorphism, 
+  ACSetTransformation, CSetTransformation, StructACSetTransformation,
   StructTightACSetTransformation, TightACSetTransformation,
   LooseACSetTransformation, SubACSet, SubCSet,
   components, type_components, force,
@@ -604,21 +605,21 @@ Xₕ ↓  ✓  ↓ Yₕ
 
 You're allowed to run this on a named tuple partly specifying an ACSetTransformation,
 though at this time the domain and codomain must be fully specified ACSets.
+
+`only_combinatorial=true` means to only test naturality in combinatorial data
 """
-function is_natural(α::LooseACSetTransformation) 
-  is_natural(dom(α),codom(α),α.components,type_components(α))
+function is_natural(α::LooseACSetTransformation; only_combinatorial=false) 
+  is_natural(dom(α),codom(α),α.components,type_components(α); only_combinatorial)
 end
-function is_natural(α::ACSetTransformation)
-  is_natural(dom(α),codom(α),α.components)
+function is_natural(α::ACSetTransformation; only_combinatorial=false)
+  is_natural(dom(α),codom(α),α.components; only_combinatorial)
 end
-function is_natural(α::CSetTransformation)
-  is_natural(dom(α),codom(α),α.components; combinatorial=true)
+function is_natural(α::CSetTransformation; only_combinatorial=true)
+  is_natural(dom(α),codom(α),α.components; only_combinatorial)
 end
 
-"""`combinatorial=true` means to only test naturality in combinatorial data"""
-function is_natural(dom,codom,comps...; combinatorial=false)
-  all(isempty, last.(collect(naturality_failures(dom, codom, comps...; combinatorial))))
-end
+is_natural(dom,codom,comps...; only_combinatorial=false) =
+  all(isempty, last.(collect(naturality_failures(dom, codom, comps...; only_combinatorial))))
 
 """
 Returns a dictionary whose keys are contained in the names in `arrows(S)`
@@ -628,15 +629,15 @@ for f does not commute. Components should be a NamedTuple or Dictionary
 with keys contained in the names of S's morphisms and values vectors or dicts
 defining partial functions from X(c) to Y(c).
 
-`combinatorial=true` means to only look for naturality failures in combinatorial 
+`only_combinatorial=true` means to only look for naturality failures in combinatorial 
 data.
 """
-function naturality_failures(X,Y,comps; combinatorial=false)
+function naturality_failures(X,Y,comps; only_combinatorial=false)
   type_comps = Dict(attr => SetFunction(identity, SetOb(X,attr), SetOb(X,attr)) 
                     for attr in attrtype(acset_schema(X)))
-  naturality_failures(X, Y, comps, type_comps; combinatorial)
+  naturality_failures(X, Y, comps, type_comps; only_combinatorial)
 end
-function naturality_failures(X, Y, comps, type_comps; combinatorial=false)
+function naturality_failures(X, Y, comps, type_comps; only_combinatorial=false)
   S = acset_schema(X)
   Fun = Union{SetFunction,VarFunction,LooseVarFunction}
   comps = Dict(a => isa(comps[a],Fun) ? comps[a] : FinDomFunction(comps[a])  
@@ -645,7 +646,7 @@ function naturality_failures(X, Y, comps, type_comps; combinatorial=false)
   type_comps = Dict(a => isa(type_comps[a], Fun) ? type_comps[a] : 
                         SetFunction(type_comps[a],TypeSet(X,a),TypeSet(Y,a)) 
                     for a in keys(type_comps))
-  α = merge(comps, combinatorial ? Dict() : type_comps)
+  α = merge(comps, only_combinatorial ? Dict() : type_comps)
   arrs = [(f,c,d) for (f,c,d) in arrows(S) if haskey(α,c) && haskey(α,d)]
   ps = Iterators.map(arrs) do (f,c,d)
     Xf,Yf,α_c,α_d = subpart(X,f),subpart(Y,f), α[c], α[d]

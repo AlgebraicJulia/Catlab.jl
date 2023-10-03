@@ -163,11 +163,16 @@ lim = product(g, term)
 @test force(proj2(lim)) ==
   ACSetTransformation((V=fill(1,4), E=fill(1,3)), g, term)
 
+  
 # Product in Graph: two directed intervals (Reyes et al 2004, p. 48).
 I = path_graph(Graph, 2)
 prod′ = ob(product(I, I))
 @test (nv(prod′), ne(prod′)) == (4, 1)
 @test src(prod′) != tgt(prod′)
+
+I3 = ⊗([I,I,I])
+@test (nv(I3), ne(I3)) == (8, 1)
+@test ⊗(Graph[]) == apex(terminal(Graph))
 
 # Product in Graph: deleting edges by multiplying by an isolated vertex.
 g = path_graph(Graph, 4)
@@ -238,6 +243,10 @@ colim = coproduct(g, Graph())
 @test force(coproj1(colim)) == force(id(g))
 @test force(coproj2(colim)) ==
   ACSetTransformation((V=Int[], E=Int[]), Graph(), g)
+
+g3 = ⊕([g,g,g])
+@test (nv(g3), ne(g3)) == (12, 9)
+@test ⊕(Graph[]) == Graph()
 
 # Coproduct in Graph.
 h = cycle_graph(Graph, 2)
