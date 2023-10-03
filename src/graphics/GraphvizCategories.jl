@@ -93,7 +93,7 @@ function to_graphviz_property_graph(d::Diagram; kw...)
   pg = to_graphviz_property_graph(g; kw...)
   for v in vertices(g)
     tᵥ = ob_map(d, v)
-    labels = has_vertex_names(g) ? [tᵥ] : [vertex_name(g,v), tᵥ]
+    labels = has_vertex_names(g) ? [vertex_name(g,v), tᵥ] : [tᵥ]
     set_vprop!(pg, v, :label, join(labels, ":"))
   end
   for e in edges(g)
