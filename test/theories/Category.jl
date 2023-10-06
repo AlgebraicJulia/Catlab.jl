@@ -125,8 +125,13 @@ x = El(:x, A)
 # Pointed category
 ##################
 
-A,B,C,D = map(x->Ob(FreePointedSetCategory,x),[:A,:B,:C,:D])
+A,B,C,D = map(x->Ob(FreePointedCategory,x),[:A,:B,:C,:D])
+Z = ZeroOb(FreePointedCategory.Ob)
 f,g,h = Hom(:f,A,B),Hom(:g,B,C),Hom(:h,C,D)
 zAB,zBC,zAC = zeromap(A,B),zeromap(B,C),zeromap(A,C)
+k,l = Hom(:k,A,Z), Hom(:l,Z,A)
+zAZ,zZA = zeromap(A,Z),zeromap(Z,A)
 @test zAC == compose(f,zBC) == compose(zAB,g)
 @test compose(f,zBC,h) == zeromap(A,D)
+#@test k == zAZ
+#@test l == zZA

@@ -25,8 +25,8 @@ using DataStructures: IntDisjointSets, in_same_set, num_groups
 using ACSets
 using ...GATs
 import ...GATs: equations
-using ...Theories: ThCategory, ThSchema, ThPointedSetCategory, ThPointedSetSchema,
-  ObExpr, HomExpr, AttrExpr, AttrTypeExpr, FreeSchema, FreePointedSetCategory, zeromap
+using ...Theories: ThCategory, ThSchema, ThPointedCategory, ThPointedSchema,
+  ObExpr, HomExpr, AttrExpr, AttrTypeExpr, FreeSchema, FreePointedCategory, zeromap
 import ...Theories: dom, codom, id, compose, ⋅, ∘
 using ...Graphs
 import ...Graphs: edges, src, tgt, enumerate_paths
@@ -312,11 +312,11 @@ function FinCatPresentation(pres::Presentation{ThSchema})
   FinCatPresentation{ThSchema,Ob,Hom}(pres)
 end
 
-function FinCatPresentation(pres::Presentation{ThPointedSetSchema})
+function FinCatPresentation(pres::Presentation{ThPointedSchema})
   S = pres.syntax
   Ob = Union{S.Ob, S.AttrType}
   Hom = Union{S.Hom, S.Attr, S.AttrType}
-  FinCatPresentation{ThPointedSetSchema,Ob,Hom}(pres)
+  FinCatPresentation{ThPointedSchema,Ob,Hom}(pres)
 end
 """
 Computes the graph generating a finitely
@@ -328,12 +328,12 @@ in the resulting graph.
 presentation(C::FinCatPresentation) = C.presentation
 
 ob_generators(C::FinCatPresentation) = generators(presentation(C), :Ob)
-ob_generators(C::Union{FinCatPresentation{ThSchema},FinCatPresentation{ThPointedSetSchema}}) = let P = presentation(C)
+ob_generators(C::Union{FinCatPresentation{ThSchema},FinCatPresentation{ThPointedSchema}}) = let P = presentation(C)
   vcat(generators(P, :Ob), generators(P, :AttrType))
 end
 
 hom_generators(C::FinCatPresentation) = generators(presentation(C), :Hom)
-hom_generators(C::Union{FinCatPresentation{ThSchema},FinCatPresentation{ThPointedSetSchema}}) = let P = presentation(C)
+hom_generators(C::Union{FinCatPresentation{ThSchema},FinCatPresentation{ThPointedSchema}}) = let P = presentation(C)
   vcat(generators(P, :Hom), generators(P, :Attr))
 end
 equations(C::FinCatPresentation) = equations(presentation(C))
@@ -348,7 +348,7 @@ hom_generator_name(C::FinCatPresentation, f::GATExpr{:generator}) = first(f)
 
 ob(C::FinCatPresentation, x::GATExpr) =
   gat_typeof(x) == :Ob ? x : error("Expression $x is not an object")
-ob(C::Union{FinCatPresentation{ThSchema},FinCatPresentation{ThPointedSetSchema}}, x::GATExpr) =
+ob(C::Union{FinCatPresentation{ThSchema},FinCatPresentation{ThPointedSchema}}, x::GATExpr) =
   gat_typeof(x) ∈ (:Ob, :AttrType) ? x :
     error("Expression $x is not an object or attribute type")
 
@@ -357,7 +357,7 @@ hom(C::FinCatPresentation, fs::AbstractVector) =
   mapreduce(f -> hom(C, f), compose, fs)
 hom(C::FinCatPresentation, f::GATExpr) =
   gat_typeof(f) == :Hom ? f : error("Expression $f is not a morphism")
-hom(::Union{FinCatPresentation{ThSchema},FinCatPresentation{ThPointedSetSchema}}, f::GATExpr) =
+hom(::Union{FinCatPresentation{ThSchema},FinCatPresentation{ThPointedSchema}}, f::GATExpr) =
   gat_typeof(f) ∈ (:Hom, :Attr, :AttrType) ? f :
     error("Expression $f is not a morphism or attribute")
 
