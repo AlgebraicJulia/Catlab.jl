@@ -10,7 +10,8 @@ export has_vertex_names, has_edge_names, vertex_name, edge_name,
   vertex_named, edge_named, AbstractNamedGraph, NamedGraph
 
 using ACSets
-using ...GATs, ..BasicGraphs
+using GATlab
+using ..BasicGraphs
 
 # Names interface
 #################
