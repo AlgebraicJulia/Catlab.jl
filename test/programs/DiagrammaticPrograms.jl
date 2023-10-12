@@ -1,7 +1,7 @@
 module TestDiagrammaticPrograms
 using Test
 
-using Catlab.GATs, Catlab.Graphs, Catlab.CategoricalAlgebra
+using GATlab, Catlab.Graphs, Catlab.CategoricalAlgebra
 using Catlab.Theories: FreeCategory, FreePointedSetCategory, FreePointedSetSchema
 using Catlab.Programs.DiagrammaticPrograms, Catlab.CategoricalAlgebra.DataMigrations
 using Catlab.Graphs.BasicGraphs: NamedGraph

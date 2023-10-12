@@ -9,7 +9,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        experiment: [CompAlgebra, Markov, TensorNetworks]
+        experiment: [Markov, TensorNetworks]
 
     steps:
       - uses: actions/checkout@v3

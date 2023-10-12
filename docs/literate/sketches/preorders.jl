@@ -12,7 +12,7 @@
 using Core: GeneratedFunctionStub
 using Test
 
-using Catlab.GATs, Catlab.Theories, Catlab.CategoricalAlgebra
+using GATlab, Catlab.Theories, Catlab.CategoricalAlgebra
 import Catlab.Theories: compose
 
 #=
@@ -114,7 +114,7 @@ end
 # expressions are represented at expression trees
 ex = compose(P, [:f, :g])
 # the head of an expression is the root of the expression tree
-GATs.head(ex)
+head(ex)
 # the julia type of the expression
 typeof(ex)
 # the GAT type of the expression

@@ -1,7 +1,7 @@
 module TestMarkovCategories
 using Test
 
-using Catlab.GATs, Catlab.WiringDiagrams
+using GATlab, Catlab.WiringDiagrams
 using Markov.MarkovCategories
 
 # Theories
@@ -23,7 +23,7 @@ M = Hom(:M, A, B)
 # Wiring diagrams
 #################
 
-A, B, C = [ Ports{ThMarkovCategory}([sym]) for sym in [:A, :B, :C] ]
+A, B, C = [ Ports{ThMarkovCategory.Meta.T}([sym]) for sym in [:A, :B, :C] ]
 M = singleton_diagram(ThMarkovCategory, Box(:M,[:A],[:B]))
 N = singleton_diagram(ThMarkovCategory, Box(:N,[:B],[:C]))
 

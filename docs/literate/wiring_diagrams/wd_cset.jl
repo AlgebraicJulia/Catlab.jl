@@ -1,6 +1,6 @@
 # # Wiring Diagrams as Attributed C-Sets
 # Catlab supports many different flavors of diagrammatic syntax. These support the different combinatorial data structures that we use for representing categorical constructions. We will discuss DirectedWiringDiagrams, UndirectedWiringDiagrams, and CPortGraphs in this document.
-using Catlab.GATs, Catlab.Theories
+using GATlab, Catlab.Theories
 using Catlab.CategoricalAlgebra
 using Catlab.WiringDiagrams
 using Catlab.Programs

@@ -1,4 +1,4 @@
-using Catlab.GATs, Catlab.Theories
+using GATlab, Catlab.Theories
 using Catlab.CategoricalAlgebra
 using Catlab.Graphs
 using Catlab.Graphics

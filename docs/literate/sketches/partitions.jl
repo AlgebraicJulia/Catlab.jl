@@ -10,7 +10,7 @@
 using Core: GeneratedFunctionStub
 using Test
 
-using Catlab.GATs, Catlab.Theories, Catlab.CategoricalAlgebra
+using GATlab, Catlab.Theories, Catlab.CategoricalAlgebra
 import Catlab.Theories: compose
 using DataStructures
 using PrettyTables

@@ -1,6 +1,6 @@
 using Test
 
-using Catlab.GATs, Catlab.Theories
+using GATlab, Catlab.Theories
 using Markov
 
 X = Ob(FreeCartesianCategory, :Float64)
