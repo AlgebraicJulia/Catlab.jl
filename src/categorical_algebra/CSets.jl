@@ -708,7 +708,7 @@ end
 ####################
 
 @instance ThCategory{ACSet, ACSetTransformation} begin
-  @import Ob, Hom
+  @import Ob, Hom, →
 
   dom(α::ACSetTransformation) = α.dom
   codom(α::ACSetTransformation) = α.codom

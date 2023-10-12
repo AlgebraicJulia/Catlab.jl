@@ -678,13 +678,13 @@ end
 function Categories.do_composeH(F::FinDomFunctorMap, β::Transformation)
   G, H = dom(β), codom(β)
   FinTransformationMap(mapvals(c -> component(β, c), F.ob_map),
-                       compose(F, G, strict=false), compose(F, H, strict=false))
+                       compose(F, G), compose(F, H))
 end
 
 function Categories.do_composeH(α::FinTransformationMap, H::Functor)
   F, G = dom(α), codom(α)
   FinTransformationMap(mapvals(f->hom_map(H,f),α.components),
-                      compose(F, H, strict=false), compose(G, H, strict=false))
+                      compose(F, H), compose(G, H))
 end
 
 function Base.show(io::IO, α::FinTransformationMap)

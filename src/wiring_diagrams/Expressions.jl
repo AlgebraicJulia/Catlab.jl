@@ -12,8 +12,8 @@ go the other way around.
 module WiringDiagramExpressions
 export to_ob_expr, to_hom_expr, to_wiring_diagram, to_undirected_wiring_diagram
 
-using ...GATs, ...Theories, ...CategoricalAlgebra
-using ...GATs.SyntaxSystems: syntax_module
+using GATlab, ...Theories, ...CategoricalAlgebra
+using GATlab.Models.SymbolicModels: syntax_module
 using ...Graphs, ..DirectedWiringDiagrams, ..UndirectedWiringDiagrams,
   ..MonoidalDirectedWiringDiagrams, ..MonoidalUndirectedWiringDiagrams
 using ..WiringDiagramAlgorithms: crossing_minimization_by_sort
@@ -25,7 +25,7 @@ using ..DirectedWiringDiagrams: WiringDiagramGraph
 """ Convert a morphism expression into a wiring diagram.
 """
 function to_wiring_diagram(expr::GATExpr, args...)
-  T = syntax_module(expr).theory()
+  T = syntax_module(expr).THEORY_MODULE.Meta.T
   to_wiring_diagram(T, expr, args...)
 end
 function to_wiring_diagram(T::Type, expr::GATExpr)
@@ -118,13 +118,13 @@ end
 
 to_hom_expr(::Type{Ob}, ::Type{Hom}, box::Box{<:Hom}) where {Ob,Hom} = box.value
 
-function to_hom_expr(Ob::Type, Hom::Type, box::Box)
+function to_hom_expr(Ob::Type, HomT::Type, box::Box)
   dom = otimes(to_ob_exprs(Ob, input_ports(box)))
   codom = otimes(to_ob_exprs(Ob, output_ports(box)))
   Hom(box.value, dom, codom)
 end
 function to_hom_expr(Ob::Type, Hom::Type, op::BoxOp)
-  invoke_term(parentmodule(Hom), head(op), to_hom_expr(Ob, Hom, op.box))
+  invoke_term(parentmodule(Hom), head(op), [to_hom_expr(Ob, Hom, op.box)])
 end
 function to_hom_expr(Ob::Type, Hom::Type, junction::Junction)
   junction_to_expr(Ob, junction)
@@ -261,11 +261,11 @@ end
 """
 to_ob_expr(Syntax::Module, x) = to_ob_expr(Syntax.Ob, x)
 to_ob_expr(::Type{Ob}, ob::Ob) where Ob = ob
-to_ob_expr(Ob::Type, value) = Ob(Ob, value)
+to_ob_expr(T::Type, value) = Ob(T, value)
 
 to_ob_expr(Ob::Type, ports::Ports) = otimes(to_ob_exprs(Ob, ports))
 to_ob_expr(Ob::Type, op::PortOp) =
-  invoke_term(parentmodule(Ob), head(op), to_ob_expr(Ob, op.value))
+  invoke_term(parentmodule(Ob), head(op), [to_ob_expr(Ob, op.value)])
 
 to_ob_exprs(Ob::Type, values) = Ob[ to_ob_expr(Ob, value) for value in values ]
 

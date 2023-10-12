@@ -1,7 +1,8 @@
 module TestCSets
 using Test
 
-using Catlab.GATs, Catlab.Theories, Catlab.Graphs, Catlab.CategoricalAlgebra
+using GATlab
+using Catlab.Theories, Catlab.Graphs, Catlab.CategoricalAlgebra
 
 @present SchDDS(FreeSchema) begin
   X::Ob

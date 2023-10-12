@@ -3,6 +3,8 @@ using Test
 
 using Catlab.Graphs
 using Catlab.Theories
+using ACSets
+using Catlab.CategoricalAlgebra
 
 # Connectivity
 ##############
@@ -75,7 +77,7 @@ ep = enumerate_paths(g)
 # Trees
 #######
 
-g = Searching.tree([1, 1, 1, 2, 2])
+g = GraphSearching.tree([1, 1, 1, 2, 2])
 g′ = @acset Graph begin
   V = 5
   E = 4

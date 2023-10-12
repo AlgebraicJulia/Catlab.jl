@@ -1,9 +1,5 @@
 using Test
 
-@testset "GATs" begin
-  include("gats/GATs.jl")
-end
-
 @testset "Theories" begin
   include("theories/Theories.jl")
 end

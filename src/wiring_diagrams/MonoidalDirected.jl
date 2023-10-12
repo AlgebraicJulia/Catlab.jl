@@ -13,8 +13,9 @@ export Ports, Junction, PortOp, BoxOp, functor, permute,
 
 using StructEquality
 
-using ...GATs, ...Theories
-import ...GATs: functor, head
+using GATlab
+using ...Theories
+import GATlab: functor, head
 import ...Theories: dom, codom, id, compose, ⋅, ∘,
   otimes, ⊗, munit, braid, σ, oplus, ⊕, mzero, swap,
   mcopy, delete, Δ, ◊, mmerge, create, ∇, □, dual, dunit, dcounit, mate, dagger,
@@ -241,32 +242,32 @@ cozero(A::Ports) = coplus(A, 0)
 # Cartesian category
 #-------------------
 
-mcopy(A::Ports{ThMonoidalCategoryWithDiagonals}, n::Int) = implicit_mcopy(A, n)
+mcopy(A::Ports{ThMonoidalCategoryWithDiagonals.Meta.T}, n::Int) = implicit_mcopy(A, n)
 
-mcopy(A::Ports{ThCartesianCategory}, n::Int) = implicit_mcopy(A, n)
+mcopy(A::Ports{ThCartesianCategory.Meta.T}, n::Int) = implicit_mcopy(A, n)
 
 # Cocartesian category
 #---------------------
 
-mmerge(A::Ports{ThMonoidalCategoryWithCodiagonals}, n::Int) = implicit_mmerge(A, n)
+mmerge(A::Ports{ThMonoidalCategoryWithCodiagonals.Meta.T}, n::Int) = implicit_mmerge(A, n)
 
-mmerge(A::Ports{ThCocartesianCategory}, n::Int) = implicit_mmerge(A, n)
+mmerge(A::Ports{ThCocartesianCategory.Meta.T}, n::Int) = implicit_mmerge(A, n)
 
 # Biproduct category
 #-------------------
 
 # The coherence laws relating diagonal to codiagonal do not hold for general
 # bidiagonals, so an explicit representation is needed.
-mcopy(A::Ports{ThMonoidalCategoryWithBidiagonals}, n::Int) = junctioned_mcopy(A, n)
-mmerge(A::Ports{ThMonoidalCategoryWithBidiagonals}, n::Int) = junctioned_mmerge(A, n)
+mcopy(A::Ports{ThMonoidalCategoryWithBidiagonals.Meta.T}, n::Int) = junctioned_mcopy(A, n)
+mmerge(A::Ports{ThMonoidalCategoryWithBidiagonals.Meta.T}, n::Int) = junctioned_mmerge(A, n)
 
-mcopy(A::Ports{ThBiproductCategory}, n::Int) = implicit_mcopy(A, n)
-mmerge(A::Ports{ThBiproductCategory}, n::Int) = implicit_mmerge(A, n)
+mcopy(A::Ports{ThBiproductCategory.Meta.T}, n::Int) = implicit_mcopy(A, n)
+mmerge(A::Ports{ThBiproductCategory.Meta.T}, n::Int) = implicit_mmerge(A, n)
 
 # Dagger category
 #----------------
 
-dagger(f::WiringDiagram{ThDaggerSymmetricMonoidalCategory}) =
+dagger(f::WiringDiagram{ThDaggerSymmetricMonoidalCategory.Meta.T}) =
   functor(f, identity, dagger, contravariant=true)
 
 # Compact closed category
@@ -275,18 +276,18 @@ dagger(f::WiringDiagram{ThDaggerSymmetricMonoidalCategory}) =
 junctioned_dunit(A::Ports) = junction_caps(A, otimes(dual(A),A))
 junctioned_dcounit(A::Ports) = junction_cups(A, otimes(A,dual(A)))
 
-dual(A::Ports{ThCompactClosedCategory}) = dual_ports(A)
-dunit(A::Ports{ThCompactClosedCategory}) = junctioned_dunit(A)
-dcounit(A::Ports{ThCompactClosedCategory}) = junctioned_dcounit(A)
-mate(f::WiringDiagram{ThCompactClosedCategory}) =
+dual(A::Ports{ThCompactClosedCategory.Meta.T}) = dual_ports(A)
+dunit(A::Ports{ThCompactClosedCategory.Meta.T}) = junctioned_dunit(A)
+dcounit(A::Ports{ThCompactClosedCategory.Meta.T}) = junctioned_dcounit(A)
+mate(f::WiringDiagram{ThCompactClosedCategory.Meta.T}) =
   functor(f, dual, mate, contravariant=true, monoidal_contravariant=true)
 
-dual(A::Ports{ThDaggerCompactCategory}) = dual_ports(A)
-dunit(A::Ports{ThDaggerCompactCategory}) = junctioned_dunit(A)
-dcounit(A::Ports{ThDaggerCompactCategory}) = junctioned_dcounit(A)
-dagger(f::WiringDiagram{ThDaggerCompactCategory}) =
+dual(A::Ports{ThDaggerCompactCategory.Meta.T}) = dual_ports(A)
+dunit(A::Ports{ThDaggerCompactCategory.Meta.T}) = junctioned_dunit(A)
+dcounit(A::Ports{ThDaggerCompactCategory.Meta.T}) = junctioned_dcounit(A)
+dagger(f::WiringDiagram{ThDaggerCompactCategory.Meta.T}) =
   functor(f, identity, dagger, contravariant=true)
-mate(f::WiringDiagram{ThDaggerCompactCategory}) =
+mate(f::WiringDiagram{ThDaggerCompactCategory.Meta.T}) =
   functor(f, dual, mate, contravariant=true, monoidal_contravariant=true)
 
 # Traced monoidal category
@@ -306,7 +307,7 @@ function trace(X::Ports, f::WiringDiagram; unsubstituted::Bool=false)
   unsubstituted ? h : substitute(h)
 end
 
-const TracedMon = ThTracedMonoidalCategory
+const TracedMon = ThTracedMonoidalCategory.Meta.T
 
 trace(X::Ports{TracedMon}, A::Ports{TracedMon},
       B::Ports{TracedMon}, f::WiringDiagram{TracedMon}) = trace(X, f)
@@ -314,7 +315,7 @@ trace(X::Ports{TracedMon}, A::Ports{TracedMon},
 # Bicategory of relations
 #------------------------
 
-const BiRel = ThBicategoryRelations
+const BiRel = ThBicategoryRelations.Meta.T
 
 mcopy(A::Ports{BiRel}, n::Int) = junctioned_mcopy(A, n)
 mmerge(A::Ports{BiRel}, n::Int) = junctioned_mmerge(A, n)
@@ -332,7 +333,7 @@ top(A::Ports{BiRel}, B::Ports{BiRel}) = compose(delete(A), create(B))
 # Abelian bicategory of relations
 #--------------------------------
 
-const AbBiRel = ThAbelianBicategoryRelations
+const AbBiRel = ThAbelianBicategoryRelations.Meta.T
 
 # Additive notation. FIXME: Use @instance.
 oplus(f::WiringDiagram{AbBiRel}, g::WiringDiagram{AbBiRel}) = otimes(f,g)

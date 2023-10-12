@@ -67,9 +67,7 @@ end
   dom(f::SliceHom) = f.dom
   codom(f::SliceHom) = f.codom
   id(A::Slice) = SliceHom(A, A, id(dom(A.slice)))
-  function compose(f::SliceHom, g::SliceHom; strict::Bool=false)
-    !strict || codom(f) == dom(g) ||
-      error("Domain mismatch in composition: $(codom(f)) != $(dom(g))")
+  function compose(f::SliceHom, g::SliceHom)
     SliceHom(dom(f), codom(g), compose(f.f, g.f))
   end
 end

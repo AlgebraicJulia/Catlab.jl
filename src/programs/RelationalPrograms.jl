@@ -8,7 +8,8 @@ export RelationDiagram, UntypedRelationDiagram, TypedRelationDiagram,
 
 using MLStyle: @match
 
-using ...GATs, ...CategoricalAlgebra.CSets
+using GATlab
+using ...CategoricalAlgebra.CSets
 using ...WiringDiagrams.UndirectedWiringDiagrams
 
 # Data types

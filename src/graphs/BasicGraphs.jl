@@ -299,7 +299,7 @@ neighbors(g::AbstractSymmetricGraph, v::Int) =
 @inline outneighbors(g::AbstractSymmetricGraph, v::Int) = neighbors(g, v)
 @inline all_neighbors(g::AbstractSymmetricGraph, v::Int) = neighbors(g, v)
 
-@generated is_directed(::Type{T}) where {S, T<:StructACSet{S}} = :inv ∉ homs(S)
+@generated is_directed(::Type{T}) where {S, T<:StructACSet{S}} = (:inv, :E, :E) ∉ homs(S)
 
 # Reflexive graphs
 ##################

@@ -301,7 +301,7 @@ products have been implemented following the limits interface.
 macro cartesian_monoidal_instance(Ob, Hom)
   thcc = ThCartesianCategory.Meta.theory
   instance_body = quote
-    @import Ob, Hom, dom, codom, compose, ⋅, id, munit, delete, pair
+    @import Ob, Hom, →, dom, codom, compose, ⋅, id, munit, delete, pair
 
     otimes(A::$Ob, B::$Ob) = ob(product(A, B))
 
@@ -319,6 +319,7 @@ macro cartesian_monoidal_instance(Ob, Hom)
     proj1(A::$Ob, B::$Ob) = proj1(product(A, B))
     proj2(A::$Ob, B::$Ob) = proj2(product(A, B))
   end
+
   instance_code = ModelInterface.generate_instance(
     ThCartesianCategory.Meta.theory,
     ThCartesianCategory,
@@ -328,6 +329,7 @@ macro cartesian_monoidal_instance(Ob, Hom)
     instance_body;
     escape=false
   )
+
   esc(quote
     import Catlab.Theories: ThCartesianCategory, otimes, ⊗, munit, braid, σ,
       mcopy, delete, pair, proj1, proj2, Δ, ◊

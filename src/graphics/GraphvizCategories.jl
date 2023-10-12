@@ -3,7 +3,8 @@
 module GraphvizCategories
 export to_graphviz, to_graphviz_property_graph
 
-using ...GATs, ...Theories, ...CategoricalAlgebra, ...Graphs, ..GraphvizGraphs
+using GATlab
+using ...Theories, ...CategoricalAlgebra, ...Graphs, ..GraphvizGraphs
 import ..Graphviz
 import ..GraphvizGraphs: to_graphviz, to_graphviz_property_graph
 
@@ -40,11 +41,11 @@ end
 # Categories
 ############
 
-function to_graphviz_property_graph(pres::Presentation{ThCategory}; kw...)
+function to_graphviz_property_graph(pres::Presentation{ThCategory.Meta.T}; kw...)
   to_graphviz_property_graph(pres, :Ob, :Hom; kw...)
 end
 
-function to_graphviz_property_graph(pres::Presentation{ThMCategory};
+function to_graphviz_property_graph(pres::Presentation{ThMCategory.Meta.T};
     tight_attrs::AbstractDict=Dict(:arrowhead => "empty"), kw...)
   pg = to_graphviz_property_graph(pres, :Ob, :Hom; kw...)
   for tight_hom in generators(pres, :Tight)
@@ -106,7 +107,7 @@ end
 # Schemas
 #########
 
-function to_graphviz_property_graph(pres::Presentation{ThSchema}; kw...)
+function to_graphviz_property_graph(pres::Presentation{ThSchema.Meta.T}; kw...)
   pg = to_graphviz_property_graph(pres, :Ob, :Hom; kw...)
   ob_vertices = vertices(pg)
   hom_edges = edges(pg)

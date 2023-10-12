@@ -10,7 +10,7 @@ import ACSets: Schema
 
 using GATlab
 import GATlab: Presentation
-using .ThCategory
+using ..Theories
 
 using MLStyle
 
@@ -52,16 +52,16 @@ function Presentation(::Type{<:StructACSet{S}}) where S <: TypeLevelBasicSchema{
   Presentation(Schema(S))
 end
 
-# function Presentation(s::BasicSchema{Symbol})
-#   pres = Presentation(FreeSchema)
-#   obs = OrderedDict(x => Ob(FreeSchema.Ob, x) for x in Schemas.objects(s))
-#   attrtypes = OrderedDict(x => AttrType(FreeSchema.AttrType, x) for x in Schemas.attrtypes(s))
-#   homs = [Hom(f, obs[d], obs[c]) for (f,d,c) in Schemas.homs(s)]
-#   attrs = [Attr(f, obs[d], attrtypes[c]) for (f,d,c) in Schemas.attrs(s)]
+function Presentation(s::BasicSchema{Symbol})
+  pres = Presentation(FreeSchema)
+  obs = OrderedDict(x => Ob(FreeSchema.Ob, x) for x in Schemas.objects(s))
+  attrtypes = OrderedDict(x => AttrType(FreeSchema.AttrType, x) for x in Schemas.attrtypes(s))
+  homs = [Hom(f, obs[d], obs[c]) for (f,d,c) in Schemas.homs(s)]
+  attrs = [Attr(f, obs[d], attrtypes[c]) for (f,d,c) in Schemas.attrs(s)]
 
-#   foreach(gens -> add_generators!(pres, gens), (values(obs), homs, values(attrtypes), attrs))
-#   return pres
-# end
+  foreach(gens -> add_generators!(pres, gens), (values(obs), homs, values(attrtypes), attrs))
+  return pres
+end
 
 function DenseACSets.struct_acset(name::Symbol, parent, p::Presentation;
                                   index::Vector=[], unique_index::Vector=[])
