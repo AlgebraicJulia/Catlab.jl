@@ -28,13 +28,15 @@ end
 function Schema(c::GATContext)
   obs, attrtypes = Symbol[], Symbol[]
   homs, attrs = Tuple{Symbol, Symbol, Symbol}[], Tuple{Symbol, Symbol, Symbol}[]
-  for binding in p.scope
-    type = getvalue(binding)
-    @match (nameof(type.body.head), type.body.args...) begin
-      (:Ob,) => push!(obs, nameof(binding))
-      (:Hom, x, y) => push!(homs, nameof.((binding, x.body, y.body)))
-      (:AttrType,) => push!(attrtypes, nameof(binding))
-      (:Attr, x, y) => push!(attrs, nameof.((binding, x.body, y.body)))
+  for scope in allscopes(gettypecontext(c))
+    for binding in scope
+      type = getvalue(binding)
+      @match (nameof(type.body.head), type.body.args...) begin
+        (:Ob,) => push!(obs, nameof(binding))
+        (:Hom, x, y) => push!(homs, nameof.((binding, x.body, y.body)))
+        (:AttrType,) => push!(attrtypes, nameof(binding))
+        (:Attr, x, y) => push!(attrs, nameof.((binding, x.body, y.body)))
+      end
     end
   end
   BasicSchema(obs,homs,attrtypes,attrs)
