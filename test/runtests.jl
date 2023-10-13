@@ -1,5 +1,6 @@
 using Test
 
+
 @testset "GATs" begin
   include("gats/GATs.jl")
 end
@@ -26,4 +27,8 @@ end
 
 @testset "Programs" begin
   include("programs/Programs.jl")
+end
+
+@testset "Sheaves" begin
+  include("sheaves/sheaves.jl")
 end

@@ -10,6 +10,7 @@ include("categorical_algebra/CategoricalAlgebra.jl")
 include("wiring_diagrams/WiringDiagrams.jl")
 include("graphics/Graphics.jl")
 include("programs/Programs.jl")
+include("sheaves/Sheaves.jl")
 
 @reexport using .GATs
 @reexport using .Theories
@@ -18,5 +19,6 @@ include("programs/Programs.jl")
 @reexport using .WiringDiagrams
 @reexport using .Graphics
 @reexport using .Programs
+@reexport using .Sheaves
 
 end

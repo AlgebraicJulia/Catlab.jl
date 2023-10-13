@@ -55,6 +55,7 @@ makedocs(
         "generated/sketches/meets.md",
         "generated/sketches/smc.md",
         "generated/sketches/cat_elements.md",
+        "generated/sketches/sheaves.md",
         ],
       "Graphs" => Any[
         "generated/graphs/graphs.md",
@@ -83,6 +84,7 @@ makedocs(
       "apis/wiring_diagrams.md",
       "apis/graphics.md",
       "apis/programs.md",
+      "apis/sheaves.md",
     ],
     "Developer Docs" => Any[
       "devdocs/style.md",
