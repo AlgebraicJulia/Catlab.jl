@@ -69,16 +69,16 @@ finite limits".
     ⊣ [A::Ob, B::Ob, C::Ob, f::(A → B), g::(A → B)])
   
   # Equalizer axioms.
-  # (incl(eq)⋅f == incl(eq)⋅g
-  #   ⊣ [A::Ob, B::Ob, f::(A → B), g::(A → B), eq::Equalizer(f,g)])
-  # (incl(eq) == id(A)
-  #   ⊣ [A::Ob, B::Ob, f::(A → B), eq::Equalizer(f,f)])
-  # (factorize(eq,h,eq_h) ⋅ incl(eq) == incl(eq_h) ⋅ h
-  #   ⊣ [A::Ob, B::Ob, C::Ob, f::(A → B), g::(A → B), h::(C → A),
-  #      eq::Equalizer(f,g), eq_h::Equalizer(h⋅f, h⋅g)])
-  # (factorize(eq, k⋅incl(eq), eq_k) == k
-  #   ⊣ [A::Ob, B::Ob, D::Ob, f::(A → B), g::(A → B), eq::Equalizer(f,g),
-  #      k::(D → ob(eq)), eq_k::Equalizer(k⋅incl(eq)⋅f, k⋅incl(eq)⋅g)])
+  (incl(eq)⋅f == incl(eq)⋅g
+    ⊣ [A::Ob, B::Ob, f::(A → B), g::(A → B), eq::Equalizer(f,g)])
+  (incl(eq) == id(A)
+    ⊣ [A::Ob, B::Ob, f::(A → B), eq::Equalizer(f,f)])
+  (factorize(eq,h,eq_h) ⋅ incl(eq) == incl(eq_h) ⋅ h
+    ⊣ [A::Ob, B::Ob, C::Ob, f::(A → B), g::(A → B), h::(C → A),
+       eq::Equalizer(f,g), eq_h::Equalizer(h⋅f, h⋅g)])
+  (factorize(eq, k⋅incl(eq), eq_k) == k
+    ⊣ [A::Ob, B::Ob, D::Ob, f::(A → B), g::(A → B), eq::Equalizer(f,g),
+       k::(D → ob(eq)), eq_k::Equalizer(k⋅incl(eq)⋅f, k⋅incl(eq)⋅g)])
 end
 
 using .ThCompleteCategory
