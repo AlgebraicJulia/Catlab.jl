@@ -25,7 +25,7 @@ using ..DirectedWiringDiagrams: WiringDiagramGraph
 """ Convert a morphism expression into a wiring diagram.
 """
 function to_wiring_diagram(expr::GATExpr, args...)
-  T = syntax_module(expr).THEORY_MODULE.Meta.T
+  T = syntax_module(expr).Meta.theory_type
   to_wiring_diagram(T, expr, args...)
 end
 function to_wiring_diagram(T::Type, expr::GATExpr)
