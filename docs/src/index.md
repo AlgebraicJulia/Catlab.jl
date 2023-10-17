@@ -58,7 +58,7 @@ diagrams, Petri nets, and the like.
 
 ### What is a GAT?
 
-See [GATlab documentation](https://algebraicjulia.github.io/Gatlab.jl)
+See [GATlab documentation](https://algebraicjulia.github.io/GATlab.jl)
 
 ## Conventions
 

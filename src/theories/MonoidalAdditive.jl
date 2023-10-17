@@ -148,7 +148,7 @@ end
 
 """ Theory of *monoidal categories with bidiagonals*, in additive notation
 
-Mathematically the same as (@ref) but
+Mathematically the same as [`ThMonoidalCategoryWithBidiagonals`](@ref) but
 written additively, instead of multiplicatively.
 """
 @theory ThMonoidalCategoryWithBidiagonalsAdditive <:
