@@ -6,8 +6,8 @@ export @program, parse_wiring_diagram
 using GeneralizedGenerated: mk_function
 using MLStyle: @match
 
-using ...GATs
-import ...GATs.MetaUtils: Expr0
+using GATlab
+import GATlab.Util.MetaUtils: Expr0
 using ...Theories: ObExpr, HomExpr, otimes, munit
 using ...WiringDiagrams
 using ..GenerateJuliaPrograms: make_return_value
@@ -109,15 +109,15 @@ end
 """ Make a lookup table assigning names to generators or term constructors.
 """
 function make_lookup_table(pres::Presentation, syntax_module::Module, names)
-  theory = GATs.theory(syntax_module.theory())
-  terms = Set([ term.name for term in theory.terms ])
+  theory = syntax_module.Meta.theory
+  terms = Set(nameof.(keys(theory.resolvers)))
 
   table = Dict{Symbol,Any}()
   for name in names
     if has_generator(pres, name)
       table[name] = generator(pres, name)
     elseif name in terms
-      table[name] = (args...) -> invoke_term(syntax_module, name, args...)
+      table[name] = (args...) -> invoke_term(syntax_module, name, args)
     end
   end
   table
@@ -129,7 +129,7 @@ function eval_type_expr(pres::Presentation, syntax_module::Module, expr::Expr0)
   function _eval_type_expr(expr)
     @match expr begin
       Expr(:curly, name, args...) =>
-        invoke_term(syntax_module, name, map(_eval_type_expr, args)...)
+        invoke_term(syntax_module, name, map(_eval_type_expr, args))
       name::Symbol => generator(pres, name)
       _ => error("Invalid type expression $expr")
     end

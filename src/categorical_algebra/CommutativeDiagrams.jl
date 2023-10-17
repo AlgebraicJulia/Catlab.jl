@@ -10,7 +10,7 @@ export SquareDiagram, SquareOb, SquareHom, ob, hom, dom, codom, src, tgt,
 using StaticArrays: StaticVector, SVector
 using StructEquality
 
-using ...GATs
+using GATlab
 using ...Theories: ThDoubleCategory
 import ...Theories: ob, hom, dom, codom, src, tgt, top, bottom,
   compose, id, pcompose, pid, ⋅, *

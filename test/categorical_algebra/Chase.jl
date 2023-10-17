@@ -1,7 +1,8 @@
 module TestChase
 using Test
 
-using Catlab.GATs, Catlab.Theories, Catlab.CategoricalAlgebra, Catlab.Graphs
+using GATlab
+using Catlab.Theories, Catlab.CategoricalAlgebra, Catlab.Graphs
 using Catlab.CategoricalAlgebra.Chase: egd, tgd, crel_type, pres_to_eds,
   from_c_rel, collage
 

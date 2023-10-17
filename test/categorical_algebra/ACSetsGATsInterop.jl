@@ -1,6 +1,7 @@
 module TestACSetsGATsInterop
 using Test
 
+using GATlab
 using Catlab.CategoricalAlgebra
 using Catlab.Graphs: SchGraph, SchWeightedGraph
 
@@ -29,6 +30,15 @@ X, parent, height = SchDendrogram[[:X, :parent, :height]]
 @test subpart(d, id(X)) == 1:5
 @test subpart(d, compose(parent, height)) == [10,10,10,20,20]
 
+@gatcontext SchDendrogram′(ThSchema) begin
+  X::Ob
+  R::AttrType
+  parent::Hom(X,X)
+  height::Attr(X,R)
+end
+
+@test Schema(SchDendrogram′) == Schema(SchDendrogram)
+
 # JSON serialization
 #-------------------
 
@@ -43,5 +53,6 @@ end
 for schema in [SchGraph, SchWeightedGraph]
   @test roundtrip_json_acset_schema(schema) == schema
 end
+
 
 end

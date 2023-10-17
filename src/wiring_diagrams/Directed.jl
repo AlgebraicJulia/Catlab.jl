@@ -30,7 +30,8 @@ export AbstractBox, Box, WiringDiagram, SchWiringDiagram,
 
 using StructEquality
 
-using ...GATs, ...Graphs.BasicGraphs, ...CategoricalAlgebra.CSets
+using GATlab
+using ...Graphs.BasicGraphs, ...CategoricalAlgebra.CSets
 import ...CategoricalAlgebra.HomSearch: is_isomorphic
 import ...CategoricalAlgebra.FinCats: graph
 import ...Graphs: all_neighbors, neighbors, outneighbors, inneighbors
@@ -721,6 +722,7 @@ function singleton_diagram(T::Type, box::AbstractBox)
   return d
 end
 singleton_diagram(box::AbstractBox) = singleton_diagram(Any, box)
+singleton_diagram(m::Module, box::AbstractBox) = singleton_diagram(m.Meta.T, box)
 
 """ The wiring diagram induced by a subset of its boxes.
 

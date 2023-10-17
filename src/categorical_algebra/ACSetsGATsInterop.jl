@@ -8,8 +8,11 @@ using DataStructures: OrderedDict
 using ACSets
 import ACSets: Schema
 
-using ...GATs, ...Theories
-import ...GATs: Presentation
+using GATlab
+import GATlab: Presentation
+using ..Theories
+
+using MLStyle
 
 # Schema <-> presentation
 #########################
@@ -19,6 +22,23 @@ function Schema(p::Presentation)
                        [p.generators[:Ob],p.generators[:AttrType]])
   homs, attrs = map(fs -> Tuple{Symbol,Symbol,Symbol}[(nameof(f), nameof(dom(f)), nameof(codom(f))) for f in fs],
                     [p.generators[:Hom], p.generators[:Attr]])
+  BasicSchema(obs,homs,attrtypes,attrs)
+end
+
+function Schema(c::GATContext)
+  obs, attrtypes = Symbol[], Symbol[]
+  homs, attrs = Tuple{Symbol, Symbol, Symbol}[], Tuple{Symbol, Symbol, Symbol}[]
+  for scope in allscopes(gettypecontext(c))
+    for binding in scope
+      type = getvalue(binding)
+      @match (nameof(type.body.head), type.body.args...) begin
+        (:Ob,) => push!(obs, nameof(binding))
+        (:Hom, x, y) => push!(homs, nameof.((binding, x.body, y.body)))
+        (:AttrType,) => push!(attrtypes, nameof(binding))
+        (:Attr, x, y) => push!(attrs, nameof.((binding, x.body, y.body)))
+      end
+    end
+  end
   BasicSchema(obs,homs,attrtypes,attrs)
 end
 
@@ -44,7 +64,6 @@ function Presentation(s::BasicSchema{Symbol})
   foreach(gens -> add_generators!(pres, gens), (values(obs), homs, values(attrtypes), attrs))
   return pres
 end
-
 
 function DenseACSets.struct_acset(name::Symbol, parent, p::Presentation;
                                   index::Vector=[], unique_index::Vector=[])
@@ -79,14 +98,14 @@ end
 JSONACSets.generate_json_acset_schema(pres::Presentation) =
   generate_json_acset_schema(Schema(pres))
 
-JSONACSets.parse_json_acset_schema(::Type{Presentation{ThSchema,Symbol}},
+JSONACSets.parse_json_acset_schema(::Type{Presentation},
                                    data::AbstractDict) =
   Presentation(parse_json_acset_schema(BasicSchema, data))
 JSONACSets.parse_json_acset_schema(data) =
-  parse_json_acset_schema(Presentation{ThSchema,Symbol}, data)
+  parse_json_acset_schema(Presentation, data)
 
 JSONACSets.read_json_acset_schema(fname::AbstractString) =
-  read_json_acset_schema(Presentation{ThSchema,Symbol}, fname)
+  read_json_acset_schema(Presentation, fname)
 
 # ACSet <-> GAT exprs
 #####################

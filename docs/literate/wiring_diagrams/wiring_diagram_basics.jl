@@ -2,7 +2,7 @@
 #
 #md # [![](https://img.shields.io/badge/show-nbviewer-579ACA.svg)](@__NBVIEWER_ROOT_URL__/generated/wiring_diagrams/wiring_diagram_basics.ipynb)
 # 
-# using Catlab.GATs, you can create, manipulate, serialize, and visualize *wiring
+# using GATlab, you can create, manipulate, serialize, and visualize *wiring
 # diagrams*, also known as [string
 # diagrams](https://ncatlab.org/nlab/show/string+diagram). The flexible data
 # structure for wiring diagrams allows arbitrary data to be attached to boxes,

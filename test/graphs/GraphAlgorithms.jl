@@ -1,8 +1,10 @@
 module TestGraphAlgorithms
 using Test
 
-using Catlab.Graphs, Catlab.CategoricalAlgebra
+using Catlab.Graphs
 using Catlab.Theories
+using ACSets
+using Catlab.CategoricalAlgebra
 
 # Connectivity
 ##############
@@ -71,5 +73,18 @@ ep = enumerate_paths(g)
     (2, 3, [2])
     (2, 3, [3])
     (3, 3, [])]
+
+# Trees
+#######
+
+g = GraphSearching.tree([1, 1, 1, 2, 2])
+g′ = @acset Graph begin
+  V = 5
+  E = 4
+  src = [1, 1, 2, 2]
+  tgt = [2, 3, 4, 5]
+end
+
+@test is_isomorphic(g,g′)
 
 end

@@ -3,8 +3,9 @@ export ThMarkovCategory, FreeMarkovCategory,
   Ob, Hom, dom, codom, compose, ⋅, ∘, otimes, ⊗, braid, mcopy, Δ, delete, ◊,
   expectation, 𝔼
 
-using Catlab.GATs, Catlab.Theories, Catlab.WiringDiagrams
-import Catlab.GATs: show_latex
+using GATlab
+using Catlab.Theories, Catlab.WiringDiagrams
+import GATlab: show_latex
 import Catlab.Theories: Ob, Hom, dom, codom, compose, ⋅, ∘, otimes, ⊗, braid,
   mcopy, Δ, delete, ◊
 
@@ -13,12 +14,12 @@ import Catlab.Theories: Ob, Hom, dom, codom, compose, ⋅, ∘, otimes, ⊗, bra
 
 """ Theory of *Markov categories with expectation*
 """
-@signature ThMarkovCategory{Ob,Hom} <: ThMonoidalCategoryWithDiagonals{Ob,Hom} begin
-  expectation(M::(A → B))::(A → B) <= (A::Ob, B::Ob)
+@signature ThMarkovCategory <: ThMonoidalCategoryWithDiagonals begin
+  expectation(M::(A → B))::(A → B) ⊣ [A::Ob, B::Ob]
   @op (𝔼) := expectation
 end
 
-@syntax FreeMarkovCategory{ObExpr,HomExpr} ThMarkovCategory begin
+@symbolic_model FreeMarkovCategory{ObExpr,HomExpr} ThMarkovCategory begin
   otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
   otimes(f::Hom, g::Hom) = associate(new(f,g))
   compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
@@ -33,9 +34,9 @@ end
 # Wiring diagrams
 #################
 
-mcopy(A::Ports{ThMarkovCategory}, n::Int) = implicit_mcopy(A, n)
+mcopy(A::Ports{ThMarkovCategory.Meta.T}, n::Int) = implicit_mcopy(A, n)
 
-function expectation(M::WiringDiagram{ThMarkovCategory})
+function expectation(M::WiringDiagram{ThMarkovCategory.Meta.T})
   if nboxes(M) <= 1
     functor(M, identity, expectation_box)
   else

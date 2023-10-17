@@ -58,29 +58,7 @@ diagrams, Petri nets, and the like.
 
 ### What is a GAT?
 
-Generalized Algebraic Theories (GATs) are the backbone of Catlab so let's expand a bit on GATs and how they fit into the bigger picture of algebra.
-
-An algebraic structure, like a group or category, is a mathematical object whose axioms all take the form of equations that are universally quantified (the equations have no exceptions). That’s not a formal definition but it’s a good heuristic. There are different ways to make this precise. The oldest, going back to universal algebra in the early 20th centrury, are algebraic theories.
-
-[Universal algebra](https://en.wikipedia.org/wiki/Universal_algebra) (sometimes called general algebra) is the field of mathematics that studies algebraic structures themselves, not examples ("models") of algebraic structures. For instance, rather than take particular groups as the object of study, in universal algebra one takes the class of groups as an object of study. In an algebraic theory, you have a collection of (total) operations and they obey a set of equational axioms. Classically, there is only a single generating type, but there are also typed or multi-sorted versions of algebraic theories. Most of the classical structures of abstract algebra, such as groups, rings, and modules, can be defined as algebraic theories.
-
-Importantly, the theory of categories is [not algebraic](https://mathoverflow.net/q/354920). In other words, a category cannot be defined as a (multi-sorted) algebraic theory. The reason is that the operation of composition is partial, since you can only compose morphisms with compatible (co)domains. Now, categories sure feel like algebraic structures, so people have come up with generalizations of algebraic theories that accomodate categories and related structures.
-
-The first of these was Freyd’s essentially algebraic theories. In an essentially algebraic theory, you can have partially defined operations; however, to maintain the equational character of the system, the domains of operations must themselves be defined equationally. For example, the theory of categories would be defined as having two types, Ob and Hom, and the composition operation `compose(f::Hom,g::Hom)::Hom` would have domain given by the equation `codom(f) == dom(g)`. As your theories get more elaborate, the sets of equations defining the domains get more complicated and reasoning about the structure is overwhelming.
-
-Later, Cartmell proposed generalized algebraic theories, which solves the same problem but in a different way. Rather than having partial operations, you have total operations but on dependent types (types that are parameterized by values). So now the composition operation has signature `compose(f::Hom(A,B), g::Hom(B,C))::Hom(A,C) where (A::Ob, B::Ob, C::Ob)`  exactly as appears in Catlab. This is closer to the way that mathematicians actually think and write about categories. For example, if you look at the definitions of category, functor, and natural transformation in [Emily Riehl’s textbook](http://www.math.jhu.edu/~eriehl/context/), you will see that they are already essentially in the form of a GAT, whereas they require translation into an essentially algebraic theory. Nevertheless, GATs and essentially algebraic theories have the same expressive power, at least in their standard set-based semantics. GATs provide a version of the computer scientist's type theory that plays well with the mathematician's algebra, thus, providing a perfect opportunity for computer algebra systems.
-
-## Overview of Key Components
-
-There are several core parts to the Catlab design, we start with a brief overview of each one
-
-1. [Catlab.GAT](@ref gats) provides `@theory` - defines a new Generalized Algebraic Theory. These are algebraic versions of what a logician would call a logical theory. They support equational reasoning and a limited version of dependent types. Namely the dependent types must also form an algebraic theory and you are only allowed to have equations between terms of the same type. Catlab ships with many predefined theories for important concepts like Categories and "doctrines" of categories like Symmetric Monoidal Categories. These predefined theories are defined in Catlab.Theories, but you can make your own with the `@theory` macro.
-
-2. [Catlab.Syntax](@ref syntax-systems) provides initial algebras for a GAT, which are declared with `@syntax`. These are represented as a typed version of Expr that allows you to customize the normalization procedure for example in a FreeCategory, the composition operation which is a unital and associative binary operation is normalized into lists. This allows you to write algorithms on Syntax trees that use different styles of simplification. The only styles available now are support for normalizing unital and associate operations like comoposition and a monoidal product.
-
-3. [`@instance`](@ref) associates Julia data structures as semantics for a GAT. This is known as functorial semantics, where you associate every type in the GAT with a type in Julia and every term constructor in the GAT to a julia function (possibly a struct constructor). These functions and types must satisfy the axioms that are encoded in the GAT. 
-
-4. [`@present`](@ref) enumerates a finite set of generators for a model of the GAT just like you would write out a group (model of the theory of groups) as list of generators and relations, the presentation lets you enumerate the objects and morphisms that generate a category.
+See [GATlab documentation](https://algebraicjulia.github.io/GATlab.jl)
 
 ## Conventions
 
@@ -148,7 +126,6 @@ debug messages.
 
 ```@contents
 Pages = [
-     "apis/gats.md",
      "apis/theories.md",
      "apis/wiring_diagrams.md",
      "apis/graphics.md",

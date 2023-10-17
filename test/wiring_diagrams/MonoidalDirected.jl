@@ -102,7 +102,7 @@ A = Ports([:A])
 @test compose(mcopy(A), otimes(id(A),delete(A))) == id(A)
 
 # Cartesian categories
-A = Ports{ThCartesianCategory}([:A])
+A = Ports{ThCartesianCategory.Meta.T}([:A])
 @test mcopy(A) == mcopy(Ports([:A]))
 @test delete(A) == delete(Ports([:A]))
 @test_throws MethodError mmerge(A)
@@ -129,7 +129,7 @@ A = Ports([:A])
 @test compose(otimes(id(A),create(A)), mmerge(A)) == id(A)
 
 # Cocartesian categories
-A = Ports{ThCocartesianCategory}([:A])
+A = Ports{ThCocartesianCategory.Meta.T}([:A])
 @test mmerge(A) == mmerge(Ports([:A]))
 @test create(A) == create(Ports([:A]))
 @test_throws MethodError mcopy(A)
@@ -140,14 +140,14 @@ A = Ports{ThCocartesianCategory}([:A])
 
 # Monoidal categories with bidiagonals, and non-naturality of explicit
 # representation.
-A = Ports{ThMonoidalCategoryWithBidiagonals}([:A])
+A = Ports{ThMonoidalCategoryWithBidiagonals.Meta.T}([:A])
 @test boxes(mcopy(A)) == [ Junction(:A,1,2) ]
 @test boxes(mcopy(otimes(A,A))) == repeat([ Junction(:A,1,2) ], 2)
 @test compose(create(A), mcopy(A)) != create(otimes(A,A))
 @test compose(mmerge(A), delete(A)) != delete(otimes(A,A))
 
 # Biproduct categories, and naturality of implicit representation.
-A = Ports{ThBiproductCategory}([:A])
+A = Ports{ThBiproductCategory.Meta.T}([:A])
 @test compose(create(A), mcopy(A)) == create(otimes(A,A))
 @test compose(mmerge(A), delete(A)) == delete(otimes(A,A))
 
@@ -177,7 +177,7 @@ g = singleton_diagram(ThDaggerSymmetricMonoidalCategory, Box(:g,[:B],[:A]))
 
 ### Duals
 
-A, B = [ Ports{ThCompactClosedCategory}([sym]) for sym in [:A, :B] ]
+A, B = [ Ports{ThCompactClosedCategory.Meta.T}([sym]) for sym in [:A, :B] ]
 I = munit(typeof(A))
 
 @test boxes(dunit(A)) == [ Junction(:A, [], [PortOp{:dual}(:A), :A]) ]
@@ -218,7 +218,7 @@ g = singleton_diagram(ThCompactClosedCategory, Box(:g,[:B],[:A]))
 # Traced monoidal category
 #-------------------------
 
-const TracedMon = ThTracedMonoidalCategory
+const TracedMon = ThTracedMonoidalCategory.Meta.T
 A, B, X, Y = [ Ports{TracedMon}([sym]) for sym in [:A,:B,:X,:Y] ]
 I = munit(typeof(A))
 f = singleton_diagram(TracedMon, Box(:f, [:X,:A], [:X,:B]))
@@ -253,7 +253,7 @@ f = singleton_diagram(TracedMon, Box(:f, [:A], [:B]))
 # Bicategory of relations
 #------------------------
 
-A, B = [ Ports{ThBicategoryRelations}([sym]) for sym in [:A, :B] ]
+A, B = [ Ports{ThBicategoryRelations.Meta.T}([sym]) for sym in [:A, :B] ]
 R = singleton_diagram(ThBicategoryRelations, Box(:R,[:A],[:B]))
 S = singleton_diagram(ThBicategoryRelations, Box(:S,[:A],[:B]))
 
@@ -270,7 +270,7 @@ S = singleton_diagram(ThBicategoryRelations, Box(:S,[:A],[:B]))
 # Abelian bicategory of relations
 #--------------------------------
 
-A, B = [ Ports{ThAbelianBicategoryRelations}([sym]) for sym in [:A, :B] ]
+A, B = [ Ports{ThAbelianBicategoryRelations.Meta.T}([sym]) for sym in [:A, :B] ]
 R = singleton_diagram(ThAbelianBicategoryRelations, Box(:R,[:A],[:B]))
 S = singleton_diagram(ThAbelianBicategoryRelations, Box(:S,[:A],[:B]))
 

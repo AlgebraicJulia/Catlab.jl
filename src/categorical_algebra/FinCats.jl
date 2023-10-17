@@ -23,8 +23,8 @@ using StaticArrays: SVector
 using DataStructures: IntDisjointSets, in_same_set, num_groups
 
 using ACSets
-using ...GATs
-import ...GATs: equations
+using GATlab
+import GATlab: equations
 using ...Theories: ThCategory, ThSchema, ThPointedSetCategory, ThPointedSetSchema,
   ObExpr, HomExpr, AttrExpr, AttrTypeExpr, FreeSchema, FreePointedSetCategory, zeromap
 import ...Theories: dom, codom, id, compose, ⋅, ∘
@@ -32,7 +32,6 @@ using ...Graphs
 import ...Graphs: edges, src, tgt, enumerate_paths
 @reexport using ..Categories
 import ..Categories: CatSize, ob, hom, ob_map, hom_map, component, op
-
 # Categories
 ############
 
@@ -305,18 +304,18 @@ function FinCatPresentation(pres::Presentation{T}) where T
   S = pres.syntax
   FinCatPresentation{T,S.Ob,S.Hom}(pres)
 end
-function FinCatPresentation(pres::Presentation{ThSchema})
+function FinCatPresentation(pres::Presentation{ThSchema.Meta.T})
   S = pres.syntax
   Ob = Union{S.Ob, S.AttrType}
   Hom = Union{S.Hom, S.Attr, S.AttrType}
-  FinCatPresentation{ThSchema,Ob,Hom}(pres)
+  FinCatPresentation{ThSchema.Meta.T,Ob,Hom}(pres)
 end
 
-function FinCatPresentation(pres::Presentation{ThPointedSetSchema})
+function FinCatPresentation(pres::Presentation{ThPointedSetSchema.Meta.T})
   S = pres.syntax
   Ob = Union{S.Ob, S.AttrType}
   Hom = Union{S.Hom, S.Attr, S.AttrType}
-  FinCatPresentation{ThPointedSetSchema,Ob,Hom}(pres)
+  FinCatPresentation{ThPointedSetSchema.Meta.T,Ob,Hom}(pres)
 end
 """
 Computes the graph generating a finitely
@@ -328,12 +327,12 @@ in the resulting graph.
 presentation(C::FinCatPresentation) = C.presentation
 
 ob_generators(C::FinCatPresentation) = generators(presentation(C), :Ob)
-ob_generators(C::Union{FinCatPresentation{ThSchema},FinCatPresentation{ThPointedSetSchema}}) = let P = presentation(C)
+ob_generators(C::Union{FinCatPresentation{ThSchema.Meta.T},FinCatPresentation{ThPointedSetSchema.Meta.T}}) = let P = presentation(C)
   vcat(generators(P, :Ob), generators(P, :AttrType))
 end
 
 hom_generators(C::FinCatPresentation) = generators(presentation(C), :Hom)
-hom_generators(C::Union{FinCatPresentation{ThSchema},FinCatPresentation{ThPointedSetSchema}}) = let P = presentation(C)
+hom_generators(C::Union{FinCatPresentation{ThSchema.Meta.T},FinCatPresentation{ThPointedSetSchema.Meta.T}}) = let P = presentation(C)
   vcat(generators(P, :Hom), generators(P, :Attr))
 end
 equations(C::FinCatPresentation) = equations(presentation(C))
@@ -348,7 +347,7 @@ hom_generator_name(C::FinCatPresentation, f::GATExpr{:generator}) = first(f)
 
 ob(C::FinCatPresentation, x::GATExpr) =
   gat_typeof(x) == :Ob ? x : error("Expression $x is not an object")
-ob(C::Union{FinCatPresentation{ThSchema},FinCatPresentation{ThPointedSetSchema}}, x::GATExpr) =
+ob(C::Union{FinCatPresentation{ThSchema.Meta.T},FinCatPresentation{ThPointedSetSchema.Meta.T}}, x::GATExpr) =
   gat_typeof(x) ∈ (:Ob, :AttrType) ? x :
     error("Expression $x is not an object or attribute type")
 
@@ -357,12 +356,12 @@ hom(C::FinCatPresentation, fs::AbstractVector) =
   mapreduce(f -> hom(C, f), compose, fs)
 hom(C::FinCatPresentation, f::GATExpr) =
   gat_typeof(f) == :Hom ? f : error("Expression $f is not a morphism")
-hom(::Union{FinCatPresentation{ThSchema},FinCatPresentation{ThPointedSetSchema}}, f::GATExpr) =
+hom(::Union{FinCatPresentation{ThSchema.Meta.T},FinCatPresentation{ThPointedSetSchema.Meta.T}}, f::GATExpr) =
   gat_typeof(f) ∈ (:Hom, :Attr, :AttrType) ? f :
     error("Expression $f is not a morphism or attribute")
 
-id(C::FinCatPresentation{ThSchema}, x::AttrTypeExpr) = x
-compose(C::FinCatPresentation{ThSchema}, f::AttrTypeExpr, g::AttrTypeExpr) =
+id(C::FinCatPresentation{ThSchema.Meta.T}, x::AttrTypeExpr) = x
+compose(C::FinCatPresentation{ThSchema.Meta.T}, f::AttrTypeExpr, g::AttrTypeExpr) =
   (f == g) ? f : error("Invalid composite of attribute type identities: $f != $g")
 
 function Base.show(io::IO, C::FinCatPresentation)
@@ -679,13 +678,13 @@ end
 function Categories.do_composeH(F::FinDomFunctorMap, β::Transformation)
   G, H = dom(β), codom(β)
   FinTransformationMap(mapvals(c -> component(β, c), F.ob_map),
-                       compose(F, G, strict=false), compose(F, H, strict=false))
+                       compose(F, G), compose(F, H))
 end
 
 function Categories.do_composeH(α::FinTransformationMap, H::Functor)
   F, G = dom(α), codom(α)
   FinTransformationMap(mapvals(f->hom_map(H,f),α.components),
-                      compose(F, H, strict=false), compose(G, H, strict=false))
+                      compose(F, H), compose(G, H))
 end
 
 function Base.show(io::IO, α::FinTransformationMap)

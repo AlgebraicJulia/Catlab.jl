@@ -18,7 +18,8 @@ module Chase
 export chase
 
 using ACSets.DenseACSets: datatypes
-using ...GATs, ...Theories
+using GATlab
+using ...Theories
 using ..CSets, ..HomSearch, ..FinSets, ..FinCats, ..Limits, ..FreeDiagrams
 using ..FinCats: FinCatPresentation
 import ..Limits: universal
@@ -467,7 +468,7 @@ end
 Preserves the original name of the inputs if it is unambiguous, otherwise
 disambiguates with index in original input. E.g. (A,B)⊔(B,C) → (A,B#1,B#2,C)
 """
-function coproduct_fincat(Xs::AbstractVector{<: FinCatPresentation{ThSchema}}; kw...)
+function coproduct_fincat(Xs::AbstractVector{<:FinCatPresentation{ThSchema.Meta.T}}; kw...)
   Xps = [X.presentation for X in Xs]
   # Collect all generators and identify conflicting names
   cnflobs, cnflats, cnflhoms, cnflattrs = map([:Ob,:AttrType,:Hom,:Attr]) do x 

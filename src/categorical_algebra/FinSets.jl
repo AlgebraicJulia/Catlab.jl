@@ -15,7 +15,8 @@ import Tables, PrettyTables
 
 using ACSets
 @reexport using ..Sets
-using ...GATs, ...Theories, ...Graphs
+using GATlab
+using ...Theories, ...Graphs
 using ..FinCats, ..FreeDiagrams, ..Limits, ..Subobjects
 import ...Theories: Ob, meet, ∧, join, ∨, top, ⊤, bottom, ⊥, ⋅, dom, codom,
   compose

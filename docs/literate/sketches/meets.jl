@@ -9,7 +9,7 @@
 using Core: GeneratedFunctionStub
 using Test
 
-using Catlab.GATs, Catlab.Theories, Catlab.CategoricalAlgebra
+using GATlab, Catlab.Theories, Catlab.CategoricalAlgebra
 using Catlab.Graphics
 
 import Catlab.Theories: compose

@@ -5,50 +5,14 @@ export ThCategory, FreeCategory, Ob, Hom, dom, codom, id, compose, ⋅,
   ThMCategory, FreeMCategory, Tight, reflexive, transitive,
   ThPointedSetCategory, FreePointedSetCategory, zeromap
 
-import Base: inv, show
-
 # Category
 ##########
-
-""" Theory of *categories*
-
-**Note**: Throughout Catlab, we compose morphisms in diagrammatic order (from
-left to right), i.e., if ``f:A→B`` and ``g:B→C`` then the composite morphism
-``f⋅g:A→C`` is `compose(f,g)`. Under this convention, functions are applied on
-the right, e.g., if ``a ∈ A`` then ``af ∈ B``.
-
-We retain the usual meaning of the symbol ``∘`` (`\\circ`), i.e., ``g∘f`` is
-`compose(f,g)`. This usage is too entrenched to overturn. However, we use the
-symbol ``⋅`` (`\\cdot`) for composition in diagrammatic order.
-"""
-@theory ThCategory{Ob,Hom} begin
-  # Unicode aliases.
-  @op begin
-    (→) := Hom
-    (⋅) := compose
-  end
-
-  """ Object in a category """
-  Ob::TYPE
-
-  """ Morphism in a category """
-  Hom(dom::Ob,codom::Ob)::TYPE
-
-  id(A::Ob)::(A → A)
-  compose(f::(A → B), g::(B → C))::(A → C) ⊣ (A::Ob, B::Ob, C::Ob)
-
-  # Category axioms.
-  ((f ⋅ g) ⋅ h == f ⋅ (g ⋅ h)
-    ⊣ (A::Ob, B::Ob, C::Ob, D::Ob, f::(A → B), g::(B → C), h::(C → D)))
-  f ⋅ id(B) == f ⊣ (A::Ob, B::Ob, f::(A → B))
-  id(A) ⋅ f == f ⊣ (A::Ob, B::Ob, f::(A → B))
-end
 
 # Convenience constructors
 compose(fs::AbstractVector) = foldl(compose, fs)
 compose(f, g, h, fs...) = compose([f, g, h, fs...])
 
-@syntax FreeCategory{ObExpr,HomExpr} ThCategory begin
+@symbolic_model FreeCategory{ObExpr,HomExpr} ThCategory begin
   compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
 end
 
@@ -67,6 +31,7 @@ function show(io::IO, ::MIME"text/plain", expr::HomExpr)
   print(io, " → ")
   show_unicode(io, codom(expr))
 end
+
 function show(io::IO, ::MIME"text/latex", expr::HomExpr)
   print(io, "\$")
   show_latex(io, expr)
@@ -82,14 +47,14 @@ end
 
 """ Theory of *groupoids*.
 """
-@theory ThGroupoid{Ob,Hom} <: ThCategory{Ob,Hom} begin
-  inv(f::(A → B))::(B → A) ⊣ (A::Ob, B::Ob)
+@theory ThGroupoid <: ThCategory begin
+  inv(f::(A → B))::(B → A) ⊣ [A::Ob, B::Ob]
 
-  f ⋅ inv(f) == id(A) ⊣ (A::Ob, B::Ob, f::(A → B))
-  inv(f) ⋅ f == id(B) ⊣ (A::Ob, B::Ob, f::(A → B))
+  f ⋅ inv(f) == id(A) ⊣ [A::Ob, B::Ob, f::(A → B)]
+  inv(f) ⋅ f == id(B) ⊣ [A::Ob, B::Ob, f::(A → B)]
 end
 
-@syntax FreeGroupoid{ObExpr,HomExpr} ThGroupoid begin
+@symbolic_model FreeGroupoid{ObExpr,HomExpr} ThGroupoid begin
   compose(f::Hom, g::Hom) = associate_unit_inv(new(f,g; strict=true), id, inv)
   inv(f::Hom) = distribute_unary(involute(new(f)), inv, compose,
                                  unit=id, contravariant=true)
@@ -102,23 +67,23 @@ end
 
 Axiomatized as a covariant category action.
 """
-@theory ThCopresheaf{Ob,Hom,El} <: ThCategory{Ob,Hom} begin
+@theory ThCopresheaf <: ThCategory begin
   # copresheaf = object-indexed family
   El(ob::Ob)::TYPE
 
   # functoriality = covariant action
-  act(x::El(A), f::Hom(A,B))::El(B) ⊣ (A::Ob, B::Ob)
-  @op (⋅) := act
+  act(x::El(A), f::Hom(A,B))::El(B) ⊣ [A::Ob, B::Ob]
+  # @op (⋅) := act
 
   # action equations
-  act(act(x, f), g) == act(x, (f ⋅ g)) ⊣
-    (A::Ob, B::Ob, C::Ob, f::(A → B), g::(B → C), x::El(A))
-  act(x, id(A)) == x ⊣ (A::Ob, x::El(A))
+  (act(act(x, f), g) == act(x, (f ⋅ g))) ⊣
+    [A::Ob, B::Ob, C::Ob, f::(A → B), g::(B → C), x::El(A)]
+  (act(x, id(A)) == x) ⊣ [A::Ob, x::El(A)]
 end
 
 abstract type ElExpr{T} <: GATExpr{T} end
 
-@syntax FreeCopresheaf{ObExpr,HomExpr,ElExpr} ThCopresheaf begin
+@symbolic_model FreeCopresheaf{ObExpr,HomExpr,ElExpr} ThCopresheaf begin
   compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
 end
 
@@ -126,21 +91,21 @@ end
 
 Axiomatized as a contravariant category action.
 """
-@theory ThPresheaf{Ob,Hom,El} <: ThCategory{Ob,Hom} begin
+@theory ThPresheaf <: ThCategory begin
   # presheaf = object-indexed family
   El(ob::Ob)::TYPE
 
   # functoriality = contravariant action
-  coact(f::Hom(A,B), x::El(B))::El(A) ⊣ (A::Ob, B::Ob)
-  @op (⋅) := coact
+  coact(f::Hom(A,B), x::El(B))::El(A) ⊣ [A::Ob, B::Ob]
+  # @op (⋅) := coact
 
   # action equations
-  coact(f, coact(g, x)) == coact((f ⋅ g), x) ⊣
-    (A::Ob, B::Ob, C::Ob, f::(A → B), g::(B → C), x::El(C))
-  coact(id(A), x) == x ⊣ (A::Ob, x::El(A))
+  (coact(f, coact(g, x)) == coact((f ⋅ g), x)) ⊣
+    [A::Ob, B::Ob, C::Ob, f::(A → B), g::(B → C), x::El(C)]
+  (coact(id(A), x) == x) ⊣ [A::Ob, x::El(A)]
 end
 
-@syntax FreePresheaf{ObExpr,HomExpr,ElExpr} ThPresheaf begin
+@symbolic_model FreePresheaf{ObExpr,HomExpr,ElExpr} ThPresheaf begin
   compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
 end
 
@@ -149,6 +114,7 @@ function show(io::IO, ::MIME"text/plain", expr::ElExpr)
   print(io, ": ")
   show_unicode(io, ob(expr))
 end
+
 function show(io::IO, ::MIME"text/latex", expr::ElExpr)
   print(io, "\$")
   show_latex(io, expr)
@@ -180,21 +146,21 @@ the arrow category of Set spanned by injections.
 In the following GAT, tightness is axiomatized as a property of morphisms: a
 dependent family of sets over the hom-sets, each having at most one inhabitant.
 """
-@theory ThMCategory{Ob,Hom,Tight} <: ThCategory{Ob,Hom} begin
-  Tight(hom::Hom(A,B))::TYPE ⊣ (A::Ob, B::Ob)
+@theory ThMCategory <: ThCategory begin
+  Tight(hom::Hom(A,B))::TYPE ⊣ [A::Ob, B::Ob]
 
   # Tightness is a property.
-  t == t′ ⊣ (A::Ob, B::Ob, f::Hom(A,B), t::Tight(f), t′::Tight(f))
+  (t == t′) ⊣ [A::Ob, B::Ob, f::Hom(A,B), t::Tight(f), t′::Tight(f)]
 
   # Tight morphisms form a subcategory.
   reflexive(A::Ob)::Tight(id(A))
-  transitive(t::Tight(f), u::Tight(g))::Tight(compose(f,g)) ⊣
-    (A::Ob, B::Ob, C::Ob, f::Hom(A,B), g::Hom(B,C), t::Tight(f), u::Tight(g))
+  transitive(t, u)::Tight(compose(f,g)) ⊣
+    [A::Ob, B::Ob, C::Ob, f::Hom(A,B), g::Hom(B,C), t::Tight(f), u::Tight(g)]
 end
 
 abstract type TightExpr{T} <: GATExpr{T} end
 
-@syntax FreeMCategory{ObExpr,HomExpr,TightExpr} ThMCategory begin
+@symbolic_model FreeMCategory{ObExpr,HomExpr,TightExpr} ThMCategory begin
   compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
   transitive(t::Tight, u::Tight) = associate_unit(new(t,u; strict=true), reflexive)
 end
@@ -204,17 +170,17 @@ Theory of a pointed set-enriched category.
 We axiomatize a category equipped with zero morphisms.
 
 A functor from an ordinary category into a freely generated
-pointed-set enriched category, 
-equivalently, a pointed-set enriched category in which no two nonzero maps 
+pointed-set enriched category,
+equivalently, a pointed-set enriched category in which no two nonzero maps
 compose to a zero map, is a good notion
 of a functor that's total on objects and partial on morphisms.
 """
-@theory ThPointedSetCategory{Ob,Hom} <: ThCategory{Ob,Hom} begin
-  zeromap(A,B)::Hom(A,B)⊣(A::Ob,B::Ob)
-  compose(zeromap(A,B),f::(B→C))==zeromap(A,C)⊣(A::Ob,B::Ob,C::Ob)
-  compose(g::(A→B),zeromap(A,B))==zeromap(A,C)⊣(A::Ob,B::Ob,C::Ob)
+@theory ThPointedSetCategory <: ThCategory begin
+  zeromap(A,B)::Hom(A,B)⊣[A::Ob,B::Ob]
+  (compose(zeromap(A,B),f)==zeromap(A,C))⊣[A::Ob,B::Ob,C::Ob,f::(B→C)]
+  (compose(g,zeromap(A,B))==zeromap(A,C))⊣[A::Ob,B::Ob,C::Ob,g::(C→A)]
 end
 
-@syntax FreePointedSetCategory{ObExpr,HomExpr} ThPointedSetCategory begin
+@symbolic_model FreePointedSetCategory{ObExpr,HomExpr} ThPointedSetCategory begin
   compose(f::Hom,g::Hom) = associate_unit(normalize_zero(new(f,g; strict=true)), id)
 end

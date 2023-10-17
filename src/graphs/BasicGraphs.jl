@@ -16,7 +16,7 @@ export HasVertices, HasGraph, AbstractGraph, Graph, SchGraph,
   add_edge!, add_edges!, add_vertex!, add_vertices!, add_vertices_with_indices!,
   rem_edge!, rem_edges!, rem_vertex!, rem_vertices!, 
   neighbors, inneighbors, outneighbors, all_neighbors, degree, induced_subgraph,
-  AbstractSymmetricGraph, SymmetricGraph, SchSymmetricGraph, inv,
+  AbstractSymmetricGraph, SymmetricGraph, SchSymmetricGraph, inv, is_directed,
   AbstractReflexiveGraph, ReflexiveGraph, SchReflexiveGraph, refl,
   AbstractSymmetricReflexiveGraph, SymmetricReflexiveGraph, SchSymmetricReflexiveGraph,
   AbstractHalfEdgeGraph, HalfEdgeGraph, SchHalfEdgeGraph, vertex, half_edges,
@@ -28,6 +28,7 @@ export HasVertices, HasGraph, AbstractGraph, Graph, SchGraph,
 import Base: inv
 
 using ACSets, ...ACSetsGATsInterop
+using ...Theories
 import ...Theories: src, tgt
 
 # Base types
@@ -239,7 +240,7 @@ function induced_subgraph(g::G, vs::AbstractVector{Int}) where G <: HasGraph
 end
 
 # Symmetric graphs
-##################
+
 
 @present SchSymmetricGraph <: SchGraph begin
   inv::Hom(E,E)
@@ -297,6 +298,8 @@ neighbors(g::AbstractSymmetricGraph, v::Int) =
 @inline inneighbors(g::AbstractSymmetricGraph, v::Int) = neighbors(g, v)
 @inline outneighbors(g::AbstractSymmetricGraph, v::Int) = neighbors(g, v)
 @inline all_neighbors(g::AbstractSymmetricGraph, v::Int) = neighbors(g, v)
+
+@generated is_directed(::Type{T}) where {S, T<:StructACSet{S}} = (:inv, :E, :E) ∉ homs(S)
 
 # Reflexive graphs
 ##################
@@ -571,7 +574,7 @@ Interchange src and tgt, keeping all other data the same
 """
 function Base.reverse!(g::G) where G<:HasGraph
   tmp = deepcopy(g[:tgt])
-  g[:tgt] = g[:src] 
+  g[:tgt] = g[:src]
   g[:src] = tmp
   return g
 end

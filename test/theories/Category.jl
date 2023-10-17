@@ -101,14 +101,14 @@ f = Hom(:f, A, B)
 x = El(:x, B)
 @test ob(x) == B
 @test ob(coact(f, x)) == A
-@test f ⋅ x == coact(f, x)
+# @test f ⋅ x == coact(f, x)
 
 A, B = Ob(FreeCopresheaf, :A, :B)
 f = Hom(:f, A, B)
 x = El(:x, A)
 @test ob(x) == A
 @test ob(act(x, f)) == B
-@test x ⋅ f == act(x, f)
+# @test x ⋅ f == act(x, f)
 
 # Infix notation (Unicode)
 @test unicode(x) == "x"

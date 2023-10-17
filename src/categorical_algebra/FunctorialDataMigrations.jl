@@ -10,12 +10,12 @@ using MLStyle: @match
 
 using ACSets
 using ACSets.DenseACSets: constructor, datatypes
-using ...GATs
+using GATlab
 using ...Theories: ob, hom, dom, codom, attr, AttrTypeExpr, ⋅
 using ..Categories, ..FinCats, ..Limits, ..Diagrams, ..FinSets, ..CSets, ..HomSearch
 using ...Graphs, ..FreeDiagrams
 import ..Categories: ob_map, hom_map
-import ...GATs: functor
+import GATlab: functor
 using ..FinCats: make_map, mapvals, presentation_key
 using ..Chase: collage, crel_type, pres_to_eds, add_srctgt, chase
 using ..FinSets: VarSet
@@ -299,7 +299,7 @@ which works because left Kan extensions take representables to representables
 representables (they can be infinite), this function thus inherits any
 limitations of our implementation of left pushforward data migrations.
 """
-function representable(T, C::Presentation{ThSchema}, ob::Symbol;
+function representable(T, C::Presentation{ThSchema.Meta.T}, ob::Symbol;
                        return_unit_id::Bool=false)
   C₀ = Presentation{Symbol}(FreeSchema)
   add_generator!(C₀, C[ob])
@@ -339,7 +339,7 @@ map from B into the A which sends the point of B to f applied to the point of A)
 Returns the classifier as well as a dictionary of subobjects corresponding to 
 the parts of the classifier.
 """
-function subobject_classifier(T::Type, S::Presentation{ThSchema}; kw...)
+function subobject_classifier(T::Type, S::Presentation{ThSchema.Meta.T}; kw...)
   isempty(generators(S, :AttrType)) ||
     error("Cannot compute Ω for schema with attributes")
   y = yoneda(T, S; kw...)
@@ -374,7 +374,7 @@ Given a map f: a->b, we compute that f(Aᵢ) = Bⱼ by constructing the followin
 
 where f* is given by `yoneda`.
 """
-function internal_hom(G::T, F::T, S::Presentation{ThSchema}; kw...) where T<:ACSet
+function internal_hom(G::T, F::T, S::Presentation{ThSchema.Meta.T}; kw...) where T<:ACSet
   y = yoneda(T, S; kw...)
   obs = nameof.(generators(S, :Ob))
   prods = Dict(ob => product(ob_map(y, ob),G) for ob in obs)
@@ -405,7 +405,7 @@ they can be supplied via the `cache` keyword argument.
 
 Returns a `FinDomFunctor` with domain `op(C)`.
 """
-function yoneda(cons, C::Presentation{ThSchema};
+function yoneda(cons, C::Presentation{ThSchema.Meta.T};
                 cache::AbstractDict=Dict{Symbol,Any}())
   # Compute any representables that have not already been computed.
   for c in nameof.(generators(C, :Ob))
@@ -444,7 +444,7 @@ yoneda(X::DynamicACSet; kw...) = yoneda(constructor(X), Presentation(X.schema); 
 Returns a `FreeDiagram` whose objects are the generating objects of `pres` and 
 whose homs are the generating homs of `pres`.
 """
-function FreeDiagrams.FreeDiagram(pres::Presentation{ThSchema, Symbol})
+function FreeDiagrams.FreeDiagram(pres::Presentation{ThSchema.Meta.T, Symbol})
   obs = Array{FreeSchema.Ob}(generators(pres, :Ob))
   homs = Array{FreeSchema.Hom}(generators(pres, :Hom))
   doms = map(h -> generator_index(pres, nameof(dom(h))), homs)

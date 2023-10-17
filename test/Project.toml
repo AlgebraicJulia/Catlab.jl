@@ -1,8 +1,11 @@
 [deps]
+ACSets = "227ef7b5-1206-438b-ac65-934d6da304b8"
+AlgebraicInterfaces = "23cfdc9f-0504-424a-be1f-4892b28e2f0c"
 Catlab = "134e5e36-593f-5add-ad60-77f754baafbe"
 Compose = "a81c6b42-2e10-5240-aca2-a61377ecd94b"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
+GATlab = "f0ffcf3b-d13a-433e-917c-cc44ccf5ead2"
 Graphs = "86223c79-3864-5bf0-83f7-82e725a168b6"
 IterativeSolvers = "42fd0dbc-a981-5370-80f2-aaf504508153"
 JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"

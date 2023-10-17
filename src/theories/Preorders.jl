@@ -3,8 +3,6 @@ export ThThinCategory, FreeThinCategory,
   ThPreorder, ThPoset, FreePreorder, El, Leq, ≤, lhs, rhs, reflexive, transitive,
   ThLattice, ThAlgebraicLattice, meet, ∧, join, ∨, top, ⊤, bottom, ⊥
 
-import Base: join
-
 # Thin category
 ###############
 
@@ -13,11 +11,11 @@ import Base: join
 Thin categories have at most one morphism between any two objects and are
 isomorphic to preorders.
 """
-@theory ThThinCategory{Ob,Hom} <: ThCategory{Ob,Hom} begin
-  f == g ⊣ (A::Ob, B::Ob, f::Hom(A,B), g::Hom(A,B))
+@theory ThThinCategory <: ThCategory begin
+  f == g ⊣ [A::Ob, B::Ob, f::Hom(A,B), g::Hom(A,B)]
 end
 
-@syntax FreeThinCategory{ObExpr,HomExpr} ThThinCategory begin
+@symbolic_model FreeThinCategory{ObExpr,HomExpr} ThThinCategory begin
   compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
 end
 
@@ -25,11 +23,11 @@ end
 
 Thin SMCs are isomorphic to commutative monoidal prosets.
 """
-@theory ThThinSymmetricMonoidalCategory{Ob,Hom} <: ThSymmetricMonoidalCategory{Ob,Hom} begin
-  f == g ⊣ (A::Ob, B::Ob, f::Hom(A,B), g::Hom(A,B))
+@theory ThThinSymmetricMonoidalCategory <: ThSymmetricMonoidalCategory begin
+  f == g ⊣ [A::Ob, B::Ob, f::Hom(A,B), g::Hom(A,B)]
 end
 
-@syntax FreeThinSymmetricMonoidalCategory{ObExpr,HomExpr} ThThinSymmetricMonoidalCategory begin
+@symbolic_model FreeThinSymmetricMonoidalCategory{ObExpr,HomExpr} ThThinSymmetricMonoidalCategory begin
   compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
   otimes(A::Ob, B::Ob) = associate_unit(new(A,B), munit)
   otimes(f::Hom, g::Hom) = associate(new(f,g))
@@ -44,18 +42,19 @@ The generalized algebraic theory of preorders encodes inequalities ``A≤B`` as
 dependent types ```Leq(A,B)`` and the axioms of reflexivity and transitivity as
 term constructors.
 """
-@theory ThPreorder{El,Leq} begin
-  El::TYPE
-  Leq(lhs::El, rhs::El)::TYPE
+@theory ThPreorder begin
   @op (≤) := Leq
 
-  reflexive(A::El)::(A≤A)
-  transitive(f::(A≤B), g::(B≤C))::(A≤C) ⊣ (A::El, B::El, C::El)
+  El::TYPE
+  Leq(lhs::El, rhs::El)::TYPE
 
-  f == g ⊣ (A::El, B::El, f::(A≤B), g::(A≤B))
+  reflexive(A::El)::(A≤A)
+  transitive(f::(A≤B), g::(B≤C))::(A≤C) ⊣ [A::El, B::El, C::El]
+
+  f == g ⊣ [A::El, B::El, f::(A≤B), g::(A≤B)]
 end
 
-@syntax FreePreorder{ObExpr,HomExpr} ThPreorder begin
+@symbolic_model FreePreorder{ObExpr,HomExpr} ThPreorder begin
   transitive(f::Leq, g::Leq) = associate(new(f,g; strict=true))
 end
 
@@ -71,8 +70,8 @@ end
 
 """ Theory of *partial orders* (posets)
 """
-@theory ThPoset{El,Leq} <: ThPreorder{El,Leq} begin
-  A == B ⊣ (A::El, B::El, f::(A≤B), g::(B≤A))
+@theory ThPoset <: ThPreorder begin
+  A == B ⊣ [A::El, B::El, f::(A≤B), g::(B≤A)]
 end
 
 # Lattice
@@ -88,7 +87,8 @@ hence the names for the inequality constructors in the theory. Compare with
 This is one of two standard axiomatizations of a lattice, the other being
 [`ThAlgebraicLattice`](@ref).
 """
-@theory ThLattice{El,Leq} <: ThPoset{El,Leq} begin
+@theory ThLattice <: ThPoset begin
+
   @op begin
     (∧) := meet
     (⊤) := top
@@ -100,7 +100,7 @@ This is one of two standard axiomatizations of a lattice, the other being
   meet(A::El, B::El)::El
   proj1(A::El, B::El)::((A ∧ B) ≤ A)
   proj2(A::El, B::El)::((A ∧ B) ≤ B)
-  pair(f::(C ≤ A), g::(C ≤ B))::(C ≤ (A ∧ B)) ⊣ (A::El, B::El, C::El)
+  pair(f::(C ≤ A), g::(C ≤ B))::(C ≤ (A ∧ B)) ⊣ [A::El, B::El, C::El]
 
   # Top = maximum.
   top()::El
@@ -110,7 +110,7 @@ This is one of two standard axiomatizations of a lattice, the other being
   join(A::El, B::El)::El
   coproj1(A::El, B::El)::(A ≤ (A ∨ B))
   coproj2(A::El, B::El)::(B ≤ (A ∨ B))
-  copair(f::(A ≤ C), g::(B ≤ C))::((A ∨ B) ≤ C) ⊣ (A::El, B::El, C::El)
+  copair(f::(A ≤ C), g::(B ≤ C))::((A ∨ B) ≤ C) ⊣ [A::El, B::El, C::El]
 
   # Bottom = minimum.
   bottom()::El
@@ -130,7 +130,8 @@ an equality type `Eq(lhs::El, rhs::El)::TYPE` combined with term constructors
 do not employ that trick here because at that point it is more convenient to
 just start with the poset structure, as in [`ThLattice`](@ref).
 """
-@theory ThAlgebraicLattice{El} begin
+@theory ThAlgebraicLattice begin
+
   @op begin
     (∧) := meet
     (⊤) := top
@@ -138,25 +139,27 @@ just start with the poset structure, as in [`ThLattice`](@ref).
     (⊥) := bottom
   end
 
+  El::TYPE
+
   # Meet/top as idempotent, commutative, associative, unital operation.
   meet(A::El, B::El)::El
   top()::El
-  (A ∧ B) ∧ C == A ∧ (B ∧ C) ⊣ (A::El, B::El, C::El)
-  A ∧ ⊤() == A ⊣ (A::El)
-  ⊤() ∧ A == A ⊣ (A::El)
-  A ∧ B == B ∧ A ⊣ (A::El, B::El)
-  A ∧ A == A ⊣ (A::El)
+  (A ∧ B) ∧ C == A ∧ (B ∧ C) ⊣ [A::El, B::El, C::El]
+  A ∧ ⊤() == A ⊣ [A::El]
+  ⊤() ∧ A == A ⊣ [A::El]
+  A ∧ B == B ∧ A ⊣ [A::El, B::El]
+  A ∧ A == A ⊣ [A::El]
 
   # Join/bottom as idempotent, commutative, associative, unital operation.
   join(A::El, B::El)::El
   bottom()::El
-  (A ∨ B) ∨ C == A ∨ (B ∨ C) ⊣ (A::El, B::El, C::El)
-  A ∨ ⊥() == A ⊣ (A::El)
-  ⊥() ∨ A == A ⊣ (A::El)
-  A ∨ B == B ∨ A ⊣ (A::El, B::El)
-  A ∨ A == A ⊣ (A::El)
+  (A ∨ B) ∨ C == A ∨ (B ∨ C) ⊣ [A::El, B::El, C::El]
+  A ∨ ⊥() == A ⊣ [A::El]
+  ⊥() ∨ A == A ⊣ [A::El]
+  A ∨ B == B ∨ A ⊣ [A::El, B::El]
+  A ∨ A == A ⊣ [A::El]
 
   # Absorption laws.
-  A ∨ (A ∧ B) == A ⊣ (A::El, B::El)
-  A ∧ (A ∨ B) == A ⊣ (A::El, B::El)
+  A ∨ (A ∧ B) == A ⊣ [A::El, B::El]
+  A ∧ (A ∨ B) == A ⊣ [A::El, B::El]
 end

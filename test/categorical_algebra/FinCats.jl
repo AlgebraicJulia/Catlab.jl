@@ -1,7 +1,8 @@
 module TestFinCats
 using Test
 
-using Catlab.GATs, Catlab.Theories, Catlab.CategoricalAlgebra, Catlab.Graphs
+using GATlab
+using Catlab.Theories, Catlab.CategoricalAlgebra, Catlab.Graphs
 
 # Categories on graphs
 ######################
@@ -159,7 +160,7 @@ G_refl = FinDomFunctor(path_graph(ReflexiveGraph, 3))
 @test is_functorial(G_refl)
 G = compose(FinFunctor(Dict(:V=>:V, :E=>:E), Dict(:src=>:src, :tgt=>:tgt),
                        SchGraph, SchReflexiveGraph),
-            G_refl, strict=false)
+            G_refl)
 @test dom(G) == FinCat(SchGraph)
 @test codom(G) == codom(G_refl)
 @test ob_map(G, :V) == FinSet(3)

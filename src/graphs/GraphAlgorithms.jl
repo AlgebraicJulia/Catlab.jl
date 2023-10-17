@@ -7,7 +7,7 @@ export connected_components, connected_component_projection, connected_component
 using DataStructures: Stack, DefaultDict
 
 using ACSets
-using ...Theories: dom, codom
+using ...Theories.ThSchema: dom, codom
 using ..BasicGraphs
 using ..PropertyGraphs: ReflexiveEdgePropertyGraph
 
