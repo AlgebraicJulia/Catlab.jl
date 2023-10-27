@@ -1,10 +1,9 @@
 # # Labeled Graphs
 # This example demonstrates how to define new C-Sets from existing C-Sets via the example of adding labels to a graph. We treat labels as members of an arbitrary FinSet of labels rather than a data attribute for pedagogical reasons. When you think of graphs where the labels are numbers, colors, or values of some kind, you would want to make them attributes. The motivation for this example is to be the simplest extension to the theory of graphs that you could possibly make. 
 
-using GATlab, Catlab.Theories
-using Catlab.CategoricalAlgebra
-using Catlab.Graphs
-using Catlab.Graphics
+using Catlab.Theories, Catlab.CategoricalAlgebra
+using Catlab.Graphs, Catlab.Graphics
+
 using Colors
 draw(g) = to_graphviz(g, node_labels=true, edge_labels=true)
 

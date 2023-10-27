@@ -1,8 +1,7 @@
 module TestACSetsGATsInterop
 using Test
 
-using GATlab
-using Catlab.CategoricalAlgebra
+using GATlab, Catlab.CategoricalAlgebra
 using Catlab.Graphs: SchGraph, SchWeightedGraph
 
 @present SchDendrogram(FreeSchema) begin

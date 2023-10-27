@@ -6,7 +6,6 @@ export AbstractPropertyGraph, PropertyGraph, SchPropertyGraph,
   set_gprop!, set_vprop!, set_eprop!, set_gprops!, set_vprops!, set_eprops!
 
 using ACSets
-using GATlab
 using ...Theories
 using ..BasicGraphs
 import ..BasicGraphs: nv, ne, src, tgt, inv, edges, vertices,

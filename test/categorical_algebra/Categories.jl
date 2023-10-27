@@ -1,7 +1,6 @@
 module TestCategories
 using Test
 
-using GATlab
 using Catlab.Theories
 using Catlab.CategoricalAlgebra
 

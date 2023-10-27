@@ -3,7 +3,6 @@ export SchCPortGraph, SchOpenCPortGraph, SchSymCPortGraph, SchOpenSymCPortGraph,
   CPortGraph, OpenCPortGraph, SymCPortGraph, OpenSymCPortGraph,
   ThBundledCPG, BundledCPG
 
-using GATlab
 using ...Theories, ...CategoricalAlgebra, ...Graphs
 import ...CategoricalAlgebra: migrate!
 import ..DirectedWiringDiagrams: ocompose

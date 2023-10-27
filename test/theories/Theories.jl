@@ -1,7 +1,6 @@
 module TestTheories
 using Test
 
-using GATlab
 using Catlab.Theories
 
 sexpr(expr::GATExpr) = sprint(show_sexpr, expr)

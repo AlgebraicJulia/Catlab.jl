@@ -18,7 +18,6 @@ export HasBipartiteVertices, HasBipartiteGraph,
   rem_edge₁₂!, rem_edge₂₁!, rem_edges₁₂!, rem_edges₂₁!
 
 using ACSets, ...ACSetsGATsInterop
-using GATlab
 using ...Theories
 using ..BasicGraphs: flatten
 import ..BasicGraphs: nv, ne, vertices, edges, src, tgt, add_edge!, add_edges!,

@@ -1,7 +1,6 @@
 module TestFinSets
 using Test
 
-using GATlab
 using Catlab.Theories, Catlab.CategoricalAlgebra
 using Catlab.CategoricalAlgebra.FinSets: VarSet
 

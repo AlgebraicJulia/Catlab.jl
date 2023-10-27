@@ -12,7 +12,7 @@
 using Core: GeneratedFunctionStub
 using Test
 
-using GATlab, Catlab.Theories, Catlab.CategoricalAlgebra
+using Catlab.Theories, Catlab.CategoricalAlgebra
 import Catlab.Theories: compose
 
 #=

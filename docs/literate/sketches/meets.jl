@@ -9,10 +9,9 @@
 using Core: GeneratedFunctionStub
 using Test
 
-using GATlab, Catlab.Theories, Catlab.CategoricalAlgebra
-using Catlab.Graphics
-
+using Catlab.Theories, Catlab.CategoricalAlgebra, Catlab.Graphics
 import Catlab.Theories: compose
+
 using DataStructures
 
 # # Defining some basic preorders

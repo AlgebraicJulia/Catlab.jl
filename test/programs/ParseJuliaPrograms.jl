@@ -1,8 +1,6 @@
 module TestParseJuliaPrograms
-
 using Test
 
-using GATlab
 using Catlab.Theories, Catlab.WiringDiagrams
 using Catlab.Programs
 using Catlab.Programs.ParseJuliaPrograms: normalize_arguments
