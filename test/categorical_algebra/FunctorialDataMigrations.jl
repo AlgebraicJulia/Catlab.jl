@@ -1,7 +1,6 @@
 module TestFunctorialDataMigrations
 using Test
 
-using GATlab
 using Catlab.Theories, Catlab.Graphs, Catlab.CategoricalAlgebra
 
 @present SchSet(FreeSchema) begin

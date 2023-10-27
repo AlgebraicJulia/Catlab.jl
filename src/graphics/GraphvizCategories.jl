@@ -3,7 +3,6 @@
 module GraphvizCategories
 export to_graphviz, to_graphviz_property_graph
 
-using GATlab
 using ...Theories, ...CategoricalAlgebra, ...Graphs, ..GraphvizGraphs
 import ..Graphviz
 import ..GraphvizGraphs: to_graphviz, to_graphviz_property_graph

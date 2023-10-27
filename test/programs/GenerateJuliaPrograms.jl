@@ -1,8 +1,6 @@
 module TestGenerateJuliaPrograms
-
 using Test
 
-using GATlab
 using Catlab.Theories
 using Catlab.Programs.GenerateJuliaPrograms
 

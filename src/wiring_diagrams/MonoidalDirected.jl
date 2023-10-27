@@ -13,7 +13,6 @@ export Ports, Junction, PortOp, BoxOp, functor, permute,
 
 using StructEquality
 
-using GATlab
 using ...Theories
 import GATlab: functor, head
 import ...Theories: dom, codom, id, compose, ⋅, ∘,

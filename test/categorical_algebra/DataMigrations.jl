@@ -1,7 +1,7 @@
 module TestDataMigrations
 using Test
 
-using GATlab, Catlab.Theories, Catlab.Graphs, Catlab.CategoricalAlgebra
+using Catlab.Theories, Catlab.Graphs, Catlab.CategoricalAlgebra
 using Catlab.Programs.DiagrammaticPrograms
 
 @present SchSet(FreeSchema) begin

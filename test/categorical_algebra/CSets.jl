@@ -1,7 +1,6 @@
 module TestCSets
 using Test
 
-using GATlab
 using Catlab.Theories, Catlab.Graphs, Catlab.CategoricalAlgebra
 
 @present SchDDS(FreeSchema) begin

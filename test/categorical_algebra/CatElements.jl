@@ -1,6 +1,6 @@
 module TestCatElements
 using Test
-using GATlab
+
 using Catlab.Theories, Catlab.Graphs, Catlab.CategoricalAlgebra
 
 arr = path_graph(Graph, 2)
