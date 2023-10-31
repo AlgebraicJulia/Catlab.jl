@@ -60,5 +60,9 @@ end
   include("Slices.jl")
 end
 
+@testset "JSONCSetTransformations" begin
+  include("JSONCSetTransformations.jl")
+end
+
 
 end

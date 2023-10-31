@@ -22,6 +22,7 @@ include("Chase.jl")
 include("FunctorialDataMigrations.jl")
 include("StructuredCospans.jl")
 include("Slices.jl")
+include("JSONCSetTransformations.jl")
 
 @reexport using .Categories
 @reexport using .FinCats
@@ -42,5 +43,7 @@ include("Slices.jl")
 @reexport using .FunctorialDataMigrations
 @reexport using .StructuredCospans
 @reexport using .Slices
+
+@reexport using .JSONCSetTransformations
 
 end
