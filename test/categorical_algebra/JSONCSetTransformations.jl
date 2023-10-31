@@ -18,16 +18,16 @@ end
 # ACSetTransformation serialization
 ###################################
 
-function roundtrip_json_acset_transformation(x::T) where T <: ACSetTransformation
+function roundtrip_json_acset_transformation(x, t)
   mktempdir() do dir
     path = joinpath(dir, "acset_transformation.json")
     write_json_acset_transformation(x, path)
-    read_json_acset_transformation(T, path)
+    read_json_acset_transformation(t, path)
   end
 end
 
 g = path_graph(WeightedGraph{Float64}, 2, E=(weight=2,))
 h = path_graph(WeightedGraph{Float64}, 4, E=(weight=[1,2,3],))
 α = ACSetTransformation((V=[2,3], E=[2]), g, h)
-@test_broken roundtrip_json_acset_transformation(g) == g
+@test roundtrip_json_acset_transformation(α, WeightedGraph{Float64}) == α
 
