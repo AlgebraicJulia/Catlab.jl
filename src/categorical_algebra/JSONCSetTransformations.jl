@@ -20,9 +20,9 @@ Inverse to [`parse_json_fin_function`](@ref).
 """
 function generate_json_fin_function(F::FinFunction)
   OrderedDict{Symbol,Any}(
-    :dom        => dom(    F),
-    :codom      => codom(  F),
-    :map => collect(F))
+    :dom   => dom(F),
+    :codom => codom(F),
+    :map   => collect(F))
 end
 
 """ Serialize a FinFunction object to a JSON file.
@@ -37,8 +37,8 @@ end
 
 function parse_json_fin_function(input::AbstractDict)
   FinFunction(
-              Int.(input["map"]), 
-              input["dom"]["n"], 
+              input["dom"]["n"] != 0 ? Int.(input["map"]) : 1:0,
+              input["dom"]["n"],
               input["codom"]["n"])
 end
 
