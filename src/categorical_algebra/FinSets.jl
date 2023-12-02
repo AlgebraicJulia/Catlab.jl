@@ -929,7 +929,7 @@ end
 ensure_type_set(s::FinSet) = TypeSet(eltype(s))
 ensure_type_set(s::TypeSet) = s
 ensure_type_set_codom(f::FinFunction) =
-  FinDomFunction([f(i) for i in dom(f)], dom(f), TypeSet(eltype(codom(f))))
+  FinDomFunction(f.func,dom(f), TypeSet(eltype(codom(f))))
 ensure_type_set_codom(f::IndexedFinFunctionVector) =
   IndexedFinDomFunctionVector(f.func, index=f.index)
 ensure_type_set_codom(f::FinDomFunction) = f
