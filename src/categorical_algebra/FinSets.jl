@@ -993,6 +993,11 @@ function pair_all(d::BipartiteFreeDiagram{Ob,Hom}) where {Ob,Hom}
       v = add_vertex₂!(d_paired, ob₂=ob(prod))
       for (i,u) in enumerate(srcs)
         f = pair(prod, hom(d, getindex.(in_edges, i)))
+        f isa Hom || begin 
+          d_paired_looser = BipartiteFreeDiagram{Ob,Union{Hom,typeof(f)}}()
+          copy_parts!(d_paired_looser,d_paired)
+          d_paired = d_paired_looser
+        end
         add_edge!(d_paired, u, v, hom=f)
       end
     end
