@@ -853,10 +853,14 @@ function limit(d::BipartiteFreeDiagram{<:SetOb,<:FinDomFunction{Int}})
 
   # For uniformity, e.g. when pairing below, ensure that all objects in layer 2
   # are type sets.
+  # XX: map can introduce overtight typing
   if !all(x isa TypeSet for x in ob₂(d))
     d = map(d, ob₁=identity, ob₂=ensure_type_set, hom=ensure_type_set_codom)
   end
-
+  # Make sure Hom isn't too tight
+  d′ = BipartiteFreeDiagram{SetOb,FinDomFunction{Int}}()
+  copy_parts!(d′,d)
+  d = d′
   # It is generally optimal to compute all equalizers (self joins) first, so as
   # to reduce the sizes of later pullbacks (joins) and products (cross joins).
   d, ιs = equalize_all(d)
@@ -993,11 +997,6 @@ function pair_all(d::BipartiteFreeDiagram{Ob,Hom}) where {Ob,Hom}
       v = add_vertex₂!(d_paired, ob₂=ob(prod))
       for (i,u) in enumerate(srcs)
         f = pair(prod, hom(d, getindex.(in_edges, i)))
-        f isa Hom || begin 
-          d_paired_looser = BipartiteFreeDiagram{Ob,Union{Hom,typeof(f)}}()
-          copy_parts!(d_paired_looser,d_paired)
-          d_paired = d_paired_looser
-        end
         add_edge!(d_paired, u, v, hom=f)
       end
     end
