@@ -850,17 +850,12 @@ function limit(d::BipartiteFreeDiagram{<:SetOb,<:FinDomFunction{Int}})
   # incoming morphisms.
   @assert !any(isempty(incident(d, v, :tgt)) for v in vertices₂(d))
   d_original = d
-
-  # For uniformity, e.g. when pairing below, ensure that all objects in layer 2
-  # are type sets.
-  # XX: map can introduce overtight typing
-  if !all(x isa TypeSet for x in ob₂(d))
-    d = map(d, ob₁=identity, ob₂=ensure_type_set, hom=ensure_type_set_codom)
-  end
-  # Make sure Hom isn't too tight
   d′ = BipartiteFreeDiagram{SetOb,FinDomFunction{Int}}()
-  copy_parts!(d′,d)
+  add_vertices₁!(d′, nv₁(d), ob₁=ob₁(d))
+  add_vertices₂!(d′, nv₂(d), ob₂=ensure_type_set.(ob₂(d)))
+  add_edges!(d′,src(d,edges(d)),tgt(d,edges(d)),hom=ensure_type_set_codom.(hom(d)))
   d = d′
+
   # It is generally optimal to compute all equalizers (self joins) first, so as
   # to reduce the sizes of later pullbacks (joins) and products (cross joins).
   d, ιs = equalize_all(d)
@@ -929,7 +924,7 @@ end
 ensure_type_set(s::FinSet) = TypeSet(eltype(s))
 ensure_type_set(s::TypeSet) = s
 ensure_type_set_codom(f::FinFunction) =
-  FinDomFunction(f.func,dom(f), TypeSet(eltype(codom(f))))
+  FinDomFunction(collect(f),dom(f), TypeSet(eltype(codom(f))))
 ensure_type_set_codom(f::IndexedFinFunctionVector) =
   IndexedFinDomFunctionVector(f.func, index=f.index)
 ensure_type_set_codom(f::FinDomFunction) = f
