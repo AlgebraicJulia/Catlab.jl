@@ -897,13 +897,17 @@ function pack_limit(::Type{ACS}, diagram, Xs, limits; abstract_product=false,
     alim = NamedTuple(Dict(map(attrtypes(S)) do at 
       T = attrtype_type(Y, at)
       apx = VarSet{T}(nparts(Y, at))
-      at => Multispan(apx, map(enumerate(cone_objects(diagram))) do (i, X) 
-        v = map(parts(Y,at)) do p 
-          f, c, j = var_reference(Y, at, p)
-          X[legs(limits[c])[i](j), f]
+      at => begin 
+        vfs = VarFunction{T}[]
+        for (i,X) in enumerate(cone_objects(diagram))
+          v = map(parts(Y,at)) do p 
+            f, c, j = var_reference(Y, at, p)
+            X[legs(limits[c])[i](j), f]
+          end
+          push!(vfs,VarFunction{T}(v, FinSet(nparts(X, at))))
         end
-        VarFunction{T}(v, FinSet(nparts(X, at)))
-      end)
+        Multispan(apx,vfs)
+      end
     end))
   else
     alim = NamedTuple()
