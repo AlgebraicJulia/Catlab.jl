@@ -40,12 +40,10 @@ end
 @info "Building Documenter.jl docs"
 makedocs(
   modules     = [Catlab],
-  format      = Documenter.HTML(
-                                assets = ["assets/analytics.js"],
-                               ),
+  format      = Documenter.HTML(assets = ["assets/analytics.js"]),
   sitename    = "Catlab.jl",
   doctest     = false,
-  checkdocs   = :none,
+  warnonly    = true,
   pages       = Any[
     "Catlab.jl" => "index.md",
     "Vignettes" => no_literate ? [] : Any[
