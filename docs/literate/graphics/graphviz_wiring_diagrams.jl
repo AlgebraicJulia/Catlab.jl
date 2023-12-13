@@ -170,6 +170,6 @@ Graphviz.pprint(graph)
 # Catlab provides a simple wrapper around the Graphviz command-line programs.
 # For example, here is the JSON output for the graph.
 
-import JSON
+import JSON3
 
-JSON.parse(Graphviz.run_graphviz(graph, format="json0"))
+JSON3.read(Graphviz.run_graphviz(graph, format="json0"))

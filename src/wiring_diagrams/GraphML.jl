@@ -18,7 +18,7 @@ export read_graphml, parse_graphml, write_graphml, generate_graphml,
   convert_from_graphml_data, convert_to_graphml_data
 
 using DataStructures: OrderedDict
-import JSON
+import JSON3
 using LightXML
 
 using ...Graphs
@@ -191,8 +191,8 @@ generate_graphml_data_type(::Type{Vector{T}}) where T = "json"
 generate_graphml_data_value(x::Number) = string(x)
 generate_graphml_data_value(x::String) = x
 generate_graphml_data_value(x::Symbol) = string(x)
-generate_graphml_data_value(x::Dict) = JSON.json(x)
-generate_graphml_data_value(x::Vector) = JSON.json(x)
+generate_graphml_data_value(x::Dict) = JSON3.write(x)
+generate_graphml_data_value(x::Vector) = JSON3.write(x)
 
 convert_to_graphml_data(x) = convert_to_graph_data(x)
 
@@ -351,7 +351,7 @@ parse_graphml_data_value(::Type{Val{:long}}, s::String) = parse(Int, s)
 parse_graphml_data_value(::Type{Val{:float}}, s::String) = parse(Float32, s)
 parse_graphml_data_value(::Type{Val{:double}}, s::String) = parse(Float64, s)
 parse_graphml_data_value(::Type{Val{:string}}, s::String) = s
-parse_graphml_data_value(::Type{Val{:json}}, s::String) = JSON.parse(s)
+parse_graphml_data_value(::Type{Val{:json}}, s::String) = JSON3.read(s)
 
 convert_from_graphml_data(T::Type, data) = convert_from_graph_data(T, data)
 

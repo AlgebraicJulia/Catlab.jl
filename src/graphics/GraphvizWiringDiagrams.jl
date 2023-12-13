@@ -5,7 +5,7 @@ This module requires Graphviz v2.42 or higher.
 module GraphvizWiringDiagrams
 export graphviz_layout, to_graphviz, to_graphviz_property_graph
 
-import JSON
+import JSON3
 using LinearAlgebra: normalize
 using MLStyle: @match
 using StaticArrays
@@ -530,7 +530,7 @@ the wires are ignored.
 """
 function graphviz_layout(diagram::WiringDiagram; kw...)
   graph = to_graphviz(diagram; kw...)
-  doc = JSON.parse(Graphviz.run_graphviz(graph, format="json0"))
+  doc = JSON3.read(Graphviz.run_graphviz(graph, format="json0"))
   graphviz_layout(diagram, parse_graphviz(doc))
 end
 

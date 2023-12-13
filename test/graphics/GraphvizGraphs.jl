@@ -1,6 +1,6 @@
 module TestGraphvizGraphs
 using Test
-import JSON
+import JSON3
 
 using Catlab.Theories, Catlab.Graphs, Catlab.Graphics.GraphvizGraphs
 import Catlab.Graphics: Graphviz
@@ -19,14 +19,14 @@ const stmts = Graphviz.filter_statements
 data_path(name::String) = joinpath(@__DIR__, "data", name)
 
 # Undirected simple graph.
-doc = open(JSON.parse, data_path("graphviz_graph.json"), "r")
+doc = open(JSON3.read, data_path("graphviz_graph.json"), "r")
 parsed = parse_graphviz(doc)
 @test parsed isa SymmetricPropertyGraph
 @test nv(parsed) == 10
 @test ne(parsed) ÷ 2 == 13
 
 # Directed simple graph
-doc = open(JSON.parse, data_path("graphviz_digraph.json"), "r")
+doc = open(JSON3.read, data_path("graphviz_digraph.json"), "r")
 parsed = parse_graphviz(doc)
 @test parsed isa PropertyGraph
 @test nv(parsed) == 5
