@@ -19,7 +19,7 @@ export read_json_graph, parse_json_graph, write_json_graph, generate_json_graph,
   convert_from_json_graph_data, convert_to_json_graph_data
 
 using DataStructures: OrderedDict
-import JSON
+import JSON3
 
 using ..DirectedWiringDiagrams, ..WiringDiagramSerialization
 
@@ -33,8 +33,13 @@ const PortData = NamedTuple{(:kind,:port),Tuple{PortKind,Int}}
 """
 function write_json_graph(diagram::WiringDiagram, filename::String;
                           indent::Union{Int,Nothing}=nothing)
+  data = generate_json_graph(diagram)
   open(filename, "w") do io
-    JSON.print(io, generate_json_graph(diagram), indent)
+    if isnothing(indent)
+      JSON3.write(io, data)
+    else
+      JSON3.pretty(io, data, JSON3.AlignmentContext(indent=indent))
+    end
   end
 end
 
@@ -108,14 +113,15 @@ convert_to_json_graph_data(x) = convert_to_graph_data(x)
 """
 function read_json_graph(
     BoxValue::Type, PortValue::Type, WireValue::Type, filename::String)
-  parse_json_graph(BoxValue, PortValue, WireValue, JSON.parsefile(filename))
+  json_string = read(filename, String)
+  parse_json_graph(BoxValue, PortValue, WireValue, JSON3.read(json_string))
 end
 
 """ Parse a wiring diagram from a JSON string or dict.
 """
 function parse_json_graph(
     BoxValue::Type, PortValue::Type, WireValue::Type, s::Union{AbstractString,IO})
-  parse_json_graph(BoxValue, PortValue, WireValue, JSON.parse(s))
+  parse_json_graph(BoxValue, PortValue, WireValue, JSON3.read(s))
 end
 function parse_json_graph(
     ::Type{BoxValue}, ::Type{PortValue}, ::Type{WireValue},

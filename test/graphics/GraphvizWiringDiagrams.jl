@@ -1,7 +1,7 @@
 module TestGraphvizWiringDiagrams
 
 using Test
-import JSON
+import JSON3
 
 using Catlab.Theories, Catlab.WiringDiagrams, Catlab.Graphics
 using Catlab.CategoricalAlgebra: @acset
@@ -101,7 +101,7 @@ graph = to_graphviz(d, box_labels=true, junction_labels=true, port_labels=true)
 #################
 
 diagram = include(joinpath("data", "graphviz_wiring_diagram.jl"))
-doc = open(JSON.parse,
+doc = open(JSON3.read,
   joinpath(@__DIR__, "data", "graphviz_wiring_diagram.json"), "r")
 graph = parse_graphviz(doc)
 layout = graphviz_layout(diagram, graph)
