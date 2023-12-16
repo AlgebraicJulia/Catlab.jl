@@ -10,7 +10,6 @@ include("MonoidalUndirected.jl")
 include("Algebras.jl")
 include("Algorithms.jl")
 include("Expressions.jl")
-include("ScheduleUndirected.jl")
 
 @reexport using .DirectedWiringDiagrams
 @reexport using .CPortGraphs
@@ -20,7 +19,6 @@ include("ScheduleUndirected.jl")
 @reexport using .WiringDiagramAlgebras
 @reexport using .WiringDiagramAlgorithms
 @reexport using .WiringDiagramExpressions
-@reexport using .ScheduleUndirectedWiringDiagrams
 
 include("Serialization.jl")
 include("GraphML.jl")
