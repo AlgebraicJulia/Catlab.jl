@@ -6,6 +6,7 @@ export to_graphviz, to_graphviz_property_graph
 using ...Theories, ...CategoricalAlgebra, ...Graphs, ..GraphvizGraphs
 import ..Graphviz
 import ..GraphvizGraphs: to_graphviz, to_graphviz_property_graph
+using ...CategoricalAlgebra.HomSearch: BacktrackingTree, BacktrackingTreePt
 
 # Presentations
 ###############
@@ -141,6 +142,39 @@ function to_graphviz(f::FinFunction{Int,Int}; kw...)
     add_edge!(g, i, f(i))
   end
   to_graphviz(g; kw...)
+end
+
+# Search trees
+###############
+to_graphviz(t::BacktrackingTreePt) = to_graphviz(t.t)
+
+function to_graphviz(t::BacktrackingTree)
+  pg = PropertyGraph{Any}(; 
+    prog = "dot",
+    graph = Dict(),
+    node = merge!(Dict(:shape => "box", :width => ".1", :height => ".1",
+                      :margin => "0.025", :style=>"filled")),
+    edge = Dict())
+  kwargs(tr::BacktrackingTree) = (
+    fillcolor=tr.success ? "green" : "red", 
+    tooltip=isempty(tr.asgn) ? "" : string(tr.asgn), 
+    label = isnothing(tr.node) ? "" : join(string.([tr.node...])))
+  add_vertex!(pg; kwargs(t)...)
+  queue = [Int[]]
+  paths = Dict([Int[]=>1]) # path to vertex
+  while !isempty(queue)
+    curr = popfirst!(queue)
+    subt = t[curr]
+    # We ought print the index too, but graphviz renders edges in right order
+    for (_,e) in enumerate(keys(subt.children)) 
+        new_pth = [curr...,e]
+        v = add_vertex!(pg; kwargs(t[new_pth])...)
+        paths[new_pth] = v
+        add_edge!(pg, paths[curr], v; label=string("$e"))
+        push!(queue, new_pth)
+    end
+  end
+  to_graphviz(pg)
 end
 
 end

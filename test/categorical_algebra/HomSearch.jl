@@ -147,6 +147,42 @@ end
 @test length(@acset_transformations x x begin V = Dict(1=>1) end monic = [:E]) == 2
 @test_throws ErrorException @acset_transformation g h begin V = [4,3,2,1]; E = [1,2,3,4] end
 
+# Debug graph
+#------------
+@present SchTri <: SchGraph begin 
+  T::Ob 
+  (t1,t2,t3)::Hom(T,E)
+  t1 ⋅ src == t2 ⋅ src 
+  t1 ⋅ tgt == t3 ⋅ tgt 
+  t2 ⋅ src == t3 ⋅ src 
+end
+
+@acset_type Tri(SchTri)
+
+""" e₃
+  2 ← 4
+e₁↑ ↖ ↓ e₄
+  1 → 3
+    e₂
+"""
+quad = @acset Tri begin V=4; E=5; T=2; 
+  src=[1,1,4,4,3]; tgt=[2,3,2,3,2]; 
+  t1=[1,3]; t2=[2,4]; t3=[5,5]
+end
+
+term = apex(terminal(Tri))
+
+tri5 = @acset Tri begin 
+  V=2; E=3; T=5; src=[1,1,2]; tgt=[2,2,2]; t1=1; t2=2; t3=3 
+end
+
+tri = @acset Tri begin 
+  V=3; E=3; T=1; src=[1,1,2]; tgt=[3,2,3]; t1=1; t2=2; t3=3 
+end 
+
+hs, t = debug_homomorphisms(tri, quad ⊕ tri5; monic=false)
+@test length(hs) == length(homomorphisms(tri, quad ⊕ tri5))
+# to_graphviz(t)
 
 # Enumeration of subobjects 
 ###########################
