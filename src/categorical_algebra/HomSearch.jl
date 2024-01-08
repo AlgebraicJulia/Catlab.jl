@@ -504,6 +504,8 @@ struct Reg
   idx::Int
 end
 
+Base.show(io::IO, r::Reg) = print(io, "[$(r.idx)]")
+
 @data SearchInst begin
   # Iterate through all the rows of a table
 
@@ -516,6 +518,9 @@ end
   Compare(r1::Reg, r2::Reg)
 end
 
+Base.show(io::IO, l::Loop) = print(io, "LOOP $(l.x)#$(l.reg)")
+Base.show(io::IO, l::Load) = print(io, "LOAD $(l.subpart): $(l.from)->$(l.into)")
+Base.show(io::IO, l::Compare) = print(io, "COMPARE $(l.r1) ? $(l.r2)")
 
 struct Machine
   registers::Vector{Int}
@@ -533,6 +538,13 @@ struct Program
   next_reg::Ref{Int}
   instructions::Vector{SearchInst}
   lookup::Dict{NamedPart, Reg}
+end
+
+function Base.show(io::IO, p::Program)
+  for (i, ins) in enumerate(p.instructions)
+    print(io, "$i: ")
+    println(io, ins)
+  end
 end
 
 function nextinst(m::Machine)
@@ -583,7 +595,6 @@ ordering strategies:
 """
 function compile_search(X::ACSet, order=nothing; strat=:neighbor)
   S = acset_schema(X)
-  neighbors(ob_i) = let (ob,i) = ob_i; 1 end
   if isnothing(order)
     order, queue, seen = Tuple{Symbol,Int}[], Int[], Set{Int}()
     all_parts = vcat([[(o,p) for p in parts(X,o)] for o in ob(S)]...)
@@ -620,7 +631,7 @@ function compile_search(X::ACSet, order=nothing; strat=:neighbor)
         else
           curr = pop!(queue)
           push!(order, all_parts[curr]); push!(seen, curr)
-          append!(queue, filter(i-> i ∉ seen, ordered_neighbors[curr]))
+          append!(queue, filter(i-> i ∉ seen && i ∉ queue, ordered_neighbors[curr]))
         end
       end
     else 
@@ -641,10 +652,17 @@ function push_callback(a::ACSet, homs::Vector{T}, prog::Program) where {T<:Named
   end
 end
 
+allparts(a::ACSet) = Set([NamedPart(ob, i) for ob in objects(acset_schema(a)) for i in parts(a, ob)])
+
 function compile_search(a::ACSet, order::Vector{NamedPart})
+  @assert allparts(a) == Set(order)
   schema = acset_schema(a)
   prog = Program(Ref(1), SearchInst[], Dict{NamedPart, Reg}())
-
+  # validate 
+  for o in ob(schema) 
+    parts = [p.idx for p in order if p.ob == o]
+    isperm(parts) && length(parts) == nparts(a, o) || error("Bad part $o $parts")
+  end
   for p in order
     if p ∈ keys(prog.lookup)
       continue
@@ -659,7 +677,7 @@ function compile_search(a::ACSet, order::Vector{NamedPart})
       for (f, _, d) in homs(schema; from=next.ob)
         r = nextreg!(prog)
         push!(prog.instructions, Load(next_reg, f, r))
-        q = NamedPart(d, a[p.idx, f])
+        q = NamedPart(d, a[next.idx, f])
         if q ∈ keys(prog.lookup)
           push!(prog.instructions, Compare(prog.lookup[q], r))
         else
