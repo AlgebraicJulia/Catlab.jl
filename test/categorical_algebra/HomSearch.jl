@@ -167,67 +167,34 @@ end
 g = path_graph(Graph, 3)
 h = erdos_renyi(Graph, 100, 0.05)
 
-# We have to specify the order in which we search for parts.
-# In the future, this should be automatically computed and optimized.
+prog1 = compile_search(g, strat=:neighbor)
+prog2 = compile_search(g, strat=:connected)
 
-prog = compile_search(g, [(:E, 1), (:E, 2), (:V, 1), (:V, 2), (:V, 3)])
-prog2 = compile_search(g, strat=:neighbor)
-prog3 = compile_search(g, strat=:connected)
-prog4 = compile_search(g, strat=:random)
+expected = length(homomorphisms(g, h))
+@test all(==(expected), map([prog1,prog2]) do prog 
+  length(homomorphisms(g, h; alg=VMSearch(), prog))
+end)
 
+# Random VM 
+prog3 = compile_search(g, strat=:random)
+h = erdos_renyi(Graph, 20, 0.05) # small, b/c random can be very inefficient
+@test length(homomorphisms(g,h; alg=VMSearch(), prog=prog3)) == length(homomorphisms(g,h))
 
-for p in [prog, prog2, prog3]
-  @time homomorphisms(g,h; alg=VMSearch(), prog=p);
-end
-
-@test length(homomorphisms(g,h; alg=VMSearch())) == length(homomorphisms(g, h))
-
-
-@time homomorphisms(g,h; alg=VMSearch(), prog=prog2);
-
-@time homomorphisms(g, h)
-
-# Look for triangle
-#------------------
-
-g = @acset Graph begin V=3; E=3; src=[1,1,2]; tgt=[3,2,3] end
-h = erdos_renyi(Graph, 100, 0.05)
-prog = compile_search(g, [(:E, 1), (:E, 2), (:E, 3), (:V, 1), (:V, 2), (:V, 3)])
-prog2 = compile_search(g, strat=:neighbor)
-prog3 = compile_search(g, strat=:connected)
-
-for p in [prog, prog2, prog3]
-  @time homomorphisms(g,h; alg=VMSearch(), prog=p);
-end
 
 # DDS 
 #-----
+DDS(i::Int) = @acset DDS begin X=i; Φ=[rand(1:i) for _ in 1:i] end # random DDS
 
-@present SchDDS(FreeSchema) begin X::Ob; Φ::Hom(X,X) end
-@acset_type DDS(SchDDS, index=[:Φ])
+for _ in 1:10
+  g, h = DDS.([10,150])
+  prog1 = compile_search(g, strat=:neighbor);
+  prog2 = compile_search(g, strat=:connected);
 
-DDS(i::Int) = @acset DDS begin X=i; Φ=[rand(1:i) for _ in 1:i] end
-
-d10, d50 = DDS.([4,15])
-prog1 = compile_search(d10, strat=:neighbor);
-prog2 = compile_search(d10, strat=:connected);
-
-hs = map([(;), (alg=VMSearch(), prog=prog1),(alg=VMSearch(), prog=prog2),]) do kw
-  @time length(homomorphisms(d10,d50; kw...))
+  expected = length(homomorphisms(g, h))
+  @test all(==(expected), map([prog1,prog2]) do prog 
+    length(homomorphisms(g, h; alg=VMSearch(), prog))
+  end)
 end
-
-@test length(unique(hs)) == 1 # currently fails sometimes
-
-X = @acset DDS begin X=4;Φ=[3,4,4,3] end
-Y = @acset DDS begin X=15;Φ=[2,6,8,13,4,4,7,5,4,6,5,10,10,1,5] end
-o1,o2 = [[(:X, i) for i in is] for is in [[1,3,2,4],[4,3,2,1]]]
-progs = compile_search.(Ref(X),[o1,o2])
-hs = map(progs) do prog
-  length(find_all(prog, X, Y))
-end #
-
-@test all(hs .== hs[1])
-
 
 # Enumeration of subobjects 
 ###########################
