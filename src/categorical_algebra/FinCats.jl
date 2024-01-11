@@ -360,8 +360,8 @@ hom(::Union{FinCatPresentation{ThSchema.Meta.T},FinCatPresentation{ThPointedSetS
   gat_typeof(f) ∈ (:Hom, :Attr, :AttrType) ? f :
     error("Expression $f is not a morphism or attribute")
 
-id(C::FinCatPresentation{ThSchema.Meta.T}, x::AttrTypeExpr) = x
-compose(C::FinCatPresentation{ThSchema.Meta.T}, f::AttrTypeExpr, g::AttrTypeExpr) =
+id(C::Union{FinCatPresentation{ThSchema.Meta.T},FinCatPresentation{ThPointedSetSchema.Meta.T}}, x::AttrTypeExpr) = x
+compose(C::Union{FinCatPresentation{ThSchema.Meta.T},FinCatPresentation{ThPointedSetSchema.Meta.T}}, f::AttrTypeExpr, g::AttrTypeExpr) =
   (f == g) ? f : error("Invalid composite of attribute type identities: $f != $g")
 
 function Base.show(io::IO, C::FinCatPresentation)
