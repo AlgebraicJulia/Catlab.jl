@@ -188,6 +188,9 @@ functor(F::SigmaMigrationFunctor) = functor(migration(F))
 SigmaMigrationFunctor(f,::Type{T},c::ACSet) where T<:StructACSet = SigmaMigrationFunctor(f,T(),constructor(c))
 SigmaMigrationFunctor(f,d::ACSet,::Type{T}) where T<:StructACSet = SigmaMigrationFunctor(f,d,T())
 SigmaMigrationFunctor(f,d::Type{T′},::Type{T}) where {T<:StructACSet, T′<:StructACSet} = SigmaMigrationFunctor(f,d,T())
+SigmaMigrationFunctor(f,T,c::ACSet)  = SigmaMigrationFunctor(f,T(),constructor(c))
+SigmaMigrationFunctor(f,d::ACSet,T)  = SigmaMigrationFunctor(f,d,T())
+SigmaMigrationFunctor(f,T′,T) = SigmaMigrationFunctor(f,d,T())
 
 """
 Create a C-Set for the collage of the functor. Initialize data in the domain 
