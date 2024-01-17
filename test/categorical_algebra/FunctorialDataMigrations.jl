@@ -293,6 +293,8 @@ y_Graph = yoneda(Graph)
 @test is_isomorphic(ob_map(y_Graph, :E), yE)
 @test Set(hom_map.(Ref(y_Graph), [:src,:tgt])) == Set(
   homomorphisms(yV, representable(Graph, :E)))
+y_Graph_Dynamic = yoneda(DynamicACSet(Graph()))
+@test all([is_isomorphic(DynamicACSet(ob_map(y_Graph,x)),ob_map(y_Graph_Dynamic,x)) for x in [:V,:E]])
 
 # Subobject classifier
 ######################
