@@ -154,7 +154,7 @@ end
 
 # VM search
 #----------
-using Catlab.CategoricalAlgebra.HomSearch: compile_search, find_all
+using Catlab.CategoricalAlgebra.HomSearch: compile_search
 
 @present SchDDS(FreeSchema) begin
   X::Ob
