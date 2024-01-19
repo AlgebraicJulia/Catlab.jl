@@ -57,8 +57,8 @@ add_edge!(g2, 1, 2)  # double arrow
 @test length(homomorphisms(g2, g1, iso=[:E])) == 0
 
 # valid constraint
-@test length(homomorphisms(g2, g1; valid=(V=Dict([1 => [1,3]]),))) == 3
-@test length(homomorphisms(g2, g1; valid=(E=Dict([1 => [1,3]]),))) == 2
+@test length(homomorphisms(g2, g1; predicates=(V=Dict([1 => [1,3]]),))) == 3
+@test length(homomorphisms(g2, g1; predicates=(E=Dict([1 => [1,3]]),))) == 2
 
 # Loose
 s1 = SetAttr{Int}()
