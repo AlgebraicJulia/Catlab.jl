@@ -77,6 +77,12 @@ default, a backtracking search algorithm is used ([`BacktrackingSearch`](@ref)).
 Use the keyword argument error_failures = true to get errors explaining 
 any immediate inconsistencies in specified initial data.
 
+The keyword `predicates` accepts a Dict{Ob, Dict{Int, Union{Nothing, AbstractVector{Int}}}}
+For each part of the domain, we have the option to give a constraint as a
+boolean function of the current assignment and tentative value to assign. E.g.
+`predicates = (E = Dict(2 => [2,4,6]))` would only find matches
+which assigned edge#2 to edge #2, #4, or #6 in the codomain.
+
 See also: [`homomorphisms`](@ref), [`isomorphism`](@ref).
 """
 homomorphism(X::ACSet, Y::ACSet; alg=BacktrackingSearch(), kw...) =
@@ -170,6 +176,7 @@ been bound.
 struct BacktrackingState{
   Dom <: ACSet, Codom <: ACSet,
   Assign <: NamedTuple, PartialAssign <: NamedTuple, LooseFun <: NamedTuple,
+  Predicates <: NamedTuple
   }
   assignment::Assign
   assignment_depth::Assign
@@ -177,10 +184,11 @@ struct BacktrackingState{
   dom::Dom
   codom::Codom
   type_components::LooseFun
+  predicates::Predicates
 end
 
 function backtracking_search(f, X::ACSet, Y::ACSet;
-    monic=false, iso=false, random=false, 
+    monic=false, iso=false, random=false, predicates=(;),
     type_components=(;), initial=(;), error_failures=false)
   S, Sy = acset_schema.([X,Y])
   S == Sy || error("Schemas must match for morphism search")
@@ -225,6 +233,10 @@ function backtracking_search(f, X::ACSet, Y::ACSet;
       error(sprint(show_naturality_failures, uns))
   end
 
+  pred_nt = NamedTuple{Ob}(let dic = get(predicates, c, Dict()); 
+    Union{Set{Int}, Nothing}[haskey(dic, p) ? Set(dic[p]) : nothing for p in parts(X,c)] 
+  end for c in Ob)
+
   # Initialize state variables for search.
   assignment = merge(
     NamedTuple{Ob}(zeros(Int, nparts(X, c)) for c in Ob),
@@ -237,7 +249,7 @@ function backtracking_search(f, X::ACSet, Y::ACSet;
   loosefuns = NamedTuple{Attr}(
     isnothing(type_components) ? identity : get(type_components, c, identity) for c in Attr)
   state = BacktrackingState(assignment, assignment_depth, 
-                                  inv_assignment, X, Y, loosefuns)
+                                  inv_assignment, X, Y, loosefuns, pred_nt)
 
   # Make any initial assignments, failing immediately if inconsistent.
   for (c, c_assignments) in pairs(initial)
@@ -336,6 +348,8 @@ assign_elem!(state::BacktrackingState{<:DynamicACSet}, depth, c, x, y) =
     # Also, y must unassigned in the inverse assignment.
     return false
   end
+
+  isnothing(state.predicates[c][x]) || y ∈ state.predicates[c][x] || return false
 
   # Check attributes first to fail as quickly as possible.
   X, Y = state.dom, state.codom
