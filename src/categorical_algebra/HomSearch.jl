@@ -234,7 +234,7 @@ function backtracking_search(f, X::ACSet, Y::ACSet;
   end
 
   pred_nt = NamedTuple{Ob}(let dic = get(predicates, c, Dict()); 
-    Union{Set{Int}, Nothing}[haskey(dic, p) ? Set(dic[p]) : nothing for p in parts(X,c)] 
+    Union{Set{Int}, Nothing}[haskey(dic, p) ? Set(dic[p]) : nothing for p in 1:maxpart(X,c)] 
   end for c in Ob)
 
   # Initialize state variables for search.
