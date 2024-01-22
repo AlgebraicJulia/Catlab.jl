@@ -239,13 +239,13 @@ function backtracking_search(f, X::ACSet, Y::ACSet;
 
   # Initialize state variables for search.
   assignment = merge(
-    NamedTuple{Ob}(zeros(Int, nparts(X, c)) for c in Ob),
+    NamedTuple{Ob}(zeros(Int, maxpart(X, c)) for c in Ob),
     NamedTuple{Attr}(Pair{Int,Union{AttrVar,attrtype_type(X,c)}}[
-      0 => AttrVar(0) for _ in parts(X,c)] for c in Attr)
+      0 => AttrVar(0) for _ in 1:maxpart(X,c)] for c in Attr)
   )
   assignment_depth = map(copy, assignment)
   inv_assignment = NamedTuple{ObAttr}(
-    (c in monic ? zeros(Int, nparts(Y, c)) : nothing) for c in ObAttr)
+    (c in monic ? zeros(Int, maxpart(Y, c)) : nothing) for c in ObAttr)
   loosefuns = NamedTuple{Attr}(
     isnothing(type_components) ? identity : get(type_components, c, identity) for c in Attr)
   state = BacktrackingState(assignment, assignment_depth, 
@@ -305,8 +305,8 @@ function find_mrv_elem(state::BacktrackingState, depth)
   S = acset_schema(state.dom)
   mrv, mrv_elem = Inf, nothing
   Y = state.codom
-  for c in ob(S), (x, y) in enumerate(state.assignment[c])
-    y == 0 || continue
+  for c in ob(S), x in parts(state.dom, c)
+    state.assignment[c][x] == 0 || continue
     n = count(can_assign_elem(state, depth, c, x, y) for y in parts(Y, c))
     if n < mrv
       mrv, mrv_elem = n, (c, x)

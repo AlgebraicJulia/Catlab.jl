@@ -241,4 +241,16 @@ results = first(is_iso1) ? results : reverse(results)
 exp = @acset WG begin V=3; E=1; src=1; tgt=2; weight=[false] end
 @test first(first(maximum_common_subobject(g1, g2; abstract=false))) == exp
 
+# Mark as deleted
+#################
+@acset_type AbsMADGraph(SchWeightedGraph, part_type=BitSetParts) <: AbstractGraph
+const MADGraph = AbsMADGraph{Symbol}
+
+v1, v2 = MADGraph.(1:2)
+@test !is_isomorphic(v1,v2)
+rem_part!(v2, :V, 1)
+@test is_isomorphic(v1,v2)
+@test is_isomorphic(v2,v1)
+
+
 end # module

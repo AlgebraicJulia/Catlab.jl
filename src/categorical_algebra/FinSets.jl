@@ -14,6 +14,7 @@ using StaticArrays: StaticVector, SVector, SizedVector, similar_type
 import Tables, PrettyTables
 
 using ACSets
+import ACSets.Columns: preimage
 @reexport using ..Sets
 using ...Theories, ...Graphs
 using ..FinCats, ..FreeDiagrams, ..Limits, ..Subobjects
@@ -187,15 +188,22 @@ FinFunction(::typeof(identity), args...) =
 FinFunction(f::AbstractDict, args...) =
   FinFunctionDict(f, (FinSet(arg) for arg in args)...)
 
-function FinFunction(f::AbstractVector{Int}, args...;
-                     index=false, known_correct = false)
-  cod = FinSet(args[end])
+function FinFunction(f::AbstractVector, args...;
+                     index=false, known_correct = false, 
+                     dom_parts=nothing, codom_parts=nothing)
+  cod = FinSet(isnothing(codom_parts) ? args[end] : codom_parts)
+  f = Vector{Int}(f) # coerce empty vectors
   if !known_correct
     for (i,t) ∈ enumerate(f)
-      t ∈ cod || error("Value $t at index $i is not in $cod.")
+      if isnothing(dom_parts) || i ∈ dom_parts
+        t ∈ cod || error("Value $t at index $i is not in $cod.")
+      end
     end
   end
   if !index
+    if !isnothing(dom_parts) 
+      args = (length(f), args[2:end]...)
+    end
     FinDomFunctionVector(f, (FinSet(arg) for arg in args)...)
   else
     index = index == true ? nothing : index
@@ -501,10 +509,8 @@ Sets.do_compose(f::Union{FinFunctionVector,IndexedFinFunctionVector},
   FinDomFunctionVector(g.func[f.func], codom(g))
 
 # These could be made to fail early if ever used in performance-critical areas
-is_epic(f::FinFunction) =
-length(codom(f)) == length(Set(values(collect(f))))
-is_monic(f::FinFunction)  =
-length(dom(f)) == length(Set(values(collect(f))))
+is_epic(f::FinFunction) = length(codom(f)) == length(Set(values(collect(f))))
+is_monic(f::FinFunction) = length(dom(f)) == length(Set(values(collect(f))))
 
 # Dict-based functions
 #---------------------

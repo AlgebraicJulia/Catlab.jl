@@ -6,7 +6,7 @@ export ACSetMorphism,
   StructTightACSetTransformation, TightACSetTransformation,
   LooseACSetTransformation, SubACSet, SubCSet,
   components, type_components, force,
-  naturality_failures, show_naturality_failures, is_natural,
+  naturality_failures, show_naturality_failures, is_natural, in_bounds,
   abstract_attributes
 
 using Base.Iterators: flatten
@@ -28,7 +28,7 @@ import ...Theories: ob, hom, dom, codom, compose, ⋅, id,
   meet, ∧, join, ∨, top, ⊤, bottom, ⊥, ⊕, ⊗
 
 using ..FreeDiagrams, ..Limits, ..Subobjects, ..Sets, ..FinSets, ..FinCats
-using ..FinSets: VarFunction, LooseVarFunction, IdentityFunction, VarSet
+using ..FinSets: VarFunction, LooseVarFunction, IdentityFunction, VarSet, AbsVarFunction
 import ..Limits: limit, colimit, universal
 import ..Subobjects: Subobject, implies, ⟹, subtract, \, negate, ¬, non, ~
 import ..Sets: SetOb, SetFunction, TypeSet
@@ -427,31 +427,35 @@ TightACSetTransformation(components, X::StructACSet{S}, Y::StructACSet{S}) where
 
 # Component coercion
 
-function coerce_components(S, components, X,Y)
+function coerce_components(S, components, X::ACSet{<:PT}, Y) where PT
   @assert keys(components) ⊆ objects(S) ∪ attrtypes(S)
-  ocomps = NamedTuple(
-    c => coerce_component(c, get(components,c,1:0), nparts(X,c), nparts(Y,c))
-    for c in objects(S))
-  acomps = NamedTuple(map(attrtypes(S)) do c
-    c => coerce_attrvar_component(c, get(components,c,1:0), 
-          TypeSet(X, c), TypeSet(Y, c), nparts(X,c), nparts(Y,c))
+  kw = Dict(map(types(S)) do c  
+    c => PT <: MarkAsDeleted ? (dom_parts=parts(X,c), codom_parts=parts(Y,c)) : (;)
   end)
-    return merge(ocomps, acomps)
+  ocomps = NamedTuple(map(objects(S)) do c
+    c => coerce_component(c, get(components, c, 1:0), 
+                          nparts(X,c), nparts(Y,c); kw[c]...)
+  end)
+  acomps = NamedTuple(map(attrtypes(S)) do c
+    c => coerce_attrvar_component(c, get(components, c, 1:0), 
+          TypeSet(X, c), TypeSet(Y, c), nparts(X,c), nparts(Y,c); kw[c]...)
+  end)
+  return merge(ocomps, acomps)
 end 
   
 function coerce_component(ob::Symbol, f::FinFunction{Int,Int},
-                          dom_size::Int, codom_size::Int)
+                          dom_size::Int, codom_size::Int; kw...)
   length(dom(f)) == dom_size || error("Domain error in component $ob")
-  length(codom(f)) == codom_size || error("Codomain error in component $ob")
-  return f
+  # length(codom(f)) == codom_size || error("Codomain error in component $ob") # codom size is now Maxpart not nparts
+  return f 
 end
 
-coerce_component(::Symbol, f, dom_size::Int, codom_size::Int) =
-  FinFunction(f, dom_size, codom_size)
+coerce_component(::Symbol, f, dom_size::Int, codom_size::Int; kw...) =
+  FinFunction(f, dom_size, codom_size; kw...)
 
 function coerce_attrvar_component(
     ob::Symbol, f::AbstractVector,::TypeSet{T}, ::TypeSet{T},
-    dom_size::Int, codom_size::Int) where {T}
+    dom_size::Int, codom_size::Int; kw...) where {T}
   e = "Domain error in component $ob variable assignment $(length(f)) != $dom_size"
   length(f) == dom_size || error(e)
   return VarFunction{T}(f, FinSet(codom_size))
@@ -459,7 +463,7 @@ end
 
 function coerce_attrvar_component(
     ob::Symbol, f::VarFunction,::TypeSet{T},::TypeSet{T},
-    dom_size::Int, codom_size::Int) where {T}
+    dom_size::Int, codom_size::Int; kw...) where {T}
   # length(dom(f.fun)) == dom_size || error("Domain error in component $ob: $(dom(f.fun))!=$dom_size")
   length(f.codom) == codom_size || error("Codomain error in component $ob: $(f.fun.codom)!=$codom_size")
   return f
@@ -467,7 +471,7 @@ end
 
 function coerce_attrvar_component(
     ob::Symbol, f::LooseVarFunction,d::TypeSet{T},cd::TypeSet{T′},
-    dom_size::Int, codom_size::Int) where {T,T′}
+    dom_size::Int, codom_size::Int; kw...) where {T,T′}
   length(dom(f.fun)) == dom_size || error("Domain error in component $ob")
   length(f.codom) == codom_size || error("Codomain error in component $ob: $(f.fun.codom)!=$codom_size")
   # We do not check types (equality is too strict)
@@ -478,7 +482,7 @@ end
 
 """Coerce an arbitrary julia function to a LooseVarFunction assuming no variables"""
 function coerce_attrvar_component(ob::Symbol, f::Function, d::TypeSet{T},cd::TypeSet{T′},
-  dom_size::Int, codom_size::Int) where {T,T′}
+  dom_size::Int, codom_size::Int; kw...) where {T,T′}
   dom_size == 0 || error("Cannot specify $ob component with $f with $dom_size domain variables")
   coerce_attrvar_component(ob, LooseVarFunction{T,T′}([], f, FinSet(codom_size)), 
                            d, cd, dom_size,codom_size)
@@ -630,8 +634,8 @@ for f does not commute. Components should be a NamedTuple or Dictionary
 with keys contained in the names of S's morphisms and values vectors or dicts
 defining partial functions from X(c) to Y(c).
 
-`only_combinatorial=true` means to only look for naturality failures in combinatorial 
-data.
+`only_combinatorial=true` means to only look for naturality failures in 
+combinatorial data.
 """
 function naturality_failures(X,Y,comps; only_combinatorial=false)
   type_comps = Dict(attr => SetFunction(identity, SetOb(X,attr), SetOb(X,attr)) 
@@ -643,18 +647,18 @@ function naturality_failures(X, Y, comps, type_comps; only_combinatorial=false)
   Fun = Union{SetFunction,VarFunction,LooseVarFunction}
   comps = Dict(a => isa(comps[a],Fun) ? comps[a] : FinDomFunction(comps[a])  
                for a in keys(comps))
-              
   type_comps = Dict(a => isa(type_comps[a], Fun) ? type_comps[a] : 
                         SetFunction(type_comps[a],TypeSet(X,a),TypeSet(Y,a)) 
                     for a in keys(type_comps))
-  α = merge(comps, only_combinatorial ? Dict() : type_comps)
-  arrs = [(f,c,d) for (f,c,d) in arrows(S) if haskey(α,c) && haskey(α,d)]
+  α(o::Symbol, i::AttrVar) = comps[o](i)
+  α(o::Symbol, i::Any) = o ∈ ob(S) ? comps[o](i) : type_comps[o](i)
+  ks = union(keys(comps), keys(type_comps))
+  arrs = filter(((f,c,d),) -> c ∈ ks && d ∈ ks, arrows(S))
   ps = Iterators.map(arrs) do (f,c,d)
-    Xf,Yf,α_c,α_d = subpart(X,f),subpart(Y,f), α[c], α[d]
     Pair(f,
-    Iterators.map(i->(i,Yf[α_c(i)],α_d(Xf[i])),
-      Iterators.filter(dom(α_c)) do i
-        Xf[i] in dom(α_d) && Yf[α_c(i)] != α_d(Xf[i])
+    Iterators.map(i->(i, Y[α(c, i), f], α(d, X[i, f])),
+      Iterators.filter(parts(X, c)) do i
+        Y[α(c,i), f] != α(d,X[i, f])
       end))
   end
   Dict(ps)
@@ -664,8 +668,6 @@ naturality_failures(α::CSetTransformation) =
   naturality_failures(dom(α), codom(α), α.components; combinatorial=true)
 naturality_failures(α::TightACSetTransformation) =
   naturality_failures(dom(α), codom(α), α.components)
-naturality_failures(α::LooseACSetTransformation)=
-  naturality_failures(dom(α), codom(α), α.components, α.type_components)
 
 """ Pretty-print failures of transformation to be natural.
 
@@ -1357,5 +1359,30 @@ function var_reference(X::ACSet, at::Symbol, i::Int)
   end
   error("Wandering variable $at#$p")
 end
+
+# Mark as deleted
+#################
+
+"""
+Check whether an ACSetTransformation is still valid, despite possible deletion 
+of elements in the codomain. An ACSetTransformation that isn't in bounds will 
+throw an error, rather than return `false`, if run through `is_natural`.
+"""
+function in_bounds(f::ACSetTransformation) 
+  X, Y = dom(f), codom(f)
+  S = acset_schema(X)
+  all(ob(S)) do o 
+    all(parts(X, o)) do i 
+      f[o](i) ∈ parts(Y, o)
+    end
+  end || return false
+  all(attrtypes(S)) do o 
+    all(AttrVar.(parts(X, o))) do i 
+      j = f[o](i) 
+      !(j isa AttrVar) || j.val ∈ parts(Y, o)
+    end
+  end
+end
+
 
 end # module
