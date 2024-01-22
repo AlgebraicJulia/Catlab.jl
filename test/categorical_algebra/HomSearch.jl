@@ -167,8 +167,11 @@ end
 g = path_graph(Graph, 3)
 h = erdos_renyi(Graph, 100, 0.05)
 
+@test_throws ErrorException compile_search(g, strat=:xxxxxx);
 prog1 = compile_search(g, strat=:neighbor)
 prog2 = compile_search(g, strat=:connected)
+
+@test sprint(show, prog1) isa String
 
 expected = length(homomorphisms(g, h))
 @test all(==(expected), map([prog1,prog2]) do prog 
