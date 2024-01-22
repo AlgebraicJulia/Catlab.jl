@@ -533,10 +533,6 @@ function Base.show(io::IO, p::Program)
   end
 end
 
-function nextinst(m::Machine)
-  m.instructions[m.pc[]]
-end
-
 function interpret_search!(m::Machine, prog::Program, a::ACSet, pc::Int, cb::Function)
   if pc > length(prog.instructions)
     cb(m.registers)
