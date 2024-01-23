@@ -21,7 +21,7 @@ include("CatElements.jl")
 include("Chase.jl")
 include("FunctorialDataMigrations.jl")
 include("StructuredCospans.jl")
-include("Slices.jl")
+include("SliceCategories.jl")
 
 @reexport using .Categories
 @reexport using .FinCats
@@ -41,6 +41,6 @@ include("Slices.jl")
 @reexport using .Chase
 @reexport using .FunctorialDataMigrations
 @reexport using .StructuredCospans
-@reexport using .Slices
+@reexport using .SliceCategories
 
 end

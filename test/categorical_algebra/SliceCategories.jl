@@ -1,4 +1,4 @@
-module TestSlices
+module TestSliceCategories
 using Test
 
 using Catlab.Theories, Catlab.CategoricalAlgebra, Catlab.Graphs

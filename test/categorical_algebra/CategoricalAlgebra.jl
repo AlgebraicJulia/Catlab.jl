@@ -56,8 +56,8 @@ end
   include("StructuredCospans.jl")
 end
 
-@testset "Slices" begin
-  include("Slices.jl")
+@testset "SliceCategories" begin
+  include("SliceCategories.jl")
 end
 
 

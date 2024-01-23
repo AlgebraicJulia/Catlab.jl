@@ -1,4 +1,4 @@
-module Slices
+module SliceCategories
 export Slice, SliceHom
 
 using StructEquality
