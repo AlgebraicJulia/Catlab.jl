@@ -1,0 +1,825 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink"
+     version="1.2"
+     width="88mm" height="52mm" viewBox="0 0 88 52"
+     stroke="none"
+     fill="#000000"
+     stroke-width="0.3"
+     font-size="3.88"
+>
+<defs>
+  <marker id="arrow" markerWidth="15" markerHeight="7" refX="5" refY="3.5" orient="auto" markerUnits="strokeWidth">
+    <path d="M0,0 L15,3.5 L0,7 z" stroke="context-stroke" fill="context-stroke"/>
+  </marker>
+</defs>
+<g stroke="#000000" id="img-68d10dbe-1">
+  <g transform="translate(84,44)">
+    <path fill="none" d="M-4,-0 C0,-0 0,0 4,0" class="primitive"/>
+  </g>
+</g>
+<g stroke="#000000" id="img-68d10dbe-2">
+  <g transform="translate(84,32)">
+    <path fill="none" d="M-4,-0 C0,-0 0,0 4,0" class="primitive"/>
+  </g>
+</g>
+<g stroke="#000000" id="img-68d10dbe-3">
+  <g transform="translate(84,20)">
+    <path fill="none" d="M-4,0 C0,0 0,-0 4,-0" class="primitive"/>
+  </g>
+</g>
+<g stroke="#000000" id="img-68d10dbe-4">
+  <g transform="translate(84,8)">
+    <path fill="none" d="M-4,0 C0,0 0,-0 4,-0" class="primitive"/>
+  </g>
+</g>
+<g stroke="#000000" id="img-68d10dbe-5">
+  <g transform="translate(20,20)">
+    <path fill="none" d="M-4,0 C0,0 0,0 4,0" class="primitive"/>
+  </g>
+</g>
+<g stroke="#000000" id="img-68d10dbe-6">
+  <g transform="translate(20,32)">
+    <path fill="none" d="M-4,0 C0,0 0,0 4,0" class="primitive"/>
+  </g>
+</g>
+<g stroke="#000000" id="img-68d10dbe-7">
+  <g transform="translate(20,8)">
+    <path fill="none" d="M-4,0 C0,0 0,0 4,0" class="primitive"/>
+  </g>
+</g>
+<g stroke="#000000" id="img-68d10dbe-8">
+  <g transform="translate(20,44)">
+    <path fill="none" d="M-4,0 C0,0 0,0 4,0" class="primitive"/>
+  </g>
+</g>
+<g stroke="#000000" id="img-68d10dbe-9">
+  <g transform="translate(36,20)">
+    <path fill="none" d="M-4,0 C0,0 0,0 4,0" class="primitive"/>
+  </g>
+</g>
+<g stroke="#000000" id="img-68d10dbe-10">
+  <g transform="translate(36,32)">
+    <path fill="none" d="M-4,0 C0,0 0,0 4,0" class="primitive"/>
+  </g>
+</g>
+<g stroke="#000000" id="img-68d10dbe-11">
+  <g transform="translate(36,8)">
+    <path fill="none" d="M-4,0 C0,0 0,0 4,0" class="primitive"/>
+  </g>
+</g>
+<g stroke="#000000" id="img-68d10dbe-12">
+  <g transform="translate(36,44)">
+    <path fill="none" d="M-4,0 C0,0 0,0 4,0" class="primitive"/>
+  </g>
+</g>
+<g stroke="#000000" id="img-68d10dbe-13">
+  <g transform="translate(52,20)">
+    <path fill="none" d="M-4,0 C0,0 0,0 4,0" class="primitive"/>
+  </g>
+</g>
+<g stroke="#000000" id="img-68d10dbe-14">
+  <g transform="translate(52,32)">
+    <path fill="none" d="M-4,0 C0,0 0,0 4,0" class="primitive"/>
+  </g>
+</g>
+<g stroke="#000000" id="img-68d10dbe-15">
+  <g transform="translate(52,8)">
+    <path fill="none" d="M-4,0 C0,0 0,0 4,0" class="primitive"/>
+  </g>
+</g>
+<g stroke="#000000" id="img-68d10dbe-16">
+  <g transform="translate(52,44)">
+    <path fill="none" d="M-4,0 C0,0 0,0 4,0" class="primitive"/>
+  </g>
+</g>
+<g stroke="#000000" id="img-68d10dbe-17">
+  <g transform="translate(68,20)">
+    <path fill="none" d="M-4,0 C0,0 0,0 4,0" class="primitive"/>
+  </g>
+</g>
+<g stroke="#000000" id="img-68d10dbe-18">
+  <g transform="translate(68,32)">
+    <path fill="none" d="M-4,0 C0,0 0,0 4,0" class="primitive"/>
+  </g>
+</g>
+<g stroke="#000000" id="img-68d10dbe-19">
+  <g transform="translate(68,8)">
+    <path fill="none" d="M-4,0 C0,0 0,0 4,0" class="primitive"/>
+  </g>
+</g>
+<g stroke="#000000" id="img-68d10dbe-20">
+  <g transform="translate(68,44)">
+    <path fill="none" d="M-4,0 C0,0 0,0 4,0" class="primitive"/>
+  </g>
+</g>
+<g stroke="#000000" id="img-68d10dbe-21">
+  <g transform="translate(4,44)">
+    <path fill="none" d="M-4,0 C0,0 0,-0 4,-0" class="primitive"/>
+  </g>
+</g>
+<g stroke="#000000" id="img-68d10dbe-22">
+  <g transform="translate(4,32)">
+    <path fill="none" d="M-4,0 C0,0 0,-0 4,-0" class="primitive"/>
+  </g>
+</g>
+<g stroke="#000000" id="img-68d10dbe-23">
+  <g transform="translate(4,20)">
+    <path fill="none" d="M-4,-0 C0,-0 0,0 4,0" class="primitive"/>
+  </g>
+</g>
+<g stroke="#000000" id="img-68d10dbe-24">
+  <g transform="translate(4,8)">
+    <path fill="none" d="M-4,-0 C0,-0 0,0 4,0" class="primitive"/>
+  </g>
+</g>
+<g fill="#000000" fill-opacity="0.000" stroke="#000000" id="img-68d10dbe-25">
+  <g stroke="#000000" stroke-opacity="0.000" id="img-68d10dbe-26">
+    <g transform="translate(79,47)">
+      <path d="M0,0 L1,0 A1,1 0 0 1 0,1L0,0" class="primitive"/>
+    </g>
+    <g transform="translate(73,47)">
+      <path d="M0,0 L0,1 A1,1 0 0 1 -1,0L0,0" class="primitive"/>
+    </g>
+    <g transform="translate(79,41)">
+      <path d="M0,0 L-0,-1 A1,1 0 0 1 1,0L0,0" class="primitive"/>
+    </g>
+    <g transform="translate(73,41)">
+      <path d="M0,0 L-1,0 A1,1 0 0 1 -0,-1L0,0" class="primitive"/>
+    </g>
+    <g transform="translate(76,44)">
+      <path d="M-4,-3.26 L4,-3.26 4,3.26 -4,3.26  z" class="primitive"/>
+    </g>
+    <g transform="translate(76,44)">
+      <path d="M-3.26,-4 L3.26,-4 3.26,4 -3.26,4  z" class="primitive"/>
+    </g>
+  </g>
+  <g transform="translate(79,47)">
+    <path d="M1,0 A1,1 0 0 1 0,1" class="primitive"/>
+  </g>
+  <g transform="translate(73,47)">
+    <path d="M0,1 A1,1 0 0 1 -1,0" class="primitive"/>
+  </g>
+  <g transform="translate(79,41)">
+    <path d="M-0,-1 A1,1 0 0 1 1,0" class="primitive"/>
+  </g>
+  <g transform="translate(73,41)">
+    <path d="M-1,0 A1,1 0 0 1 -0,-1" class="primitive"/>
+  </g>
+  <g transform="translate(76,40)">
+    <path fill="none" d="M-3,0 L3,0 " class="primitive"/>
+  </g>
+  <g transform="translate(72,44)">
+    <path fill="none" d="M0,-3 L0,3 " class="primitive"/>
+  </g>
+  <g transform="translate(76,48)">
+    <path fill="none" d="M-3,0 L3,0 " class="primitive"/>
+  </g>
+  <g transform="translate(80,44)">
+    <path fill="none" d="M0,-3 L0,3 " class="primitive"/>
+  </g>
+</g>
+<g fill="#000000" id="img-68d10dbe-27">
+  <g transform="translate(76,44)">
+    <g class="primitive">
+      <text text-anchor="middle" dy="0.35em">g</text>
+    </g>
+  </g>
+</g>
+<g fill="#000000" fill-opacity="0.000" stroke="#000000" id="img-68d10dbe-28">
+  <g stroke="#000000" stroke-opacity="0.000" id="img-68d10dbe-29">
+    <g transform="translate(79,35)">
+      <path d="M0,0 L1,0 A1,1 0 0 1 0,1L0,0" class="primitive"/>
+    </g>
+    <g transform="translate(73,35)">
+      <path d="M0,0 L0,1 A1,1 0 0 1 -1,0L0,0" class="primitive"/>
+    </g>
+    <g transform="translate(79,29)">
+      <path d="M0,0 L-0,-1 A1,1 0 0 1 1,0L0,0" class="primitive"/>
+    </g>
+    <g transform="translate(73,29)">
+      <path d="M0,0 L-1,0 A1,1 0 0 1 -0,-1L0,0" class="primitive"/>
+    </g>
+    <g transform="translate(76,32)">
+      <path d="M-4,-3.26 L4,-3.26 4,3.26 -4,3.26  z" class="primitive"/>
+    </g>
+    <g transform="translate(76,32)">
+      <path d="M-3.26,-4 L3.26,-4 3.26,4 -3.26,4  z" class="primitive"/>
+    </g>
+  </g>
+  <g transform="translate(79,35)">
+    <path d="M1,0 A1,1 0 0 1 0,1" class="primitive"/>
+  </g>
+  <g transform="translate(73,35)">
+    <path d="M0,1 A1,1 0 0 1 -1,0" class="primitive"/>
+  </g>
+  <g transform="translate(79,29)">
+    <path d="M-0,-1 A1,1 0 0 1 1,0" class="primitive"/>
+  </g>
+  <g transform="translate(73,29)">
+    <path d="M-1,0 A1,1 0 0 1 -0,-1" class="primitive"/>
+  </g>
+  <g transform="translate(76,28)">
+    <path fill="none" d="M-3,0 L3,0 " class="primitive"/>
+  </g>
+  <g transform="translate(72,32)">
+    <path fill="none" d="M0,-3 L0,3 " class="primitive"/>
+  </g>
+  <g transform="translate(76,36)">
+    <path fill="none" d="M-3,0 L3,0 " class="primitive"/>
+  </g>
+  <g transform="translate(80,32)">
+    <path fill="none" d="M0,-3 L0,3 " class="primitive"/>
+  </g>
+</g>
+<g fill="#000000" id="img-68d10dbe-30">
+  <g transform="translate(76,32)">
+    <g class="primitive">
+      <text text-anchor="middle" dy="0.35em">f</text>
+    </g>
+  </g>
+</g>
+<g fill="#000000" fill-opacity="0.000" stroke="#000000" id="img-68d10dbe-31">
+  <g stroke="#000000" stroke-opacity="0.000" id="img-68d10dbe-32">
+    <g transform="translate(79,23)">
+      <path d="M0,0 L1,0 A1,1 0 0 1 0,1L0,0" class="primitive"/>
+    </g>
+    <g transform="translate(73,23)">
+      <path d="M0,0 L0,1 A1,1 0 0 1 -1,0L0,0" class="primitive"/>
+    </g>
+    <g transform="translate(79,17)">
+      <path d="M0,0 L-0,-1 A1,1 0 0 1 1,0L0,0" class="primitive"/>
+    </g>
+    <g transform="translate(73,17)">
+      <path d="M0,0 L-1,0 A1,1 0 0 1 -0,-1L0,0" class="primitive"/>
+    </g>
+    <g transform="translate(76,20)">
+      <path d="M-4,-3.26 L4,-3.26 4,3.26 -4,3.26  z" class="primitive"/>
+    </g>
+    <g transform="translate(76,20)">
+      <path d="M-3.26,-4 L3.26,-4 3.26,4 -3.26,4  z" class="primitive"/>
+    </g>
+  </g>
+  <g transform="translate(79,23)">
+    <path d="M1,0 A1,1 0 0 1 0,1" class="primitive"/>
+  </g>
+  <g transform="translate(73,23)">
+    <path d="M0,1 A1,1 0 0 1 -1,0" class="primitive"/>
+  </g>
+  <g transform="translate(79,17)">
+    <path d="M-0,-1 A1,1 0 0 1 1,0" class="primitive"/>
+  </g>
+  <g transform="translate(73,17)">
+    <path d="M-1,0 A1,1 0 0 1 -0,-1" class="primitive"/>
+  </g>
+  <g transform="translate(76,16)">
+    <path fill="none" d="M-3,0 L3,0 " class="primitive"/>
+  </g>
+  <g transform="translate(72,20)">
+    <path fill="none" d="M0,-3 L0,3 " class="primitive"/>
+  </g>
+  <g transform="translate(76,24)">
+    <path fill="none" d="M-3,0 L3,0 " class="primitive"/>
+  </g>
+  <g transform="translate(80,20)">
+    <path fill="none" d="M0,-3 L0,3 " class="primitive"/>
+  </g>
+</g>
+<g fill="#000000" id="img-68d10dbe-33">
+  <g transform="translate(76,20)">
+    <g class="primitive">
+      <text text-anchor="middle" dy="0.35em">k</text>
+    </g>
+  </g>
+</g>
+<g fill="#000000" fill-opacity="0.000" stroke="#000000" id="img-68d10dbe-34">
+  <g stroke="#000000" stroke-opacity="0.000" id="img-68d10dbe-35">
+    <g transform="translate(79,11)">
+      <path d="M0,0 L1,0 A1,1 0 0 1 0,1L0,0" class="primitive"/>
+    </g>
+    <g transform="translate(73,11)">
+      <path d="M0,0 L0,1 A1,1 0 0 1 -1,0L0,0" class="primitive"/>
+    </g>
+    <g transform="translate(79,5)">
+      <path d="M0,0 L-0,-1 A1,1 0 0 1 1,0L0,0" class="primitive"/>
+    </g>
+    <g transform="translate(73,5)">
+      <path d="M0,0 L-1,0 A1,1 0 0 1 -0,-1L0,0" class="primitive"/>
+    </g>
+    <g transform="translate(76,8)">
+      <path d="M-4,-3.26 L4,-3.26 4,3.26 -4,3.26  z" class="primitive"/>
+    </g>
+    <g transform="translate(76,8)">
+      <path d="M-3.26,-4 L3.26,-4 3.26,4 -3.26,4  z" class="primitive"/>
+    </g>
+  </g>
+  <g transform="translate(79,11)">
+    <path d="M1,0 A1,1 0 0 1 0,1" class="primitive"/>
+  </g>
+  <g transform="translate(73,11)">
+    <path d="M0,1 A1,1 0 0 1 -1,0" class="primitive"/>
+  </g>
+  <g transform="translate(79,5)">
+    <path d="M-0,-1 A1,1 0 0 1 1,0" class="primitive"/>
+  </g>
+  <g transform="translate(73,5)">
+    <path d="M-1,0 A1,1 0 0 1 -0,-1" class="primitive"/>
+  </g>
+  <g transform="translate(76,4)">
+    <path fill="none" d="M-3,0 L3,0 " class="primitive"/>
+  </g>
+  <g transform="translate(72,8)">
+    <path fill="none" d="M0,-3 L0,3 " class="primitive"/>
+  </g>
+  <g transform="translate(76,12)">
+    <path fill="none" d="M-3,0 L3,0 " class="primitive"/>
+  </g>
+  <g transform="translate(80,8)">
+    <path fill="none" d="M0,-3 L0,3 " class="primitive"/>
+  </g>
+</g>
+<g fill="#000000" id="img-68d10dbe-36">
+  <g transform="translate(76,8)">
+    <g class="primitive">
+      <text text-anchor="middle" dy="0.35em">h</text>
+    </g>
+  </g>
+</g>
+<g fill="#000000" fill-opacity="0.000" stroke="#000000" id="img-68d10dbe-37">
+  <g stroke="#000000" stroke-opacity="0.000" id="img-68d10dbe-38">
+    <g transform="translate(63,47)">
+      <path d="M0,0 L1,0 A1,1 0 0 1 0,1L0,0" class="primitive"/>
+    </g>
+    <g transform="translate(57,47)">
+      <path d="M0,0 L0,1 A1,1 0 0 1 -1,0L0,0" class="primitive"/>
+    </g>
+    <g transform="translate(63,29)">
+      <path d="M0,0 L-0,-1 A1,1 0 0 1 1,0L0,0" class="primitive"/>
+    </g>
+    <g transform="translate(57,29)">
+      <path d="M0,0 L-1,0 A1,1 0 0 1 -0,-1L0,0" class="primitive"/>
+    </g>
+    <g transform="translate(60,38)">
+      <path d="M-4,-9.26 L4,-9.26 4,9.26 -4,9.26  z" class="primitive"/>
+    </g>
+    <g transform="translate(60,38)">
+      <path d="M-3.26,-10 L3.26,-10 3.26,10 -3.26,10  z" class="primitive"/>
+    </g>
+  </g>
+  <g transform="translate(63,47)">
+    <path d="M1,0 A1,1 0 0 1 0,1" class="primitive"/>
+  </g>
+  <g transform="translate(57,47)">
+    <path d="M0,1 A1,1 0 0 1 -1,0" class="primitive"/>
+  </g>
+  <g transform="translate(63,29)">
+    <path d="M-0,-1 A1,1 0 0 1 1,0" class="primitive"/>
+  </g>
+  <g transform="translate(57,29)">
+    <path d="M-1,0 A1,1 0 0 1 -0,-1" class="primitive"/>
+  </g>
+  <g transform="translate(60,28)">
+    <path fill="none" d="M-3,0 L3,0 " class="primitive"/>
+  </g>
+  <g transform="translate(56,38)">
+    <path fill="none" d="M0,-9 L0,9 " class="primitive"/>
+  </g>
+  <g transform="translate(60,48)">
+    <path fill="none" d="M-3,0 L3,0 " class="primitive"/>
+  </g>
+  <g transform="translate(64,38)">
+    <path fill="none" d="M0,-9 L0,9 " class="primitive"/>
+  </g>
+</g>
+<g fill="#000000" id="img-68d10dbe-39">
+  <g transform="translate(60,38)">
+    <g class="primitive">
+      <text text-anchor="middle" dy="0.35em">m</text>
+    </g>
+  </g>
+</g>
+<g fill="#000000" fill-opacity="0.000" stroke="#000000" id="img-68d10dbe-40">
+  <g stroke="#000000" stroke-opacity="0.000" id="img-68d10dbe-41">
+    <g transform="translate(63,23)">
+      <path d="M0,0 L1,0 A1,1 0 0 1 0,1L0,0" class="primitive"/>
+    </g>
+    <g transform="translate(57,23)">
+      <path d="M0,0 L0,1 A1,1 0 0 1 -1,0L0,0" class="primitive"/>
+    </g>
+    <g transform="translate(63,5)">
+      <path d="M0,0 L-0,-1 A1,1 0 0 1 1,0L0,0" class="primitive"/>
+    </g>
+    <g transform="translate(57,5)">
+      <path d="M0,0 L-1,0 A1,1 0 0 1 -0,-1L0,0" class="primitive"/>
+    </g>
+    <g transform="translate(60,14)">
+      <path d="M-4,-9.26 L4,-9.26 4,9.26 -4,9.26  z" class="primitive"/>
+    </g>
+    <g transform="translate(60,14)">
+      <path d="M-3.26,-10 L3.26,-10 3.26,10 -3.26,10  z" class="primitive"/>
+    </g>
+  </g>
+  <g transform="translate(63,23)">
+    <path d="M1,0 A1,1 0 0 1 0,1" class="primitive"/>
+  </g>
+  <g transform="translate(57,23)">
+    <path d="M0,1 A1,1 0 0 1 -1,0" class="primitive"/>
+  </g>
+  <g transform="translate(63,5)">
+    <path d="M-0,-1 A1,1 0 0 1 1,0" class="primitive"/>
+  </g>
+  <g transform="translate(57,5)">
+    <path d="M-1,0 A1,1 0 0 1 -0,-1" class="primitive"/>
+  </g>
+  <g transform="translate(60,4)">
+    <path fill="none" d="M-3,0 L3,0 " class="primitive"/>
+  </g>
+  <g transform="translate(56,14)">
+    <path fill="none" d="M0,-9 L0,9 " class="primitive"/>
+  </g>
+  <g transform="translate(60,24)">
+    <path fill="none" d="M-3,0 L3,0 " class="primitive"/>
+  </g>
+  <g transform="translate(64,14)">
+    <path fill="none" d="M0,-9 L0,9 " class="primitive"/>
+  </g>
+</g>
+<g fill="#000000" id="img-68d10dbe-42">
+  <g transform="translate(60,14)">
+    <g class="primitive">
+      <text text-anchor="middle" dy="0.35em">n</text>
+    </g>
+  </g>
+</g>
+<g fill="#000000" fill-opacity="0.000" stroke="#000000" id="img-68d10dbe-43">
+  <g stroke="#000000" stroke-opacity="0.000" id="img-68d10dbe-44">
+    <g transform="translate(47,47)">
+      <path d="M0,0 L1,0 A1,1 0 0 1 0,1L0,0" class="primitive"/>
+    </g>
+    <g transform="translate(41,47)">
+      <path d="M0,0 L0,1 A1,1 0 0 1 -1,0L0,0" class="primitive"/>
+    </g>
+    <g transform="translate(47,5)">
+      <path d="M0,0 L-0,-1 A1,1 0 0 1 1,0L0,0" class="primitive"/>
+    </g>
+    <g transform="translate(41,5)">
+      <path d="M0,0 L-1,0 A1,1 0 0 1 -0,-1L0,0" class="primitive"/>
+    </g>
+    <g transform="translate(44,26)">
+      <path d="M-4,-21.26 L4,-21.26 4,21.26 -4,21.26  z" class="primitive"/>
+    </g>
+    <g transform="translate(44,26)">
+      <path d="M-3.26,-22 L3.26,-22 3.26,22 -3.26,22  z" class="primitive"/>
+    </g>
+  </g>
+  <g transform="translate(47,47)">
+    <path d="M1,0 A1,1 0 0 1 0,1" class="primitive"/>
+  </g>
+  <g transform="translate(41,47)">
+    <path d="M0,1 A1,1 0 0 1 -1,0" class="primitive"/>
+  </g>
+  <g transform="translate(47,5)">
+    <path d="M-0,-1 A1,1 0 0 1 1,0" class="primitive"/>
+  </g>
+  <g transform="translate(41,5)">
+    <path d="M-1,0 A1,1 0 0 1 -0,-1" class="primitive"/>
+  </g>
+  <g transform="translate(44,4)">
+    <path fill="none" d="M-3,0 L3,0 " class="primitive"/>
+  </g>
+  <g transform="translate(40,26)">
+    <path fill="none" d="M0,-21 L0,21 " class="primitive"/>
+  </g>
+  <g transform="translate(44,48)">
+    <path fill="none" d="M-3,0 L3,0 " class="primitive"/>
+  </g>
+  <g transform="translate(48,26)">
+    <path fill="none" d="M0,-21 L0,21 " class="primitive"/>
+  </g>
+</g>
+<g fill="#000000" id="img-68d10dbe-45">
+  <g transform="translate(44,26)">
+    <g class="primitive">
+      <text text-anchor="middle" dy="0.35em">l</text>
+    </g>
+  </g>
+</g>
+<g fill="#000000" fill-opacity="0.000" stroke="#000000" id="img-68d10dbe-46">
+  <g stroke="#000000" stroke-opacity="0.000" id="img-68d10dbe-47">
+    <g transform="translate(31,47)">
+      <path d="M0,0 L1,0 A1,1 0 0 1 0,1L0,0" class="primitive"/>
+    </g>
+    <g transform="translate(25,47)">
+      <path d="M0,0 L0,1 A1,1 0 0 1 -1,0L0,0" class="primitive"/>
+    </g>
+    <g transform="translate(31,29)">
+      <path d="M0,0 L-0,-1 A1,1 0 0 1 1,0L0,0" class="primitive"/>
+    </g>
+    <g transform="translate(25,29)">
+      <path d="M0,0 L-1,0 A1,1 0 0 1 -0,-1L0,0" class="primitive"/>
+    </g>
+    <g transform="translate(28,38)">
+      <path d="M-4,-9.26 L4,-9.26 4,9.26 -4,9.26  z" class="primitive"/>
+    </g>
+    <g transform="translate(28,38)">
+      <path d="M-3.26,-10 L3.26,-10 3.26,10 -3.26,10  z" class="primitive"/>
+    </g>
+  </g>
+  <g transform="translate(31,47)">
+    <path d="M1,0 A1,1 0 0 1 0,1" class="primitive"/>
+  </g>
+  <g transform="translate(25,47)">
+    <path d="M0,1 A1,1 0 0 1 -1,0" class="primitive"/>
+  </g>
+  <g transform="translate(31,29)">
+    <path d="M-0,-1 A1,1 0 0 1 1,0" class="primitive"/>
+  </g>
+  <g transform="translate(25,29)">
+    <path d="M-1,0 A1,1 0 0 1 -0,-1" class="primitive"/>
+  </g>
+  <g transform="translate(28,28)">
+    <path fill="none" d="M-3,0 L3,0 " class="primitive"/>
+  </g>
+  <g transform="translate(24,38)">
+    <path fill="none" d="M0,-9 L0,9 " class="primitive"/>
+  </g>
+  <g transform="translate(28,48)">
+    <path fill="none" d="M-3,0 L3,0 " class="primitive"/>
+  </g>
+  <g transform="translate(32,38)">
+    <path fill="none" d="M0,-9 L0,9 " class="primitive"/>
+  </g>
+</g>
+<g fill="#000000" id="img-68d10dbe-48">
+  <g transform="translate(28,38)">
+    <g class="primitive">
+      <text text-anchor="middle" dy="0.35em">n</text>
+    </g>
+  </g>
+</g>
+<g fill="#000000" fill-opacity="0.000" stroke="#000000" id="img-68d10dbe-49">
+  <g stroke="#000000" stroke-opacity="0.000" id="img-68d10dbe-50">
+    <g transform="translate(31,23)">
+      <path d="M0,0 L1,0 A1,1 0 0 1 0,1L0,0" class="primitive"/>
+    </g>
+    <g transform="translate(25,23)">
+      <path d="M0,0 L0,1 A1,1 0 0 1 -1,0L0,0" class="primitive"/>
+    </g>
+    <g transform="translate(31,5)">
+      <path d="M0,0 L-0,-1 A1,1 0 0 1 1,0L0,0" class="primitive"/>
+    </g>
+    <g transform="translate(25,5)">
+      <path d="M0,0 L-1,0 A1,1 0 0 1 -0,-1L0,0" class="primitive"/>
+    </g>
+    <g transform="translate(28,14)">
+      <path d="M-4,-9.26 L4,-9.26 4,9.26 -4,9.26  z" class="primitive"/>
+    </g>
+    <g transform="translate(28,14)">
+      <path d="M-3.26,-10 L3.26,-10 3.26,10 -3.26,10  z" class="primitive"/>
+    </g>
+  </g>
+  <g transform="translate(31,23)">
+    <path d="M1,0 A1,1 0 0 1 0,1" class="primitive"/>
+  </g>
+  <g transform="translate(25,23)">
+    <path d="M0,1 A1,1 0 0 1 -1,0" class="primitive"/>
+  </g>
+  <g transform="translate(31,5)">
+    <path d="M-0,-1 A1,1 0 0 1 1,0" class="primitive"/>
+  </g>
+  <g transform="translate(25,5)">
+    <path d="M-1,0 A1,1 0 0 1 -0,-1" class="primitive"/>
+  </g>
+  <g transform="translate(28,4)">
+    <path fill="none" d="M-3,0 L3,0 " class="primitive"/>
+  </g>
+  <g transform="translate(24,14)">
+    <path fill="none" d="M0,-9 L0,9 " class="primitive"/>
+  </g>
+  <g transform="translate(28,24)">
+    <path fill="none" d="M-3,0 L3,0 " class="primitive"/>
+  </g>
+  <g transform="translate(32,14)">
+    <path fill="none" d="M0,-9 L0,9 " class="primitive"/>
+  </g>
+</g>
+<g fill="#000000" id="img-68d10dbe-51">
+  <g transform="translate(28,14)">
+    <g class="primitive">
+      <text text-anchor="middle" dy="0.35em">m</text>
+    </g>
+  </g>
+</g>
+<g fill="#000000" fill-opacity="0.000" stroke="#000000" id="img-68d10dbe-52">
+  <g stroke="#000000" stroke-opacity="0.000" id="img-68d10dbe-53">
+    <g transform="translate(15,47)">
+      <path d="M0,0 L1,0 A1,1 0 0 1 0,1L0,0" class="primitive"/>
+    </g>
+    <g transform="translate(9,47)">
+      <path d="M0,0 L0,1 A1,1 0 0 1 -1,0L0,0" class="primitive"/>
+    </g>
+    <g transform="translate(15,41)">
+      <path d="M0,0 L-0,-1 A1,1 0 0 1 1,0L0,0" class="primitive"/>
+    </g>
+    <g transform="translate(9,41)">
+      <path d="M0,0 L-1,0 A1,1 0 0 1 -0,-1L0,0" class="primitive"/>
+    </g>
+    <g transform="translate(12,44)">
+      <path d="M-4,-3.26 L4,-3.26 4,3.26 -4,3.26  z" class="primitive"/>
+    </g>
+    <g transform="translate(12,44)">
+      <path d="M-3.26,-4 L3.26,-4 3.26,4 -3.26,4  z" class="primitive"/>
+    </g>
+  </g>
+  <g transform="translate(15,47)">
+    <path d="M1,0 A1,1 0 0 1 0,1" class="primitive"/>
+  </g>
+  <g transform="translate(9,47)">
+    <path d="M0,1 A1,1 0 0 1 -1,0" class="primitive"/>
+  </g>
+  <g transform="translate(15,41)">
+    <path d="M-0,-1 A1,1 0 0 1 1,0" class="primitive"/>
+  </g>
+  <g transform="translate(9,41)">
+    <path d="M-1,0 A1,1 0 0 1 -0,-1" class="primitive"/>
+  </g>
+  <g transform="translate(12,40)">
+    <path fill="none" d="M-3,0 L3,0 " class="primitive"/>
+  </g>
+  <g transform="translate(8,44)">
+    <path fill="none" d="M0,-3 L0,3 " class="primitive"/>
+  </g>
+  <g transform="translate(12,48)">
+    <path fill="none" d="M-3,0 L3,0 " class="primitive"/>
+  </g>
+  <g transform="translate(16,44)">
+    <path fill="none" d="M0,-3 L0,3 " class="primitive"/>
+  </g>
+</g>
+<g fill="#000000" id="img-68d10dbe-54">
+  <g transform="translate(12,44)">
+    <g class="primitive">
+      <text text-anchor="middle" dy="0.35em">k</text>
+    </g>
+  </g>
+</g>
+<g fill="#000000" fill-opacity="0.000" stroke="#000000" id="img-68d10dbe-55">
+  <g stroke="#000000" stroke-opacity="0.000" id="img-68d10dbe-56">
+    <g transform="translate(15,35)">
+      <path d="M0,0 L1,0 A1,1 0 0 1 0,1L0,0" class="primitive"/>
+    </g>
+    <g transform="translate(9,35)">
+      <path d="M0,0 L0,1 A1,1 0 0 1 -1,0L0,0" class="primitive"/>
+    </g>
+    <g transform="translate(15,29)">
+      <path d="M0,0 L-0,-1 A1,1 0 0 1 1,0L0,0" class="primitive"/>
+    </g>
+    <g transform="translate(9,29)">
+      <path d="M0,0 L-1,0 A1,1 0 0 1 -0,-1L0,0" class="primitive"/>
+    </g>
+    <g transform="translate(12,32)">
+      <path d="M-4,-3.26 L4,-3.26 4,3.26 -4,3.26  z" class="primitive"/>
+    </g>
+    <g transform="translate(12,32)">
+      <path d="M-3.26,-4 L3.26,-4 3.26,4 -3.26,4  z" class="primitive"/>
+    </g>
+  </g>
+  <g transform="translate(15,35)">
+    <path d="M1,0 A1,1 0 0 1 0,1" class="primitive"/>
+  </g>
+  <g transform="translate(9,35)">
+    <path d="M0,1 A1,1 0 0 1 -1,0" class="primitive"/>
+  </g>
+  <g transform="translate(15,29)">
+    <path d="M-0,-1 A1,1 0 0 1 1,0" class="primitive"/>
+  </g>
+  <g transform="translate(9,29)">
+    <path d="M-1,0 A1,1 0 0 1 -0,-1" class="primitive"/>
+  </g>
+  <g transform="translate(12,28)">
+    <path fill="none" d="M-3,0 L3,0 " class="primitive"/>
+  </g>
+  <g transform="translate(8,32)">
+    <path fill="none" d="M0,-3 L0,3 " class="primitive"/>
+  </g>
+  <g transform="translate(12,36)">
+    <path fill="none" d="M-3,0 L3,0 " class="primitive"/>
+  </g>
+  <g transform="translate(16,32)">
+    <path fill="none" d="M0,-3 L0,3 " class="primitive"/>
+  </g>
+</g>
+<g fill="#000000" id="img-68d10dbe-57">
+  <g transform="translate(12,32)">
+    <g class="primitive">
+      <text text-anchor="middle" dy="0.35em">h</text>
+    </g>
+  </g>
+</g>
+<g fill="#000000" fill-opacity="0.000" stroke="#000000" id="img-68d10dbe-58">
+  <g stroke="#000000" stroke-opacity="0.000" id="img-68d10dbe-59">
+    <g transform="translate(15,23)">
+      <path d="M0,0 L1,0 A1,1 0 0 1 0,1L0,0" class="primitive"/>
+    </g>
+    <g transform="translate(9,23)">
+      <path d="M0,0 L0,1 A1,1 0 0 1 -1,0L0,0" class="primitive"/>
+    </g>
+    <g transform="translate(15,17)">
+      <path d="M0,0 L-0,-1 A1,1 0 0 1 1,0L0,0" class="primitive"/>
+    </g>
+    <g transform="translate(9,17)">
+      <path d="M0,0 L-1,0 A1,1 0 0 1 -0,-1L0,0" class="primitive"/>
+    </g>
+    <g transform="translate(12,20)">
+      <path d="M-4,-3.26 L4,-3.26 4,3.26 -4,3.26  z" class="primitive"/>
+    </g>
+    <g transform="translate(12,20)">
+      <path d="M-3.26,-4 L3.26,-4 3.26,4 -3.26,4  z" class="primitive"/>
+    </g>
+  </g>
+  <g transform="translate(15,23)">
+    <path d="M1,0 A1,1 0 0 1 0,1" class="primitive"/>
+  </g>
+  <g transform="translate(9,23)">
+    <path d="M0,1 A1,1 0 0 1 -1,0" class="primitive"/>
+  </g>
+  <g transform="translate(15,17)">
+    <path d="M-0,-1 A1,1 0 0 1 1,0" class="primitive"/>
+  </g>
+  <g transform="translate(9,17)">
+    <path d="M-1,0 A1,1 0 0 1 -0,-1" class="primitive"/>
+  </g>
+  <g transform="translate(12,16)">
+    <path fill="none" d="M-3,0 L3,0 " class="primitive"/>
+  </g>
+  <g transform="translate(8,20)">
+    <path fill="none" d="M0,-3 L0,3 " class="primitive"/>
+  </g>
+  <g transform="translate(12,24)">
+    <path fill="none" d="M-3,0 L3,0 " class="primitive"/>
+  </g>
+  <g transform="translate(16,20)">
+    <path fill="none" d="M0,-3 L0,3 " class="primitive"/>
+  </g>
+</g>
+<g fill="#000000" id="img-68d10dbe-60">
+  <g transform="translate(12,20)">
+    <g class="primitive">
+      <text text-anchor="middle" dy="0.35em">g</text>
+    </g>
+  </g>
+</g>
+<g fill="#000000" fill-opacity="0.000" stroke="#000000" id="img-68d10dbe-61">
+  <g stroke="#000000" stroke-opacity="0.000" id="img-68d10dbe-62">
+    <g transform="translate(15,11)">
+      <path d="M0,0 L1,0 A1,1 0 0 1 0,1L0,0" class="primitive"/>
+    </g>
+    <g transform="translate(9,11)">
+      <path d="M0,0 L0,1 A1,1 0 0 1 -1,0L0,0" class="primitive"/>
+    </g>
+    <g transform="translate(15,5)">
+      <path d="M0,0 L-0,-1 A1,1 0 0 1 1,0L0,0" class="primitive"/>
+    </g>
+    <g transform="translate(9,5)">
+      <path d="M0,0 L-1,0 A1,1 0 0 1 -0,-1L0,0" class="primitive"/>
+    </g>
+    <g transform="translate(12,8)">
+      <path d="M-4,-3.26 L4,-3.26 4,3.26 -4,3.26  z" class="primitive"/>
+    </g>
+    <g transform="translate(12,8)">
+      <path d="M-3.26,-4 L3.26,-4 3.26,4 -3.26,4  z" class="primitive"/>
+    </g>
+  </g>
+  <g transform="translate(15,11)">
+    <path d="M1,0 A1,1 0 0 1 0,1" class="primitive"/>
+  </g>
+  <g transform="translate(9,11)">
+    <path d="M0,1 A1,1 0 0 1 -1,0" class="primitive"/>
+  </g>
+  <g transform="translate(15,5)">
+    <path d="M-0,-1 A1,1 0 0 1 1,0" class="primitive"/>
+  </g>
+  <g transform="translate(9,5)">
+    <path d="M-1,0 A1,1 0 0 1 -0,-1" class="primitive"/>
+  </g>
+  <g transform="translate(12,4)">
+    <path fill="none" d="M-3,0 L3,0 " class="primitive"/>
+  </g>
+  <g transform="translate(8,8)">
+    <path fill="none" d="M0,-3 L0,3 " class="primitive"/>
+  </g>
+  <g transform="translate(12,12)">
+    <path fill="none" d="M-3,0 L3,0 " class="primitive"/>
+  </g>
+  <g transform="translate(16,8)">
+    <path fill="none" d="M0,-3 L0,3 " class="primitive"/>
+  </g>
+</g>
+<g fill="#000000" id="img-68d10dbe-63">
+  <g transform="translate(12,8)">
+    <g class="primitive">
+      <text text-anchor="middle" dy="0.35em">f</text>
+    </g>
+  </g>
+</g>
+</svg>
