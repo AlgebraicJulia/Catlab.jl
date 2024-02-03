@@ -606,13 +606,18 @@ function Base.iterate(Sub::SubobjectIterator, state=SubobjectIteratorState())
   end 
 end
 
-
 struct OverlapIterator
-  top::ACSet
-  others::Vector{ACSet}
-  function OverlapIterator(Xs::Vector{T}) where T<:ACSet
-    t, o... = sort(Xs, by=total_parts)
-    new(t, o)
+  acsets::Vector{ACSet}
+  top::Int
+  abstract::Vector{Symbol}
+  function OverlapIterator(Xs::Vector{T}; abstract=true) where T<:ACSet
+    S = acset_schema(first(Xs))
+    abstract_attrs = if abstract isa Bool 
+      abstract ? attrtypes(S) : Symbol[]
+    else 
+      abstract 
+    end
+    new(Xs, argmin(total_parts.(Xs)), abstract_attrs)
   end
 end
 Base.eltype(::Type{OverlapIterator}) = Multispan
@@ -641,7 +646,7 @@ independently. This is the maps from A into all the other objects as well as the
 automorphisms of A.  
 """
 function Base.iterate(Sub::OverlapIterator, state=nothing)
-  state = isnothing(state) ? OverlapIteratorState(Sub.top) : state
+  state = isnothing(state) ? OverlapIteratorState(Sub.acsets[Sub.top]) : state
   # if we are not computing overlaps from a particular subobj, 
   if isnothing(state.curr_subobj) # pick the next subobj
     isnothing(state.maps) || error("Inconsistent overlapiterator state")
@@ -653,7 +658,7 @@ function Base.iterate(Sub::OverlapIterator, state=nothing)
     end
   elseif isnothing(state.maps) # compute all the maps out of curr subobj
     subobj = state.curr_subobj
-    abs_subobj = abstract_attributes(dom(subobj)) ⋅ subobj
+    abs_subobj = abstract_attributes(dom(subobj), Sub.abstract) ⋅ subobj
     Y = dom(abs_subobj)
     # don't repeat work if already computed syms/maps for something iso to Y
     for res in state.seen
@@ -663,26 +668,29 @@ function Base.iterate(Sub::OverlapIterator, state=nothing)
         return (Multispan(map(m->σ⋅m, res)), state)
       end
     end
-    maps = Vector{ACSetTransformation}[[abs_subobj]]
     # Compute the automorphisms so that we can remove spurious symmetries
     syms = isomorphisms(Y, Y)
     # Get monic maps from Y into each of the objects. The first comes for free
-    maps = Vector{ACSetTransformation}[[abs_subobj]]
-    for X in Sub.others
-      fs = homomorphisms(Y, X; monic=ob(acset_schema(Y)))
-      real_fs = Set() # quotient fs via automorphisms of Y
-      for f in fs 
-        if all(rf->all(σ -> force(σ⋅f) != force(rf),  syms), real_fs)  
-          push!(real_fs, f)
+    maps = Vector{ACSetTransformation}[]
+    for (i, X) in enumerate(Sub.acsets)
+      if i == Sub.top 
+        push!(maps, [abs_subobj])
+      else 
+        fs = homomorphisms(Y, X; monic=ob(acset_schema(Y)))
+        real_fs = Set() # quotient fs via automorphisms of Y
+        for f in fs 
+          if all(rf->all(σ -> force(σ⋅f) != force(rf),  syms), real_fs)  
+            push!(real_fs, f)
+          end
+        end
+        if isempty(real_fs)
+          break # this subobject of Xs[1] does not have common overlap w/ all Xs
+        else
+          push!(maps, collect(real_fs))
         end
       end
-      if isempty(real_fs)
-        break # this subobject of Xs[1] does not have common overlap w/ all Xs
-      else
-        push!(maps,collect(real_fs))
-      end
     end
-    if length(maps) == length(Sub.others) + 1
+    if length(maps) == length(Sub.acsets)
       state.maps = Iterators.Stateful(Iterators.product(maps...))
     else 
       state.curr_subobj = nothing
@@ -696,8 +704,8 @@ function Base.iterate(Sub::OverlapIterator, state=nothing)
   end
 end
 
-partial_overlaps(Xs::Vector{T}) where T<:ACSet = OverlapIterator(Xs)
-partial_overlaps(Xs::ACSet...) = Xs |> collect |> partial_overlaps
+partial_overlaps(Xs::Vector{T}; abstract=true) where T<:ACSet = OverlapIterator(Xs; abstract)
+partial_overlaps(Xs::ACSet...; abstract=true) = partial_overlaps(collect(Xs); abstract)
 
 """ Compute the Maximimum Common C-Sets from a vector of C-Sets.
 
@@ -711,8 +719,8 @@ these are all returned.
 If there are attributes, we ignore these and use variables in the apex of the 
 overlap.
 """
-function maximum_common_subobject(Xs::Vector{T}) where T <: ACSet
-  it = partial_overlaps(Xs)
+function maximum_common_subobject(Xs::Vector{T}; abstract=true) where T <: ACSet
+  it = partial_overlaps(Xs; abstract)
   osize = -1
   res = DefaultDict(()->[])
   for overlap in it 
@@ -725,7 +733,8 @@ function maximum_common_subobject(Xs::Vector{T}) where T <: ACSet
   return res
 end
 
-maximum_common_subobject(Xs::T...) where T <: ACSet = maximum_common_subobject(collect(Xs))
+maximum_common_subobject(Xs::T...; abstract=true) where T <: ACSet = 
+  maximum_common_subobject(collect(Xs); abstract)
 
 
 end # module
