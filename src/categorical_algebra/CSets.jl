@@ -1322,12 +1322,13 @@ preimage(f::ACSetTransformation,Y::StructACSet) =
 
 """
 For any ACSet, X, a canonical map A→X where A has distinct variables for all
-subparts.
+attributes valued in attrtypes present in `abstract` (by default: all attrtypes)
 """
-function abstract_attributes(X::ACSet)
+function abstract_attributes(X::ACSet, abstract=nothing)
   S = acset_schema(X)
+  abstract = isnothing(abstract) ? attrtypes(S) : abstract
   A = copy(X)
-  comps = Dict{Any, Any}(map(attrtypes(S)) do at
+  comps = Dict{Any, Any}(map(abstract) do at
     rem_parts!(A, at, parts(A, at))
     comp = Union{AttrVar, attrtype_type(X, at)}[]
     for (f, d, _) in attrs(S; to=at)
