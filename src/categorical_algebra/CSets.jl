@@ -610,21 +610,16 @@ Xₕ ↓  ✓  ↓ Yₕ
 
 You're allowed to run this on a named tuple partly specifying an ACSetTransformation,
 though at this time the domain and codomain must be fully specified ACSets.
-
-`only_combinatorial=true` means to only test naturality in combinatorial data
 """
-function is_natural(α::LooseACSetTransformation; only_combinatorial=false) 
-  is_natural(dom(α),codom(α),α.components,type_components(α); only_combinatorial)
+function is_natural(α::LooseACSetTransformation) 
+  is_natural(dom(α), codom(α), α.components, type_components(α))
 end
-function is_natural(α::ACSetTransformation; only_combinatorial=false)
-  is_natural(dom(α),codom(α),α.components; only_combinatorial)
-end
-function is_natural(α::CSetTransformation; only_combinatorial=true)
-  is_natural(dom(α),codom(α),α.components; only_combinatorial)
+function is_natural(α::ACSetMorphism)
+  is_natural(dom(α), codom(α), α.components)
 end
 
-is_natural(dom,codom,comps...; only_combinatorial=false) =
-  all(isempty, last.(collect(naturality_failures(dom, codom, comps...; only_combinatorial))))
+is_natural(dom, codom, comps...) =
+  all(isempty, last.(collect(naturality_failures(dom, codom, comps...))))
 
 """
 Returns a dictionary whose keys are contained in the names in `arrows(S)`
@@ -633,18 +628,15 @@ over the elements of X(c) on which α's naturality square
 for f does not commute. Components should be a NamedTuple or Dictionary
 with keys contained in the names of S's morphisms and values vectors or dicts
 defining partial functions from X(c) to Y(c).
-
-`only_combinatorial=true` means to only look for naturality failures in 
-combinatorial data.
 """
-function naturality_failures(X,Y,comps; only_combinatorial=false)
+function naturality_failures(X, Y, comps)
   type_comps = Dict(attr => SetFunction(identity, SetOb(X,attr), SetOb(X,attr)) 
                     for attr in attrtype(acset_schema(X)))
-  naturality_failures(X, Y, comps, type_comps; only_combinatorial)
+  naturality_failures(X, Y, comps, type_comps)
 end
-function naturality_failures(X, Y, comps, type_comps; only_combinatorial=false)
+function naturality_failures(X, Y, comps, type_comps)
   S = acset_schema(X)
-  Fun = Union{SetFunction,VarFunction,LooseVarFunction}
+  Fun = Union{SetFunction, VarFunction, LooseVarFunction}
   comps = Dict(a => isa(comps[a],Fun) ? comps[a] : FinDomFunction(comps[a])  
                for a in keys(comps))
   type_comps = Dict(a => isa(type_comps[a], Fun) ? type_comps[a] : 
