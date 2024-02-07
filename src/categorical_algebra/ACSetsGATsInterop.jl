@@ -66,8 +66,9 @@ function Presentation(s::BasicSchema{Symbol})
 end
 
 function DenseACSets.struct_acset(name::Symbol, parent, p::Presentation;
-                                  index::Vector=[], unique_index::Vector=[])
-  DenseACSets.struct_acset(name, parent, Schema(p); index, unique_index)
+                                  index::Vector=[], unique_index::Vector=[], 
+                                  part_type::Type{<:PartsType}=IntParts)
+  DenseACSets.struct_acset(name, parent, Schema(p); index, unique_index, part_type)
 end
 
 function DenseACSets.DynamicACSet(

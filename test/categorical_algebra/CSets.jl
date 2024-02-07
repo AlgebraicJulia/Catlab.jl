@@ -532,10 +532,19 @@ end
 ##########
 
 const WG = WeightedGraph
-A = @acset WG{Bool} begin V=1;E=2;Weight=2;src=1;tgt=1;weight=[AttrVar(1),true] end
-B = @acset WG{Bool} begin V=1;E=2;Weight=1;src=1;tgt=1;weight=[true, false] end
+A = @acset WG{Bool} begin V=1; E=2; Weight=2;
+  src=1; tgt=1; weight=[AttrVar(1), true] 
+end
+B = @acset WG{Bool} begin V=1; E=2; Weight=1;
+  src=1; tgt=1; weight=[true, false] 
+end
 
 @test VarFunction(A,:weight) == VarFunction{Bool}([AttrVar(1), true], FinSet(2))
+
+f = ACSetTransformation(
+  Dict(:V=>[1],:E=>[1,2],:Weight=>[AttrVar(2), AttrVar(1)]), A, A
+)
+@test !is_natural(f) # this should not be true, bug in is_natural
 
 f = ACSetTransformation(Dict(:V=>[1],:E=>[2,1],:Weight=>[false, AttrVar(1)]), A,B)
 @test is_natural(f)
@@ -761,10 +770,30 @@ end
 @test is_isomorphic(apex(ABC),expected)
 
 # 3. Apply commutative monoid to attrs
-ABC = pullback(AC,BC; attrfun=(weight=prod,))
+ABC = pullback(AC, BC; attrfun=(weight=prod,))
 expected = @acset WeightedGraph{Float64} begin V=6; E=7;
   src=[1,1,2,3,3,4,5]; tgt=[2,3,4,4,5,6,6]; weight=[-5,-2,-2,-5,-3,-3,-5]
 end
 @test is_isomorphic(apex(ABC),expected)
+
+# Mark as deleted
+#################
+
+@acset_type AbsMADGraph(SchWeightedGraph, part_type=BitSetParts) <: AbstractGraph
+const MADGraph = AbsMADGraph{Symbol}
+p2, p3 = path_graph.(MADGraph, 3:4)
+p2[:weight] = [:y,AttrVar(add_part!(p2, :Weight))]
+p3[:weight] = [AttrVar(add_part!(p3, :Weight)), :y, AttrVar(add_part!(p3, :Weight))]
+f = homomorphism(p2, p3)
+@test in_bounds(f) && is_natural(f)
+rem_part!(p3, :Weight, 2)
+p3[3, :weight] = :z
+@test !in_bounds(f) 
+
+f = homomorphism(p2, p3)
+@test in_bounds(f) && is_natural(f)
+rem_part!(p3, :E, 3)
+rem_part!(p3, :V, 4)
+@test !in_bounds(f)
 
 end
