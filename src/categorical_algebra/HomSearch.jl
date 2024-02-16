@@ -589,7 +589,18 @@ function Base.iterate(Sub::SubobjectIterator, state=SubobjectIteratorState())
   for o in ob(S)
     for p in parts(dX, o)
       rem = copy(dX)
-      comps = delete_subobj!(rem, Dict([o => [p]]))
+      comps = Dict{Symbol, Any}(pairs(delete_subobj!(rem, Dict([o => [p]]))))
+      rem_free_vars!(rem)
+      for at in attrtypes(S)
+        comps[at] = map(AttrVar.(parts(rem, at))) do part
+          for (f, c, _) in attrs(S; to=at)
+            inc = incident(rem, part, f)
+            if !isempty(inc)
+              return dX[comps[c][first(inc)], f]
+            end
+          end
+        end
+      end
       h = ACSetTransformation(rem, dX; comps...) ⋅ X
       if !is_seen(state, h)
         push!(state, h)
