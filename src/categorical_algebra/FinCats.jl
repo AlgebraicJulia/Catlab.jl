@@ -559,15 +559,18 @@ end
 """
 Reinterpret a functor on a finitely presented category
 as a functor on the equivalent category (ignoring equations)
-free on a graph.
+free on a graph. Also normalizes the input to have vector ob_map
+and hom_map, with valtype optionally specified. This is useful when
+the domain is empty or when the maps might be tightly typed but need to
+allow for types such as that of identity morphisms upon mutation.
 """
-function dom_to_graph(F::FinDomFunctor{<:FinCatPresentation,<:Cat{Ob,Hom}}) where {Ob,Hom}
+function dom_to_graph(F::FinDomFunctor{Dom,<:Cat{Ob,Hom}},obtype=Ob,homtype=Hom) where {Dom,Ob,Hom} 
   D = dom(F)
-  g , obs, homs = graph(D),Dict(pairs(ob_generators(D))), Dict(pairs(hom_generators(D)))
-  C = FinCat(g)
-  FinDomFunctorMap(Ob[ob_map(F,obs[i]) for i in 1:length(obs)],Hom[hom_map(F,homs[i]) for i in 1:length(homs)],C,codom(F))
+  C = FinCat(graph(D))
+  new_obs = obtype[ob_map(F,ob) for ob in ob_generators(D)]
+  new_homs = homtype[hom_map(F,hom) for hom in hom_generators(D)]
+  FinDomFunctorMap(new_obs,new_homs,C,TypeCat(obtype,homtype))
 end
-dom_to_graph(F::FinDomFunctor) = F
 function Base.show(io::IO, F::T) where T <: FinDomFunctorMap
   Categories.show_type_constructor(io, T); print(io, "(")
   show(io, F.ob_map)
