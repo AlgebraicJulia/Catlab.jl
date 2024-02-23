@@ -598,7 +598,7 @@ coerce_type_component(type::Symbol, f, dom_type::Type, codom_type::Type) =
   
 """
 Check naturality condition for a purported ACSetTransformation, α: X→Y. 
-For each hom in the schema, e.g. h: m → n, the following square commute must:
+For each hom in the schema, e.g. h: m → n, the following square must commute:
 
 ```text
      αₘ
