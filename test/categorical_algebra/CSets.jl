@@ -802,7 +802,7 @@ rem_part!(p3, :V, 4)
 # Test nauty interface
 ######################
 
-if !Sys.iswindows
+if !Sys.iswindows()
   using nauty_jll
 
   # G1 = 3-cycle, G2 = 3-cycle with extra vertex
