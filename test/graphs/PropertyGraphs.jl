@@ -58,8 +58,10 @@ add_vertex₂!(bg, a="trisha", b="elric")
 add_vertex₂!(bg, a="rurouni", b="kenshin")
 add_vertices₂!(bg, 1, a="van", b="hohenheim")
 
-@test_throws Exception add_edges₁₂!(bg, [1,1], [1,3, 5], rel="parent")
-add_edges₁₂!(bg, [1,1], [1,3], rel="parent")
+@test_throws Exception add_edges₁₂!(bg, [1,1], [1,3, 5], rel="childof")
+add_edges₁₂!(bg, [1,1], [1,3], rel="childof")
+add_edges₂₁!(bg, [1,3], [1,1], rel="parentof")
+add_edge₂₁!(bg, 3, 2, rel="parentof")
 
 @test nv₁(bg) == 4
 @test nv₂(bg) == 3
@@ -67,6 +69,12 @@ add_edges₁₂!(bg, [1,1], [1,3], rel="parent")
 @test vertices₁(bg) == 1:4
 @test vertices₂(bg) == 1:3
 @test vertices(bg) == (vertices₁(bg), vertices₂(bg))
+@test ne(bg) == (2,3)
+@test edges(bg) == (1:2, 1:3)
+
+e = add_edge₁₂!(bg, 1, 2, a="mistake")
+rem_edges₁₂!(bg, e)
+rem_edge₁₂!(bg, e)
 
 # test we can add verticies and edges without any properties 
 # test failure cases, like adding multiple edges with len src != len tgt
