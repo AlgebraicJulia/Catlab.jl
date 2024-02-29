@@ -326,6 +326,8 @@ add_edges₂₁!(g::AbstractBipartitePropertyGraph{T}, srcs::AbstractVector{Int}
             tgts::AbstractVector{Int}; kw...) where T =
   add_edges₂₁!(g.graph, srcs, tgts, e₂₁props=[Dict{Symbol,T}(kw...) for _=1:length(srcs)])
 
+# implement the vprops/eprops accessors/mutators
+
 # Constructors from graphs
 ##########################
 

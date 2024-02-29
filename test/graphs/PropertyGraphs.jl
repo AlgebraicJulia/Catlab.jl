@@ -58,12 +58,13 @@ add_vertex₂!(bg, a="trisha", b="elric")
 add_vertex₂!(bg, a="rurouni", b="kenshin")
 add_vertices₂!(bg, 1, a="van", b="hohenheim")
 
+@test_throws Exception add_edges₁₂!(bg, [1,1], [1,3, 5], rel="parent")
 add_edges₁₂!(bg, [1,1], [1,3], rel="parent")
 
-@test nv₁(bg) == 2
+@test nv₁(bg) == 4
 @test nv₂(bg) == 3
-@test nv(bg) == (2,3)
-@test vertices₁(bg) == 1:2
+@test nv(bg) == (4,3)
+@test vertices₁(bg) == 1:4
 @test vertices₂(bg) == 1:3
 @test vertices(bg) == (vertices₁(bg), vertices₂(bg))
 
