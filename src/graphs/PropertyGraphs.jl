@@ -270,29 +270,61 @@ end
 @inline nv₂(g::AbstractBipartitePropertyGraph) = nv₂(g.graph)
 @inline vertices₁(g::AbstractBipartitePropertyGraph) = vertices₁(g.graph)
 @inline vertices₂(g::AbstractBipartitePropertyGraph) = vertices₂(g.graph)
+@inline ne₁₂(g::AbstractBipartitePropertyGraph) = ne₁₂(g.graph)
+@inline ne₁₂(g::AbstractBipartitePropertyGraph, src::Int, tgt::Int) = ne₁₂(g.graph, src, tgt)
+@inline ne₂₁(g::AbstractBipartitePropertyGraph) = ne₂₁(g.graph)
+@inline ne₂₁(g::AbstractBipartitePropertyGraph, src::Int, tgt::Int) = ne₂₁(g.graph, src, tgt)
+@inline edges₁₂(g::AbstractBipartitePropertyGraph) = edges₁₂(g.graph)
+@inline edges₁₂(g::AbstractBipartitePropertyGraph, src::Int, tgt::Int) = edges₁₂(g.graph, src, tgt)
+@inline edges₂₁(g::AbstractBipartitePropertyGraph) = edges₂₁(g.graph)
+@inline edges₂₁(g::AbstractBipartitePropertyGraph, src::Int, tgt::Int) = edges₂₁(g.graph, src, tgt)
+@inline src₁(g::AbstractBipartitePropertyGraph, args...) = src₁(g.graph, args...)
+@inline tgt₂(g::AbstractBipartitePropertyGraph, args...) = tgt₂(g.graph, args...)
+@inline src₂(g::AbstractBipartitePropertyGraph, args...) = src₂(g.graph, args...)
+@inline tgt₁(g::AbstractBipartitePropertyGraph, args...) = tgt₁(g.graph, args...)
+@inline rem_vertex₁!(g::AbstractBipartitePropertyGraph, v::Int; kw...) = rem_vertex₁!(g.graph, v; kw...)
+@inline rem_vertex₂!(g::AbstractBipartitePropertyGraph, v::Int; kw...) = rem_vertex₂!(g.graph, v; kw...)
+@inline rem_vertices₁!(g::AbstractBipartitePropertyGraph, vs; keep_edges::Bool=false) = rem_vertices₁!(g.graph, vs; keep_edges)
+@inline rem_vertices₂!(g::AbstractBipartitePropertyGraph, vs; keep_edges::Bool=false) = rem_vertices₂!(g.graph, vs; keep_edges)
+@inline rem_edge₁₂!(g::AbstractBipartitePropertyGraph, e::Int) = rem_edge₁₂!(g.graph, e)
+@inline rem_edge₁₂!(g::AbstractBipartitePropertyGraph, src::Int, tgt::Int) = rem_edge₁₂!(g.graph, src, tgt)
+@inline rem_edge₂₁!(g::AbstractBipartitePropertyGraph, e::Int) = rem_edge₂₁!(g.graph, e)
+@inline rem_edge₂₁!(g::AbstractBipartitePropertyGraph, src::Int, tgt::Int) = rem_edge₂₁!(g.graph, src, tgt)
+@inline rem_edges₁₂!(g::AbstractBipartitePropertyGraph, es) = rem_edges₁₂!(g.graph, es)
+@inline rem_edges₂₁!(g::AbstractBipartitePropertyGraph, es) = rem_edges₂₁!(g.graph, es)
+
 @inline nv(g::AbstractBipartitePropertyGraph) = nv(g.graph)
 @inline vertices(g::AbstractBipartitePropertyGraph) = vertices(g.graph)
+@inline ne(g::AbstractBipartitePropertyGraph) = ne(g.graph)
+@inline edges(g::AbstractBipartitePropertyGraph) = edges(g.graph)
 
 add_vertex₁!(g::AbstractBipartitePropertyGraph{T}; kw...) where T =
   add_vertex₁!(g, Dict{Symbol,T}(kw...))
 add_vertex₁!(g::AbstractBipartitePropertyGraph{T}, d::Dict{Symbol,T}) where T =
-  add_part!(g.graph, :V₁, v₁props=d)
+  add_vertex₁!(g.graph, v₁props=d)
 
 add_vertex₂!(g::AbstractBipartitePropertyGraph{T}; kw...) where T =
   add_vertex₂!(g, Dict{Symbol,T}(kw...))
 add_vertex₂!(g::AbstractBipartitePropertyGraph{T}, d::Dict{Symbol,T}) where T =
-  add_part!(g.graph, :V₂, v₂props=d)
+  add_vertex₂!(g.graph, v₂props=d)
 
 add_vertices₁!(g::AbstractBipartitePropertyGraph{T}, n::Int; kw...) where T =
-  add_parts!(g.graph, :V₁, n, v₁props=[Dict{Symbol,T}(kw...) for _=1:n])
+  add_vertices₁!(g.graph, n, v₁props=[Dict{Symbol,T}(kw...) for _=1:n])
 add_vertices₂!(g::AbstractBipartitePropertyGraph{T}, n::Int; kw...) where T =
-  add_parts!(g.graph, :V₂, n, v₂props=[Dict{Symbol,T}(kw...) for _=1:n])
+  add_vertices₂!(g.graph, n, v₂props=[Dict{Symbol,T}(kw...) for _=1:n])
 
-#  ne₁₂, ne₂₁, edges₁₂, edges₂₁,
-#   src₁, src₂, tgt₁, tgt₂,
-#   rem_vertex₁!, rem_vertex₂!, rem_vertices₁!, rem_vertices₂!,
-#   add_edge₁₂!, add_edge₂₁!, add_edges₁₂!, add_edges₂₁!,
-#   rem_edge₁₂!, rem_edge₂₁!, rem_edges₁₂!, rem_edges₂₁!
+add_edge₁₂!(g::AbstractBipartitePropertyGraph{T}, src::Int, tgt::Int; kw...) where T =
+  add_edge₁₂!(g.graph, src, tgt, e₁₂props=Dict{Symbol,T}(kw...))
+add_edge₂₁!(g::AbstractBipartitePropertyGraph{T}, src::Int, tgt::Int; kw...) where T =
+  add_edge₂₁!(g.graph, src, tgt, e₂₁props=Dict{Symbol,T}(kw...))
+
+add_edges₁₂!(g::AbstractBipartitePropertyGraph{T}, srcs::AbstractVector{Int},
+            tgts::AbstractVector{Int}; kw...) where T =
+  add_edges₁₂!(g.graph, srcs, tgts, e₁₂props=[Dict{Symbol,T}(kw...) for _=1:length(srcs)])
+
+add_edges₂₁!(g::AbstractBipartitePropertyGraph{T}, srcs::AbstractVector{Int},
+            tgts::AbstractVector{Int}; kw...) where T =
+  add_edges₂₁!(g.graph, srcs, tgts, e₂₁props=[Dict{Symbol,T}(kw...) for _=1:length(srcs)])
 
 # Constructors from graphs
 ##########################

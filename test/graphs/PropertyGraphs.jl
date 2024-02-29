@@ -53,9 +53,12 @@ add_edge!(g, 1, 2, c="car")
 bg = BipartitePropertyGraph{String}()
 add_vertex₁!(bg, a="alphonse", b="elric")
 add_vertices₁!(bg, 1, a="ed", b="elric")
+add_vertices₁!(bg, 2, f="rei", l="ayanami")
 add_vertex₂!(bg, a="trisha", b="elric")
 add_vertex₂!(bg, a="rurouni", b="kenshin")
 add_vertices₂!(bg, 1, a="van", b="hohenheim")
+
+add_edges₁₂!(bg, [1,1], [1,3], rel="parent")
 
 @test nv₁(bg) == 2
 @test nv₂(bg) == 3
@@ -63,5 +66,9 @@ add_vertices₂!(bg, 1, a="van", b="hohenheim")
 @test vertices₁(bg) == 1:2
 @test vertices₂(bg) == 1:3
 @test vertices(bg) == (vertices₁(bg), vertices₂(bg))
+
+# test we can add verticies and edges without any properties 
+# test failure cases, like adding multiple edges with len src != len tgt
+# be sure to test removing vertices/edges, might have bugs
 
 end
