@@ -3,7 +3,8 @@ export AbstractPropertyGraph, PropertyGraph, SchPropertyGraph,
   SymmetricPropertyGraph, SchSymmetricPropertyGraph,
   ReflexiveEdgePropertyGraph, SchReflexivePropertyGraph,
   gprops, vprops, eprops, get_gprop, get_vprop, get_eprop,
-  set_gprop!, set_vprop!, set_eprop!, set_gprops!, set_vprops!, set_eprops!
+  set_gprop!, set_vprop!, set_eprop!, set_gprops!, set_vprops!, set_eprops!,
+  AbstractBipartitePropertyGraph, BipartitePropertyGraph, SchBipartitePropertyGraph
 
 using ACSets
 using ...Theories
@@ -11,6 +12,12 @@ using ..BasicGraphs
 import ..BasicGraphs: nv, ne, src, tgt, inv, edges, vertices,
   has_edge, has_vertex, add_edge!, add_edges!, add_vertex!, add_vertices!
 using ..BipartiteGraphs
+import ..BipartiteGraphs: nv₁, nv₂, vertices₁, vertices₂, ne₁₂, ne₂₁, edges₁₂, edges₂₁,
+  src₁, src₂, tgt₁, tgt₂,
+  add_vertex₁!, add_vertex₂!, add_vertices₁!, add_vertices₂!,
+  rem_vertex₁!, rem_vertex₂!, rem_vertices₁!, rem_vertices₂!,
+  add_edge₁₂!, add_edge₂₁!, add_edges₁₂!, add_edges₂₁!,
+  rem_edge₁₂!, rem_edge₂₁!, rem_edges₁₂!, rem_edges₂₁!
 
 # Data types
 ############
@@ -256,6 +263,36 @@ function add_edges!(g::SymmetricPropertyGraph{T}, srcs::AbstractVector{Int},
   add_parts!(g.graph, :E, 2n, src=[srcs; tgts], tgt=[tgts; srcs],
              inv=invs, eprops=eprops)
 end
+
+# Bipartite property graphs
+
+@inline nv₁(g::AbstractBipartitePropertyGraph) = nv₁(g.graph)
+@inline nv₂(g::AbstractBipartitePropertyGraph) = nv₂(g.graph)
+@inline vertices₁(g::AbstractBipartitePropertyGraph) = vertices₁(g.graph)
+@inline vertices₂(g::AbstractBipartitePropertyGraph) = vertices₂(g.graph)
+@inline nv(g::AbstractBipartitePropertyGraph) = nv(g.graph)
+@inline vertices(g::AbstractBipartitePropertyGraph) = vertices(g.graph)
+
+add_vertex₁!(g::AbstractBipartitePropertyGraph{T}; kw...) where T =
+  add_vertex₁!(g, Dict{Symbol,T}(kw...))
+add_vertex₁!(g::AbstractBipartitePropertyGraph{T}, d::Dict{Symbol,T}) where T =
+  add_part!(g.graph, :V₁, v₁props=d)
+
+add_vertex₂!(g::AbstractBipartitePropertyGraph{T}; kw...) where T =
+  add_vertex₂!(g, Dict{Symbol,T}(kw...))
+add_vertex₂!(g::AbstractBipartitePropertyGraph{T}, d::Dict{Symbol,T}) where T =
+  add_part!(g.graph, :V₂, v₂props=d)
+
+add_vertices₁!(g::AbstractBipartitePropertyGraph{T}, n::Int; kw...) where T =
+  add_parts!(g.graph, :V₁, n, v₁props=[Dict{Symbol,T}(kw...) for _=1:n])
+add_vertices₂!(g::AbstractBipartitePropertyGraph{T}, n::Int; kw...) where T =
+  add_parts!(g.graph, :V₂, n, v₂props=[Dict{Symbol,T}(kw...) for _=1:n])
+
+#  ne₁₂, ne₂₁, edges₁₂, edges₂₁,
+#   src₁, src₂, tgt₁, tgt₂,
+#   rem_vertex₁!, rem_vertex₂!, rem_vertices₁!, rem_vertices₂!,
+#   add_edge₁₂!, add_edge₂₁!, add_edges₁₂!, add_edges₂₁!,
+#   rem_edge₁₂!, rem_edge₂₁!, rem_edges₁₂!, rem_edges₂₁!
 
 # Constructors from graphs
 ##########################

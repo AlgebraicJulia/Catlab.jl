@@ -47,4 +47,21 @@ add_edge!(g, 1, 2, c="car")
 @test eprops(g, 1) == Dict(:c => "car")
 @test eprops(g, 1) === eprops(g, 2)
 
+# Bipartite property graphs
+###########################
+
+bg = BipartitePropertyGraph{String}()
+add_vertex₁!(bg, a="alphonse", b="elric")
+add_vertices₁!(bg, 1, a="ed", b="elric")
+add_vertex₂!(bg, a="trisha", b="elric")
+add_vertex₂!(bg, a="rurouni", b="kenshin")
+add_vertices₂!(bg, 1, a="van", b="hohenheim")
+
+@test nv₁(bg) == 2
+@test nv₂(bg) == 3
+@test nv(bg) == (2,3)
+@test vertices₁(bg) == 1:2
+@test vertices₂(bg) == 1:3
+@test vertices(bg) == (vertices₁(bg), vertices₂(bg))
+
 end
