@@ -35,6 +35,7 @@ Graphviz_jll = "3c863552-8265-54e4-a6dc-903eb78fde85"
 MetaGraphs = "626554b9-1ddb-594c-aa3c-2596fe9399a5"
 SCS = "c946c3f1-0d1f-5ce8-9dea-7daa1f7e2d13"
 TikzPictures = "37f6aa50-8035-52d0-81c2-5a1d08754b2d"
+nauty_jll = "55c6dc9b-343a-50ca-8ff2-b71adb3733d5"
 
 [extensions]
 CatlabConvexExt = "Convex"
@@ -42,6 +43,7 @@ CatlabDataFramesExt = "DataFrames"
 CatlabGraphsExt = "Graphs"
 CatlabGraphvizExt = "Graphviz_jll"
 CatlabMetaGraphsExt = "MetaGraphs"
+CatlabNautyExt = "nauty_jll"
 CatlabSCSExt = "SCS"
 CatlabTikzPicturesExt = "TikzPictures"
 

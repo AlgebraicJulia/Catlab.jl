@@ -25,7 +25,7 @@ using ACSets
 using GATlab
 using ...Theories, ...Graphs, ..FinCats
 import AlgebraicInterfaces: ob, hom, dom, codom
-import ..FinCats: FreeCatGraph, FinDomFunctor, collect_ob, collect_hom
+import ..FinCats: FreeCatGraph, FinDomFunctor, collect_ob, collect_hom, force
 
 # Diagram interface
 ###################
@@ -161,6 +161,8 @@ Base.iterate(span::Multispan, args...) = iterate(span.legs, args...)
 Base.eltype(span::Multispan) = eltype(span.legs)
 Base.length(span::Multispan) = length(span.legs)
 
+force(span::Multispan) = Multispan(apex(span), force.(legs(span)))
+
 """ Multicospan of morphisms in a category.
 
 A multicospan is like a [`Cospan`](@ref) except that it may have a number of
@@ -202,6 +204,8 @@ cone_objects(cospan::Multicospan) = feet(cospan)
 Base.iterate(cospan::Multicospan, args...) = iterate(cospan.legs, args...)
 Base.eltype(cospan::Multicospan) = eltype(cospan.legs)
 Base.length(cospan::Multicospan) = length(cospan.legs)
+
+force(span::Multicospan) = Multicospan(apex(span), force.(legs(span)))
 
 """ Bundle together legs of a multi(co)span.
 

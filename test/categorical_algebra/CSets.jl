@@ -3,6 +3,8 @@ using Test
 
 using Catlab.Theories, Catlab.Graphs, Catlab.CategoricalAlgebra
 
+
+
 @present SchDDS(FreeSchema) begin
   X::Ob
   Φ::Hom(X,X)
@@ -796,4 +798,36 @@ rem_part!(p3, :E, 3)
 rem_part!(p3, :V, 4)
 @test !in_bounds(f)
 
+
+# Test nauty interface
+######################
+
+if !Sys.iswindows
+  using nauty_jll
+
+  # G1 = 3-cycle, G2 = 3-cycle with extra vertex
+  G1 = @acset Graph begin V=3; E=3; src=[1,2,3]; tgt=[2,3,1] end;
+  G1′ = @acset Graph begin V=3; E=3; src=[3,2,1]; tgt=[2,1,3] end;
+  G2 = @acset Graph begin V=4; E=3; src=[2,3,4]; tgt=[3,4,2] end;
+  G2′ = @acset Graph begin V=4; E=3; src=[1,2,3]; tgt=[2,3,1] end;
+  h,h′ = call_nauty.(homomorphism.([G1,G1′],[G2,G2′]));
+  @test canon(h)  == canon(h′)
+  
+  # Test pullback up to iso
+  G = @acset Graph begin V=3; E=3; src=[1,1,2]; tgt=[1,2,2] end
+  f = homomorphism(path_graph(Graph, 3), G; initial=(E=[1,2],))
+  g = homomorphism(path_graph(Graph, 2), G; initial=(E=[2],))
+  eq = pullback(f,g);
+  canon_eq = canon(call_nauty(cone(eq))) |> force
+
+  bkwd_path_3 = @acset Graph begin V=3; E=2; src=[3,2]; tgt=[2,1] end
+  bkwd_path_2 = @acset Graph begin V=2; E=1; src=2; tgt=1 end
+  bkwd_apex = @acset Graph begin V=3; E=1; src=1; tgt=3 end
+  L = homomorphisms(bkwd_apex, bkwd_path_3; monic=true, initial=(E=[2],)) |> only
+  R = homomorphisms(bkwd_apex, bkwd_path_2; initial=(V=[2,2,1],)) |> only
+  expected = canon(call_nauty(Span(L,R)))
+  @test expected == canon_eq
+
 end
+
+end # module
