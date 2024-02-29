@@ -10,6 +10,7 @@ using ...Theories
 using ..BasicGraphs
 import ..BasicGraphs: nv, ne, src, tgt, inv, edges, vertices,
   has_edge, has_vertex, add_edge!, add_edges!, add_vertex!, add_vertices!
+using ..BipartiteGraphs
 
 # Data types
 ############
@@ -96,6 +97,51 @@ end
 @abstract_acset_type AbstractReflexiveEdgePropertyGraph <: HasGraph
 @acset_type ReflexiveEdgePropertyGraph(SchReflexiveEdgePropertyGraph, index=[:src,:tgt]) <:
   AbstractReflexiveEdgePropertyGraph
+
+# bipartite property graph
+
+# the design behind the standard property graphs is to have a presentation and acset type
+# for the graph itself
+# a struct then wraps that along with another dict for graph level attributes
+
+""" Abstract type for bipartite graph with properties.
+
+Concrete types are [`BipartitePropertyGraph`](@ref).
+"""
+abstract type AbstractBipartitePropertyGraph{T} end
+
+@present SchBipartitePropertyGraph <: SchBipartiteGraph begin
+  Props::AttrType
+  v₁props::Attr(V₁,Props)
+  v₂props::Attr(V₂,Props)
+  e₁₂props::Attr(E₁₂,Props)
+  e₂₁props::Attr(E₂₁,Props)
+end
+
+@abstract_acset_type __AbstractBipartitePropertyGraph <: HasBipartiteGraph
+
+const _AbstractBipartitePropertyGraph{T} = __AbstractBipartitePropertyGraph{S, Tuple{Dict{Symbol,T}}} where {S}
+
+@acset_type __BipartitePropertyGraph(SchBipartitePropertyGraph, index=[:src₁, :src₂, :tgt₁, :tgt₂]) <: __AbstractBipartitePropertyGraph
+
+const _BipartitePropertyGraph{T} = __BipartitePropertyGraph{Dict{Symbol,T}}
+
+""" Bipartite graph with properties.
+
+"Property graphs" are graphs with arbitrary named properties on the graph,
+vertices, and edges. They are intended for applications with a large number of
+ad-hoc properties. If you have a small number of known properties, it is better
+and more efficient to create a specialized C-set type using `@acset_type`.
+
+See also: [`SymmetricPropertyGraph`](@ref).
+"""
+struct BipartitePropertyGraph{T,G<:_AbstractBipartitePropertyGraph{T}} <: AbstractBipartitePropertyGraph{T}
+  graph::G
+  gprops::Dict{Symbol,T}
+end
+
+BipartitePropertyGraph{T,G}(; kw...) where {T,G<:_AbstractBipartitePropertyGraph{T}} = BipartitePropertyGraph(G(), Dict{Symbol,T}(kw...))
+BipartitePropertyGraph{T}(; kw...) where T = BipartitePropertyGraph{T,_BipartitePropertyGraph{T}}(; kw...)
 
 # Accessors and mutators
 ########################
