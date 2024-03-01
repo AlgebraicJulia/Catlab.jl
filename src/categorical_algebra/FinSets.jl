@@ -4,7 +4,7 @@ module FinSets
 export FinSet, FinFunction, FinDomFunction, TabularSet, TabularLimit,
   force, is_indexed, preimage, VarFunction, LooseVarFunction,
   JoinAlgorithm, SmartJoin, NestedLoopJoin, SortMergeJoin, HashJoin,
-  SubFinSet, SubOpBoolean, is_monic, is_epic
+  SubFinSet, SubOpBoolean, is_monic, is_epic, FinBijection
 
 using StructEquality
 using DataStructures: OrderedDict, IntDisjointSets, union!, find_root!
@@ -26,7 +26,8 @@ import ..FinCats: force, ob_generators, hom_generators, ob_generator,
 using ..FinCats: dicttype
 import ..Limits: limit, colimit, universal, BipartiteColimit
 import ..Subobjects: Subobject
-using ..Sets: IdentityFunction, SetFunctionCallable
+using ..Sets: IdentityFunction, SetFunctionCallable, AbsBijectionWrapper,
+  BijectionBimap, BijectionWrapper, unwrap
 
 # Finite sets
 #############
@@ -55,7 +56,8 @@ FinSet(n::Int) = FinSetInt(n)
 
 Base.iterate(set::FinSetInt, args...) = iterate(1:set.n, args...)
 Base.length(set::FinSetInt) = set.n
-Base.in(set::FinSetInt, elem) = in(elem, 1:set.n)
+# Code review note: the arguments seem to have been placed backwards originally
+Base.in(elem, set::FinSetInt) = in(elem, 1:set.n)
 
 Base.show(io::IO, set::FinSetInt) = print(io, "FinSet($(set.n))")
 
@@ -293,11 +295,26 @@ Base.collect(f::SetFunction) = force(f).func
 
 """ Function in **FinSet** represented explicitly by a vector.
 """
-const FinFunctionVector{S,T,V<:AbstractVector{T}} =
-  FinDomFunctionVector{T,V,<:FinSet{S,T}}
+# Code review note: This type declaration is regarded by Julia
+# as equal (i.e. ==) to the extant declaration. I feel that giving
+# `FinFunctionVector` an explicit parameter to represent the type of the
+# codomain improves the self-documentation aspect of the code.
+const FinFunctionVector{S,T,V<:AbstractVector{T},Codom<:FinSet{S,T}} =
+  FinDomFunctionVector{T,V,Codom}
 
-Base.show(io::IO, f::FinFunctionVector) =
+# Code review note: showing just the length of the codomain is not ideal when
+# the codomain is not a `FinSetInt`
+Base.show(io::IO, f::FinFunctionVector{Int}) =
   print(io, "FinFunction($(f.func), $(length(dom(f))), $(length(codom(f))))")
+
+function Base.show(io::IO, f::F) where {F<:FinFunctionVector}
+  Sets.show_type_constructor(io, F)
+  print(io, "(")
+  show(io, f.func)
+  print(io, ", $(length(dom(f))), ")
+  Sets.show_domains(io, f, domain=false)
+  print(io, ")")
+end
 
 Sets.do_compose(f::FinFunctionVector, g::FinDomFunctionVector) =
   FinDomFunctionVector(g.func[f.func], codom(g))
@@ -451,12 +468,16 @@ is_indexed(f::SetFunction) = false
 is_indexed(f::IdentityFunction) = true
 is_indexed(f::IndexedFinDomFunctionVector) = true
 is_indexed(f::FinDomFunctionVector{T,<:AbstractRange{T}}) where T = true
+is_indexed(f::BijectionWrapper) = is_indexed(f.func)
+is_indexed(f::BijectionBimap) = true
 
 """ The preimage (inverse image) of the value y in the codomain.
 """
 preimage(f::IdentityFunction, y) = SVector(y)
 preimage(f::FinDomFunction, y) = [ x for x in dom(f) if f(x) == y ]
 preimage(f::IndexedFinDomFunctionVector, y) = get_preimage_index(f.index, y)
+preimage(f::BijectionWrapper, y) = preimage(unwrap(f), y)
+preimage(f::BijectionBimap, y) = f.inv(y)
 
 @inline get_preimage_index(index::AbstractDict, y) = get(index, y, 1:0)
 @inline get_preimage_index(index::AbstractVector, y) = index[y]
@@ -548,8 +569,10 @@ force(f::FinDomFunctionDict) = f
 
 """ Function in **FinSet** represented by a dictionary.
 """
-const FinFunctionDict{K,D<:AbstractDict{K},Codom<:FinSet} =
+const FinFunctionDict{K,D<:AbstractDict{K},S,Codom<:FinSet{S}} =
   FinDomFunctionDict{K,D,Codom}
+# Code review note: The additional parameter `S` allows `FinFunctionDict` to be
+# recognized as a subtype of `FinFunction`
 
 FinFunctionDict(d::AbstractDict, codom::FinSet) = FinDomFunctionDict(d, codom)
 FinFunctionDict(d::AbstractDict{K,V}) where {K,V} =
@@ -558,6 +581,164 @@ FinFunctionDict(d::AbstractDict{K,V}) where {K,V} =
 Sets.do_compose(f::FinFunctionDict{K,D}, g::FinDomFunctionDict) where {K,D} =
   FinDomFunctionDict(dicttype(D)(x => g.func[y] for (x,y) in pairs(f.func)),
                      codom(g))
+
+# Category of finite sets and bijections
+########################################
+
+""" Bijection between finite sets.
+"""
+const FinBijection{S, S′, Dom <: FinSet{S}, Codom <: FinSet{S′}} =
+  Bijection{Dom, Codom}
+
+FinBijection(f, args...) = FinBijection(f, (FinSet(a) for a in args)...)
+FinBijection(f::Function, dom::FinSet, codom::FinSet) =
+  BijectionWrapper(SetFunction(f, dom, codom))
+FinBijection(f::FinFunction) = BijectionWrapper(f)
+FinBijection(f::FinFunction, g::FinFunction) = BijectionBimap(f, g)
+FinBijection(f::AbstractVector) =
+  BijectionWrapper(FinDomFunction(f, FinSet(Set(f))))
+FinBijection(f::AbstractVector, a, args...) =
+  BijectionWrapper(FinDomFunction(f, FinSet(a), args...))
+FinBijection(f::AbstractDict, args...) =
+  BijectionWrapper(FinFunction(f, args...))
+
+function FinBijection(f::Union{AbstractDict{K,Int},AbstractVector{Int}}) where K
+  minandmax = (p, n) -> (Int(min(p[1], n)), Int(max(p[2], n)))
+  minval, maxval = reduce(minandmax, values(f), init=(typemax(Int), typemin(Int)))
+  len = length(f)
+  cod = minval == 1 && maxval == len ? FinSet(len) : Set(v)
+  BijectionWrapper(FinFunction(f, cod))
+end
+
+Sets.show_type_constructor(io::IO, ::Type{<:FinBijection}) =
+  print(io, "FinBijection")
+
+""" Abstract (alias) type for bijections on finite sets which are implemented
+by wrapping another `FinFunction` object.
+"""
+const FinBijectionWrap{S,S′,Dom<:FinSet{S},Codom<:FinSet{S′},
+  F<:FinFunction{S,S′,Dom,Codom}} = AbsBijectionWrapper{Dom, Codom, F}
+
+force(f::FinBijectionWrap) = FinBijection(force(unwrap(f)))
+
+""" Alias for all `FinBijection`s that wrap `Vector`s.
+"""
+const FinBijectionVector = Union{
+  AbsBijectionWrapper{
+    FinSetInt, Codom, FinFunctionVector{S,T,V,Codom}
+  } where {S, T, V<:AbstractVector{T}, Codom<:FinSet{S,T}},
+  AbsBijectionWrapper{
+    FinSetInt, FinSetInt, IndexedFinFunctionVector{V,Index}
+  } where {V<:AbstractVector{Int}, Index},
+}
+
+force(f::FinBijectionVector) = f
+
+Sets.do_compose(f::FinBijectionVector, g::FinBijectionVector) =
+  BijectionWrapper(Sets.do_compose(unwrap(f), unwrap(g)))
+
+""" Alias for all `FinBijection`s that wrap `Dict`s.
+"""
+const FinBijectionDict{K,D<:AbstractDict{K},S,Codom<:FinSet{S}} =
+  AbsBijectionWrapper{
+    FinSetCollection{Base.KeySet{K,D}}, Codom, FinFunctionDict{K,D,S,Codom}
+  } where {K, D<:AbstractDict{K}, S, Codom<:FinSet{S}}
+
+force(f::FinBijectionDict) = f
+
+Sets.do_compose(f::FinBijectionDict, g::FinBijectionDict) =
+  BijectionWrapper(Sets.do_compose(unwrap(f), unwrap(g)))
+
+function Sets.do_inv(f::FinBijection{S,S′,Dom,Codom}) where
+    {S,S′,T,T′,Dom<:FinSet{S,T},Codom<:FinSet{S′,T′}}
+  domain, cod = dom(f), codom(f)
+  func = S′ == Int ? Vector{T}(undef, length(cod)) : Dict{T′,T}()
+  for x in domain
+    func[f(x)] = x
+  end
+  BijectionWrapper(FinDomFunction(func, domain))
+end
+
+""" Finite bijection whose form in cycle notation is known.
+
+Computing a bijection's cycles from its function requires the same computations
+as computing the inverse. Furthermore, the inverse of a function can be computed
+from its cycles just as easily as the function itself. This type is designed
+with these facts in mind.
+"""
+struct FinBijectionCycles{S,T,Dom<:FinSet{S,T},F<:FinFunction{S,S,Dom,Dom},
+    G<:FinFunction{S,S,Dom,Dom}} <: AbsBijectionWrapper{Dom,Dom,F}
+  func::BijectionBimap{Dom,Dom,F,G}
+  cycles::Vector{Vector{T}}
+end
+
+function FinBijectionCycles(f::FinBijection{S,S,Dom,Dom}) where
+    {S,T,Dom<:FinSet{S,T}}
+  domain = dom(f)
+  cycles = Vector{T}[]
+  if S == Int
+    invfunc, used = Vector{Int}(undef, length(domain)), falses(length(domain))
+  else
+    invfunc, used = Dict{T,T}(), Dict(k=>false for k in domain)
+  end
+  # Developer's note: this loop recapitulates the approach of the extant
+  # function `Permutations.cycles`, with the difference that it ignores
+  # trivial cycles and interleaves the computation of the inverse
+  for i in domain
+    if used[i]; continue end
+    used[i] = true
+    j = f(i)
+    invfunc[j] = i
+    if j != i
+      cycle = [i]
+      while true
+        push!(cycle, j)
+        used[j] = true
+        k = j
+        j = f(j)
+        invfunc[j] = k
+        if j == i; break end
+      end
+      push!(cycles, cycle)
+    end
+  end
+  bimap = BijectionBimap(f, FinDomFunction(invfunc, dom(f)))
+  FinBijectionCycles(bimap, cycles)
+end
+
+function FinBijectionCycles(f::AbstractVector{<:AbstractVector{T}},
+    dom::FinSet{S,T}) where {S,T}
+  domlen = length(dom)
+  if S == Int
+    func, invfunc = Vector{Int}(undef, domlen), Vector{Int}(undef, domlen)
+  else
+    func, invfunc = Dict{T,T}(), Dict{T,T}()
+  end
+  lengths = map(length, f)
+  for (i, cycle) in enumerate(f)
+    len = lengths[i]
+    lenmod = n -> mod(n, len)
+    for (j, x) in enumerate(cycle)
+      func[x], invfunc[x] = cycle[lenmod(j+1)], cycle[lenmod(j-1)]
+    end
+  end
+  bimap = FinBijection(FinDomFunction(func, dom), FinDomFunction(invfunc, dom))
+  FinBijectionCycles(bimap, f)
+end
+
+Base.:(==)(f::FinBijectionCycles, g::FinBijectionCycles) = f.func == g.func
+Base.hash(f::FinBijectionCycles) = hash(f.func)
+
+Sets.compose_inv(f::FinBijectionCycles, g::SetFunction) = compose_inv(f.func, g)
+Sets.compose_inv(f::SetFunction, g::FinBijectionCycles) = compose_inv(f, g.func)
+Sets.compose_inv(f::FinBijectionCycles, g::FinBijectionCycles) =
+  compose_inv(f.func, g.func)
+
+Base.inv(f::FinBijectionCycles) =
+  FinBijectionCycles(inv(f.func), [reverse(c) for c in f.cycles])
+
+is_indexed(f::FinBijectionCycles) = true
+preimage(f::FinBijectionCycles, y) = preimage(f.func, y)
 
 # Limits
 ########

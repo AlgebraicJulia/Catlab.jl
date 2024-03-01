@@ -181,6 +181,43 @@ h = FinDomFunction(strfunc,strings,index=true,known_correct=true) #known_correct
 @test_throws ErrorException m = FinFunction(badfunc,three,four,index=true)
 @test_throws BoundsError n = FinFunction(badfunc,three,four,index=true,known_correct=true) 
 
+# Finite Bijections
+###################
+
+f = FinBijection(['a', 'b', 'c'])
+@test dom(f) == FinSet(3)
+@test codom(f) == FinSet(Set(['a', 'b', 'c']))
+@test f(2) == 'b'
+@test Sets.unwrap(f) == FinDomFunction(['a', 'b', 'c'], FinSet(Set(['a', 'b', 'c'])))
+@test startswith(sshow(f), "FinBijection(['a', 'b', 'c'], 3, FinSet")
+
+g = FinBijection(Dict('a'=>2, 'b'=>1, 'c'=>3), 3)
+@test dom(g) == FinSet(Set(['a', 'b', 'c']))
+@test codom(g) == FinSet(3)
+@test g('a') == 2
+@test Sets.unwrap(g) == FinFunction(Dict('a'=>2, 'b'=>1, 'c'=>3), 3)
+@test startswith(sshow(g), "FinBijection(Dict(") && endswith(sshow(g), ", FinSet(3))")
+
+# Inverses
+inv_f = inv(f)
+@test dom(inv_f) == FinSet(Set(['a', 'b', 'c']))
+@test codom(inv_f) == FinSet(3)
+@test inv_f('b') == 2
+
+inv_g = inv(g)
+@test dom(inv_g) == FinSet(3)
+@test codom(inv_g) == FinSet(Set(['a', 'b', 'c']))
+@test inv_g(3) == 'c'
+
+# Composition
+@test compose(f, inv_f) == id(dom(f))
+@test inv(compose(f, g)) == compose(inv_g, inv_f)
+
+h = FinBijection([3, 1, 2])
+j = FinBijection([1, 3, 2])
+@test compose(compose(h, j), inv(compose(h, j))) == FinBijection([1, 2, 3])
+
+k = FinBijection(FinBijection(Dict('a'=>1, 'b'=>2, 'c'=>3)), f)
 
 # Limits
 ########
