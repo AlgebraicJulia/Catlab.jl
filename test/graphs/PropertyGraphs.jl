@@ -1,7 +1,7 @@
 module TestPropertyGraphs
 using Test
 
-using Catlab.Graphs.BasicGraphs, Catlab.Graphs.PropertyGraphs
+using Catlab.Graphs.BasicGraphs, Catlab.Graphs.PropertyGraphs, Catlab.Graphs.BipartiteGraphs
 
 # Property graphs
 #################
