@@ -4,7 +4,10 @@ export AbstractPropertyGraph, PropertyGraph, SchPropertyGraph,
   ReflexiveEdgePropertyGraph, SchReflexivePropertyGraph,
   gprops, vprops, eprops, get_gprop, get_vprop, get_eprop,
   set_gprop!, set_vprop!, set_eprop!, set_gprops!, set_vprops!, set_eprops!,
-  AbstractBipartitePropertyGraph, BipartitePropertyGraph, SchBipartitePropertyGraph
+  AbstractBipartitePropertyGraph, BipartitePropertyGraph, SchBipartitePropertyGraph,
+  v₁props, v₂props, e₁₂props, e₂₁props, get_v₁prop, get_v₂prop,
+  get_e₁₂prop, get_e₂₁prop, set_v₁prop!, set_v₂prop!, set_e₁₂prop!, set_e₂₁prop!,
+  set_v₁props!, set_v₂props!, set_e₁₂props!, set_e₂₁props!
 
 using ACSets
 using ...Theories
@@ -329,67 +332,104 @@ add_edges₂₁!(g::AbstractBipartitePropertyGraph{T}, srcs::AbstractVector{Int}
   add_edges₂₁!(g.graph, srcs, tgts, e₂₁props=[Dict{Symbol,T}(kw...) for _=1:length(srcs)])
 
 # Property graph interface
+
+""" Graph-level properties of a bipartite property graph.
+"""
 gprops(g::AbstractBipartitePropertyGraph) = g.gprops
 
-# # property graph specific interface
-# gprops, vprops, eprops, get_gprop, get_vprop, get_eprop,
-# set_gprop!, set_vprop!, set_eprop!, set_gprops!, set_vprops!, set_eprops!
+""" Get graph-level property of a bipartite property graph.
+"""
+get_gprop(g::AbstractBipartitePropertyGraph, key::Symbol) = gprops(g)[key]
 
+""" Set graph-level property in a bipartite property graph.
+"""
+set_gprop!(g::AbstractBipartitePropertyGraph, key::Symbol, value) =
+  (gprops(g)[key] = value)
 
-# """ Properties of vertex in a property graph.
-# """
-# vprops(g::AbstractPropertyGraph, v) = subpart(g.graph, v, :vprops)
+""" Set multiple graph-level properties in a property graph.
+"""
+set_gprops!(g::AbstractBipartitePropertyGraph; kw...) = merge!(gprops(g), kw)
+set_gprops!(g::AbstractBipartitePropertyGraph, d::AbstractDict) = merge!(gprops(g), d)
 
-# """ Properties of edge in a property graph.
-# """
-# eprops(g::AbstractPropertyGraph, e) = subpart(g.graph, e, :eprops)
+""" Properties of vertex of type V₁ in a bipartite property graph.
+"""
+v₁props(g::AbstractBipartitePropertyGraph, v) = subpart(g.graph, v, :v₁props) 
 
-# """ Get graph-level property of a property graph.
-# """
-# get_gprop(g::AbstractPropertyGraph, key::Symbol) = gprops(g)[key]
+""" Properties of vertex of type V₂ in a bipartite property graph.
+"""
+v₂props(g::AbstractBipartitePropertyGraph, v) = subpart(g.graph, v, :v₂props) 
 
-# """ Get property of vertex or vertices in a property graph.
-# """
-# get_vprop(g::AbstractPropertyGraph, v, key::Symbol) =
-#   broadcast(v) do v; vprops(g,v)[key] end
+""" Properties of edge from V₁ to V₂ in a bipartite property graph.
+"""
+e₁₂props(g::AbstractBipartitePropertyGraph, v) = subpart(g.graph, v, :e₁₂props) 
 
-# """ Get property of edge or edges in a property graph.
-# """
-# get_eprop(g::AbstractPropertyGraph, e, key::Symbol) =
-#   broadcast(e) do e; eprops(g,e)[key] end
+""" Properties of edge from V₂ to V₁ in a bipartite property graph.
+"""
+e₂₁props(g::AbstractBipartitePropertyGraph, v) = subpart(g.graph, v, :e₂₁props) 
 
-# """ Set graph-level property in a property graph.
-# """
-# set_gprop!(g::AbstractPropertyGraph, key::Symbol, value) =
-#   (gprops(g)[key] = value)
+""" Get property of vertex or vertices of type V₁ in a bipartite property graph.
+"""
+get_v₁prop(g::AbstractBipartitePropertyGraph, v, key::Symbol) =
+  broadcast(v) do v; v₁props(g,v)[key] end
 
-# """ Set property of vertex or vertices in a property graph.
-# """
-# set_vprop!(g::AbstractPropertyGraph, v, key::Symbol, value) =
-#   broadcast(v, value) do v, value; vprops(g,v)[key] = value end
+""" Get property of vertex or vertices of type V₂ in a bipartite property graph.
+"""
+get_v₂prop(g::AbstractBipartitePropertyGraph, v, key::Symbol) =
+  broadcast(v) do v; v₂props(g,v)[key] end
 
-# """ Set property of edge or edges in a property graph.
-# """
-# set_eprop!(g::AbstractPropertyGraph, e, key::Symbol, value) =
-#   broadcast(e, value) do e, value; eprops(g,e)[key] = value end
+""" Get property of edge or edges from V₁ to V₂ in a bipartite property graph.
+"""
+get_e₁₂prop(g::AbstractBipartitePropertyGraph, e, key::Symbol) =
+  broadcast(e) do e; e₁₂props(g,e)[key] end
 
-# """ Set multiple graph-level properties in a property graph.
-# """
-# set_gprops!(g::AbstractPropertyGraph; kw...) = merge!(gprops(g), kw)
-# set_gprops!(g::AbstractPropertyGraph, d::AbstractDict) = merge!(gprops(g), d)
+""" Get property of edge or edges from V₂ to V₁ in a bipartite property graph.
+"""
+get_e₂₁prop(g::AbstractBipartitePropertyGraph, e, key::Symbol) =
+  broadcast(e) do e; e₂₁props(g,e)[key] end
 
-# """ Set multiple properties of a vertex in a property graph.
-# """
-# set_vprops!(g::AbstractPropertyGraph, v::Int; kw...) = merge!(vprops(g,v), kw)
-# set_vprops!(g::AbstractPropertyGraph, v::Int, d::AbstractDict) =
-#   merge!(vprops(g,v), d)
+""" Set property of vertex or vertices of type V₁ in a bipartite property graph.
+"""
+set_v₁prop!(g::AbstractBipartitePropertyGraph, v, key::Symbol, value) =
+  broadcast(v, value) do v, value; v₁props(g,v)[key] = value end
 
-# """ Set multiple properties of an edge in a property graph.
-# """
-# set_eprops!(g::AbstractPropertyGraph, e::Int; kw...) = merge!(eprops(g,e), kw)
-# set_eprops!(g::AbstractPropertyGraph, e::Int, d::AbstractDict) =
-#   merge!(eprops(g,e), d)
+""" Set property of vertex or vertices of type V₂ in a bipartite property graph.
+"""
+set_v₂prop!(g::AbstractBipartitePropertyGraph, v, key::Symbol, value) =
+  broadcast(v, value) do v, value; v₂props(g,v)[key] = value end
 
+""" Set property of edge or edges from V₁ to V₂ in a bipartite property graph.
+"""
+set_e₁₂prop!(g::AbstractBipartitePropertyGraph, e, key::Symbol, value) =
+  broadcast(e, value) do e, value; e₁₂props(g,e)[key] = value end
+
+""" Set property of edge or edges from V₂ to V₁ in a bipartite property graph.
+"""
+set_e₂₁prop!(g::AbstractBipartitePropertyGraph, e, key::Symbol, value) =
+  broadcast(e, value) do e, value; e₂₁props(g,e)[key] = value end
+
+""" Set multiple properties of a vertex of type V₁ in a bipartite property graph.
+"""
+set_v₁props!(g::AbstractBipartitePropertyGraph, v::Int; kw...) = merge!(v₁props(g,v), kw)
+set_v₁props!(g::AbstractBipartitePropertyGraph, v::Int, d::AbstractDict) =
+  merge!(v₁props(g,v), d)
+
+""" Set multiple properties of a vertex of type V₂ in a bipartite property graph.
+"""
+set_v₂props!(g::AbstractBipartitePropertyGraph, v::Int; kw...) = merge!(v₂props(g,v), kw)
+set_v₂props!(g::AbstractBipartitePropertyGraph, v::Int, d::AbstractDict) =
+  merge!(v₂props(g,v), d)
+
+""" Set multiple properties of an edge from V₁ to V₂ in a bipartite property graph.
+"""
+set_e₁₂props!(g::AbstractBipartitePropertyGraph, e::Int; kw...) = merge!(e₁₂props(g,e), kw)
+set_e₁₂props!(g::AbstractBipartitePropertyGraph, e::Int, d::AbstractDict) =
+  merge!(e₁₂props(g,e), d)
+
+""" Set multiple properties of an edge from V₂ to V₁ in a bipartite property graph.
+"""
+set_e₂₁props!(g::AbstractBipartitePropertyGraph, e::Int; kw...) = merge!(e₂₁props(g,e), kw)
+set_e₂₁props!(g::AbstractBipartitePropertyGraph, e::Int, d::AbstractDict) =
+  merge!(e₂₁props(g,e), d)
 
 # Constructors from graphs
 ##########################
@@ -429,5 +469,9 @@ end
 
 SymmetricPropertyGraph{T}(g::HasGraph; gprops...) where T =
   SymmetricPropertyGraph{T}(g, v->Dict(), e->Dict(); gprops...)
+
+# BipartitePropertyGraph needs 2 constructors,
+# 1. from HasBipartiteVertices
+# 2. from HasBipartiteGraph
 
 end

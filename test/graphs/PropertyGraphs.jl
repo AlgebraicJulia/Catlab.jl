@@ -58,8 +58,9 @@ add_vertex₂!(bg, a="trisha", b="elric")
 add_vertex₂!(bg, a="rurouni", b="kenshin")
 add_vertices₂!(bg, 1, a="van", b="hohenheim")
 
-@test_throws Exception add_edges₁₂!(bg, [1,1], [1,3, 5], rel="childof")
+@test_throws Exception add_edges₁₂!(bg, [1,1], [1,3,5], rel="childof")
 add_edges₁₂!(bg, [1,1], [1,3], rel="childof")
+@test_throws Exception add_edges₂₁!(bg, [1,3], [1,1,5], rel="parentof")
 add_edges₂₁!(bg, [1,3], [1,1], rel="parentof")
 add_edge₂₁!(bg, 3, 2, rel="parentof")
 
@@ -73,11 +74,52 @@ add_edge₂₁!(bg, 3, 2, rel="parentof")
 @test edges(bg) == (1:2, 1:3)
 
 e = add_edge₁₂!(bg, 1, 2, a="mistake")
-rem_edges₁₂!(bg, e)
 rem_edge₁₂!(bg, e)
+@test e ∉ edges₁₂(bg)
+e = add_edges₁₂!(bg, [1,1], [2,2], a="mistake")
+rem_edges₁₂!(bg, e)
+@test e ∉ edges₁₂(bg)
 
-# test we can add verticies and edges without any properties 
-# test failure cases, like adding multiple edges with len src != len tgt
-# be sure to test removing vertices/edges, might have bugs
+e = add_edge₂₁!(bg, 1, 2, a="mistake")
+rem_edge₂₁!(bg, e)
+@test e ∉ edges₂₁(bg)
+e = add_edges₂₁!(bg, [1,1], [2,2], a="mistake")
+rem_edges₂₁!(bg, e)
+@test e ∉ edges₂₁(bg)
+@test edges(bg) == (1:2, 1:3)
+
+@test gprops(bg) isa Dict
+@test v₁props(bg, 1) == Dict(:a=>"alphonse", :b=>"elric")
+@test v₂props(bg, 1) == Dict(:a=>"trisha", :b=>"elric")
+@test e₁₂props(bg, 1) == Dict(:rel=>"childof")
+@test e₂₁props(bg, 1) == Dict(:rel=>"parentof")
+@test get_v₁prop(bg, 1, :a) == "alphonse"
+@test get_v₂prop(bg, 1, :a) == "trisha"
+@test get_e₁₂prop(bg, 1, :rel) == "childof"
+@test get_e₂₁prop(bg, 1, :rel) == "parentof"
+
+set_v₁prop!(bg, 4, :f, "rei1")
+@test get_v₁prop(bg, 4, :f) == "rei1"
+
+set_v₂prop!(bg, 2, :a, "himura")
+@test get_v₂prop(bg, 2, :a) == "himura"
+
+set_e₁₂prop!(bg, 1, :rel, "childof1")
+@test get_e₁₂prop(bg, 1, :rel) == "childof1"
+
+set_e₂₁prop!(bg, 1, :rel, "parentof1")
+@test get_e₂₁prop(bg, 1, :rel) == "parentof1"
+
+set_v₁prop!(bg, 3:4, :f, "rei")
+get_v₁prop(bg, 3:4, :f) == ["rei", "rei"]
+
+set_v₂prop!(bg, 2, :a, "kenshin")
+get_v₂prop(bg, 2, :a) == "kenshin"
+
+set_e₁₂props!(bg, 1, rel="childof")
+@test get_e₁₂prop(bg, 1:2, :rel) == ["childof", "childof"]
+
+set_e₂₁props!(bg, 1, rel="parentof")
+@test get_e₂₁prop(bg, 1:3, :rel) == ["parentof", "parentof", "parentof"]
 
 end
