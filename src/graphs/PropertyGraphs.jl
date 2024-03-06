@@ -108,12 +108,6 @@ end
 @acset_type ReflexiveEdgePropertyGraph(SchReflexiveEdgePropertyGraph, index=[:src,:tgt]) <:
   AbstractReflexiveEdgePropertyGraph
 
-# bipartite property graph
-
-# the design behind the standard property graphs is to have a presentation and acset type
-# for the graph itself
-# a struct then wraps that along with another dict for graph level attributes
-
 """ Abstract type for bipartite graph with properties.
 
 Concrete types are [`BipartitePropertyGraph`](@ref).
