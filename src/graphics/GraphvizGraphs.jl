@@ -346,8 +346,8 @@ A simple default style is applied. For more control over the visual appearance,
 first convert the graph to a property graph, define the Graphviz attributes as
 needed, and finally convert the property graph to a Graphviz graph.
 """
-function to_graphviz(g::HasBipartiteVertices; kw...)
-  to_graphviz(to_graphviz_property_graph(g); kw...)
+function to_graphviz(g::HasBipartiteVertices; invis_edges::Bool=true, kw...)
+  to_graphviz(to_graphviz_property_graph(g; kw...); invis_edges)
 end
 
 function to_graphviz_property_graph(g::AbstractBipartiteGraph;

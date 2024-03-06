@@ -234,4 +234,21 @@ gv = to_graphviz(f, draw_codom=true)
 @test gv.directed
 @test length(stmts(gv, Graphviz.Subgraph)) == 2
 
+# Functions between finite sets
+###############################
+
+A = FinSet(4)
+B = FinSet(3)
+f = FinFunction([1,3,2,2], A, B)
+
+fv = to_graphviz(f, graph_attrs=Dict(:splines=>"false"))
+@test length(stmts(fv, Graphviz.Subgraph)) == 2
+fv1, fv2 = stmts(fv, Graphviz.Subgraph)
+
+@test length(stmts(fv1, Graphviz.Edge)) == length(A) - 1
+@test length(stmts(fv2, Graphviz.Edge)) == length(B) - 1
+@test length(stmts(fv, Graphviz.Edge)) == 4
+@test length(stmts(fv1, Graphviz.Node)) == length(A)
+@test length(stmts(fv2, Graphviz.Node)) == length(B)
+
 end
