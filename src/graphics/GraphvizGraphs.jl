@@ -340,6 +340,20 @@ const default_subgraph_edge_attrs = Dict(:color => "cornflowerblue")
 # Bipartite graphs
 ##################
 
+# new bipartite graphviz implementation:
+
+# the main thing that people will interact through
+# function to_graphviz(g::HasBipartiteVertices; kw...)
+#   to_graphviz(to_graphviz_property_graph(g; kw...))
+# end
+
+# the methods for undirected and bipartite 
+# to_graphviz_property_graph(g::AbstractUndirectedBipartiteGraph)
+# to_graphviz_property_graph(g::AbstractBipartiteGraph)
+
+# given a property graph return a graphviz one
+# function to_graphviz(g::AbstractBipartitePropertyGraph)::Graphviz.Graph end
+
 """ Visualize a bipartite graph using Graphviz.
 
 Works for both directed and undirected bipartite graphs. Both types of vertices
