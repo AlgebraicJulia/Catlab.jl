@@ -354,6 +354,114 @@ const default_subgraph_edge_attrs = Dict(:color => "cornflowerblue")
 # given a property graph return a graphviz one
 # function to_graphviz(g::AbstractBipartitePropertyGraph)::Graphviz.Graph end
 
+# function to_graphviz_property_graph(g::AbstractGraph;
+#   prog::AbstractString="dot", graph_attrs::AbstractDict=Dict(),
+#   node_attrs::AbstractDict=Dict(), edge_attrs::AbstractDict=Dict(),
+#   node_labels::Union{Symbol,Bool}=false, edge_labels::Union{Symbol,Bool}=false)
+# PropertyGraph{Any}(g, v -> node_label(g, node_labels, v),
+#                    e -> edge_label(g, edge_labels, e);
+#   prog = prog,
+#   graph = merge!(default_graph_attrs(prog), graph_attrs),
+#   node = merge!(default_node_attrs(node_labels), node_attrs),
+#   edge = merge!(default_edge_attrs(prog), edge_attrs),
+# )
+# end
+
+function to_graphviz_property_graph(g::AbstractBipartiteGraph;
+  prog::AbstractString="dot", graph_attrs::AbstractDict=Dict(),
+  node_attrs::AbstractDict=Dict(), edge_attrs::AbstractDict=Dict(),
+  node_labels::Union{Tuple{Symbol,Symbol},Bool}=false, edge_labels::Union{Tuple{Symbol,Symbol},Bool}=false)
+
+  node1_labels, node2_labels = node_labels isa Tuple ? node_labels : (node_labels, node_labels)
+  edge12_labels, edge21_labels = edge_labels isa Tuple ? edge_labels : (edge_labels, edge_labels)
+
+  BipartitePropertyGraph{Any}(g, v -> node_label(g, node1_labels, v), v -> node_label(g, node2_labels, v), 
+                              e -> edge_label(g, edge12_labels, e), e -> edge_label(g, edge21_labels, e);
+                              prog = prog,
+                              graph = merge!(default_graph_attrs(prog), graph_attrs),
+                              node = merge!(default_node_attrs(node_labels), node_attrs),
+                              edge = merge!(default_edge_attrs(prog), edge_attrs),
+                              ) 
+end
+
+function to_graphviz_property_graph(g::AbstractUndirectedBipartiteGraph;
+  prog::AbstractString="dot", graph_attrs::AbstractDict=Dict(),
+  node_attrs::AbstractDict=Dict(), edge_attrs::AbstractDict=Dict(),
+  node_labels::Union{Tuple{Symbol,Symbol},Bool}=false, edge_labels::Union{Symbol,Bool}=false)
+
+  node1_labels, node2_labels = node_labels isa Tuple ? node_labels : (node_labels, node_labels)
+
+  BipartitePropertyGraph{Any}(g, v -> node_label(g, node1_labels, v), v -> node_label(g, node2_labels, v), 
+                              e -> edge_label(g, edge_labels, e);
+                              prog = prog,
+                              graph = merge!(default_graph_attrs(prog), graph_attrs),
+                              node = merge!(default_node_attrs(node_labels), node_attrs),
+                              edge = merge!(default_edge_attrs(prog), edge_attrs),
+                              ) 
+end
+
+
+function to_graphviz(g::AbstractBipartitePropertyGraph; kw...)::Graphviz.Graph
+  
+  stmts, nodes1, nodes2 = bipartite_graphviz_nodes(g; kw...)
+
+  for e in edges₁₂(g)
+    attrs = merge!(Dict(:constraint => "false"), e₁₂props(g, e))
+    push!(stmts, Graphviz.Edge([nodes1[src₁(g,e)], nodes2[tgt₂(g,e)]], attrs))
+  end
+  for e in edges₂₁(g)
+    attrs = merge!(Dict(:constraint => "false"), e₂₁props(g, e))
+    push!(stmts, Graphviz.Edge([nodes2[src₂(g,e)], nodes1[tgt₁(g,e)]], attrs))
+  end
+
+  attrs = gprops(g)
+  Graphviz.Digraph(
+    "bipartite_graph", 
+    stmts, 
+    prog = get(attrs, :prog, "dot"),
+    graph_attrs = get(attrs, :graph, Dict()),
+    node_attrs = get(attrs, :node, Dict()),
+    edge_attrs = get(attrs, :edge, Dict())
+  )
+end
+
+function bipartite_graphviz_nodes(g::AbstractBipartitePropertyGraph; invis_edges::Bool=true)
+  V₁, V₂ = vertices₁(g), vertices₂(g)
+
+  # Vertices of type 1.
+  nodes1 = map(V₁) do v
+    Graphviz.Node("n1_$v", v₁props(g, v))
+  end
+  edges1 = Graphviz.Edge[]
+  if invis_edges
+    for (u, v) in zip(V₁[1:end-1], V₁[2:end])
+      push!(edges1, Graphviz.Edge("n1_$u", "n1_$v"; style="invis"))
+    end
+  end
+  cluster1 = Graphviz.Subgraph("cluster_nodes1", [nodes1; edges1];
+    graph_attrs=Graphviz.Attributes(:rank => "same"))
+
+  # Vertices of type 2.
+  nodes2 = map(V₂) do v
+    Graphviz.Node("n2_$v", v₂props(g, v))
+  end
+  edges2 = Graphviz.Edge[]
+  if invis_edges
+    for (u, v) in zip(V₂[1:end-1], V₂[2:end])
+      push!(edges2, Graphviz.Edge("n2_$u", "n2_$v"; style="invis"))
+    end
+  end
+  cluster2 = Graphviz.Subgraph("cluster_nodes2", [nodes2; edges2];
+    graph_attrs=Graphviz.Attributes(:rank => "same"))
+
+  stmts = Graphviz.Statement[cluster1, cluster2]
+  return (stmts, map(n -> n.name, nodes1), map(n -> n.name, nodes2))
+end
+
+
+# ------------------------------------------------------------------------------
+# old bipartite graph viz
+
 """ Visualize a bipartite graph using Graphviz.
 
 Works for both directed and undirected bipartite graphs. Both types of vertices
