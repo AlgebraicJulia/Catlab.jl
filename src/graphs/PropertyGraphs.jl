@@ -470,8 +470,50 @@ end
 SymmetricPropertyGraph{T}(g::HasGraph; gprops...) where T =
   SymmetricPropertyGraph{T}(g, v->Dict(), e->Dict(); gprops...)
 
-# BipartitePropertyGraph needs 2 constructors,
-# 1. from HasBipartiteVertices
-# 2. from HasBipartiteGraph
+function BipartitePropertyGraph{T}(g::HasBipartiteVertices, make_v₁props, make_v₂props, 
+                                   make_e₁₂props; gprops...) where {T}
+  pg = BipartitePropertyGraph{T}(; gprops...)
+  add_vertices₁!(pg, nv₁(g))
+  add_vertices₂!(pg, nv₂(g))
+  add_edges₁₂!(pg, src(g), tgt(g))
+  for v in vertices₁(g)
+    set_v₁props!(pg, v, make_v₁props(v))
+  end
+  for v in vertices₂(g)
+    set_v₂props!(pg, v, make_v₂props(v))
+  end
+  for e in edges(g)
+    set_e₁₂props!(pg, e, make_e₁₂props(e))
+  end
+  pg
+end
+
+BipartitePropertyGraph{T}(g::HasBipartiteVertices; gprops...) where T =
+  BipartitePropertyGraph{T}(g, v₁->Dict(), v₂->Dict(), e₁₂->Dict(); gprops...)
+
+function BipartitePropertyGraph{T}(g::HasBipartiteGraph, make_v₁props, make_v₂props, 
+                                   make_e₁₂props, make_e₂₁props; gprops...) where {T}
+  pg = BipartitePropertyGraph{T}(; gprops...)
+  add_vertices₁!(pg, nv₁(g))
+  add_vertices₂!(pg, nv₂(g))
+  add_edges₁₂!(pg, src₁(g), tgt₂(g))
+  add_edges₂₁!(pg, src₂(g), tgt₁(g))
+  for v in vertices₁(g)
+    set_v₁props!(pg, v, make_v₁props(v))
+  end
+  for v in vertices₂(g)
+    set_v₂props!(pg, v, make_v₂props(v))
+  end
+  for e in edges₁₂(g)
+    set_e₁₂props!(pg, e, make_e₁₂props(e))
+  end
+  for e in edges₂₁(g)
+    set_e₂₁props!(pg, e, make_e₂₁props(e))
+  end
+  pg
+end
+
+BipartitePropertyGraph{T}(g::HasBipartiteGraph; gprops...) where T =
+  BipartitePropertyGraph{T}(g, v₁->Dict(), v₂->Dict(), e₁₂->Dict(), e₂₁->Dict(); gprops...)
 
 end

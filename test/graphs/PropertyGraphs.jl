@@ -122,4 +122,37 @@ set_e₁₂props!(bg, 1, rel="childof")
 set_e₂₁props!(bg, 1, rel="parentof")
 @test get_e₂₁prop(bg, 1:3, :rel) == ["parentof", "parentof", "parentof"]
 
+# constructors from graphs
+g = BipartiteGraph(2, 3)
+add_edge₁₂!(g, 1, 2)
+add_edge₂₁!(g, 1, 1)
+add_edges₁₂!(g, [2,2], [3,3])
+add_edges₂₁!(g, [2,3], [1,1])
+
+pg = BipartitePropertyGraph{String}(g, a="test")
+@test gprops(pg) == Dict{Symbol,String}(:a=>"test")
+
+@test nv(pg) == (2, 3)
+@test (ne₁₂(pg), ne₂₁(pg)) == (3,3)
+@test (edges₁₂(pg), edges₂₁(pg)) == (1:3, 1:3)
+@test ne(pg) == (3,3)
+@test edges(pg) == (1:3, 1:3)
+
+g = UndirectedBipartiteGraph()
+add_vertices₁!(g, 2)
+add_vertices₂!(g, 3)
+add_edge!(g, 1, 1)
+add_edges!(g, [2,2], [2,3])
+
+pg = BipartitePropertyGraph{String}(g, a="test")
+@test gprops(pg) == Dict{Symbol,String}(:a=>"test")
+
+@test (nv₁(pg), nv₂(pg)) == (2,3)
+@test (vertices₁(pg), vertices₂(pg)) == (1:2, 1:3)
+@test nv(pg) == (2,3)
+@test vertices(pg) == (1:2, 1:3)
+@test ne(pg) == (3,0)
+@test edges₁₂(pg) == (1:3)
+@test (src₁(pg), tgt₂(pg)) == ([1,2,2], [1,2,3])
+
 end
