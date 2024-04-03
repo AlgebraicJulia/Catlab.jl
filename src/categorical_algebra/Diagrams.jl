@@ -8,11 +8,11 @@ using StructEquality
 
 using GATlab
 import ...Theories: dom, codom, id, compose, ⋅, ∘, munit
-using ...Theories: ThCategory, composeH, FreeSchema
+using ...Theories: ThCategory, composeH, FreeSchema, Ob, Hom
 import ..Categories: ob_map, hom_map, op, co
 using ..FinCats, ..FreeDiagrams, ..FinSets
 using ..FinCats: mapvals,FinDomFunctorMap,FinCatPresentation
-import ..FinCats: force, collect_ob, collect_hom
+import ..FinCats: force, collect_ob, collect_hom, FinFunctor
 import ..Limits: limit, colimit, universal
 import ..FinSets: FinDomFunction
 # Data types
@@ -308,5 +308,33 @@ j = only(ob_generators(shape(d)))
 isnothing(dom_shape) ? DiagramHom{op}([Pair(j, f)], d, d′) :
    DiagramHom{op}(Dict(only(ob_generators(dom(diagram(d′)))) => Pair(j, f)),d,d′)
 end
+
+# Cast Catlab data structures to diagrams
+#########################################
+
+function FinDomFunctor(sp::Multispan{T, F}) where {T,F}
+  J, s = Presentation(FreeSchema), collect(sp)
+  obs = Ob.(Ref(FreeSchema), [:apex; [Symbol("foot$i") for i in 1:length(s)]])
+  omap = Dict(add_generator!(J, first(obs)) => apex(sp))
+  hmap = Dict(map(enumerate(obs[2:end])) do (i, o)
+    add_generator!(J, o)
+    omap[o] = codom(s[i])
+    add_generator!(J, Hom(Symbol("leg$i"),first(obs), o)) => s[i]
+  end)
+  FinDomFunctor(omap, hmap, FinCat(J), TypeCat{T, F}()) 
+end
+
+function FinDomFunctor(sp::Multicospan{T, F}) where {T,F}
+  J, s = Presentation(FreeSchema), collect(sp)
+  obs = Ob.(Ref(FreeSchema), [:apex; [Symbol("foot$i") for i in 1:length(s)]])
+  omap = Dict(add_generator!(J, first(obs)) => apex(sp))
+  hmap = Dict(map(enumerate(obs[2:end])) do (i, o)
+    add_generator!(J, o)
+    omap[o] = dom(s[i])
+    add_generator!(J, Hom(Symbol("leg$i"), o, first(obs))) => s[i]
+  end)
+  FinDomFunctor(omap, hmap, FinCat(J), TypeCat{T, F}())
+end
+
 
 end

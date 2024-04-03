@@ -150,10 +150,10 @@ isomorphisms(X::ACSet, Y::ACSet, alg::BacktrackingSearch; initial=(;)) =
 This function generally reduces to [`isomorphism`](@ref) but certain algorithms
 may have minor optimizations.
 """
-is_isomorphic(X::ACSet, Y::ACSet; alg=BacktrackingSearch(), kw...) =
+is_isomorphic(X, Y; alg=BacktrackingSearch(), kw...) =
   is_isomorphic(X, Y, alg; kw...)
 
-is_isomorphic(X::ACSet, Y::ACSet, alg::BacktrackingSearch; kw...) =
+is_isomorphic(X, Y, alg::BacktrackingSearch; kw...) =
   !isnothing(isomorphism(X, Y, alg; kw...))
 
 # Backtracking search
@@ -980,6 +980,24 @@ end
 
 maximum_common_subobject(Xs::T...; abstract=true) where T <: ACSet = 
   maximum_common_subobject(collect(Xs); abstract)
+
+# Isomorphism between morphisms and diagrams
+############################################
+
+function is_isomorphic(X::ACSetTransformation, Y::ACSetTransformation; alg=BacktrackingSearch())
+  cX, cY = CSets.ACSetFunctor.(CSets.uncurry.(FinSets.FinDomFunctor.([X,Y])))
+  is_isomorphic(cX, cY; alg)
+end
+
+function is_isomorphic(X::Multispan, Y::Multispan; alg=BacktrackingSearch())
+  cX, cY = CSets.ACSetFunctor.(CSets.uncurry.(FinSets.FinDomFunctor.([X,Y])))
+  is_isomorphic(cX, cY; alg)
+end
+
+function is_isomorphic(X::Multicospan, Y::Multicospan; alg=BacktrackingSearch())
+  cX, cY = CSets.ACSetFunctor.(CSets.uncurry.(FinSets.FinDomFunctor.([X,Y])))
+  is_isomorphic(cX, cY; alg)
+end
 
 
 end # module

@@ -809,6 +809,41 @@ rem_part!(p3, :V, 4)
 end
 @acset_type Petri(SchPetri,index=[:it,:ot])
 
+# Test isomorphism of higher structures
+#######################################
+using Catlab,Test
+s, t = homomorphisms(Graph(1), path_graph(Graph, 2))
+@test is_isomorphic(s, s)
+@test !is_isomorphic(s, t)
+
+sp = Span(s, t);
+p2 = @acset Graph begin V=2; E=1; src=2; tgt=1 end;
+sp2 = Span(s, ACSetTransformation(Graph(1), p2; V=[1]));
+@test is_isomorphic(sp, sp2)
+
+# G1 = 3-cycle, G2 = 3-cycle with extra vertex
+G1 = @acset Graph begin V=3; E=3; src=[1,2,3]; tgt=[2,3,1] end;
+G1′ = @acset Graph begin V=3; E=3; src=[3,2,1]; tgt=[2,1,3] end;
+G2 = @acset Graph begin V=4; E=3; src=[2,3,4]; tgt=[3,4,2] end;
+G2′ = @acset Graph begin V=4; E=3; src=[1,2,3]; tgt=[2,3,1] end;
+h, h′ = homomorphism.([G1,G1′],[G2,G2′])
+@test is_isomorphic(h, h′)
+
+# Test pullback up to iso
+G = @acset Graph begin V=3; E=3; src=[1,1,2]; tgt=[1,2,2] end
+f = homomorphism(path_graph(Graph, 3), G; initial=(E=[1,2],))
+g = homomorphism(path_graph(Graph, 2), G; initial=(E=[2],))
+eq = cone(pullback(f,g));
+
+bkwd_path_3 = @acset Graph begin V=3; E=2; src=[3,2]; tgt=[2,1] end
+bkwd_path_2 = @acset Graph begin V=2; E=1; src=2; tgt=1 end
+bkwd_apex = @acset Graph begin V=3; E=1; src=1; tgt=3 end
+exp_L = homomorphisms(bkwd_apex, bkwd_path_3; monic=true, initial=(E=[2],)) |> only
+exp_R = homomorphisms(bkwd_apex, bkwd_path_2; initial=(V=[2,2,1],)) |> only
+is_isomorphic(eq, Span(exp_L,exp_R))
+
+end # module
+
 p = @acset Petri begin
   S = 2; T = 2; I = 3; O = 4
   is = [1,1,1]; os = [2,2,2,2]

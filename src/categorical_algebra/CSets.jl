@@ -36,6 +36,7 @@ using ..Diagrams: Diagram, diagram
 import ..FinSets: FinSet, FinFunction, FinDomFunction, force, predicate, 
                   is_monic, is_epic, preimage
 import ..FinCats: FinDomFunctor, components, is_natural
+using ..FinCats: FinCatPresentation
 
 # Sets interop
 ##############
@@ -235,6 +236,14 @@ function (::Type{ACS})(F::FinDomFunctor) where ACS <: ACSet
   copy_parts!(X, F)
   return X
 end
+
+# Set-valued FinDomFunctors as ACSets, no specific ACS type given
+function ACSetFunctor(F::FinDomFunctor)
+  X = AnonACSet(presentation(dom(F))) # perhaps should be a DynamicACSet?
+  copy_parts!(X, F)
+  return X
+end
+
 
 """ Copy parts from a set-valued `FinDomFunctor` to an `ACSet`.
 """
@@ -1396,5 +1405,37 @@ Expects the homs to be given as a list of `Symbol`s.
 """
 is_cartesian(f,hs=homs(acset_schema(dom(f)),just_names=true)) = all(h->is_cartesian_at(f,h),hs)
 
+
+@present SchArr(FreeSchema) begin (S,T)::Ob; arr::Hom(S, T) end
+
+function FinDomFunctor(f::T) where {ACS, T<:ACSetTransformation{ACS}}
+  obs = Dict(:S=>dom(f), :T => codom(f))
+  FinDomFunctor(obs, Dict(:arr=>f), FinCat(SchArr), TypeCat{ACS,T}())
+end
+
+"""Convert a nonempty C->D->Set into a (CxD)->Set"""
+function uncurry(d::FinDomFunctor)
+  S = acset_schema(ob_map(d, first(ob_generators(dom(d))))) # assumes not empty
+  shapelim = product(FinCatPresentation[dom(d), FinCat(Presentation(S))])
+  shape_ind, part_ind = legs(shapelim)
+  apx = apex(shapelim)
+  omap = Dict(map(ob_generators(apx)) do o
+    o => FinSet(ob_map(d, ob_map(shape_ind, o)), Symbol(ob_map(part_ind, o)))
+  end)
+
+  hmap = Dict(map(hom_generators(apx)) do o
+    x = hom_map(shape_ind, o)
+    y = hom_map(part_ind, o)
+    if first(typeof(x).parameters) == :id # comes from a hom w/in an ACSet
+      o => FinFunction(ob_map(d, only(x.args)), Symbol(y))
+    elseif first(typeof(y).parameters) == :id # comes from an ACSetTransformation
+      o => hom_map(d, x)[Symbol(only(y.args))]
+    else
+      error("x $x $(typeof(x)) y $y $(typeof(y))")
+    end
+  end)
+
+  FinDomFunctor(omap, hmap, apx, TypeCat{SetOb, FinDomFunction{Int}}())
+end
 
 end # module
