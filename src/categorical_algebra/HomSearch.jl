@@ -150,10 +150,10 @@ isomorphisms(X::ACSet, Y::ACSet, alg::BacktrackingSearch; initial=(;)) =
 This function generally reduces to [`isomorphism`](@ref) but certain algorithms
 may have minor optimizations.
 """
-is_isomorphic(X, Y; alg=BacktrackingSearch(), kw...) =
+is_isomorphic(X::ACSet, Y::ACSet; alg=BacktrackingSearch(), kw...) =
   is_isomorphic(X, Y, alg; kw...)
 
-is_isomorphic(X, Y, alg::BacktrackingSearch; kw...) =
+is_isomorphic(X::ACSet, Y::ACSet, alg::BacktrackingSearch; kw...) =
   !isnothing(isomorphism(X, Y, alg; kw...))
 
 # Backtracking search
