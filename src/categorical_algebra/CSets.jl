@@ -238,8 +238,13 @@ function (::Type{ACS})(F::FinDomFunctor) where ACS <: ACSet
 end
 
 # Set-valued FinDomFunctors as ACSets, no specific ACS type given
-function ACSetFunctor(F::FinDomFunctor)
-  X = AnonACSet(presentation(dom(F))) # perhaps should be a DynamicACSet?
+function ACSetFunctor(F::FinDomFunctor; structacset=false)
+  S = presentation(dom(F))
+  X = if structacset 
+    AnonACSet(S) 
+  else 
+    DynamicACSet("ACSetFunctor", S)
+  end
   copy_parts!(X, F)
   return X
 end
@@ -1435,7 +1440,7 @@ function uncurry(d::FinDomFunctor)
     end
   end)
 
-  FinDomFunctor(omap, hmap, apx, TypeCat{SetOb, FinDomFunction{Int}}())
+  return FinDomFunctor(omap, hmap, apx, TypeCat{SetOb, FinDomFunction{Int}}())
 end
 
 end # module

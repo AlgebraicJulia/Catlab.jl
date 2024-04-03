@@ -704,23 +704,22 @@ function product(Xs::AbstractVector{<:FinCatPresentation}; kw...)
     hgens[tuple(id.(k)...)] = id(v)
   end
 
-  # Add multiple naturality squares for each unordered pair of FinCats
-  #-------------------------------------------------------------------
+  # Naturality squares
+  #-------------------
+  # Add (possibly) multiple naturality squares for each unordered pair of FinCats
   for i in 1:(length(Xs) - 1), j in (i+1):length(Xs)
-    # Construct a composite morphism with id for all non-i non-j components.
-    fun(iarg, jarg, args) = tuple(map(1:length(Xs)) do k
-      if k==i iarg elseif k==j jarg else args[k] end 
-    end...)
-    # Commutative squares for each morphism in Xᵢ and morphism in Xⱼ
+    # Add multiple naturality squares for each morphism in Xᵢ and morphism in Xⱼ
     for (hᵢ, hⱼ) in Iterators.product(hom_generators.(getindex.(Ref(Xs), [i, j]))...)
       (dᵢ, cdᵢ), (dⱼ, cdⱼ) = [id.([dom(x), codom(x)]) for x in [hᵢ, hⱼ]]
-      # A square for each combination of objects in the non-i, non-j FinCats
+      square_sides = [[hᵢ, dⱼ], [cdᵢ, hⱼ], [dᵢ, hⱼ], [hᵢ, cdⱼ]]
+      # One square for each combination of objects in the non-i, non-j FinCats
       args = [id.(ob_generators(x)) for (k, x) in enumerate(Xs) if k ∉ (i,j)]
       for hs in Vector{Any}.(collect.(Iterators.product(args...)))
-        a₁,a₂,b₁,b₂ = map([[hᵢ, dⱼ], [cdᵢ, hⱼ], [dᵢ, hⱼ], [hᵢ, cdⱼ]]) do x₁x₂
-          hs′ = deepcopy(hs)
-          insert!.(Ref(hs′), [i, j], x₁x₂) # insert i,j components in right spot
-          hgens[tuple(hs′...)]             # morphism for a side of nat. square
+        # Assemble sides of the square
+        a₁, a₂, b₁, b₂ = map(square_sides) do (x₁, x₂)
+          hs′ = deepcopy(hs) # morphism but it's missing the i,j components 
+          insert!(hs′, i, x₁); insert!(hs′, j, x₂) # add them in, noting i < j
+          hgens[tuple(hs′...)] # morphism for this side of the nat. square
         end
         add_equation!(p, a₁⋅a₂, b₁⋅b₂)
       end
