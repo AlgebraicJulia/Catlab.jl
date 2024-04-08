@@ -6,7 +6,6 @@ const SUITE = BenchmarkGroup()
 
 using Random
 using Catlab
-using Catlab.CategoricalAlgebra.HomSearch: compile_search
 
 Random.seed!(1)
 
@@ -30,8 +29,8 @@ DDS(i::Int) = @acset DDS begin X=i; Φ=[rand(1:i) for _ in 1:i] end # random DDS
 small_dds = [DDS(5) for _ in 1:2]
 big_dds = [DDS(200) for _ in 1:2]
 
-prog1 = compile_search.(small_dds, strat=:neighbor);
-prog2 = compile_search.(small_dds, strat=:connected);
+prog1 = compile_hom_search.(small_dds, strat=:neighbor);
+prog2 = compile_hom_search.(small_dds, strat=:connected);
 
 for (i, x) in enumerate(small_dds), (j, y) in enumerate(big_dds)
   btsbench["DDS-$i-$j"] = @benchmarkable homomorphisms($x, $y)
@@ -44,8 +43,8 @@ end
 
 c3 = cycle_graph(Graph, 3)
 
-prog1 = compile_search(c3, strat=:neighbor);
-prog2 = compile_search(c3, strat=:connected);
+prog1 = compile_hom_search(c3, strat=:neighbor);
+prog2 = compile_hom_search(c3, strat=:connected);
 
 for (i, G) in [(i, erdos_renyi(Graph, 150, 0.05)) for i in 1:5]
   btsbench["graph-$i"] = @benchmarkable homomorphisms($c3, $G)

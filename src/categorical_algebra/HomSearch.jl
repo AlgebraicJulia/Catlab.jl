@@ -10,7 +10,8 @@ export ACSetHomomorphismAlgorithm, BacktrackingSearch, HomomorphismQuery,
        VMSearch,homomorphism, homomorphisms, is_homomorphic,
        isomorphism, isomorphisms, is_isomorphic,
        @acset_transformation, @acset_transformations,
-       subobject_graph, partial_overlaps, maximum_common_subobject
+       subobject_graph, partial_overlaps, maximum_common_subobject,
+       compile_hom_search
    
 using ...Theories, ..CSets, ..FinSets, ..FreeDiagrams, ..Subobjects
 using ...Graphs.BasicGraphs
@@ -496,7 +497,7 @@ of instructions for faster execution.
 struct VMSearch <: ACSetHomomorphismAlgorithm end
 
 function homomorphisms(X::ACSet, Y::ACSet, ::VMSearch; prog=nothing)
-  prog = isnothing(prog) ? compile_search(X) : prog
+  prog = isnothing(prog) ? compile_hom_search(X) : prog
   find_all(prog, X, Y)
 end
 
@@ -589,7 +590,7 @@ ordering strategies:
  - connected - order by neighbors but prioritize connected components
  - random
 """
-function compile_search(X::ACSet, order=nothing; strat=:neighbor)
+function compile_hom_search(X::ACSet, order=nothing; strat=:neighbor)
   S = acset_schema(X)
   if isnothing(order)
     order, queue, seen = Tuple{Symbol,Int}[], Int[], Set{Int}()
@@ -634,7 +635,7 @@ function compile_search(X::ACSet, order=nothing; strat=:neighbor)
       error("Unknown order strategy: $strat")
     end
   end
-  compile_search(X, [NamedPart(ob, i) for (ob, i) in order])
+  compile_hom_search(X, [NamedPart(ob, i) for (ob, i) in order])
 end
 
 function push_callback(a::ACSet, homs::Vector{T}, prog::Program) where {T<:NamedTuple}
@@ -650,7 +651,7 @@ end
 
 allparts(a::ACSet) = Set([NamedPart(ob, i) for ob in objects(acset_schema(a)) for i in parts(a, ob)])
 
-function compile_search(a::ACSet, order::Vector{NamedPart})
+function compile_hom_search(a::ACSet, order::Vector{NamedPart})
   @assert allparts(a) == Set(order)
   schema = acset_schema(a)
   prog = Program(Ref(1), SearchInst[], Dict{NamedPart, Reg}())
