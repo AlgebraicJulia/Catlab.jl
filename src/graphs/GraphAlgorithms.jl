@@ -119,7 +119,7 @@ function longest_paths(g::ACSet;
 end
 
 """Enumerate all paths of an acyclic graph, indexed by src+tgt"""
-function enumerate_paths(G::Graph;
+function enumerate_paths(G::HasGraph;
                          sorted::Union{AbstractVector{Int},Nothing}=nothing
                         )::ReflexiveEdgePropertyGraph{Vector{Int}}
   sorted = isnothing(sorted) ? topological_sort(G) : sorted
