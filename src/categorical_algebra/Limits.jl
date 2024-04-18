@@ -143,7 +143,7 @@ colimit(diagram; kw...) = colimit(diagram_type(diagram), diagram; kw...)
 colimit(diagram, ::Nothing; kw...) = colimit(diagram; kw...) # alg == nothing
 
 """ 
-`universal(lim,cone)`
+    universal(lim,cone)
 
 Universal property of (co)limits.
 
@@ -636,7 +636,7 @@ function universal(colim::BipartiteColimit, cocone::Multicospan)
 end
 
 #####################Cartesian morphisms of acsets
-function is_cartesian_at(f::ACSetTransformation,h::Tuple{Symbol,Symbol,Symbol})
+function is_cartesian_at(f,h::Tuple{Symbol,Symbol,Symbol})
   X,Y = FinDomFunctor(dom(f)),FinDomFunctor(codom(f))
   mor,x,y = h
   s = Span(hom_map(X,mor),f[x])
@@ -645,5 +645,13 @@ function is_cartesian_at(f::ACSetTransformation,h::Tuple{Symbol,Symbol,Symbol})
   f = universal(L,s)
   is_iso(f)
 end
-is_cartesian(f::ACSetTransformation,hs=homs(acset_schema(dom(f)))) = all(h->is_cartesian_at(f,h),hs)
+"""
+    is_cartesian(f,hs)
+
+Checks if an acset transformation `f` is cartesian at the homs in the list `hs`.
+Expects the homs to be given as tuples of the form `(morphism,source,target)`.
+"""
+is_cartesian(f,hs=homs(acset_schema(dom(f)))) = all(h->is_cartesian_at(f,h),hs)
+
+end
 
