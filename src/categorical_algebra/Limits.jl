@@ -13,8 +13,7 @@ export AbstractLimit, AbstractColimit, Limit, Colimit,
   BinaryCoequalizer, Coequalizer, coequalizer, proj,
   @cartesian_monoidal_instance, @cocartesian_monoidal_instance,
   ComposeProductEqualizer, ComposeCoproductCoequalizer,
-  SpecializeLimit, SpecializeColimit, ToBipartiteLimit, ToBipartiteColimit,
-  is_cartesian
+  SpecializeLimit, SpecializeColimit, ToBipartiteLimit, ToBipartiteColimit
 
 using StructEquality
 using StaticArrays: StaticVector, SVector
@@ -634,24 +633,6 @@ function universal(colim::BipartiteColimit, cocone::Multicospan)
   cocone = Multicospan(apex(cocone), legs(cocone)[cocone_indices(colim.diagram)])
   universal(colim, cocone)
 end
-
-#####################Cartesian morphisms of acsets
-function is_cartesian_at(f,h::Tuple{Symbol,Symbol,Symbol})
-  X,Y = FinDomFunctor(dom(f)),FinDomFunctor(codom(f))
-  mor,x,y = h
-  s = Span(hom_map(X,mor),f[x])
-  c = Cospan(f[y],hom_map(Y,mor))
-  L = limit(c)
-  f = universal(L,s)
-  is_iso(f)
-end
-"""
-    is_cartesian(f,hs)
-
-Checks if an acset transformation `f` is cartesian at the homs in the list `hs`.
-Expects the homs to be given as tuples of the form `(morphism,source,target)`.
-"""
-is_cartesian(f,hs=homs(acset_schema(dom(f)))) = all(h->is_cartesian_at(f,h),hs)
 
 end
 

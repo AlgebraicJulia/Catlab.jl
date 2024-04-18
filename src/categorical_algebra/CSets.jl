@@ -7,7 +7,7 @@ export ACSetMorphism,
   LooseACSetTransformation, SubACSet, SubCSet,
   components, type_components, force,
   naturality_failures, show_naturality_failures, is_natural, in_bounds,
-  abstract_attributes
+  abstract_attributes, is_cartesian
 
 using Base.Iterators: flatten
 using Base.Meta: quot
@@ -1375,6 +1375,24 @@ function in_bounds(f::ACSetTransformation)
     end
   end
 end
+
+#####################Cartesian morphisms of acsets
+function is_cartesian_at(f::ACSetTransformation,h::Tuple{Symbol,Symbol,Symbol})
+  X,Y = FinDomFunctor(dom(f)),FinDomFunctor(codom(f))
+  mor,x,y = h
+  s = Span(hom_map(X,mor),f[x])
+  c = Cospan(f[y],hom_map(Y,mor))
+  L = limit(c)
+  f = universal(L,s)
+  is_iso(f)
+end
+"""
+    is_cartesian(f,hs)
+
+Checks if an acset transformation `f` is cartesian at the homs in the list `hs`.
+Expects the homs to be given as tuples of the form `(morphism,source,target)`.
+"""
+is_cartesian(f,hs=homs(acset_schema(dom(f)))) = all(h->is_cartesian_at(f,h),hs)
 
 
 end # module
