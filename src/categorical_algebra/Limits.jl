@@ -13,7 +13,8 @@ export AbstractLimit, AbstractColimit, Limit, Colimit,
   BinaryCoequalizer, Coequalizer, coequalizer, proj,
   @cartesian_monoidal_instance, @cocartesian_monoidal_instance,
   ComposeProductEqualizer, ComposeCoproductCoequalizer,
-  SpecializeLimit, SpecializeColimit, ToBipartiteLimit, ToBipartiteColimit
+  SpecializeLimit, SpecializeColimit, ToBipartiteLimit, ToBipartiteColimit,
+  is_cartesian
 
 using StructEquality
 using StaticArrays: StaticVector, SVector
@@ -40,7 +41,7 @@ abstract type AbstractLimit{Ob,Diagram} end
 
 ob(lim::AbstractLimit) = apex(lim)
 cone(lim::AbstractLimit) = lim.cone
-apex(lim::AbstractLimit) = apex(cone(lim))
+apex(lim::AbstractLimit) = apex(cone(lim)) #isn't this a synonym for ob(lim)?
 legs(lim::AbstractLimit) = legs(cone(lim))
 
 Base.iterate(lim::AbstractLimit, args...) = iterate(cone(lim), args...)
@@ -141,7 +142,10 @@ See also: [`limit`](@ref)
 colimit(diagram; kw...) = colimit(diagram_type(diagram), diagram; kw...)
 colimit(diagram, ::Nothing; kw...) = colimit(diagram; kw...) # alg == nothing
 
-""" Universal property of (co)limits.
+""" 
+`universal(lim,cone)`
+
+Universal property of (co)limits.
 
 Compute the morphism whose existence and uniqueness is guaranteed by the
 universal property of (co)limits.
@@ -497,7 +501,7 @@ struct ComposeProductEqualizer <: LimitAlgorithm end
 """ Pullback formed as composite of product and equalizer.
 
 The fields of this struct are an implementation detail; accessing them directly
-violates the abstraction. Everything that you can do with a pushout, including
+violates the abstraction. Everything that you can do with a pullback, including
 invoking its universal property, should be done through the generic interface
 for limits.
 
@@ -631,5 +635,15 @@ function universal(colim::BipartiteColimit, cocone::Multicospan)
   universal(colim, cocone)
 end
 
-
+#####################Cartesian morphisms of acsets
+function is_cartesian_at(f::ACSetTransformation,h::Tuple{Symbol,Symbol,Symbol})
+  X,Y = FinDomFunctor(dom(f)),FinDomFunctor(codom(f))
+  mor,x,y = h
+  s = Span(hom_map(X,mor),f[x])
+  c = Cospan(f[y],hom_map(Y,mor))
+  L = limit(c)
+  f = universal(L,s)
+  is_iso(f)
 end
+is_cartesian(f::ACSetTransformation,hs=homs(acset_schema(dom(f)))) = all(h->is_cartesian_at(f,h),hs)
+
