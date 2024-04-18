@@ -817,6 +817,8 @@ end
 homoms = homomorphisms(p,p)
 hs = [(:it,:I,:T),(:ot,:O,:T)]
 #Cartesian morphisms have to preserve the states and transitions and
-#can only swap or not-swap the inputs to T 2 and the outputs to T 1
+#can only permute the inputs to T 2 and the outputs to T 1
+@test sum(h->is_cartesian(h,hs),homoms) == 12
+
 
 end
