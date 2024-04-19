@@ -229,6 +229,7 @@ FinDomFunction(f::Function, dom, codom) =
 FinDomFunction(::typeof(identity), args...) =
   IdentityFunction((FinSet(arg) for arg in args)...)
 FinDomFunction(f::AbstractDict, args...) = FinDomFunctionDict(f, args...)
+FinDomFunction(f::FinDomFunction) = f
 
 #kw is to capture is_correct, which does nothing for this type.
 function FinDomFunction(f::AbstractVector, args...; index=false, kw...)
@@ -311,7 +312,9 @@ Control dispatch in the category of VarFunctions
   n::Int 
 end
 VarSet(i::Int) = VarSet{Union{}}(i)
-FinSet(s::VarSet) = FinSet(s.n)
+SetOb(s::VarSet{Union{}}) = FinSet(s)
+SetOb(s::VarSet{T}) where T = TypeSet{Union{AttrVar,T}}()
+FinSet(s::VarSet) = FinSet(s.n) #Note this throws away `T`, most accurate when thinking about tight `VarFunction`s.
 Base.iterate(set::VarSet{T}, args...) where T = iterate(1:set.n, args...)
 Base.length(set::VarSet{T}) where T = set.n
 Base.in(set::VarSet{T}, elem) where T = in(elem, 1:set.n)
@@ -338,6 +341,7 @@ VarFunction(f::FinDomFunction) = VarFunction{Union{}}(AttrVar.(collect(f)),codom
 FinFunction(f::VarFunction{T}) where T = FinFunction(
   [f.fun(i) isa AttrVar ? f.fun(i).val : error("Cannot cast to FinFunction") 
    for i in dom(f)], f.codom)
+FinDomFunction(f::VarFunction{T}) where T = f.fun
 Base.length(f::AbsVarFunction{T}) where T = length(collect(f.fun))
 Base.collect(f::AbsVarFunction{T}) where T = collect(f.fun)
 (f::VarFunction{T})(v::T) where T = v 
@@ -355,6 +359,9 @@ is_epic(f::VarFunction) = AttrVar.(f.codom) ⊆ collect(f)
 
 compose(::IdentityFunction{TypeSet{T}}, f::AbsVarFunction{T}) where T = f
 compose(f::VarFunction{T}, ::IdentityFunction{TypeSet{T}}) where T = f
+
+FinDomFunction(f::Function, dom, codom::VarSet{T}) where T =
+  SetFunctionCallable(f, FinSet(dom), SetOb(codom))
 
 """Kleisi composition of [n]->T+[m] and [m]->T'+[p], yielding a [n]->T'+[p]"""
 compose(f::VarFunction{T},g::VarFunction{T}) where {T} =

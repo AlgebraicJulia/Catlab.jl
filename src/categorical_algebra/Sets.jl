@@ -29,7 +29,7 @@ Note: This type is more abstract than the built-in Julia types `AbstractSet` and
 encompassed by the subtype [`FinSet`](@ref).
 """
 abstract type SetOb{T} end
-
+SetOb(S::SetOb) = S
 Base.eltype(::Type{<:SetOb{T}}) where T = T
 
 """ A Julia data type regarded as a set.
