@@ -40,7 +40,10 @@ abstract type AbstractLimit{Ob,Diagram} end
 
 ob(lim::AbstractLimit) = apex(lim)
 cone(lim::AbstractLimit) = lim.cone
-apex(lim::AbstractLimit) = apex(cone(lim)) #isn't this a synonym for ob(lim)?
+"""Synonymous with `ob` in the case of `Limit`s, but 
+present here to allow a `Limit` to be implicitly 
+treated like a `Multispan`."""
+apex(lim::AbstractLimit) = apex(cone(lim)) 
 legs(lim::AbstractLimit) = legs(cone(lim))
 
 Base.iterate(lim::AbstractLimit, args...) = iterate(cone(lim), args...)

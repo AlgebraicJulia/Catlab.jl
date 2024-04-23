@@ -1377,9 +1377,10 @@ function in_bounds(f::ACSetTransformation)
 end
 
 #####################Cartesian morphisms of acsets
-function is_cartesian_at(f::ACSetTransformation,h::Tuple{Symbol,Symbol,Symbol})
+function is_cartesian_at(f::ACSetTransformation,h::Symbol)
   X,Y = FinDomFunctor(dom(f)),FinDomFunctor(codom(f))
-  mor,x,y = h
+  S = acset_schema(dom(f))
+  mor,x,y = h,dom(h,S),codom(h,S)
   s = Span(hom_map(X,mor),f[x])
   c = Cospan(f[y],hom_map(Y,mor))
   L = limit(c)
@@ -1392,7 +1393,7 @@ end
 Checks if an acset transformation `f` is cartesian at the homs in the list `hs`.
 Expects the homs to be given as tuples of the form `(morphism,source,target)`.
 """
-is_cartesian(f,hs=homs(acset_schema(dom(f)))) = all(h->is_cartesian_at(f,h),hs)
+is_cartesian(f,hs=homs(acset_schema(dom(f)),just_names=true)) = all(h->is_cartesian_at(f,h),hs)
 
 
 end # module
