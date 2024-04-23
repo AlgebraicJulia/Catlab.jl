@@ -1380,7 +1380,7 @@ end
 function is_cartesian_at(f::ACSetTransformation,h::Symbol)
   X,Y = FinDomFunctor(dom(f)),FinDomFunctor(codom(f))
   S = acset_schema(dom(f))
-  mor,x,y = h,dom(h,S),codom(h,S)
+  mor,x,y = h,dom(S,h),codom(S,h)
   s = Span(hom_map(X,mor),f[x])
   c = Cospan(f[y],hom_map(Y,mor))
   L = limit(c)
@@ -1391,7 +1391,7 @@ end
     is_cartesian(f,hs)
 
 Checks if an acset transformation `f` is cartesian at the homs in the list `hs`.
-Expects the homs to be given as tuples of the form `(morphism,source,target)`.
+Expects the homs to be given as a list of `Symbol`s.
 """
 is_cartesian(f,hs=homs(acset_schema(dom(f)),just_names=true)) = all(h->is_cartesian_at(f,h),hs)
 

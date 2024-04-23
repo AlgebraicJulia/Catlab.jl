@@ -815,7 +815,7 @@ p = @acset Petri begin
   it = [1,2,2]; ot = [1,1,1,2]
 end
 homoms = homomorphisms(p,p)
-hs = [(:it,:I,:T),(:ot,:O,:T)]
+hs = [:it,:ot]
 #Cartesian morphisms have to preserve the states and transitions and
 #can only permute the inputs to T 2 and the outputs to T 1
 @test sum(h->is_cartesian(h,hs),homoms) == 12
