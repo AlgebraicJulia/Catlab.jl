@@ -122,7 +122,11 @@ ACSetInterface.subpart(acs, part, expr::GATExpr{:compose}) =
   subpart(acs, part, subpart_names(expr))
 
 @inline ACSetInterface.subpart(acs, expr::GATExpr{:generator}) = subpart(acs, first(expr))
+@inline ACSetInterface.subpart(acs, i, expr::GATExpr{:generator}) = subpart(acs, i, first(expr))
 @inline ACSetInterface.subpart(acs, expr::GATExpr{:id}) = parts(acs, first(dom(expr)))
+@inline ACSetInterface.subpart(acs, i::Int, ::GATExpr{:id}) = i
+@inline ACSetInterface.subpart(acs, i::AbstractVector{Int}, ::GATExpr{:id}) = i
+@inline ACSetInterface.subpart(acs, ::Colon, ::GATExpr{:id}) = parts(acs, first(dom(expr)))
 
 ACSetInterface.incident(acs, part, expr::GATExpr; kw...) =
   incident(acs, part, subpart_names(expr); kw...)
