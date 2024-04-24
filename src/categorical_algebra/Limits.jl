@@ -40,7 +40,10 @@ abstract type AbstractLimit{Ob,Diagram} end
 
 ob(lim::AbstractLimit) = apex(lim)
 cone(lim::AbstractLimit) = lim.cone
-apex(lim::AbstractLimit) = apex(cone(lim))
+"""Synonymous with `ob` in the case of `Limit`s, but 
+present here to allow a `Limit` to be implicitly 
+treated like a `Multispan`."""
+apex(lim::AbstractLimit) = apex(cone(lim)) 
 legs(lim::AbstractLimit) = legs(cone(lim))
 
 Base.iterate(lim::AbstractLimit, args...) = iterate(cone(lim), args...)
@@ -141,7 +144,10 @@ See also: [`limit`](@ref)
 colimit(diagram; kw...) = colimit(diagram_type(diagram), diagram; kw...)
 colimit(diagram, ::Nothing; kw...) = colimit(diagram; kw...) # alg == nothing
 
-""" Universal property of (co)limits.
+""" 
+    universal(lim,cone)
+
+Universal property of (co)limits.
 
 Compute the morphism whose existence and uniqueness is guaranteed by the
 universal property of (co)limits.
@@ -497,7 +503,7 @@ struct ComposeProductEqualizer <: LimitAlgorithm end
 """ Pullback formed as composite of product and equalizer.
 
 The fields of this struct are an implementation detail; accessing them directly
-violates the abstraction. Everything that you can do with a pushout, including
+violates the abstraction. Everything that you can do with a pullback, including
 invoking its universal property, should be done through the generic interface
 for limits.
 
@@ -631,5 +637,5 @@ function universal(colim::BipartiteColimit, cocone::Multicospan)
   universal(colim, cocone)
 end
 
-
 end
+

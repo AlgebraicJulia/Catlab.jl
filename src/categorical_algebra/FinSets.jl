@@ -4,7 +4,7 @@ module FinSets
 export FinSet, FinFunction, FinDomFunction, TabularSet, TabularLimit,
   force, is_indexed, preimage, VarFunction, LooseVarFunction,
   JoinAlgorithm, SmartJoin, NestedLoopJoin, SortMergeJoin, HashJoin,
-  SubFinSet, SubOpBoolean, is_monic, is_epic
+  SubFinSet, SubOpBoolean, is_monic, is_epic, is_iso
 
 using StructEquality
 using DataStructures: OrderedDict, IntDisjointSets, union!, find_root!
@@ -511,6 +511,7 @@ Sets.do_compose(f::Union{FinFunctionVector,IndexedFinFunctionVector},
 # These could be made to fail early if ever used in performance-critical areas
 is_epic(f::FinFunction) = length(codom(f)) == length(Set(values(collect(f))))
 is_monic(f::FinFunction) = length(dom(f)) == length(Set(values(collect(f))))
+is_iso(f::FinFunction) = is_monic(f) && is_epic(f)
 
 # Dict-based functions
 #---------------------
