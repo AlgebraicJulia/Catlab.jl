@@ -769,7 +769,7 @@ Limits.terminal(::Type{T}; loose=false, cset=false, kw...) where T <: ACSet =
   limit(EmptyDiagram{T}(kw_type(;loose, cset)); kw...)
 Limits.product(X::ACSet, Y::ACSet; loose=false, cset=false,kw...) =
   limit(ObjectPair(X, Y, kw_type(;loose, cset)); kw...)
-Limits.product(Xs::AbstractVector{<:ACSet}; loose=false, cset=false, skw...) =
+Limits.product(Xs::AbstractVector{<:ACSet}; loose=false, cset=false, kw...) =
   limit(DiscreteDiagram(Xs, kw_type(;loose, cset)); kw...)
 
 Limits.initial(::Type{T}; kw...) where T <: ACSet =
