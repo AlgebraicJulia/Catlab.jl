@@ -35,4 +35,3 @@ end
 @testset "Decorated" begin
   include("decorated/Decorated.jl")
 end
-
