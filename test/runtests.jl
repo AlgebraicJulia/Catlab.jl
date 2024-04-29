@@ -1,6 +1,5 @@
 using Test
 
-
 @testset "GATs" begin
 include("gats/GATs.jl")
 end
