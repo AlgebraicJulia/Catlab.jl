@@ -31,3 +31,7 @@ end
 @testset "Sheaves" begin
   include("sheaves/sheaves.jl")
 end
+
+@testset "Decorated" begin
+  include("decorated/Decorated.jl")
+end

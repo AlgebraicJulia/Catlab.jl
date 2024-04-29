@@ -12,19 +12,6 @@ do_ob_map(::FVectPullback, n::FinSet) = n
 do_hom_map(::FVectPullback, f::FinFunction) = (v->v[f.(dom(f))])
 # as a callable functor this would be: FVectPullback = Functor(identity, f->(v->v[f.(dom(f))]), OppositeCat(FinSetCat()), FinVect())
 
-"""    FreeVect{T} where T <: Number
-
-The covariant free vector space functor. 
-The returned  function f✶ sums over preimages.
-"""
-FVectPushforward = Functor(identity, # identity on objects
-  # specify the pushforward construction
-  f->(v->map(dom(f)) do i
-    sum(v[j] for j in preimage(f,i))
-  end),
-  # covariant functor from FinSetCat to FinVect
-  FinSetCat(), FinVect()
-)
 
 const FinMat = TypeCat(MatrixDom, Matrix)
 const FinMatT = typeof(FinMat)
