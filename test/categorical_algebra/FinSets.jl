@@ -594,7 +594,4 @@ f = FinDomFunction([:a, :b, :a], FinSet(3), TypeSet(Symbol))
 @test f(2) == :b
 @test f(3) == :a
 
-S = SetOb(VarSet{Union{}}(5))
-@test SetOb(S) == S
-
 end
