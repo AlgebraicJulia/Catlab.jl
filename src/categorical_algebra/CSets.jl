@@ -1240,10 +1240,13 @@ function subtract(A::SubACSet{S}, B::SubACSet{S}, ::SubOpBoolean) where S
   A, B = map(predicate, components(A)), map(predicate, components(B))
   D = NamedTuple(o => falses(nparts(X, o)) for o in types(S))
 
-  function set!(c, x)
+  set!(c::Symbol, x::AttrVar) = D[c][x.val] = true
+  function set!(c::Symbol, x::Int)
     D[c][x] = true
     for (c′,x′) in all_subparts(X, Val{c}, x)
-      if !D[c′][x′]; set!(c′,x′) end
+      if (c′ ∈ ob(S) && !D[c′][x′]) || x′ isa AttrVar 
+        set!(c′,x′) 
+      end
     end
   end
 
@@ -1263,7 +1266,7 @@ end
 
 @generated function all_subparts(X::StructACSet{S},
                                  ::Type{Val{c}}, x::Int) where {S,c}
-  Expr(:tuple, map(homs(S; from=c)) do (f,_,c′)
+  Expr(:tuple, map(arrows(S; from=c)) do (f,_,c′)
     :($(quot(c′)), subpart(X,x,$(quot(f))))
   end...)
 end
