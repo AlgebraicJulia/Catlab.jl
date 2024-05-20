@@ -25,7 +25,7 @@ import ..FinCats: force, ob_generators, hom_generators, ob_generator,
   ob_generator_name, graph, is_discrete
 using ..FinCats: dicttype
 import ..Limits: limit, colimit, universal, BipartiteColimit
-import ..Subobjects: Subobject
+import ..Subobjects: Subobject, SubobjectHom
 using ..Sets: IdentityFunction, SetFunctionCallable
 
 # Finite sets
@@ -1448,6 +1448,17 @@ SubFinSet(pred::AbstractBoolVector) = Subobject(FinSet(length(pred)), pred)
 ob(A::SubFinSetVector) = A.set
 hom(A::SubFinSetVector) = FinFunction(findall(A.predicate), A.set)
 predicate(A::SubFinSetVector) = A.predicate
+function predicate(A::SubobjectHom{<:VarSet}) 
+  f = hom(A)
+  pred = falses(length(codom(f)))
+  for x in AttrVar.(dom(f))
+    fx = f(x)
+    if fx isa AttrVar
+      pred[fx.val] = true
+    end
+  end
+  pred
+end
 
 function predicate(A::SubFinSet)
   f = hom(A)
