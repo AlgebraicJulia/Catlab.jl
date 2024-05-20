@@ -57,7 +57,7 @@
 <!-- n9 -->
 <g id="node9" class="node">
 <title>n9</title>
-<ellipse fill="none" stroke="#853459" cx="89.65" cy="-509.13" rx="10.71" ry="10.71"/>
+<ellipse fill="none" stroke="#853559" cx="89.65" cy="-509.13" rx="10.71" ry="10.71"/>
 <text text-anchor="middle" x="89.65" y="-505.43" font-family="Times,serif" font-size="14.00">9</text>
 </g>
 <!-- n1&#45;&gt;n9 -->
@@ -96,7 +96,7 @@
 <!-- n2 -->
 <g id="node2" class="node">
 <title>n2</title>
-<ellipse fill="none" stroke="#11249b" cx="10.61" cy="-287.13" rx="10.71" ry="10.71"/>
+<ellipse fill="none" stroke="#11239b" cx="10.61" cy="-287.13" rx="10.71" ry="10.71"/>
 <text text-anchor="middle" x="10.61" y="-283.43" font-family="Times,serif" font-size="14.00">2</text>
 </g>
 <!-- n2&#45;&gt;n6 -->
@@ -109,7 +109,7 @@
 <!-- n8 -->
 <g id="node8" class="node">
 <title>n8</title>
-<ellipse fill="none" stroke="#753362" cx="89.65" cy="-99.13" rx="10.71" ry="10.71"/>
+<ellipse fill="none" stroke="#753262" cx="89.65" cy="-99.13" rx="10.71" ry="10.71"/>
 <text text-anchor="middle" x="89.65" y="-95.43" font-family="Times,serif" font-size="14.00">8</text>
 </g>
 <!-- n2&#45;&gt;n8 -->
@@ -222,7 +222,7 @@
 <!-- n15 -->
 <g id="node15" class="node">
 <title>n15</title>
-<ellipse fill="none" stroke="#e94320" cx="171.52" cy="-324.13" rx="13.37" ry="13.37"/>
+<ellipse fill="none" stroke="#e94420" cx="171.52" cy="-324.13" rx="13.37" ry="13.37"/>
 <text text-anchor="middle" x="171.52" y="-320.43" font-family="Times,serif" font-size="14.00">15</text>
 </g>
 <!-- n5&#45;&gt;n15 -->
