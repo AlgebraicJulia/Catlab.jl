@@ -177,7 +177,7 @@ been bound.
 struct BacktrackingState{
   Dom <: ACSet, Codom <: ACSet,
   Assign <: NamedTuple, PartialAssign <: NamedTuple, LooseFun <: NamedTuple,
-  Predicates <: NamedTuple
+  Predicates <: NamedTuple,Image <: NamedTuple, Unassign<: NamedTuple
   }
   assignment::Assign
   assignment_depth::Assign
@@ -186,10 +186,13 @@ struct BacktrackingState{
   codom::Codom
   type_components::LooseFun
   predicates::Predicates
+  image::Image # Negative of image for epic components or if finding an epimorphism
+  unassigned::Unassign # "# of unassigned elems in domain of a component 
+
 end
 
 function backtracking_search(f, X::ACSet, Y::ACSet;
-    monic=false, iso=false, random=false, predicates=(;),
+    monic=false, epic=false, iso=false, random=false, predicates=(;),
     type_components=(;), initial=(;), error_failures=false)
   S, Sy = acset_schema.([X,Y])
   S == Sy || error("Schemas must match for morphism search")
@@ -212,15 +215,21 @@ function backtracking_search(f, X::ACSet, Y::ACSet;
   if monic isa Bool
     monic = monic ? ObAttr : ()
   end
+  if epic isa Bool
+    epic = epic ? Ob : ()
+  end
   iso_failures = Iterators.filter(c->nparts(X,c)!=nparts(Y,c),iso)
   mono_failures = Iterators.filter(c->nparts(X,c)>nparts(Y,c),monic)  
-  if (!isempty(iso_failures) || !isempty(mono_failures))
+  epi_failures = Iterators.filter(c->nparts(X,c)<nparts(Y,c),epic)  
+
+  if !all(isempty, [iso_failures,mono_failures,epi_failures])
     if !error_failures 
       return false 
     else error("""
       Cardinalities inconsistent with request for...
         iso at object(s) $iso_failures
         mono at object(s) $mono_failures
+        epi at object(s) $epi_failures
       """)
     end
   end
@@ -249,8 +258,15 @@ function backtracking_search(f, X::ACSet, Y::ACSet;
     (c in monic ? zeros(Int, maxpart(Y, c)) : nothing) for c in ObAttr)
   loosefuns = NamedTuple{Attr}(
     isnothing(type_components) ? identity : get(type_components, c, identity) for c in Attr)
+
+  images = NamedTuple{Ob}(
+    (c in epic ? zeros(Int, nparts(Y, c)) : nothing) for c in Ob)
+  unassigned = NamedTuple{Ob}(
+    (c in epic ? [nparts(X, c)] : nothing) for c in Ob)
+
   state = BacktrackingState(assignment, assignment_depth, 
-                                  inv_assignment, X, Y, loosefuns, pred_nt)
+                            inv_assignment, X, Y, loosefuns, pred_nt,
+                            images, unassigned)
 
   # Make any initial assignments, failing immediately if inconsistent.
   for (c, c_assignments) in pairs(initial)
@@ -350,6 +366,13 @@ assign_elem!(state::BacktrackingState{<:DynamicACSet}, depth, c, x, y) =
     return false
   end
 
+  # With an epic constraint, fail based on the # of unassigned in dom vs codom
+  if (!isnothing(state.image[@ct c]) && state.image[@ct c][y]!=0
+      && only(state.unassigned[@ct c]) <= count(==(0), state.image[@ct c]))
+    return false
+  end
+
+
   isnothing(state.predicates[c][x]) || y ∈ state.predicates[c][x] || return false
 
   # Check attributes first to fail as quickly as possible.
@@ -372,6 +395,10 @@ assign_elem!(state::BacktrackingState{<:DynamicACSet}, depth, c, x, y) =
   state.assignment_depth[@ct c][x] = depth
   if !isnothing(state.inv_assignment[@ct c])
     state.inv_assignment[@ct c][y] = x
+  end
+  if !isnothing(state.image[@ct c])
+    state.image[@ct c][y] += 1
+    state.unassigned[@ct c][1] -= 1
   end
 
   @ct_ctrl for (f,_,d) in attrs(S; from=c)
@@ -404,6 +431,10 @@ unassign_elem!(state::BacktrackingState{<:DynamicACSet}, depth, c, x) =
     if !isnothing(state.inv_assignment[@ct c])
       y = state.assignment[@ct c][x]
       state.inv_assignment[@ct c][y] = 0
+    end
+    if !isnothing(state.unassigned[@ct c])
+      state.unassigned[@ct c][1] += 1
+      state.image[@ct c][state.assignment[@ct c][x]] -= 1
     end
 
     @ct_ctrl for (f,_,d) in attrs(S; from=c)
