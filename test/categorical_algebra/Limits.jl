@@ -64,4 +64,28 @@ epi, mono = epi_mono(f)
 @test is_epic(epi)
 @test is_monic(mono)
 
+# Limits of FinCats
+###################
+
+# Cube, except one dimension has an involution on one terminus
+@present X(FreeSchema) begin (X₀,X₁)::Ob; x::Hom(X₀,X₁) end
+@present Y(FreeSchema) begin (Y₀,Y₁)::Ob; y::Hom(Y₀,Y₁) end
+@present Z(FreeSchema) begin 
+  (Z₀,Z₁)::Ob; z::Hom(Z₀,Z₁); 
+  inv::Hom(Z₁,Z₁); compose(inv, inv) == inv 
+end
+
+π₁,π₂,π₃ = XYZ = product(FinCat.([X,Y,Z]))
+
+@test hom_map(π₂, Symbol("(id(X₀), id(Y₁), inv)")) == id(last(Y.generators[:Ob]))
+@test hom_map(π₃, Symbol("(id(X₀), id(Y₁), inv)")) == last(Z.generators[:Hom])
+
+# 8 vertices on a cube
+@test length(ob_generators(apex(XYZ))) == 8
+# 12 sides of cube, plus loops on the corners of the top face 
+@test length(hom_generators(apex(XYZ))) == 12+4
+# 6 faces of the cube, plus equations on the four loops
+# plus inv naturality squares with (x Y₀ -) (x Y₁ -) (X₀ y -) (X₁ y -)
+@test length(equations(presentation(apex(XYZ)))) == 6 + 4 + 4
+
 end
