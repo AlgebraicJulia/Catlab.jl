@@ -809,9 +809,21 @@ rem_part!(p3, :V, 4)
 end
 @acset_type Petri(SchPetri,index=[:it,:ot])
 
+p = @acset Petri begin
+  S = 2; T = 2; I = 3; O = 4
+  is = [1,1,1]; os = [2,2,2,2]
+  it = [1,2,2]; ot = [1,1,1,2]
+end
+homoms = homomorphisms(p,p)
+hs = [:it,:ot]
+#Cartesian morphisms have to preserve the states and transitions and
+#can only permute the inputs to T 2 and the outputs to T 1
+@test sum(h->is_cartesian(h,hs),homoms) == 12
+
+
 # Test isomorphism of higher structures
 #######################################
-using Catlab,Test
+
 s, t = homomorphisms(Graph(1), path_graph(Graph, 2))
 @test is_isomorphic(s, s)
 @test !is_isomorphic(s, t)
@@ -843,17 +855,3 @@ exp_R = homomorphisms(bkwd_apex, bkwd_path_2; initial=(V=[2,2,1],)) |> only
 is_isomorphic(eq, Span(exp_L,exp_R))
 
 end # module
-
-p = @acset Petri begin
-  S = 2; T = 2; I = 3; O = 4
-  is = [1,1,1]; os = [2,2,2,2]
-  it = [1,2,2]; ot = [1,1,1,2]
-end
-homoms = homomorphisms(p,p)
-hs = [:it,:ot]
-#Cartesian morphisms have to preserve the states and transitions and
-#can only permute the inputs to T 2 and the outputs to T 1
-@test sum(h->is_cartesian(h,hs),homoms) == 12
-
-
-end
