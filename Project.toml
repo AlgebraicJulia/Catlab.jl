@@ -47,7 +47,7 @@ CatlabTikzPicturesExt = "TikzPictures"
 
 [compat]
 ACSets = "0.2.17"
-AlgebraicInterfaces = "0.1"
+AlgebraicInterfaces = "0.1.3"
 Colors = "0.12"
 CompTime = "0.1"
 Compose = "0.7, 0.8, 0.9"

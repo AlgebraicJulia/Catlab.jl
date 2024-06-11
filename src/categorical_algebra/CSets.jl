@@ -194,21 +194,14 @@ const ACSetDomCat = FinCats.FinCatPresentation{
             TypeCat{Union{FinSet,VarSet},
                     Union{VarFunction,FinDomFunction{Int}}}}
   acset::ACS
-  # FIXME: The equations should not be here. They should be in the acset, which
-  # is not yet supported for struct acsets.
-  equations::Vector{Pair}
 end
-FinDomFunctor(X::ACSet; equations=Pair[]) = ACSetFunctor(X, equations)
+FinDomFunctor(X::ACSet) = ACSetFunctor(X)
 ACSet(X::ACSetFunctor) = X.acset
 
 hasvar(X::ACSet) = any(o->nparts(X,o) > 0, attrtypes(acset_schema(X)))
 hasvar(X::ACSetFunctor) = hasvar(X.acset)
 
-function dom(F::ACSetFunctor)
-  pres = Presentation(F.acset)
-  add_equations!(pres, F.equations)
-  FinCat(pres)
-end
+dom(F::ACSetFunctor) = FinCat(Presentation(F.acset))
 
 function codom(F::ACSetFunctor)
   hasvar(F) ? TypeCat{VarSet,VarFunction}() :

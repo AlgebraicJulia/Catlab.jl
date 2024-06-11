@@ -274,9 +274,7 @@ function (M::SigmaMigrationFunctor)(d::ACSet; n=100, return_unit::Bool=false)
     ff = o ∈ ob(S) ? FinFunction : VarFunction{attrtype_type(D,o)}
     o => ff(m, nparts(rel_res, nameof(ob_map(functor(M)⋅i2,o))))
   end)
-  ddom = FinDomFunctor(d; equations=equations(dom(functor(M))))
-  dcodom = FinDomFunctor(res; equations=equations(codom(functor(M))))
-  DiagramHom{id}(functor(M), diagram_map, ddom, dcodom)
+  DiagramHom{id}(functor(M), diagram_map, FinDomFunctor(d), FinDomFunctor(res))
 end
 
 """
@@ -301,13 +299,13 @@ which works because left Kan extensions take representables to representables
 representables (they can be infinite), this function thus inherits any
 limitations of our implementation of left pushforward data migrations.
 """
-function representable(T, C::Presentation{ThSchema.Meta.T}, ob::Symbol;
-                       return_unit_id::Bool=false)
+function representable(cons, ob::Symbol; return_unit_id::Bool=false)
   C₀ = Presentation{Symbol}(FreeSchema)
+  C = Presentation(cons())
   add_generator!(C₀, C[ob])
   X = AnonACSet(C₀); add_part!(X, ob)
   F = FinFunctor(Dict(ob => ob), Dict(), C₀, C)
-  ΣF = SigmaMigrationFunctor(F, X, T)
+  ΣF = SigmaMigrationFunctor(F, X, cons())
   if return_unit_id
     η = ΣF(X; return_unit=true)
     (ACSet(diagram(codom(η))), only(collect(diagram_map(η)[ob])))
@@ -315,15 +313,6 @@ function representable(T, C::Presentation{ThSchema.Meta.T}, ob::Symbol;
     ΣF(X)
   end
 end
-
-"""
-ACSet types do not store info about equations, so this info is lost when we try
-to recover the presentation from the datatype. Thus, this method for 
-`representable` should only be used for free schemas
-""" 
-representable(::Type{T}, ob::Symbol; kw...) where T <: StructACSet =
-  representable(T, Presentation(T), ob; kw...)
-
 
 """
 The subobject classifier Ω in a presheaf topos is the presheaf that sends each 
@@ -341,16 +330,19 @@ map from B into the A which sends the point of B to f applied to the point of A)
 Returns the classifier as well as a dictionary of subobjects corresponding to 
 the parts of the classifier.
 """
-function subobject_classifier(T::Type, S::Presentation{ThSchema.Meta.T}; kw...)
+function subobject_classifier(T::Type; kw...)
+  S = Presentation(T())
   isempty(generators(S, :AttrType)) ||
     error("Cannot compute Ω for schema with attributes")
-  y = yoneda(T, S; kw...)
+  y = yoneda(T; kw...)
   obs = nameof.(generators(S, :Ob))
   subobs = Dict(ob => subobject_graph(ob_map(y, ob))[2] for ob in obs)
   Ω = T()
+
   for ob in obs
     add_parts!(Ω, ob, length(subobs[ob]))
   end
+
   for (f, a, b) in homs(acset_schema(Ω))
     BA = hom_map(y, f)
     Ω[f] = map(parts(Ω, a)) do pᵢ
@@ -376,15 +368,18 @@ Given a map f: a->b, we compute that f(Aᵢ) = Bⱼ by constructing the followin
 
 where f* is given by `yoneda`.
 """
-function internal_hom(G::T, F::T, S::Presentation{ThSchema.Meta.T}; kw...) where T<:ACSet
-  y = yoneda(T, S; kw...)
+function internal_hom(G::T, F::T; kw...) where T<:ACSet
+  S = Presentation(G)
+  y = yoneda(T; kw...)
   obs = nameof.(generators(S, :Ob))
   prods = Dict(ob => product(ob_map(y, ob),G) for ob in obs)
   maps = Dict(ob => homomorphisms(apex(prods[ob]),F) for ob in obs)
   Fᴳ = T()
+
   for ob in obs
     add_parts!(Fᴳ, ob, length(maps[ob]))
   end
+
   for (f, a, b) in homs(acset_schema(G))
     BA = hom_map(y, f)
     π₁, π₂ = prods[b]
@@ -393,6 +388,7 @@ function internal_hom(G::T, F::T, S::Presentation{ThSchema.Meta.T}; kw...) where
       findfirst(==(composite), maps[b])
     end
   end
+
   return Fᴳ, homs
 end
 
@@ -407,13 +403,15 @@ they can be supplied via the `cache` keyword argument.
 
 Returns a `FinDomFunctor` with domain `op(C)`.
 """
-function yoneda(cons, C::Presentation{ThSchema.Meta.T};
-                cache::AbstractDict=Dict{Symbol,Any}())
+function yoneda(cons; cache::AbstractDict=Dict{Symbol,Any}())
+  C = Presentation(cons())
+
   # Compute any representables that have not already been computed.
   for c in nameof.(generators(C, :Ob))
     haskey(cache, c) && continue
-    cache[c] = representable(cons, C, c, return_unit_id=true)
+    cache[c] = representable(cons, c, return_unit_id=true)
   end
+
   for c in nameof.(generators(C, :AttrType))
     haskey(cache, c) && continue
     rep = cons()
@@ -433,8 +431,8 @@ function yoneda(cons, C::Presentation{ThSchema.Meta.T};
 
   FinDomFunctor(y_ob, y_hom, op(FinCat(C)))
 end
-yoneda(::Type{T}; kw...) where T <: StructACSet = yoneda(T, Presentation(T); kw...)
-yoneda(X::DynamicACSet; kw...) = yoneda(constructor(X), Presentation(X.schema); kw...)
+
+yoneda(X::DynamicACSet; kw...) = yoneda(constructor(X); kw...)
 
 # Schema translation
 ####################
@@ -454,5 +452,4 @@ function FreeDiagrams.FreeDiagram(pres::Presentation{ThSchema.Meta.T, Symbol})
   return FreeDiagram(obs, collect(zip(homs, doms, codoms)))
 end
 
-end
-
+end # module
