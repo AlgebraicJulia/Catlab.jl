@@ -198,10 +198,10 @@ end
 FinDomFunctor(X::ACSet) = ACSetFunctor(X)
 ACSet(X::ACSetFunctor) = X.acset
 
-hasvar(X::ACSet) = any(o->nparts(X,o) > 0, attrtypes(acset_schema(X)))
-hasvar(X::ACSetFunctor) = hasvar(X.acset)
+hasvar(X::ACSet) = any(o->nparts(X,o) > 0, attrtypes(acset_schema(X))) # upstream?
+hasvar(X::ACSetFunctor) = hasvar(ACSet(X))
 
-dom(F::ACSetFunctor) = FinCat(Presentation(F.acset))
+dom(F::ACSetFunctor) = FinCat(Presentation(ACSet(F)))
 
 function codom(F::ACSetFunctor)
   hasvar(F) ? TypeCat{VarSet,VarFunction}() :
@@ -209,9 +209,9 @@ function codom(F::ACSetFunctor)
 end
 
 Categories.do_ob_map(F::ACSetFunctor, x) = 
-  (hasvar(F) ? VarSet : SetOb)(F.acset, functor_key(x))
+  (hasvar(F) ? VarSet : SetOb)(ACSet(F), functor_key(x))
 Categories.do_hom_map(F::ACSetFunctor, f) =  
-  (hasvar(F) ? VarFunction : FinFunction)(F.acset, functor_key(f))
+  (hasvar(F) ? VarFunction : FinFunction)(ACSet(F), functor_key(f))
 
 functor_key(x) = x
 functor_key(expr::GATExpr{:generator}) = first(expr)

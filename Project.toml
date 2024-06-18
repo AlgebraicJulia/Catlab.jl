@@ -46,7 +46,7 @@ CatlabSCSExt = "SCS"
 CatlabTikzPicturesExt = "TikzPictures"
 
 [compat]
-ACSets = "0.2.17"
+ACSets = "0.2.20"
 AlgebraicInterfaces = "0.1.3"
 Colors = "0.12"
 CompTime = "0.1"

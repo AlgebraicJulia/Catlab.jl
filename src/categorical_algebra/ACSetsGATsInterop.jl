@@ -46,7 +46,7 @@ function Schema(c::GATContext)
       end
     end
   end
-  BasicSchema(obs,homs,attrtypes,attrs,[])
+  return BasicSchema(obs, homs, attrtypes, attrs, [])
 end
 
 function Presentation(::Type{S}) where S <: TypeLevelBasicSchema{Symbol}
@@ -80,8 +80,8 @@ function Presentation(s::BasicSchema{Symbol})
   return pres
 end
 
-mk_term(pres, d::Symbol, ::Tuple{}) = id(Ob(FreeSchema.Ob, d))
-mk_term(pres, ::Symbol, t::Tuple{Symbol}) = generator(pres, only(t))
+mk_term(pres, dom::Symbol, ::Tuple{}) = id(Ob(FreeSchema.Ob, dom)) # id(dom)
+mk_term(pres, ::Symbol, t::Tuple{Symbol}) = generator(pres, only(t)) # generator
 mk_term(pres, ::Symbol, t::Tuple{Vararg{Symbol}}) = compose(generator.(Ref(pres), t)...)
 
 
