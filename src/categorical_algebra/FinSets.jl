@@ -349,8 +349,7 @@ FinFunction(f::VarFunction{T}) where T = FinFunction(
 FinDomFunction(f::VarFunction{T}) where T = f.fun
 Base.length(f::AbsVarFunction{T}) where T = length(collect(f.fun))
 Base.collect(f::AbsVarFunction{T}) where T = collect(f.fun)
-# XX: Does it really make sense that VarFunctions can only be evaluated 
-#     on AttrVars, say in the case they're giving an attribute?
+ 
 (f::VarFunction{T})(v::T) where T = v 
 (f::AbsVarFunction{T})(v::AttrVar) where T = f.fun(v.val) 
 
