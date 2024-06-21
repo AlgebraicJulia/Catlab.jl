@@ -2,7 +2,7 @@
 """
 module FinSets
 export FinSet, FinFunction, FinDomFunction, TabularSet, TabularLimit,
-  force, is_indexed, preimage, VarFunction, LooseVarFunction,
+  force, is_indexed, preimage, VarSet, VarFunction, LooseVarFunction,
   JoinAlgorithm, SmartJoin, NestedLoopJoin, SortMergeJoin, HashJoin,
   SubFinSet, SubOpBoolean, is_monic, is_epic, is_iso
 
@@ -322,9 +322,13 @@ Base.in(set::VarSet{T}, elem) where T = in(elem, 1:set.n)
 
 abstract type AbsVarFunction{T} end # either VarFunction or LooseVarFunction
 """
-Data type of a map out of a set of attribute variables
+Data type for a morphism of VarSet{T}s. Note we can equivalently view these 
+as morphisms [n]+T -> [m]+T fixing T or as morphisms [n] -> [m]+T, in the typical
+Kleisli category yoga. 
 
-Currently, domains are FinSet{Int} and codomains are expected to be FinSet{Int}.
+Currently, domains are treated as VarSets. The codom field is treated as a FinSet{Int}.
+Note that the codom accessor gives a VarSet while the codom field is just that VarSet's 
+FinSet of AttrVars.
 This could be generalized to being FinSet{Symbol} to allow for
 symbolic attributes. (Likewise, AttrVars will have to wrap Any rather than Int)
 """
@@ -338,15 +342,19 @@ symbolic attributes. (Likewise, AttrVars will have to wrap Any rather than Int)
 end
 VarFunction(f::AbstractVector{Int},cod::Int) = VarFunction(FinFunction(f,cod))
 VarFunction(f::FinDomFunction) = VarFunction{Union{}}(AttrVar.(collect(f)),codom(f))
+VarFunction{T}(f::FinDomFunction,cod::FinSet) where T = VarFunction{T}(collect(f),cod)
 FinFunction(f::VarFunction{T}) where T = FinFunction(
   [f.fun(i) isa AttrVar ? f.fun(i).val : error("Cannot cast to FinFunction") 
    for i in dom(f)], f.codom)
 FinDomFunction(f::VarFunction{T}) where T = f.fun
 Base.length(f::AbsVarFunction{T}) where T = length(collect(f.fun))
 Base.collect(f::AbsVarFunction{T}) where T = collect(f.fun)
+ 
 (f::VarFunction{T})(v::T) where T = v 
 (f::AbsVarFunction{T})(v::AttrVar) where T = f.fun(v.val) 
 
+#XX if a VarSet could contain an arbitrary FinSet of variables this
+#   wouldn't need to be so violent
 dom(f::AbsVarFunction{T}) where T = VarSet{T}(length(collect(f.fun)))
 codom(f::VarFunction{T}) where T = VarSet{T}(length(f.codom))
 id(s::VarSet{T}) where T = VarFunction{T}(AttrVar.(1:s.n), FinSet(s.n))
@@ -373,6 +381,10 @@ compose(f::VarFunction{T},g::VarFunction{T}) where {T} =
 compose(f::VarFunction{T}, g::FinFunction) where T =
   VarFunction{T}([elem isa AttrVar ? AttrVar(g(elem.val)) : elem 
                   for elem in collect(f)], g.codom)
+
+"""Compose [n]->[m] with [m]->[p]+T, yielding a [n]->T+[p]"""
+compose(f::FinFunction,g::VarFunction{T}) where T =
+  VarFunction{T}(compose(f,g.fun), g.codom)
 
 preimage(f::VarFunction{T}, v::AttrVar) where T = preimage(f.fun, v)
 preimage(f::VarFunction{T}, v::T) where T = preimage(f.fun, v)
