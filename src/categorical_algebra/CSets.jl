@@ -194,21 +194,14 @@ const ACSetDomCat = FinCats.FinCatPresentation{
             TypeCat{Union{FinSet,VarSet},
                     Union{VarFunction,FinDomFunction{Int}}}}
   acset::ACS
-  # FIXME: The equations should not be here. They should be in the acset, which
-  # is not yet supported for struct acsets.
-  equations::Vector{Pair}
 end
-FinDomFunctor(X::ACSet; equations=Pair[]) = ACSetFunctor(X, equations)
+FinDomFunctor(X::ACSet) = ACSetFunctor(X)
 ACSet(X::ACSetFunctor) = X.acset
 
-hasvar(X::ACSet) = any(o->nparts(X,o) > 0, attrtypes(acset_schema(X)))
-hasvar(X::ACSetFunctor) = hasvar(X.acset)
+hasvar(X::ACSet) = any(o->nparts(X,o) > 0, attrtypes(acset_schema(X))) # upstream?
+hasvar(X::ACSetFunctor) = hasvar(ACSet(X))
 
-function dom(F::ACSetFunctor)
-  pres = Presentation(F.acset)
-  add_equations!(pres, F.equations)
-  FinCat(pres)
-end
+dom(F::ACSetFunctor) = FinCat(Presentation(ACSet(F)))
 
 function codom(F::ACSetFunctor)
   hasvar(F) ? TypeCat{VarSet,VarFunction}() :
@@ -216,9 +209,9 @@ function codom(F::ACSetFunctor)
 end
 
 Categories.do_ob_map(F::ACSetFunctor, x) = 
-  (hasvar(F) ? VarSet : SetOb)(F.acset, functor_key(x))
+  (hasvar(F) ? VarSet : SetOb)(ACSet(F), functor_key(x))
 Categories.do_hom_map(F::ACSetFunctor, f) =  
-  (hasvar(F) ? VarFunction : FinFunction)(F.acset, functor_key(f))
+  (hasvar(F) ? VarFunction : FinFunction)(ACSet(F), functor_key(f))
 
 functor_key(x) = x
 functor_key(expr::GATExpr{:generator}) = first(expr)
