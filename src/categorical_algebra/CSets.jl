@@ -103,7 +103,7 @@ FinDomFunction(c::Column{Int,Union{AttrVar,T}}, dom, codom) where {T} =
 """ Create `VarSet` for attribute type of attributed C-set."""
 function VarSet(X::ACSet, type::Symbol)
   S = acset_schema(X)
-  if type ∈ ob(S)
+  if type ∈ ob(S) #honestly should probably be an error
     return VarSet{Union{}}(nparts(X,type))
   else 
     return VarSet{attrtype_type(X,type)}(nparts(X,type))
@@ -115,7 +115,7 @@ function VarFunction(X::ACSet, f::Symbol)
   if f ∈ attrs(S; just_names=true)
     VarFunction(X.subparts[f], parts(X,dom(S,f)), FinSet(nparts(X,codom(S,f))))
   else
-    VarFunction(FinFunction(X,f))
+    VarFunction(FinFunction(X,f)) #also probably an error
   end
 end
 
@@ -201,7 +201,13 @@ end
 FinDomFunctor(X::ACSet; equations=Pair[]) = ACSetFunctor(X, equations)
 ACSet(X::ACSetFunctor) = X.acset
 
-hasvar(X::ACSet) = any(o->nparts(X,o) > 0, attrtypes(acset_schema(X)))
+function hasvar(X::ACSet,x) 
+  s = acset_schema(X)
+  (x∈ attrs(acset_schema(X),just_names=true) && hasvar(X,codom(s,x))) || 
+  x∈attrtypes(acset_schema(X)) && nparts(X,x)>0
+end
+hasvar(X::ACSet) = any(o->hasvar(X,o), attrtypes(acset_schema(X)))
+hasvar(X::ACSetFunctor,x) = hasvar(X.acset,x)
 hasvar(X::ACSetFunctor) = hasvar(X.acset)
 
 function dom(F::ACSetFunctor)
@@ -210,15 +216,16 @@ function dom(F::ACSetFunctor)
   FinCat(pres)
 end
 
+#not clear this couldn't just always give the Vars
 function codom(F::ACSetFunctor)
-  hasvar(F) ? TypeCat{VarSet,VarFunction}() :
+  hasvar(F) ? TypeCat{Union{SetOb,VarSet},Union{FinDomFunction{Int},VarFunction}}() :
     TypeCat{SetOb,FinDomFunction{Int}}()
 end
 
 Categories.do_ob_map(F::ACSetFunctor, x) = 
-  (hasvar(F) ? VarSet : SetOb)(F.acset, functor_key(x))
+  (hasvar(F,functor_key(x)) ? VarSet : SetOb)(F.acset, functor_key(x))
 Categories.do_hom_map(F::ACSetFunctor, f) =  
-  (hasvar(F) ? VarFunction : FinFunction)(F.acset, functor_key(f))
+  (hasvar(F,functor_key(f)) ? VarFunction : FinFunction)(F.acset, functor_key(f))
 
 functor_key(x) = x
 functor_key(expr::GATExpr{:generator}) = first(expr)

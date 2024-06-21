@@ -535,11 +535,18 @@ end
 ##############
 # Construction 
 f = VarFunction{Vector{Int}}([AttrVar(1),[1,2,3]], FinSet(1))
+g = VarFunction{Vector{Int}}(FinDomFunction([AttrVar(1),[1,2,3]]),FinSet(1))
+@test f == g
 @test f([1,2]) == [1,2]
+@test f(AttrVar(2)) == [1,2,3]
 
 # Composition 
 f = VarFunction{Bool}(([AttrVar(2),AttrVar(1), true]),FinSet(3))
+g = FinFunction([2,3])
+h = FinFunction([2,2,1])
 @test collect(f⋅ f) == [AttrVar(1),AttrVar(2), true]
+@test collect(compose(g,f)) == [AttrVar(1),true]
+@test collect(compose(f,h)) == [AttrVar(2),AttrVar(2), true]
 
 @test force(f) == f
 @test f.(AttrVar.(3:-1:1)) == [true, AttrVar.(1:2)...]
