@@ -299,8 +299,8 @@ y_Graph_Dynamic = yoneda(DynamicACSet(Graph()))
 # Subobject classifier
 ######################
 # Graph and ReflGraph have 'same' subobject classifier
-ΩG,_ = subobject_classifier(Graph, SchGraph)
-ΩrG,_ = subobject_classifier(ReflexiveGraph, SchReflexiveGraph)
+ΩG,_ = subobject_classifier(Graph)
+ΩrG,_ = subobject_classifier(ReflexiveGraph)
 F = FinFunctor(Dict(:V=>:V, :E=>:E), Dict(:src=>:src, :tgt=>:tgt), 
                SchGraph, SchReflexiveGraph)
 ΔF = DataMigrationFunctor(F, ReflexiveGraph, Graph)
@@ -317,20 +317,21 @@ G = (star_graph(Graph, 2)⊗path_graph(Graph, 3))
   Φ⋅Φ⋅Φ⋅Φ == Φ⋅Φ
 end
 @acset_type DDS42(SchDDS42, index=[:Φ])
-ΩDDs, _ = subobject_classifier(DDS42, SchDDS42)
+ΩDDs, _ = subobject_classifier(DDS42)
 @test is_isomorphic(ΩDDs, @acset DDS42 begin X=4; Φ=[1,3,4,4] end)
 
 # Internal Hom
 ##############
 G = ReflexiveGraph(2)
 F = path_graph(ReflexiveGraph, 2)
-Fᴳ,_ = internal_hom(G,F, SchReflexiveGraph)
+Fᴳ,_ = internal_hom(G, F)
 Z = apex(terminal(ReflexiveGraph)) ⊕ path_graph(ReflexiveGraph, 3)
 @test length(homomorphisms(Z, Fᴳ)) == length(homomorphisms(Z ⊗ G, F)) # 64
 
 G = @acset DDS42 begin X=3; Φ=[2,3,3] end
 F = @acset DDS42 begin X=4; Φ=[2,2,4,4] end
-Fᴳ,_ = internal_hom(G,F, SchDDS42)
+Fᴳ,_ = internal_hom(G, F)
 Z = @acset DDS42 begin X=5; Φ=[2,3,4,3,4] end
 @test length(homomorphisms(Z, Fᴳ)) == length(homomorphisms(Z ⊗ G, F)) # 1024
+
 end # module

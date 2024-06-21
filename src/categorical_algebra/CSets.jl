@@ -194,11 +194,8 @@ const ACSetDomCat = FinCats.FinCatPresentation{
             TypeCat{Union{FinSet,VarSet},
                     Union{VarFunction,FinDomFunction{Int}}}}
   acset::ACS
-  # FIXME: The equations should not be here. They should be in the acset, which
-  # is not yet supported for struct acsets.
-  equations::Vector{Pair}
 end
-FinDomFunctor(X::ACSet; equations=Pair[]) = ACSetFunctor(X, equations)
+FinDomFunctor(X::ACSet) = ACSetFunctor(X)
 ACSet(X::ACSetFunctor) = X.acset
 
 function hasvar(X::ACSet,x) 
@@ -210,11 +207,8 @@ hasvar(X::ACSet) = any(o->hasvar(X,o), attrtypes(acset_schema(X)))
 hasvar(X::ACSetFunctor,x) = hasvar(X.acset,x)
 hasvar(X::ACSetFunctor) = hasvar(X.acset)
 
-function dom(F::ACSetFunctor)
-  pres = Presentation(F.acset)
-  add_equations!(pres, F.equations)
-  FinCat(pres)
-end
+
+dom(F::ACSetFunctor) = FinCat(Presentation(ACSet(F)))
 
 #not clear this couldn't just always give the Vars
 function codom(F::ACSetFunctor)
@@ -1118,11 +1112,9 @@ end
 const SubCSet{S} = Subobject{<:StructCSet{S}}
 const SubACSet{S} = Subobject{<:StructACSet{S}}
 
-# Cast VarFunctions to FinFunctions
+# Componentwise subobjects
 components(A::SubACSet{S}) where S = 
-  NamedTuple(k => Subobject(
-    k ∈ ob(S) ? vs : FinFunction([v.val for v in collect(vs)], FinSet(codom(vs))))
-  for (k,vs) in pairs(components(hom(A)))
+  NamedTuple(k => Subobject(vs) for (k,vs) in pairs(components(hom(A)))
 )
 
 force(A::SubACSet) = Subobject(force(hom(A)))
@@ -1247,10 +1239,13 @@ function subtract(A::SubACSet{S}, B::SubACSet{S}, ::SubOpBoolean) where S
   A, B = map(predicate, components(A)), map(predicate, components(B))
   D = NamedTuple(o => falses(nparts(X, o)) for o in types(S))
 
-  function set!(c, x)
+  set!(c::Symbol, x::AttrVar) = D[c][x.val] = true
+  function set!(c::Symbol, x::Int)
     D[c][x] = true
     for (c′,x′) in all_subparts(X, Val{c}, x)
-      if !D[c′][x′]; set!(c′,x′) end
+      if (c′ ∈ ob(S) && !D[c′][x′]) || x′ isa AttrVar 
+        set!(c′,x′) 
+      end
     end
   end
 
@@ -1270,7 +1265,7 @@ end
 
 @generated function all_subparts(X::StructACSet{S},
                                  ::Type{Val{c}}, x::Int) where {S,c}
-  Expr(:tuple, map(homs(S; from=c)) do (f,_,c′)
+  Expr(:tuple, map(arrows(S; from=c)) do (f,_,c′)
     :($(quot(c′)), subpart(X,x,$(quot(f))))
   end...)
 end
