@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>The Category of Elements · Catlab.jl</title><meta name="title" content="The Category of Elements · Catlab.jl"/><meta property="og:title" content="The Category of Elements · Catlab.jl"/><meta property="twitter:title" content="The Category of Elements · Catlab.jl"/><meta name="description" content="Documentation for Catlab.jl."/><meta property="og:description" content="Documentation for Catlab.jl."/><meta property="twitter:description" content="Documentation for Catlab.jl."/><script data-outdated-warner src="../../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../search_index.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../assets/themeswap.js"></script><script src="../../../assets/analytics.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../../"><img src="../../../assets/logo.svg" alt="Catlab.jl logo"/></a><div class="docs-package-name"><span class="docs-autofit"><a href="../../../">Catlab.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../../">Catlab.jl</a></li><li><span class="tocitem">Vignettes</span><ul><li><input class="collapse-toggle" id="menuitem-2-1" type="checkbox" checked/><label class="tocitem" for="menuitem-2-1"><span class="docs-label">Seven Sketches in Compositionality</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../partitions/">Partitions</a></li><li><a class="tocitem" href="../preorders/">Preorders</a></li><li><a class="tocitem" href="../meets/">Meets in Preorders</a></li><li><a class="tocitem" href="../smc/">Symmetric Monoidal Categories</a></li><li class="is-active"><a class="tocitem" href>The Category of Elements</a><ul class="internal"><li><a class="tocitem" href="#The-simplest-schema"><span>The simplest schema</span></a></li><li><a class="tocitem" href="#The-Elements-of-a-Graph-are-its-Vertices-and-Edges"><span>The Elements of a Graph are its Vertices and Edges</span></a></li><li><a class="tocitem" href="#Generality-of-the-construction"><span>Generality of the construction</span></a></li><li><a class="tocitem" href="#Reconstructing-the-C-Set-from-its-category-of-elemnts"><span>Reconstructing the C-Set from its category of elemnts</span></a></li><li><a class="tocitem" href="#The-Slice-Elements-Transform"><span>The Slice-Elements Transform</span></a></li></ul></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-2" type="checkbox"/><label class="tocitem" for="menuitem-2-2"><span class="docs-label">Graphs</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../graphs/graphs/">The Category of Graphs</a></li><li><a class="tocitem" href="../../graphs/graphs_label/">Labeled Graphs</a></li><li><a class="tocitem" href="../../graphs/subgraphs/">Algebra of subgraphs</a></li></ul></li><li><span class="tocitem">Categorical Algebra</span></li><li><input class="collapse-toggle" id="menuitem-2-4" type="checkbox"/><label class="tocitem" for="menuitem-2-4"><span class="docs-label">Wiring Diagrams</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../wiring_diagrams/wiring_diagram_basics/">Basics of wiring diagrams</a></li><li><a class="tocitem" href="../../wiring_diagrams/diagrams_and_expressions/">Wiring diagrams and syntactic expressions</a></li><li><a class="tocitem" href="../../wiring_diagrams/wd_cset/">Wiring Diagrams as Attributed C-Sets</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-5" type="checkbox"/><label class="tocitem" for="menuitem-2-5"><span class="docs-label">Graphics</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../graphics/graphviz_graphs/">Drawing graphs in Graphviz</a></li><li><a class="tocitem" href="../../graphics/graphviz_wiring_diagrams/">Drawing wiring diagrams in Graphviz</a></li><li><a class="tocitem" href="../../graphics/composejl_wiring_diagrams/">Drawing wiring diagrams in Compose.jl</a></li><li><a class="tocitem" href="../../graphics/tikz_wiring_diagrams/">Drawing wiring diagrams in TikZ</a></li><li><a class="tocitem" href="../../graphics/layouts_vs_drawings/">Layouts versus drawings of wiring diagrams</a></li></ul></li></ul></li><li><span class="tocitem">Modules</span><ul><li><a class="tocitem" href="../../../apis/theories/">Standard library of theories</a></li><li><a class="tocitem" href="../../../apis/categorical_algebra/">Categorical algebra</a></li><li><a class="tocitem" href="../../../apis/graphs/">Graphs</a></li><li><a class="tocitem" href="../../../apis/wiring_diagrams/">Wiring diagrams</a></li><li><a class="tocitem" href="../../../apis/graphics/">Graphics</a></li><li><a class="tocitem" href="../../../apis/programs/">Programs</a></li></ul></li><li><span class="tocitem">Developer Docs</span><ul><li><a class="tocitem" href="../../../devdocs/style/">Style Guide for AlgebraicJulia</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Vignettes</a></li><li><a class="is-disabled">Seven Sketches in Compositionality</a></li><li class="is-active"><a href>The Category of Elements</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>The Category of Elements</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/Catlab.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/Catlab.jl/blob/main/docs/literate/sketches/cat_elements.jl" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="The-Category-of-Elements"><a class="docs-heading-anchor" href="#The-Category-of-Elements">The Category of Elements</a><a id="The-Category-of-Elements-1"></a><a class="docs-heading-anchor-permalink" href="#The-Category-of-Elements" title="Permalink"></a></h1><p>A very useful construction in applied category theory is the Category of Elements, which is also called the Grothendieck construction. This is a very general technique in category theory, but we will look at how you can use it to explain why graphs are so useful in computer science. We have already seen that C-Sets are a model of relational databases that can be used to store data as a collection of interlocking tables. Relational databases are the bread and butter of the computing industry. Every company on earth uses software that is backed by a relational database. Most data that is not stored in a relational DB is often stored in some kind of graph data structure. This sketch will show how these approaches are interchangeable via the category of elements, which associates to every database instance a graph and a graph homomorphism into the schema of the graph.</p><pre><code class="language-julia hljs">using GATlab, Catlab.CategoricalAlgebra, Catlab.Graphs, Catlab.Graphics
+using Colors</code></pre><p>Let&#39;s tell Catlab how to draw categories of elements.</p><pre><code class="language-julia hljs">function graph(el::Elements)
+  F = FinFunctor(Dict(:V =&gt; :El, :E =&gt; :Arr), Dict(:src =&gt; :src, :tgt =&gt; :tgt),
+                 SchGraph, SchElements)
+  ΔF = DataMigrationFunctor(F, Elements{Symbol}, Graph)
+  return ΔF(el)
+end
+
+safecolors(start, stop, len) = if len &gt; 1
+  return hex.(range(start, stop=stop, length=len))
+else
+  return [hex.(start)]
+end
+
+function draw(f::Elements; kw...)
+  pg = to_graphviz_property_graph(graph(f);
+    node_labels=true, edge_labels=true, prog=&quot;neato&quot;, kw...)
+  vcolors = safecolors(colorant&quot;#0021A5&quot;, colorant&quot;#FA4616&quot;, nparts(f, :Ob))
+  ecolors = safecolors(colorant&quot;#6C9AC3&quot;, colorant&quot;#E28F41&quot;, nparts(f, :Hom))
+  for v in parts(f, :El)
+    fv = f[v, :πₑ]
+    set_vprops!(pg, v, Dict(:color =&gt; &quot;#$(vcolors[fv])&quot;, :label=&gt;&quot;$v:$(f[v,[:πₑ, :nameo]])&quot;))
+  end
+  for e in parts(f, :Arr)
+    fe = f[e, :πₐ]
+    set_eprops!(pg, e, Dict(:color =&gt; &quot;#$(ecolors[fe])&quot;))
+  end
+  to_graphviz(pg)
+end
+
+draw(g) = to_graphviz(g, node_labels=true, edge_labels=true, prog=&quot;neato&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">draw (generic function with 2 methods)</code></pre><h2 id="The-simplest-schema"><a class="docs-heading-anchor" href="#The-simplest-schema">The simplest schema</a><a id="The-simplest-schema-1"></a><a class="docs-heading-anchor-permalink" href="#The-simplest-schema" title="Permalink"></a></h2><p>First we will look at discrete dynamical systems. The set S is our state space and the funct nxt associates to every state, the next state in the system. This is a deterministic dynamical system with finitely many states and discrete time.</p><pre><code class="language-julia hljs">@present SchDDS(FreeSchema) begin
+  S::Ob
+  nxt::Hom(S, S)
+end
+
+@acset_type DDS(SchDDS, index=[:nxt])
+
+fₓ = @acset DDS begin
+  S = 3
+  nxt = [2,3,1]
+end</code></pre><div class="c-set">
+<span class="c-set-summary">Main.__atexample__named__cat_elements.DDS {S:3}</span>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">S</th>
+      <th style = "text-align: right;">nxt</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">3</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+<p>Now if you want to draw a DDS, you might think to draw each state as a vertex and the next relationship as an arrow from one state to the next state. If your intuition selected that representation, you have already discovered a special case of the category of elements</p><pre><code class="language-julia hljs">elᶠ = elements(fₓ)
+draw(graph(elᶠ))</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="65pt" height="65pt"
+ viewBox="0.00 0.00 65.32 64.68" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 60.68)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-60.68 61.32,-60.68 61.32,4 -4,4"/>
+<!-- n1 -->
+<g id="node1" class="node">
+<title>n1</title>
+<ellipse fill="none" stroke="black" cx="10.61" cy="-41.57" rx="10.71" ry="10.71"/>
+<text text-anchor="middle" x="10.61" y="-37.87" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- n2 -->
+<g id="node2" class="node">
+<title>n2</title>
+<ellipse fill="none" stroke="black" cx="46.71" cy="-41.81" rx="10.71" ry="10.71"/>
+<text text-anchor="middle" x="46.71" y="-38.11" font-family="Times,serif" font-size="14.00">2</text>
+</g>
+<!-- n1&%2345;&gt;n2 -->
+<g id="edge1" class="edge">
+<title>n1&%2345;&gt;n2</title>
+<path fill="none" stroke="black" d="M21.24,-41.64C24.3,-41.66 27.7,-41.69 31,-41.71"/>
+<polygon fill="black" stroke="black" points="31.01,-43.46 36.02,-41.74 31.04,-39.96 31.01,-43.46"/>
+<text text-anchor="middle" x="31.12" y="-45.48" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- n3 -->
+<g id="node3" class="node">
+<title>n3</title>
+<ellipse fill="none" stroke="black" cx="28.9" cy="-10.61" rx="10.71" ry="10.71"/>
+<text text-anchor="middle" x="28.9" y="-6.91" font-family="Times,serif" font-size="14.00">3</text>
+</g>
+<!-- n2&%2345;&gt;n3 -->
+<g id="edge2" class="edge">
+<title>n2&%2345;&gt;n3</title>
+<path fill="none" stroke="black" d="M41.27,-32.28C39.89,-29.86 38.38,-27.21 36.9,-24.62"/>
+<polygon fill="black" stroke="black" points="38.31,-23.56 34.31,-20.08 35.27,-25.29 38.31,-23.56"/>
+<text text-anchor="middle" x="44.08" y="-17.25" font-family="Times,serif" font-size="14.00">2</text>
+</g>
+<!-- n3&%2345;&gt;n1 -->
+<g id="edge3" class="edge">
+<title>n3&%2345;&gt;n1</title>
+<path fill="none" stroke="black" d="M23.31,-20.07C21.9,-22.47 20.34,-25.1 18.82,-27.67"/>
+<polygon fill="black" stroke="black" points="17.2,-26.98 16.16,-32.17 20.21,-28.76 17.2,-26.98"/>
+<text text-anchor="middle" x="26.07" y="-27.67" font-family="Times,serif" font-size="14.00">3</text>
+</g>
+</g>
+</svg>
+'/><p>As you are quite far in your category theoretic training, you are surely suspicious of the idea that you would construct the category of elements of a DDS and get a graph. We have a categorical construction, so your intuition should be saying &quot;there should be some kind of morphism that goes with this object&quot;. And there is, the Elements of a C-Set X is a graph whose vertices are rows in the tables of X and whose edges are the foreign key relationships in X, along with a graph homomorphism into the schema C. We can draw this using the same color coding convention we used to draw graph homomorphisms.</p><pre><code class="language-julia hljs">draw(elᶠ)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="78pt" height="73pt"
+ viewBox="0.00 0.00 78.04 73.14" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 69.14)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-69.14 74.04,-69.14 74.04,4 -4,4"/>
+<!-- n1 -->
+<g id="node1" class="node">
+<title>n1</title>
+<ellipse fill="none" stroke="%230021a5" cx="16.97" cy="-47.94" rx="16.94" ry="16.94"/>
+<text text-anchor="middle" x="16.97" y="-44.24" font-family="Times,serif" font-size="14.00">1:S</text>
+</g>
+<!-- n2 -->
+<g id="node2" class="node">
+<title>n2</title>
+<ellipse fill="none" stroke="%230021a5" cx="53.07" cy="-48.17" rx="16.94" ry="16.94"/>
+<text text-anchor="middle" x="53.07" y="-44.47" font-family="Times,serif" font-size="14.00">2:S</text>
+</g>
+<!-- n1&%2345;&gt;n2 -->
+<g id="edge1" class="edge">
+<title>n1&%2345;&gt;n2</title>
+<path fill="none" stroke="%236c9ac3" d="M34.18,-48.05C34.32,-48.05 34.47,-48.05 34.61,-48.05"/>
+<polygon fill="%236c9ac3" stroke="%236c9ac3" points="30.91,-49.78 35.92,-48.06 30.93,-46.28 30.91,-49.78"/>
+<text text-anchor="middle" x="31.89" y="-36.85" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- n3 -->
+<g id="node3" class="node">
+<title>n3</title>
+<ellipse fill="none" stroke="%230021a5" cx="35.27" cy="-16.97" rx="16.94" ry="16.94"/>
+<text text-anchor="middle" x="35.27" y="-13.27" font-family="Times,serif" font-size="14.00">3:S</text>
+</g>
+<!-- n2&%2345;&gt;n3 -->
+<g id="edge2" class="edge">
+<title>n2&%2345;&gt;n3</title>
+<path fill="none" stroke="%236c9ac3" d="M44.59,-33.3C44.52,-33.18 44.44,-33.05 44.37,-32.93"/>
+<polygon fill="%236c9ac3" stroke="%236c9ac3" points="47.73,-35.27 43.73,-31.8 44.69,-37.01 47.73,-35.27"/>
+<text text-anchor="middle" x="49.48" y="-21.92" font-family="Times,serif" font-size="14.00">2</text>
+</g>
+<!-- n3&%2345;&gt;n1 -->
+<g id="edge3" class="edge">
+<title>n3&%2345;&gt;n1</title>
+<path fill="none" stroke="%236c9ac3" d="M26.55,-31.73C26.47,-31.85 26.4,-31.98 26.33,-32.1"/>
+<polygon fill="%236c9ac3" stroke="%236c9ac3" points="26.7,-28.03 25.66,-33.22 29.71,-29.81 26.7,-28.03"/>
+<text text-anchor="middle" x="21.44" y="-20.72" font-family="Times,serif" font-size="14.00">3</text>
+</g>
+</g>
+</svg>
+'/><p>We can scale up our DDS drawing too.</p><pre><code class="language-julia hljs">Fₓ = @acset DDS begin
+  S = 7
+  nxt = [2,3,1, 1,7,7,4]
+end
+draw(elements(Fₓ))</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="105pt" height="175pt"
+ viewBox="0.00 0.00 105.49 175.27" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 171.27)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-171.27 101.49,-171.27 101.49,4 -4,4"/>
+<!-- n1 -->
+<g id="node1" class="node">
+<title>n1</title>
+<ellipse fill="none" stroke="%230021a5" cx="44.28" cy="-49.74" rx="16.94" ry="16.94"/>
+<text text-anchor="middle" x="44.28" y="-46.04" font-family="Times,serif" font-size="14.00">1:S</text>
+</g>
+<!-- n2 -->
+<g id="node2" class="node">
+<title>n2</title>
+<ellipse fill="none" stroke="%230021a5" cx="61.27" cy="-16.97" rx="16.94" ry="16.94"/>
+<text text-anchor="middle" x="61.27" y="-13.27" font-family="Times,serif" font-size="14.00">2:S</text>
+</g>
+<!-- n1&%2345;&gt;n2 -->
+<g id="edge1" class="edge">
+<title>n1&%2345;&gt;n2</title>
+<path fill="none" stroke="%236c9ac3" d="M52.18,-34.51C52.23,-34.41 52.28,-34.31 52.33,-34.21"/>
+<polygon fill="%236c9ac3" stroke="%236c9ac3" points="52.68,-37.34 53.43,-32.1 49.57,-35.73 52.68,-37.34"/>
+<text text-anchor="middle" x="57.26" y="-38.16" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- n3 -->
+<g id="node3" class="node">
+<title>n3</title>
+<ellipse fill="none" stroke="%230021a5" cx="25.74" cy="-17.9" rx="16.94" ry="16.94"/>
+<text text-anchor="middle" x="25.74" y="-14.2" font-family="Times,serif" font-size="14.00">3:S</text>
+</g>
+<!-- n2&%2345;&gt;n3 -->
+<g id="edge2" class="edge">
+<title>n2&%2345;&gt;n3</title>
+<path fill="none" stroke="%236c9ac3" d="M43.92,-17.42C43.78,-17.43 43.64,-17.43 43.5,-17.43"/>
+<polygon fill="%236c9ac3" stroke="%236c9ac3" points="48.03,-15.56 43.08,-17.45 48.12,-19.06 48.03,-15.56"/>
+<text text-anchor="middle" x="43.71" y="-6.23" font-family="Times,serif" font-size="14.00">2</text>
+</g>
+<!-- n3&%2345;&gt;n1 -->
+<g id="edge3" class="edge">
+<title>n3&%2345;&gt;n1</title>
+<path fill="none" stroke="%236c9ac3" d="M34.36,-32.7C34.41,-32.8 34.47,-32.9 34.53,-32.99"/>
+<polygon fill="%236c9ac3" stroke="%236c9ac3" points="31.69,-31.6 35.72,-35.04 34.72,-29.84 31.69,-31.6"/>
+<text text-anchor="middle" x="39.44" y="-21.65" font-family="Times,serif" font-size="14.00">3</text>
+</g>
+<!-- n4 -->
+<g id="node4" class="node">
+<title>n4</title>
+<ellipse fill="none" stroke="%230021a5" cx="45.37" cy="-87.13" rx="16.94" ry="16.94"/>
+<text text-anchor="middle" x="45.37" y="-83.43" font-family="Times,serif" font-size="14.00">4:S</text>
+</g>
+<!-- n4&%2345;&gt;n1 -->
+<g id="edge4" class="edge">
+<title>n4&%2345;&gt;n1</title>
+<path fill="none" stroke="%236c9ac3" d="M44.86,-69.75C44.86,-69.64 44.86,-69.52 44.85,-69.41"/>
+<polygon fill="%236c9ac3" stroke="%236c9ac3" points="46.68,-71.95 44.78,-67 43.18,-72.05 46.68,-71.95"/>
+<text text-anchor="middle" x="39.86" y="-58.38" font-family="Times,serif" font-size="14.00">4</text>
+</g>
+<!-- n5 -->
+<g id="node5" class="node">
+<title>n5</title>
+<ellipse fill="none" stroke="%230021a5" cx="80.51" cy="-147.09" rx="16.94" ry="16.94"/>
+<text text-anchor="middle" x="80.51" y="-143.39" font-family="Times,serif" font-size="14.00">5:S</text>
+</g>
+<!-- n7 -->
+<g id="node7" class="node">
+<title>n7</title>
+<ellipse fill="none" stroke="%230021a5" cx="47.57" cy="-125.61" rx="16.94" ry="16.94"/>
+<text text-anchor="middle" x="47.57" y="-121.91" font-family="Times,serif" font-size="14.00">7:S</text>
+</g>
+<!-- n5&%2345;&gt;n7 -->
+<g id="edge5" class="edge">
+<title>n5&%2345;&gt;n7</title>
+<path fill="none" stroke="%236c9ac3" d="M65.97,-137.6C65.88,-137.55 65.79,-137.49 65.71,-137.44"/>
+<polygon fill="%236c9ac3" stroke="%236c9ac3" points="66.96,-136.16 61.81,-134.9 65.05,-139.09 66.96,-136.16"/>
+<text text-anchor="middle" x="70.84" y="-126.32" font-family="Times,serif" font-size="14.00">5</text>
+</g>
+<!-- n6 -->
+<g id="node6" class="node">
+<title>n6</title>
+<ellipse fill="none" stroke="%230021a5" cx="16.97" cy="-150.3" rx="16.94" ry="16.94"/>
+<text text-anchor="middle" x="16.97" y="-146.6" font-family="Times,serif" font-size="14.00">6:S</text>
+</g>
+<!-- n6&%2345;&gt;n7 -->
+<g id="edge6" class="edge">
+<title>n6&%2345;&gt;n7</title>
+<path fill="none" stroke="%236c9ac3" d="M30.48,-139.4C30.64,-139.27 30.8,-139.14 30.96,-139.01"/>
+<polygon fill="%236c9ac3" stroke="%236c9ac3" points="31.54,-140.79 34.34,-136.29 29.34,-138.06 31.54,-140.79"/>
+<text text-anchor="middle" x="25.72" y="-128" font-family="Times,serif" font-size="14.00">6</text>
+</g>
+<!-- n7&%2345;&gt;n4 -->
+<g id="edge7" class="edge">
+<title>n7&%2345;&gt;n4</title>
+<path fill="none" stroke="%236c9ac3" d="M46.6,-108.62C46.59,-108.53 46.59,-108.44 46.58,-108.35"/>
+<polygon fill="%236c9ac3" stroke="%236c9ac3" points="48.38,-109.15 46.35,-104.25 44.89,-109.34 48.38,-109.15"/>
+<text text-anchor="middle" x="41.59" y="-97.28" font-family="Times,serif" font-size="14.00">7</text>
+</g>
+</g>
+</svg>
+'/><p>A category of elements derived from a C-Set is stored as a C-Set of on a different schema. You can see that it is the data of a graph homomorphism where the codomain graph has vertex and edge labels. The two projections πₑ and πₐ are the components of a natural transformation between graphs viewed as functors into Set. The names are attributes usually of type Symbol.</p><pre><code class="language-julia hljs">to_graphviz(SchElements)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="168pt" height="187pt"
+ viewBox="0.00 0.00 168.32 186.77" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 182.77)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-182.77 164.32,-182.77 164.32,4 -4,4"/>
+<!-- n1 -->
+<g id="node1" class="node">
+<title>n1</title>
+<ellipse fill="none" stroke="black" cx="27" cy="-39.06" rx="27" ry="18"/>
+<text text-anchor="middle" x="27" y="-35.36" font-family="Times,serif" font-size="14.00">El</text>
+</g>
+<!-- n3 -->
+<g id="node3" class="node">
+<title>n3</title>
+<ellipse fill="none" stroke="black" cx="47.65" cy="-114.31" rx="27" ry="18"/>
+<text text-anchor="middle" x="47.65" y="-110.61" font-family="Times,serif" font-size="14.00">Ob</text>
+</g>
+<!-- n1&%2345;&gt;n3 -->
+<g id="edge5" class="edge">
+<title>n1&%2345;&gt;n3</title>
+<path fill="none" stroke="black" d="M31.89,-56.89C34.34,-65.79 37.35,-76.77 40.08,-86.72"/>
+<polygon fill="black" stroke="black" points="36.77,-87.89 42.79,-96.61 43.52,-86.04 36.77,-87.89"/>
+<text text-anchor="middle" x="28.49" y="-75.61" font-family="Times,serif" font-size="14.00">πₑ</text>
+</g>
+<!-- n2 -->
+<g id="node2" class="node">
+<title>n2</title>
+<ellipse fill="none" stroke="black" cx="102.07" cy="-18" rx="27" ry="18"/>
+<text text-anchor="middle" x="102.07" y="-14.3" font-family="Times,serif" font-size="14.00">Arr</text>
+</g>
+<!-- n2&%2345;&gt;n1 -->
+<g id="edge1" class="edge">
+<title>n2&%2345;&gt;n1</title>
+<path fill="none" stroke="black" d="M74.92,-18.94C69.06,-20.25 62.83,-21.91 56.87,-23.74"/>
+<polygon fill="black" stroke="black" points="55.59,-20.48 47.2,-26.95 57.8,-27.12 55.59,-20.48"/>
+<text text-anchor="middle" x="54.89" y="-10.14" font-family="Times,serif" font-size="14.00">src</text>
+</g>
+<!-- n2&%2345;&gt;n1 -->
+<g id="edge2" class="edge">
+<title>n2&%2345;&gt;n1</title>
+<path fill="none" stroke="black" d="M81.63,-30.19C76.2,-32.13 70.16,-34.01 64.14,-35.64"/>
+<polygon fill="black" stroke="black" points="62.99,-32.32 54.12,-38.12 64.67,-39.11 62.99,-32.32"/>
+<text text-anchor="middle" x="61.89" y="-36.71" font-family="Times,serif" font-size="14.00">tgt</text>
+</g>
+<!-- n4 -->
+<g id="node4" class="node">
+<title>n4</title>
+<ellipse fill="none" stroke="black" cx="122.67" cy="-93.15" rx="27" ry="18"/>
+<text text-anchor="middle" x="122.67" y="-89.45" font-family="Times,serif" font-size="14.00">Hom</text>
+</g>
+<!-- n2&%2345;&gt;n4 -->
+<g id="edge6" class="edge">
+<title>n2&%2345;&gt;n4</title>
+<path fill="none" stroke="black" d="M106.95,-35.81C109.37,-44.64 112.35,-55.5 115.06,-65.38"/>
+<polygon fill="black" stroke="black" points="111.73,-66.49 117.75,-75.21 118.49,-64.64 111.73,-66.49"/>
+<text text-anchor="middle" x="103.51" y="-54.4" font-family="Times,serif" font-size="14.00">πₐ</text>
+</g>
+<!-- n5 -->
+<g id="node5" class="node">
+<title>n5</title>
+<ellipse fill="black" stroke="black" cx="101.78" cy="-161.97" rx="1.8" ry="1.8"/>
+<text text-anchor="middle" x="78.48" y="-167.57" font-family="Times,serif" font-size="14.00">Name</text>
+</g>
+<!-- n3&%2345;&gt;n5 -->
+<g id="edge7" class="edge">
+<title>n3&%2345;&gt;n5</title>
+<path fill="none" stroke="black" d="M64.19,-128.87C73.52,-137.1 84.84,-147.06 92.61,-153.9"/>
+<polygon fill="black" stroke="black" points="90.48,-156.69 100.29,-160.67 95.1,-151.43 90.48,-156.69"/>
+<text text-anchor="middle" x="54.4" y="-145.19" font-family="Times,serif" font-size="14.00">nameo</text>
+</g>
+<!-- n4&%2345;&gt;n3 -->
+<g id="edge3" class="edge">
+<title>n4&%2345;&gt;n3</title>
+<path fill="none" stroke="black" d="M95.53,-94.13C89.67,-95.45 83.45,-97.12 77.49,-98.96"/>
+<polygon fill="black" stroke="black" points="76.21,-95.7 67.83,-102.18 78.43,-102.34 76.21,-95.7"/>
+<text text-anchor="middle" x="71.01" y="-85.34" font-family="Times,serif" font-size="14.00">dom</text>
+</g>
+<!-- n4&%2345;&gt;n3 -->
+<g id="edge4" class="edge">
+<title>n4&%2345;&gt;n3</title>
+<path fill="none" stroke="black" d="M102.26,-105.37C96.83,-107.32 90.8,-109.2 84.78,-110.84"/>
+<polygon fill="black" stroke="black" points="83.63,-107.52 74.77,-113.34 85.32,-114.31 83.63,-107.52"/>
+<text text-anchor="middle" x="106.02" y="-111.9" font-family="Times,serif" font-size="14.00">cod</text>
+</g>
+<!-- n4&%2345;&gt;n5 -->
+<g id="edge8" class="edge">
+<title>n4&%2345;&gt;n5</title>
+<path fill="none" stroke="black" d="M117.29,-110.87C113.54,-123.24 108.63,-139.4 105.35,-150.21"/>
+<polygon fill="black" stroke="black" points="101.97,-149.3 102.41,-159.88 108.67,-151.33 101.97,-149.3"/>
+<text text-anchor="middle" x="135.82" y="-134.34" font-family="Times,serif" font-size="14.00">nameh</text>
+</g>
+</g>
+</svg>
+'/><p>In the case of a DDS, we have only one object and one morphism in the schema. Since the graph with one edge and one vertices is terminal in <em>Graph</em>, there is only one vertex and edge color being used.</p><h2 id="The-Elements-of-a-Graph-are-its-Vertices-and-Edges"><a class="docs-heading-anchor" href="#The-Elements-of-a-Graph-are-its-Vertices-and-Edges">The Elements of a Graph are its Vertices and Edges</a><a id="The-Elements-of-a-Graph-are-its-Vertices-and-Edges-1"></a><a class="docs-heading-anchor-permalink" href="#The-Elements-of-a-Graph-are-its-Vertices-and-Edges" title="Permalink"></a></h2><p>In what might appear as primordial ooze, we can examine the category of elements of a graph. We will look at the commuting triangle graph. Notice how there are 3 vertices and three edges with each edge incident to 2 vertices.</p><pre><code class="language-julia hljs">g = @acset Graph begin
+  V = 3
+  E = 3
+  src = [1,2,1]
+  tgt = [2,3,3]
+end
+draw(g)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="65pt" height="65pt"
+ viewBox="0.00 0.00 65.32 64.68" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 60.68)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-60.68 61.32,-60.68 61.32,4 -4,4"/>
+<!-- n1 -->
+<g id="node1" class="node">
+<title>n1</title>
+<ellipse fill="none" stroke="black" cx="10.61" cy="-41.57" rx="10.71" ry="10.71"/>
+<text text-anchor="middle" x="10.61" y="-37.87" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- n2 -->
+<g id="node2" class="node">
+<title>n2</title>
+<ellipse fill="none" stroke="black" cx="46.71" cy="-41.81" rx="10.71" ry="10.71"/>
+<text text-anchor="middle" x="46.71" y="-38.11" font-family="Times,serif" font-size="14.00">2</text>
+</g>
+<!-- n1&%2345;&gt;n2 -->
+<g id="edge1" class="edge">
+<title>n1&%2345;&gt;n2</title>
+<path fill="none" stroke="black" d="M21.24,-41.64C24.3,-41.66 27.7,-41.69 31,-41.71"/>
+<polygon fill="black" stroke="black" points="31.01,-43.46 36.02,-41.74 31.04,-39.96 31.01,-43.46"/>
+<text text-anchor="middle" x="31.12" y="-45.48" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- n3 -->
+<g id="node3" class="node">
+<title>n3</title>
+<ellipse fill="none" stroke="black" cx="28.9" cy="-10.61" rx="10.71" ry="10.71"/>
+<text text-anchor="middle" x="28.9" y="-6.91" font-family="Times,serif" font-size="14.00">3</text>
+</g>
+<!-- n1&%2345;&gt;n3 -->
+<g id="edge3" class="edge">
+<title>n1&%2345;&gt;n3</title>
+<path fill="none" stroke="black" d="M16.2,-32.11C17.61,-29.71 19.17,-27.08 20.69,-24.51"/>
+<polygon fill="black" stroke="black" points="22.31,-25.2 23.35,-20.01 19.3,-23.42 22.31,-25.2"/>
+<text text-anchor="middle" x="13.44" y="-17.11" font-family="Times,serif" font-size="14.00">3</text>
+</g>
+<!-- n2&%2345;&gt;n3 -->
+<g id="edge2" class="edge">
+<title>n2&%2345;&gt;n3</title>
+<path fill="none" stroke="black" d="M41.27,-32.28C39.89,-29.86 38.38,-27.21 36.9,-24.62"/>
+<polygon fill="black" stroke="black" points="38.31,-23.56 34.31,-20.08 35.27,-25.29 38.31,-23.56"/>
+<text text-anchor="middle" x="44.08" y="-17.25" font-family="Times,serif" font-size="14.00">2</text>
+</g>
+</g>
+</svg>
+'/><p>The category of elements has 6 vertices and 6 edges. The 6 vertices come from 3 vertices of type V and 3 vertices of type E. The 6 edges in this graph are 3 src relationships and 3 target relationships.</p><pre><code class="language-julia hljs">elᵍ = elements(g)
+draw(elᵍ)
+
+g = @acset Graph begin
+  V = 6
+  E = 7
+  src = [1,2,1,3,5,6,4]
+  tgt = [2,3,3,5,6,3,4]
+end
+draw(g)
+draw(elements(g))</code></pre><img src="373afc21.svg" alt="Example block output"/><p>Notice that the 3 vertices of type E are interspersed between the 3 vertices of type V and vice versa. You can see that the normal visual syntax for a graph is more compact for the special case of graphs. However the category of elements works for any schema C.</p><h2 id="Generality-of-the-construction"><a class="docs-heading-anchor" href="#Generality-of-the-construction">Generality of the construction</a><a id="Generality-of-the-construction-1"></a><a class="docs-heading-anchor-permalink" href="#Generality-of-the-construction" title="Permalink"></a></h2><p>Discrete Dynamical Systems and Graphs are clearly data structures from mathematics and so it would make sense that they have a clean representation in the categorical language. But how about a database schema that comes not from mathematics, but from software engineering. We turn to everyone&#39;s favorite database example, the HR database at a fictitious company.</p><pre><code class="language-julia hljs">@present SchCompany(FreeSchema) begin
+  (P, D, S)::Ob # Person, Department, Salary
+  worksin::Hom(P, D)    # Every Person works in a Department
+  makes::Hom(P, S)      # Every Person makes a Salary
+  reportsto::Hom(P, P)  # Every Person reports to a Person
+  managedby::Hom(D, P)  # Every Department is managed by a Person
+  leq::Hom(S,S)         # Salaries are a finite total order
+end
+
+@acset_type Company(SchCompany, index=[])</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Main.Company</code></pre><p>We can draw a company that has 4 people, 2 departments, and 3 distinct salaries.</p><pre><code class="language-julia hljs">cmpy = @acset Company begin
+  P = 4
+  D = 2
+  S = 3
+  worksin = [1,1,2,2]
+  makes = [3,1,2,1]
+  reportsto = [1, 1,1,3]
+  managedby = [1,3]
+  leq = [2,3,3]
+end</code></pre><div class="c-set">
+<span class="c-set-summary">Main.__atexample__named__cat_elements.Company {P:4, D:2, S:3}</span>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">P</th>
+      <th style = "text-align: right;">worksin</th>
+      <th style = "text-align: right;">makes</th>
+      <th style = "text-align: right;">reportsto</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">3</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">D</th>
+      <th style = "text-align: right;">managedby</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">3</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">S</th>
+      <th style = "text-align: right;">leq</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">3</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">3</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+<p>A visualization of the elements of this functor is commonly described as a knowledge graph.</p><pre><code class="language-julia hljs">elᶜ = elements(cmpy)
+draw(elᶜ)</code></pre><img src="46537d0c.svg" alt="Example block output"/><p>The visualization of the category of elements isn&#39;t the most compact representation of data, but it is always an option. Once you know how to draw a graph homomorphism as a color-coded graph, you know how to draw any C-Set. The vertices and edges of the domain graph are the rows and fields of the C-Set, and the colors are from the vertices and edges of the schema C, viewed as a graph presenting the category. One thing you lose is the ability to represent path equations in C.</p><h2 id="Reconstructing-the-C-Set-from-its-category-of-elemnts"><a class="docs-heading-anchor" href="#Reconstructing-the-C-Set-from-its-category-of-elemnts">Reconstructing the C-Set from its category of elemnts</a><a id="Reconstructing-the-C-Set-from-its-category-of-elemnts-1"></a><a class="docs-heading-anchor-permalink" href="#Reconstructing-the-C-Set-from-its-category-of-elemnts" title="Permalink"></a></h2><p>When looking at the graphical representation of the category of elements, you can see that the vertices are numbered sequentially within their vertex type. This order can be computed with the incident function in Catlab. There are inclusions of all the tables in the database instance into the global vertex set of the knowledge graph representation.</p><pre><code class="language-julia hljs">incident(elᶜ, :, :πₑ)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">3-element Vector{AbstractVector{Int64}}:
+ [1, 2, 3, 4]
+ [5, 6]
+ [7, 8, 9]</code></pre><p>The same goes for the edges (arrows) in the category of elements.</p><pre><code class="language-julia hljs">incident(elᶜ, :, :πₐ)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">5-element Vector{AbstractVector{Int64}}:
+ [1, 2, 3, 4]
+ [5, 6, 7, 8]
+ [9, 10, 11, 12]
+ [13, 14]
+ [15, 16, 17]</code></pre><p>From this information, you can reassemble the knowledge graph into a database. You use the codomain graph as the schema and then these two projections πₑ and πₐ to recover the instance data.</p><pre><code class="language-julia hljs">cset(T::Type, el::Elements) = begin
+  X = T()
+  ℓ = Dict{Int, Int}() # this map reverses the inclusions converting global element numbers into per-table numbers
+  for ob in parts(el, :Ob)
+    obname = el[ob, :nameo]
+    eltsob = incident(el, ob, :πₑ)
+    pts = add_parts!(X, obname, length(eltsob))
+    map(zip(pts, eltsob)) do (i,x)
+      ℓ[x] = i
+    end
+  end
+  for h in parts(el, :Hom)
+    nameh = el[h, :nameh]
+    arrₕ = incident(el, h, :πₐ)
+    doms = map(arrₕ) do e
+      ℓ[el[e, :src]]
+    end
+    codoms = map(arrₕ) do e
+      ℓ[el[e, :tgt]]
+    end
+    set_subpart!(X, doms, nameh, codoms)
+  end
+  return X
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">cset (generic function with 1 method)</code></pre><p>We can apply this algorithm to our company knowledge graph to recover our original DB.</p><pre><code class="language-julia hljs">cset(Company, elᶜ)
+cmpy == cset(Company, elᶜ)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">true</code></pre><p>Hopefully you see one reason why graphs are ubiquitous in computer science. Every relational database is isomorphic to a typed graph. You can generate this graph from the database and recover the database from the typed graph. So while knowledge graphs are great for ingesting data when you aren&#39;t sure about the structure and useful for some types of computation that involve long paths. You can always build your software on relational databases knowing that you can easily get access to all the graph algorithms by applying the Grothendieck construction.</p><h2 id="The-Slice-Elements-Transform"><a class="docs-heading-anchor" href="#The-Slice-Elements-Transform">The Slice-Elements Transform</a><a id="The-Slice-Elements-Transform-1"></a><a class="docs-heading-anchor-permalink" href="#The-Slice-Elements-Transform" title="Permalink"></a></h2><p>An amazing fact about presheaf toposes is that they are closed under taking slices. In the graphs section of this documentation, you can find a description of bipartite and k-partite graphs as a morphisms into a clique. That definition is very mathematically pleasing because it gives you a category of partitioned graphs that are derived from commuting triangles in Graph. However, for application oriented practitioners, the definition of a bipartite graph as &quot;a graph with two sets of vertices, where all the edges go between the groups with no edges within either group&quot; is probably more explicit. For example a classic way to get a bipartite graph would be to look at the graph of authors and papers that those authors wrote. People write papers, people do not write people and papers do not write papers so the authorship graph is bipartite. These two equivalent definitions of a bipartite graph are related via an isomorphism you can find on the <a href="https://ncatlab.org/nlab/show/category+of+presheaves#RelWithOvercategories">nlab</a>. It shows that a slice category of [C,Set]/X is isomorphic to [El(X), Set] which is a cateogory of presheaves on a different schema. Catlab knows how to use this idea to turn a category of elements into a schema for a new category of presheaves. The two directions of the isomorphism are not yet implemented.</p><pre><code class="language-julia hljs">e = @acset Graph begin
+  V = 2
+  E = 1
+  src = 1
+  tgt = 2
+end
+
+draw(elements(e))
+
+SchBipartite = CatElements.presentation(elements(e))[1]
+to_graphviz(SchBipartite)
+
+@acset_type BipartiteGraph(SchBipartite)
+b = @acset BipartiteGraph begin
+  V_1 = 3
+  V_2 = 2
+  E_1 = 5
+  src_E_1 = [1,2,3,3,2]
+  tgt_E_1 = [1,2,2,1,1]
+end
+draw(elements(b))</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="239pt" height="169pt"
+ viewBox="0.00 0.00 239.14 168.63" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 164.63)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-164.63 235.14,-164.63 235.14,4 -4,4"/>
+<!-- n1 -->
+<g id="node1" class="node">
+<title>n1</title>
+<ellipse fill="none" stroke="%230021a5" cx="28.28" cy="-128.14" rx="28.07" ry="28.07"/>
+<text text-anchor="middle" x="28.28" y="-124.44" font-family="Times,serif" font-size="14.00">1:V_1</text>
+</g>
+<!-- n2 -->
+<g id="node2" class="node">
+<title>n2</title>
+<ellipse fill="none" stroke="%230021a5" cx="172.64" cy="-124.82" rx="28.07" ry="28.07"/>
+<text text-anchor="middle" x="172.64" y="-121.12" font-family="Times,serif" font-size="14.00">2:V_1</text>
+</g>
+<!-- n3 -->
+<g id="node3" class="node">
+<title>n3</title>
+<ellipse fill="none" stroke="%230021a5" cx="131.49" cy="-29.96" rx="28.07" ry="28.07"/>
+<text text-anchor="middle" x="131.49" y="-26.26" font-family="Times,serif" font-size="14.00">3:V_1</text>
+</g>
+<!-- n4 -->
+<g id="node4" class="node">
+<title>n4</title>
+<ellipse fill="none" stroke="%237d345e" cx="99.36" cy="-100.33" rx="28.07" ry="28.07"/>
+<text text-anchor="middle" x="99.36" y="-96.63" font-family="Times,serif" font-size="14.00">4:V_2</text>
+</g>
+<!-- n5 -->
+<g id="node5" class="node">
+<title>n5</title>
+<ellipse fill="none" stroke="%237d345e" cx="202.85" cy="-55.32" rx="28.07" ry="28.07"/>
+<text text-anchor="middle" x="202.85" y="-51.62" font-family="Times,serif" font-size="14.00">5:V_2</text>
+</g>
+<!-- n6 -->
+<g id="node6" class="node">
+<title>n6</title>
+<ellipse fill="none" stroke="%23fa4616" cx="63.41" cy="-116.26" rx="28.07" ry="28.07"/>
+<text text-anchor="middle" x="63.41" y="-112.56" font-family="Times,serif" font-size="14.00">6:E_1</text>
+</g>
+<!-- n6&%2345;&gt;n1 -->
+<g id="edge1" class="edge">
+<title>n6&%2345;&gt;n1</title>
+<path fill="none" stroke="%236c9ac3" d="M36.43,-125.38C36.36,-125.41 36.28,-125.43 36.21,-125.45"/>
+<polygon fill="%236c9ac3" stroke="%236c9ac3" points="40.17,-122.27 35.99,-125.53 41.29,-125.58 40.17,-122.27"/>
+<text text-anchor="middle" x="31.32" y="-129.22" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- n6&%2345;&gt;n4 -->
+<g id="edge6" class="edge">
+<title>n6&%2345;&gt;n4</title>
+<path fill="none" stroke="%23e28f41" d="M89.53,-104.68C89.58,-104.66 89.62,-104.64 89.66,-104.62"/>
+<polygon fill="%23e28f41" stroke="%23e28f41" points="85.93,-108.19 89.79,-104.57 84.51,-104.99 85.93,-108.19"/>
+<text text-anchor="middle" x="84.6" y="-108.45" font-family="Times,serif" font-size="14.00">6</text>
+</g>
+<!-- n7 -->
+<g id="node7" class="node">
+<title>n7</title>
+<ellipse fill="none" stroke="%23fa4616" cx="201.64" cy="-96.17" rx="28.07" ry="28.07"/>
+<text text-anchor="middle" x="201.64" y="-92.47" font-family="Times,serif" font-size="14.00">7:E_1</text>
+</g>
+<!-- n7&%2345;&gt;n2 -->
+<g id="edge2" class="edge">
+<title>n7&%2345;&gt;n2</title>
+<path fill="none" stroke="%236c9ac3" d="M181.5,-116.07C181.42,-116.15 181.34,-116.22 181.27,-116.3"/>
+<polygon fill="%236c9ac3" stroke="%236c9ac3" points="183.36,-111.77 181.04,-116.53 185.82,-114.26 183.36,-111.77"/>
+<text text-anchor="middle" x="176.38" y="-119.98" font-family="Times,serif" font-size="14.00">2</text>
+</g>
+<!-- n7&%2345;&gt;n5 -->
+<g id="edge7" class="edge">
+<title>n7&%2345;&gt;n5</title>
+<path fill="none" stroke="%23e28f41" d="M202.48,-67.8C202.48,-67.74 202.48,-67.69 202.49,-67.63"/>
+<polygon fill="%23e28f41" stroke="%23e28f41" points="204.09,-72.52 202.49,-67.47 200.59,-72.42 204.09,-72.52"/>
+<text text-anchor="middle" x="207.48" y="-56.52" font-family="Times,serif" font-size="14.00">7</text>
+</g>
+<!-- n8 -->
+<g id="node8" class="node">
+<title>n8</title>
+<ellipse fill="none" stroke="%23fa4616" cx="172.21" cy="-28.28" rx="28.07" ry="28.07"/>
+<text text-anchor="middle" x="172.21" y="-24.58" font-family="Times,serif" font-size="14.00">8:E_1</text>
+</g>
+<!-- n8&%2345;&gt;n3 -->
+<g id="edge3" class="edge">
+<title>n8&%2345;&gt;n3</title>
+<path fill="none" stroke="%236c9ac3" d="M143.93,-29.45C143.87,-29.45 143.82,-29.45 143.77,-29.45"/>
+<polygon fill="%236c9ac3" stroke="%236c9ac3" points="148.53,-27.5 143.6,-29.46 148.67,-31 148.53,-27.5"/>
+<text text-anchor="middle" x="138.85" y="-33.25" font-family="Times,serif" font-size="14.00">3</text>
+</g>
+<!-- n8&%2345;&gt;n5 -->
+<g id="edge8" class="edge">
+<title>n8&%2345;&gt;n5</title>
+<path fill="none" stroke="%23e28f41" d="M193.49,-47.06C193.57,-47.13 193.65,-47.2 193.74,-47.28"/>
+<polygon fill="%23e28f41" stroke="%23e28f41" points="189.07,-45.49 193.98,-47.49 191.39,-42.87 189.07,-45.49"/>
+<text text-anchor="middle" x="188.61" y="-50.97" font-family="Times,serif" font-size="14.00">8</text>
+</g>
+<!-- n9 -->
+<g id="node9" class="node">
+<title>n9</title>
+<ellipse fill="none" stroke="%23fa4616" cx="103.25" cy="-58.75" rx="28.07" ry="28.07"/>
+<text text-anchor="middle" x="103.25" y="-55.05" font-family="Times,serif" font-size="14.00">9:E_1</text>
+</g>
+<!-- n9&%2345;&gt;n3 -->
+<g id="edge4" class="edge">
+<title>n9&%2345;&gt;n3</title>
+<path fill="none" stroke="%236c9ac3" d="M123.17,-38.44C123.24,-38.37 123.32,-38.29 123.39,-38.22"/>
+<polygon fill="%236c9ac3" stroke="%236c9ac3" points="121.35,-42.79 123.6,-38 118.85,-40.34 121.35,-42.79"/>
+<text text-anchor="middle" x="118.28" y="-42.13" font-family="Times,serif" font-size="14.00">4</text>
+</g>
+<!-- n9&%2345;&gt;n4 -->
+<g id="edge9" class="edge">
+<title>n9&%2345;&gt;n4</title>
+<path fill="none" stroke="%23e28f41" d="M100.59,-87.17C100.58,-87.23 100.58,-87.29 100.57,-87.34"/>
+<polygon fill="%23e28f41" stroke="%23e28f41" points="99.28,-82.37 100.56,-87.51 102.77,-82.7 99.28,-82.37"/>
+<text text-anchor="middle" x="95.58" y="-91.06" font-family="Times,serif" font-size="14.00">9</text>
+</g>
+<!-- n10 -->
+<g id="node10" class="node">
+<title>n10</title>
+<ellipse fill="none" stroke="%23fa4616" cx="132.31" cy="-125.98" rx="34.8" ry="34.8"/>
+<text text-anchor="middle" x="132.31" y="-122.28" font-family="Times,serif" font-size="14.00">10:E_1</text>
+</g>
+<!-- n10&%2345;&gt;n2 -->
+<g id="edge5" class="edge">
+<title>n10&%2345;&gt;n2</title>
+<path fill="none" stroke="%236c9ac3" d="M167.03,-124.98C167.08,-124.98 167.14,-124.98 167.19,-124.98"/>
+<polygon fill="%236c9ac3" stroke="%236c9ac3" points="162.4,-126.87 167.35,-124.97 162.3,-123.37 162.4,-126.87"/>
+<text text-anchor="middle" x="162.11" y="-128.78" font-family="Times,serif" font-size="14.00">5</text>
+</g>
+<!-- n10&%2345;&gt;n4 -->
+<g id="edge10" class="edge">
+<title>n10&%2345;&gt;n4</title>
+<path fill="none" stroke="%23e28f41" d="M104.8,-104.57C104.75,-104.53 104.7,-104.49 104.65,-104.45"/>
+<polygon fill="%23e28f41" stroke="%23e28f41" points="109.52,-106.02 104.5,-104.33 107.37,-108.78 109.52,-106.02"/>
+<text text-anchor="middle" x="114.22" y="-108.31" font-family="Times,serif" font-size="14.00">10</text>
+</g>
+</g>
+</svg>
+'/><p>As a very advanced exercise, you could try to implement one or both directions of the isomorphism above.</p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../smc/">« Symmetric Monoidal Categories</a><a class="docs-footer-nextpage" href="../../graphs/graphs/">The Category of Graphs »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.4.1 on <span class="colophon-date" title="Friday 21 June 2024 18:58">Friday 21 June 2024</span>. Using Julia version 1.10.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
