@@ -250,8 +250,13 @@ function ACSetInterface.copy_parts!(X::ACSet, F::FinDomFunctor)
     set_subpart!(X, dom_parts, nameof(f), codom_parts[collect(hom_map(F, f))])
   end
   for f in generators(pres, :Attr)
+    cd = nameof(codom(f))
     dom_parts = added[nameof(dom(f))]
-    set_subpart!(X, dom_parts, nameof(f), collect(hom_map(F, f)))
+    F_of_f = collect(hom_map(F,f))
+    n_attrvars_present = nparts(X, cd)
+    n_attrvars_needed = maximum(map(x->x.val,filter(x->x isa AttrVar,F_of_f)),init=0)
+    add_parts!(X,cd,n_attrvars_needed-n_attrvars_present)
+    set_subpart!(X, dom_parts, nameof(f), F_of_f)
   end
   added
 end
