@@ -541,6 +541,7 @@ end
 
 @test VarFunction(A,:weight) == VarFunction{Bool}([AttrVar(1), true], FinSet(2))
 
+
 f = ACSetTransformation(
   Dict(:V=>[1],:E=>[1,2],:Weight=>[AttrVar(2), AttrVar(1)]), A, A
 )
@@ -557,6 +558,10 @@ w1,w2,w3 = ws = [WG{x}() for x in [Symbol,Bool,Int]]
 [add_parts!(w, :Weight, 2) for w in ws]
 rem_part!(w1, :Weight, 1)
 @test [nparts(w, :Weight) for w in ws] == [1,2,2]
+
+A′ = WG{Bool}(FinDomFunctor(A))
+rem_part!(A,:Weight,2)
+@test is_isomorphic(A,A′)
 
 # Construct Tight/Loose ACSet Transformations
 #--------------------------------------------
