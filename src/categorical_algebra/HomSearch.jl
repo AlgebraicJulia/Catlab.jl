@@ -193,20 +193,12 @@ end
 
 function backtracking_search(f, X::ACSet, Y::ACSet;
     monic=false, epic=false, iso=false, random=false, predicates=(;),
-    type_components=(;), initial=(;), error_failures=false)
+    type_components=(;), initial=(;), error_failures=false, no_bind=false)
   S, Sy = acset_schema.([X,Y])
   S == Sy || error("Schemas must match for morphism search")
   Ob = Tuple(objects(S))
   Attr = Tuple(attrtypes(S))
   ObAttr = Tuple(objects(S) ∪ attrtypes(S))
-  # Fail if there are "free floating attribute variables"
-  all(attrtypes(S)) do a_type
-    ats = attrs(S, just_names=true, to=a_type)
-    avs = collect.([filter(x->x isa AttrVar, X[f]) for f in ats])
-    pa = partial_assignments(get(initial, a_type, []); is_attr=true)
-    initkeys = AttrVar.(keys(collect(pa)))
-    length(unique(vcat(initkeys, avs...))) == nparts(X, a_type) 
-  end || error("Cannot search for morphisms with free-floating variables")
 
   # Fail early if no monic/isos exist on cardinality grounds.
   if iso isa Bool
@@ -218,11 +210,15 @@ function backtracking_search(f, X::ACSet, Y::ACSet;
   if epic isa Bool
     epic = epic ? Ob : ()
   end
+  if no_bind isa Bool 
+    no_bind = no_bind ? Attr : ()
+  end
+
   iso_failures = Iterators.filter(c->nparts(X,c)!=nparts(Y,c),iso)
   mono_failures = Iterators.filter(c->nparts(X,c)>nparts(Y,c),monic)  
   epi_failures = Iterators.filter(c->nparts(X,c)<nparts(Y,c),epic)  
 
-  if !all(isempty, [iso_failures,mono_failures,epi_failures])
+  if !all(isempty, [iso_failures, mono_failures, epi_failures])
     if !error_failures 
       return false 
     else error("""
@@ -233,6 +229,20 @@ function backtracking_search(f, X::ACSet, Y::ACSet;
       """)
     end
   end
+  
+  # Fail if there are "free floating attribute variables"
+  for a_type in attrtypes(S) 
+    a_type ∈ (monic ∪ iso ∪ no_bind) && continue # attrvars ↦ attrvars
+    attrs′ = attrs(S, just_names=true, to=a_type)
+    avars = union(collect.([filter(x->x isa AttrVar, X[f]) for f in attrs′])...)
+    assigned = partial_assignments(get(initial, a_type, []); is_attr=true)
+    assigned′ = first.(collect(assigned))
+    unassigned = setdiff(parts(X, a_type), [v.val for v in avars] ∪ assigned′)
+    if !isempty(unassigned)
+      error("Cannot search for morphisms with free-floating variables: $unassigned")
+    end
+  end
+  
 
   # Injections between finite sets of the same size are bijections, so reduce to that case.
   monic = unique([iso..., monic...])
@@ -296,9 +306,32 @@ function backtracking_search(f, state::BacktrackingState, depth::Int;
     else
       S = acset_schema(state.dom)
       od = Dict{Symbol,Vector{Int}}(k=>(state.assignment[k]) for k in objects(S))
-      ad = Dict(k=>last.(state.assignment[k]) for k in attrtypes(S))
-      comps = merge(NamedTuple(od),NamedTuple(ad))
-      return f(ACSetTransformation(comps, state.dom, state.codom))
+
+      # Compute possible assignments for all free variables
+      free_data = map(attrtypes(S)) do k
+        monic = !isnothing(state.inv_assignment[k])
+        assigned = [v.val for (_, v) in state.assignment[k] if v isa AttrVar]
+        valid_targets = setdiff(parts(state.codom, k), monic ? assigned : [])
+        free_vars = findall(==(AttrVar(0)), last.(state.assignment[k]))
+        N = length(free_vars)
+        prod_iter = Iterators.product(fill(valid_targets, N)...)
+        if monic
+          prod_iter = Iterators.filter(x->length(x)==length(unique(x)), prod_iter)
+        end
+        (free_vars, prod_iter) # prod_iter = valid assignments for this attrtype
+      end
+
+      # Homomorphism for each element in the product of the prod_iters
+      for combo in Iterators.product(last.(free_data)...) 
+        ad = Dict(map(zip(attrtypes(S), first.(free_data), combo)) do (k, xs, vs)
+          vec = last.(state.assignment[k])
+          vec[xs] = AttrVar.(collect(vs))
+          k => vec
+        end)
+        comps = merge(NamedTuple(od),NamedTuple(ad))
+        f(ACSetTransformation(comps, state.dom, state.codom))
+      end
+      return false
     end
   elseif mrv == 0
     # An element has no allowable assignment, so we must backtrack.
@@ -401,16 +434,24 @@ assign_elem!(state::BacktrackingState{<:DynamicACSet}, depth, c, x, y) =
     state.unassigned[@ct c][1] -= 1
   end
 
-  @ct_ctrl for (f,_,d) in attrs(S; from=c)
-    if subpart(X,x,@ct(f)) isa AttrVar
-      v = subpart(X,x,@ct(f)).val
-      xcount,_ = state.assignment[@ct d][v]
-      state.assignment[@ct d][v] = xcount+1 => subpart(Y,y,@ct(f))
+  # Enforce naturality for all attrs, e.g. assigning an edge fixes its weight
+  @ct_ctrl for (f, _, d) in attrs(S; from=c)
+    if subpart(X, x, @ct(f)) isa AttrVar 
+      v = subpart(X, x, @ct(f)).val
+      xcount, _ = state.assignment[@ct d][v]
+      Yf = subpart(Y, y, @ct(f))
+      invD = state.inv_assignment[@ct d]
+      state.assignment[@ct d][v] = xcount+1 => Yf
+      if !isnothing(invD)
+        (Yf isa AttrVar && invD[Yf.val] == 0) || return false
+        invD[Yf.val] = v 
+      end
     end
   end
 
   @ct_ctrl for (f, _, d) in homs(S; from=c) 
-    assign_elem!(state, depth, @ct(d), subpart(X,x,@ct f),subpart(Y,y,@ct f)) || return false
+    assign_elem!(state, depth, @ct(d), subpart(X, x, @ct f),
+                 subpart(Y, y, @ct f)) || return false
   end
   return true
 end
@@ -442,6 +483,11 @@ unassign_elem!(state::BacktrackingState{<:DynamicACSet}, depth, c, x) =
         v = subpart(X,x,@ct(f)).val
         n, αv = state.assignment[@ct(d)][v]
         state.assignment[@ct(d)][v]= (n-1 => αv)
+        invD = state.inv_assignment[@ct d]
+        # Reset inv assignment if it's we're unsetting last reference
+        if n == 1 && αv isa AttrVar && !isnothing(invD) && invD[αv.val] == v
+          invD[αv.val] = 0
+        end
       end
     end
 
