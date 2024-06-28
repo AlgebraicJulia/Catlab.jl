@@ -774,6 +774,20 @@ expected = @acset WeightedGraph{Float64} begin V=6; E=7; Weight=3;
 end
 @test is_isomorphic(apex(ABC),expected)
 
+
+expected = @acset WeightedGraph{Float64} begin V=1; E=3; Weight=2; 
+  src=[1,1,1]; tgt=[1,1,1]; weight=AttrVar.([1,2,2])
+end
+homomorphisms(expected, expected; monic=[:Weight])
+
+@present SchLSet(FreeSchema) begin X::Ob; D::AttrType; f::Attr(X,D) end
+@acset_type LSet(SchLSet){Symbol}
+
+X = @acset LSet begin X=2; D=1; f=AttrVar.([1,1]) end;
+homomorphisms(X,X; monic=true)
+
+
+
 # 3. Apply commutative monoid to attrs
 ABC = pullback(AC, BC; attrfun=(weight=prod,))
 expected = @acset WeightedGraph{Float64} begin V=6; E=7;

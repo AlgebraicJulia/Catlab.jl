@@ -443,7 +443,7 @@ assign_elem!(state::BacktrackingState{<:DynamicACSet}, depth, c, x, y) =
       invD = state.inv_assignment[@ct d]
       state.assignment[@ct d][v] = xcount+1 => Yf
       if !isnothing(invD)
-        (Yf isa AttrVar && invD[Yf.val] == 0) || return false
+        (Yf isa AttrVar && invD[Yf.val] ∈ [0, v]) || return false
         invD[Yf.val] = v 
       end
     end
