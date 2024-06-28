@@ -651,7 +651,7 @@ f′ = homomorphism(A, X; initial=(Weight=[true,AttrVar(1)],))
 g′ = homomorphism(A, X; initial=(Weight=[true,AttrVar(2)],))
 fg = universal(AA, Cospan(f′,g′))
 
-# PUSHOUTS
+# PUSHOUTS wow
 V = @acset WG{Bool} begin Weight=1 end
 f = ACSetTransformation(Dict(:Weight=>[AttrVar(1)]), V, A)
 g = ACSetTransformation(Dict(:Weight=>[AttrVar(2)]), V, A)
