@@ -315,10 +315,13 @@ VarSet(i::Int) = VarSet{Union{}}(i)
 SetOb(s::VarSet{Union{}}) = FinSet(s)
 SetOb(s::VarSet{T}) where T = TypeSet{Union{AttrVar,T}}()
 FinSet(s::VarSet) = FinSet(s.n) #Note this throws away `T`, most accurate when thinking about tight `VarFunction`s.
-Base.iterate(set::VarSet{T}, args...) where T = iterate(1:set.n, args...)
+"""
+The iterable part of a varset is its collection of `AttrVar`s.
+"""
+Base.iterate(set::VarSet{T}, args...) where T = iterate(AttrVar.(1:set.n), args...)
 Base.length(set::VarSet{T}) where T = set.n
 Base.in(set::VarSet{T}, elem) where T = in(elem, 1:set.n)
-Base.eltype(set::VarSet{T}) where T = T
+Base.eltype(set::VarSet{T}) where T = Union{AttrVar,T}
 
 
 abstract type AbsVarFunction{T} end # either VarFunction or LooseVarFunction
@@ -364,7 +367,7 @@ function is_monic(f::VarFunction)
   vals = [v.val for v in collect(f.fun)]
   return length(vals) == length(unique(vals))
 end
-is_epic(f::VarFunction) = AttrVar.(f.codom) ⊆ collect(f)
+is_epic(f::VarFunction) = AttrVar.(f.codom) ⊆ collect(f) #XXX: tested?
 
 compose(::IdentityFunction{TypeSet{T}}, f::AbsVarFunction{T}) where T = f
 compose(f::VarFunction{T}, ::IdentityFunction{TypeSet{T}}) where T = f
@@ -1289,7 +1292,7 @@ end
 
 # FIXME: Handle more specific diagrams? Now only VarSet colimits will be bipartite
 function universal(lim::BipartiteColimit{<:VarSet{T}}, cocone::Multicospan) where {T}
-  VarFunction{T}(map(AttrVar.(collect(apex(lim)))) do p 
+  VarFunction{T}(map(collect(apex(lim))) do p 
     for (l, csp) in zip(legs(lim), cocone)
       pre = preimage(l, p) # find some colimit leg which maps onto this part
       if !isempty(pre)
