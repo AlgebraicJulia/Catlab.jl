@@ -559,9 +559,17 @@ w1,w2,w3 = ws = [WG{x}() for x in [Symbol,Bool,Int]]
 rem_part!(w1, :Weight, 1)
 @test [nparts(w, :Weight) for w in ws] == [1,2,2]
 
-A′ = WG{Bool}(FinDomFunctor(A))
-rem_part!(A,:Weight,2)
-@test is_isomorphic(A,A′)
+A′ = WG(FinDomFunctor(A))
+rem_part!(A,:Weight,2) #remove the dangling attrvar from A
+
+C = FinCat(SchWeightedGraph)
+obs = Dict(x=>x for x in ob_generators(C))
+homs = Dict(f=> f for f in hom_generators(C))
+F = FinDomFunctor(obs,homs,C,C)
+A′′ = WG(compose(F,FinDomFunctor(A)))
+#Test both A′ and A′′ for constructing an acset from 
+# an ACSetFunctor, respectively, a FinDomFunctorMap.
+@test A == A′ == A′′
 
 # Construct Tight/Loose ACSet Transformations
 #--------------------------------------------

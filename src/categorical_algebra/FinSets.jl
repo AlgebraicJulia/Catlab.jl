@@ -318,6 +318,7 @@ FinSet(s::VarSet) = FinSet(s.n) #Note this throws away `T`, most accurate when t
 Base.iterate(set::VarSet{T}, args...) where T = iterate(1:set.n, args...)
 Base.length(set::VarSet{T}) where T = set.n
 Base.in(set::VarSet{T}, elem) where T = in(elem, 1:set.n)
+Base.eltype(set::VarSet{T}) where T = T
 
 
 abstract type AbsVarFunction{T} end # either VarFunction or LooseVarFunction

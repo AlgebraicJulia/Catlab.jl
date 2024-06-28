@@ -229,13 +229,15 @@ functor_key(expr::GATExpr{:generator}) = first(expr)
 function (::Type{ACS})(F::FinDomFunctor) where ACS <: ACSet
   X = if ACS isa UnionAll
     pres = presentation(dom(F))
-    ACS{(eltype(ob_map(F, c)) for c in generators(pres, :AttrType))...}()
+    ACS{(strip_attrvars(eltype(ob_map(F, c))) for c in generators(pres, :AttrType))...}()
   else
     ACS()
   end
   copy_parts!(X, F)
   return X
 end
+strip_attrvars(T) = T
+strip_attrvars(::Type{Union{AttrVar, T}}) where T = T
 
 """ Copy parts from a set-valued `FinDomFunctor` to an `ACSet`.
 """
