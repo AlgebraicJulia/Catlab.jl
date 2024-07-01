@@ -1,4 +1,5 @@
 module TestRelationalPrograms
+
 using Test
 
 using Catlab.CategoricalAlgebra.CSets
@@ -49,7 +50,8 @@ d = RelationDiagram(0)
 add_box!(d, 0, name=:A)
 @test parsed == d
 
-# Typed
+
+# Typed by Symbols
 #------
 
 parsed = @relation (x,y,z) where (x::X, y::Y, z::Z, w::W) begin
@@ -57,6 +59,10 @@ parsed = @relation (x,y,z) where (x::X, y::Y, z::Z, w::W) begin
   S(y,w)
   T(z,w)
 end
+
+show_uwd(parsed)
+show_uwd_types(parsed)
+
 d = RelationDiagram([:X,:Y,:Z])
 add_box!(d, [:X,:W], name=:R)
 add_box!(d, [:Y,:W], name=:S)
@@ -65,6 +71,57 @@ add_junctions!(d, [:X,:Y,:Z,:W], variable=[:x,:y,:z,:w])
 set_junction!(d, [1,4,2,4,3,4])
 set_junction!(d, [1,2,3], outer=true)
 @test parsed == d
+
+
+# Typed by Ints
+#------
+
+parsed = @relation (x,y,z) where (x::1, y::2, z::3, w::4) begin
+  R(x,w)
+  S(y,w)
+  T(z,w)
+end
+
+d = RelationDiagram([:1,:2,:3])
+add_box!(d, [:1,:4], name=:R)
+add_box!(d, [:2,:4], name=:S)
+add_box!(d, [:3,:4], name=:T)
+add_junctions!(d, [:1,:2,:3,:4], variable=[:x,:y,:z,:w])
+set_junction!(d, [1,4,2,4,3,4])
+set_junction!(d, [1,2,3], outer=true)
+@test parsed == d
+
+
+
+# Typed by Expressions
+#------
+
+function n()
+end
+
+parsed = @relation (x,y,z) where (x::n(1), y::n(2), z::n(3), w::n(4)) begin
+  R(x,w)
+  S(y,w)
+  T(z,w)
+end
+
+
+
+# Testing doesn't work right now because Julia doesn't like calling n as a function
+d = RelationDiagram([Expr(n(1)), Expr(n(1)), Expr(n(1))])
+add_box!(d, [:n(1),:n(4)], name=:R)
+add_box!(d, [:n(2),:n(4)], name=:S)
+add_box!(d, [:n(3),:n(4)], name=:T)
+add_junctions!(d, [:n(1),:n(2),:n(3),:n(4)], variable=[:x,:y,:z,:w])
+set_junction!(d, [1,4,2,4,3,4])
+set_junction!(d, [1,2,3], outer=true)
+@test parsed == d
+
+
+
+
+
+
 
 # Special case: closed diagram.
 sird_uwd = @relation () where (S::Pop, I::Pop, R::Pop, D::Pop) begin

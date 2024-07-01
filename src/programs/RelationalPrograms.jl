@@ -4,13 +4,14 @@ module RelationalPrograms
 export RelationDiagram, UntypedRelationDiagram, TypedRelationDiagram,
   SchRelationDiagram, SchTypedRelationDiagram,
   SchNamedRelationDiagram, SchTypedNamedRelationDiagram,
-  @relation, parse_relation_diagram
+  @relation, parse_relation_diagram, show_uwd, show_uwd_types
 
 using MLStyle: @match
 
 using GATlab
 using ...CategoricalAlgebra.CSets
 using ...WiringDiagrams.UndirectedWiringDiagrams
+using Catlab   # Could have greater specificity
 
 # Data types
 ############
@@ -147,9 +148,21 @@ function parse_relation_diagram(head::Expr, body::Expr)
   end
   var_types = if isnothing(all_types) # Untyped case.
     vars -> length(vars)
-  else # Typed case.
+  elseif typeof(all_types[1]) <: Int # Int typed case
+    println("int typed case")
+    var_type_map = Dict{Symbol,Int}(zip(all_vars, all_types))
+    vars -> getindex.(Ref(var_type_map), vars)
+  elseif typeof(all_types[1]) <: Expr # Int typed case
+    println("expr typed case")
+    var_type_map = Dict{Symbol,Expr}(zip(all_vars, all_types))
+    vars -> getindex.(Ref(var_type_map), vars)
+  else # Symbol typed case.
+    println("symbol typed case")
+    println(typeof(all_types))
+    println(all_types)
     var_type_map = Dict{Symbol,Symbol}(zip(all_vars, all_types))
     vars -> getindex.(Ref(var_type_map), vars)
+
   end
 
   # Create wiring diagram and add outer ports and junctions.
@@ -186,6 +199,7 @@ function parse_relation_diagram(head::Expr, body::Expr)
 end
 
 function parse_relation_context(context)
+  println("here")
   terms = @match context begin
     Expr(:tuple) => return (Symbol[], nothing)
     Expr(:tuple, terms...) => terms
@@ -194,18 +208,33 @@ function parse_relation_context(context)
   vars = map(terms) do term
     @match term begin
       Expr(:(::), var::Symbol, type::Symbol) => (var => type)
+      Expr(:(::), var::Symbol, type::Int) => (var => type)
+      Expr(:(::), var::Symbol, type::Expr) => (var => type)
+
+      # Arbitrary expression types
+
+
       var::Symbol => var
-      _ => error("Invalid syntax in term $expr of context")
+      _ => error("Invalid syntax in term $term of context")
     end
   end
   if vars isa AbstractVector{Symbol}
     (vars, nothing)
+  # elseif vars isa AbstractVector{}
+  #   (vars, nothing)
   elseif vars isa AbstractVector{Pair{Symbol,Symbol}}
+    (first.(vars), last.(vars))
+  elseif vars isa AbstractVector{Pair{Symbol, Int}}
+    println("symbol int case")
+    (first.(vars), last.(vars))
+  elseif vars isa AbstractVector{Pair{Symbol, Expr}}
+    println("symbol expr case")
     (first.(vars), last.(vars))
   else
     error("Context $context mixes typed and untyped variables")
   end
 end
+
 
 function parse_relation_call(call)
   @match call begin
@@ -236,6 +265,7 @@ function parse_relation_kw_args(args)
 end
 
 function parse_relation_inferred_args(args)
+  println("INSIDE PARSE RELATION INFERRED ARGS")
   @assert !isempty(args) # Need at least one argument to infer named/unnamed.
   args = map(args) do arg
     @match arg begin
@@ -252,6 +282,14 @@ function parse_relation_inferred_args(args)
   else
     error("Relation mixes named and unnamed arguments $args")
   end
+end
+
+function show_uwd(uwd)
+  to_graphviz(uwd, box_labels = :name, junction_labels = :variable, edge_attrs=Dict(:len => ".75"))
+end
+
+function show_uwd_types(uwd)   # Add better typing and error catching for if uwd is untyped
+  to_graphviz(uwd, box_labels = :name, junction_labels = :junction_type, edge_attrs=Dict(:len => ".75"))
 end
 
 end
