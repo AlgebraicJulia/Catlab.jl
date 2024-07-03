@@ -145,7 +145,7 @@ function parse_relation_diagram(head::Expr, body::Expr)
     Expr(:where, expr, context) => (expr, parse_relation_context(context)...)
     _ => (head, nothing, nothing)
   end
-  var_types = if isnothing(all_types)    # Untyped case.
+  var_types = if isnothing(all_types)    # Untyped case
     vars -> length(vars)
   elseif typeof(all_types[1]) <: Int     # Int typed case
     var_type_map = Dict{Symbol,Int}(zip(all_vars, all_types))
@@ -255,6 +255,7 @@ function parse_relation_inferred_args(args)
       Expr(:kw, name::Symbol, var::Symbol) => (name => var)
       Expr(:(=), name::Symbol, var::Symbol) => (name => var)
       var::Symbol => var
+      Expr(:(::), _, _) => error("All variable types must be included in the where clause and not in the argument list")
       _ => error("Expected name as positional or keyword argument")
     end
   end
