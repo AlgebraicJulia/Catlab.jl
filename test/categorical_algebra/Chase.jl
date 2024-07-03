@@ -115,9 +115,9 @@ add_parts!(unique_l,:X,3);
 add_parts!(unique_l,:x,2;src_x=[1,1],tgt_x=[2,3]);
 add_parts!(unique_r,:X,2); 
 add_part!(unique_r,:x;src_x=1,tgt_x=2);
-ED_unique = homomorphism(unique_l, unique_r)
+ED_unique = only(homomorphisms(unique_l, unique_r))
 add_part!(total_l,:X)
-ED_total = homomorphism(total_l, unique_r)
+ED_total = ACSetTransformation(total_l, unique_r; X=[1])
 # x-path of length 3 = x-path of length 2
 add_parts!(three_two_l,:X,6); 
 add_parts!(three_two_l,:x,5; src_x=[1,2,3,1,5],tgt_x=[2,3,4,5,6] ); 

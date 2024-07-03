@@ -40,7 +40,7 @@ end
 @info "Building Documenter.jl docs"
 makedocs(
   modules     = [Catlab],
-  format      = Documenter.HTML(assets = ["assets/analytics.js"]),
+  format      = Documenter.HTML(assets = ["assets/analytics.js"]; size_threshold = nothing),
   sitename    = "Catlab.jl",
   doctest     = false,
   warnonly    = true,
