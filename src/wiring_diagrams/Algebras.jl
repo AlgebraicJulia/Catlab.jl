@@ -174,7 +174,19 @@ function query(X::ACSet, diagram::UndirectedWiringDiagram,
       junction = key isa Integer ? key : only(incident(diagram, key, :variable))
       add_part!(diagram, :Port, port_name=:_value,
                 box=box, junction=junction)
-      SMultispan{1}(ConstantFunction(value, FinSet(1)))
+      subpart_nm = diagram[first(incident(diagram, junction, :junction)), :port_name]
+      if subpart_nm ∈ attrs(acset_schema(X), just_names=true)
+        subpart_t = subpart_type(X, codom(acset_schema(X), subpart_nm))
+        SMultispan{1}(
+          ConstantFunction(
+            value, 
+            FinSet(1),
+            TypeSet{subpart_t}()
+          )
+        )
+      else
+        SMultispan{1}(ConstantFunction(value, FinSet(1)))
+      end
     end)
   end
 
