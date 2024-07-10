@@ -111,4 +111,35 @@ result = query(g, cycles3, (v=1,))
 @test result == DataFrame(edge1=[3], edge2=[1], edge3=[2])
 @test isempty(query(cycle_graph(Graph, 4), cycles3))
 
+# queries with attributes
+@present TestSch(FreeSchema) begin
+    X::Ob
+    A::AttrType
+    a::Attr(X,A)
+end
+
+@acset_type TestData(TestSch)
+
+data = @acset TestData{Union{Int,Symbol}} begin
+    X=5
+    a=[1,2,3,:four,:five]
+end
+
+testquery = @relation (xout=xid, aout=attr) begin
+    X(_id=xid, a=attr)
+end
+
+result = query(data, testquery)
+
+@test result[!,1] == 1:5
+@test result[!,2] == [1,2,3,:four,:five]
+
+result = query(data, testquery, (attr=3, ))
+@test result[!,1] == [3]
+@test result[!,2] == [3]
+
+result = query(data, testquery, (attr=:five, ))
+@test result[!,1] == [5]
+@test result[!,2] == [:five]
+
 end
