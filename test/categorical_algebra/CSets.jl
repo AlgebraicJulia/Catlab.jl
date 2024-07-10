@@ -721,6 +721,14 @@ B = Subobject(X, X=[2], D=[1])
 @test A ∨ B |> force == ⊤(X) |> force
 
 const VES = VELabeledGraph{Symbol}
+
+"""
+  e1    e4 
+a ↘  e3  ↗ e        A = [a,b,c,d] + [1,2,3]
+   c → d 
+b ↗     ↘ f         B = [c,d,e,f] + [3,4,5]
+  e2   e5
+"""
 X = @acset VES begin V=6; E=5; Label=5
   src=[1,2,3,4,4]; tgt=[3,3,4,5,6];
   vlabel=[:a,:b,:c,:d,:e,:f]; elabel=AttrVar.(1:5)
@@ -746,6 +754,8 @@ end
 @test dom(hom(subtract(A,B))) == @acset VES begin V=3; E=2; Label=2
   src=[1,2]; tgt=3; vlabel=[:a,:b,:c]; elabel=AttrVar.(1:2)
 end
+
+@test nv(dom(hom(~A))) == 3
 
 # Limits of CSetTransformations between ACSets
 #---------------------------------------------

@@ -1467,7 +1467,7 @@ predicate(A::SubFinSetVector) = A.predicate
 function predicate(A::SubobjectHom{<:VarSet}) 
   f = hom(A)
   pred = falses(length(codom(f)))
-  for x in AttrVar.(dom(f))
+  for x in dom(f)
     fx = f(x)
     if fx isa AttrVar
       pred[fx.val] = true
