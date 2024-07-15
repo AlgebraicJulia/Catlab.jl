@@ -127,9 +127,9 @@ filter = only consider morphisms which meet some criteria, expressed as a Julia
 It does not make sense to specify both `take` and `max`.
 """
 function homomorphisms(X::ACSet, Y::ACSet, alg::BacktrackingSearch; 
-                       take=-1, max=-1, filter=nothing, kw...) 
+                       take=nothing, max=nothing, filter=nothing, kw...) 
   results = []
-  take == -1 || max == -1 || error(
+  isnothing(take) || isnothing(max) || error(
     "Cannot set both `take`=$take and `max`=$max for `homomorphisms`")
   backtracking_search(X, Y; kw...) do αs
     for α in αs
