@@ -135,9 +135,9 @@ d = naturality_failures(β)
 G = @acset Graph begin V=2; E=1; src=1; tgt=2 end
 H = @acset Graph begin V=2; E=2; src=1; tgt=2 end
 I = @acset Graph begin V=2; E=2; src=[1,2]; tgt=[1,2] end
-f_ = homomorphism(G, H; monic=true)
+f_ = homomorphism(G, H; monic=true, any=true)
 g_ = homomorphism(H, G)
-h_ = homomorphism(G, I)
+h_ = homomorphism(G, I; initial=(V=[1,1],))
 @test is_monic(f_)
 @test !is_epic(f_)
 @test !is_monic(g_)
@@ -689,7 +689,7 @@ rem_part!(X, :E, 2)
 A = @acset WG{Symbol} begin V=1;E=2;Weight=1;src=1;tgt=1;weight=[AttrVar(1),:X] end
 B = @acset WG{Symbol} begin V=1;E=2;Weight=1;src=1;tgt=1;weight=[:X, :Y] end
 C = B ⊕ @acset WG{Symbol} begin V=1 end
-AC = homomorphism(A,C)
+AC = homomorphism(A,C; initial=(E=[1,1],))
 BC = CSetTransformation(B,C; V=[1],E=[1,2], Weight=[:X])
 @test all(is_natural,[AC,BC])
 p1, p2 = product(A,A; cset=true);
@@ -701,8 +701,8 @@ g0, g1, g2 = WG{Symbol}.([2,3,2])
 add_edges!(g0, [1,1,2], [1,2,2]; weight=[:X,:Y,:Z])
 add_edges!(g1, [1,2,3], [2,3,3]; weight=[:Y,:Z,AttrVar(add_part!(g1,:Weight))])
 add_edges!(g2, [1,2,2], [1,2,2]; weight=[AttrVar(add_part!(g2,:Weight)), :Z,:Z])
-ϕ = only(homomorphisms(g1, g0)) |> CSetTransformation
-ψ = only(homomorphisms(g2, g0; initial=(V=[1,2],))) |> CSetTransformation
+ϕ = homomorphism(g1, g0) |> CSetTransformation
+ψ = homomorphism(g2, g0; initial=(V=[1,2],)) |> CSetTransformation
 @test is_natural(ϕ) && is_natural(ψ)
 lim = pullback(ϕ, ψ)
 @test nv(ob(lim)) == 3

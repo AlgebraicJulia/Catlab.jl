@@ -453,8 +453,12 @@ end
   
 function coerce_component(ob::Symbol, f::FinFunction{Int,Int},
                           dom_size::Int, codom_size::Int; kw...)
-  length(dom(f)) == dom_size || error("Domain error in component $ob")
-  # length(codom(f)) == codom_size || error("Codomain error in component $ob") # codom size is now Maxpart not nparts
+  if haskey(kw, :dom_parts)
+    !any(i -> f.func[i] == 0, kw[:dom_parts]) # check domain of mark as deleted
+  else                         
+    length(dom(f)) == dom_size # check domain of dense parts
+  end || error("Domain error in component $ob")
+  # length(codom(f)) == codom_size || error("Codomain error in component $ob")
   return f 
 end
 

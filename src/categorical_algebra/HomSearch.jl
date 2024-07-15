@@ -54,7 +54,8 @@ to infinite ``C``-sets when ``C`` is infinite (but possibly finitely presented).
 """
 struct HomomorphismQuery <: ACSetHomomorphismAlgorithm end
 
-""" Find a homomorphism between two attributed ``C``-sets.
+""" Find a unique homomorphism between two attributed ``C``-sets (subject to a
+variety of constraints), if one exists.
 
 Returns `nothing` if no homomorphism exists. For many categories ``C``, the
 ``C``-set homomorphism problem is NP-complete and thus this procedure generally
@@ -94,17 +95,17 @@ In both of these cases, it's possible to compute homomorphisms when there are
 the domain), as each such variable has a finite number of possibilities for it
 to be mapped to.
 
+Setting `any=true` relaxes the constraint that the returned homomorphism is 
+unique.
+
 See also: [`homomorphisms`](@ref), [`isomorphism`](@ref).
 """
 homomorphism(X::ACSet, Y::ACSet; alg=BacktrackingSearch(), kw...) =
   homomorphism(X, Y, alg; kw...)
 
-function homomorphism(X::ACSet, Y::ACSet, alg::BacktrackingSearch; kw...)
-  result = nothing
-  backtracking_search(X, Y; kw...) do α
-    result = α; return true
-  end
-  result
+function homomorphism(X::ACSet, Y::ACSet, alg::BacktrackingSearch; any=false, kw...)
+  res = homomorphisms(X, Y, alg; Dict((any ? :take : :max) => 1)..., kw...)
+  isempty(res) ? nothing : only(res)
 end
 
 """ Find all homomorphisms between two attributed ``C``-sets.
@@ -115,10 +116,29 @@ homomorphisms exist, it is exactly as expensive.
 homomorphisms(X::ACSet, Y::ACSet; alg=BacktrackingSearch(), kw...) =
   homomorphisms(X, Y, alg; kw...)
 
-function homomorphisms(X::ACSet, Y::ACSet, alg::BacktrackingSearch; kw...) 
+"""
+take = number of homomorphisms requested (stop the search process early if this 
+       number is reached)
+max = throw an error if we take more than this many morphisms (e.g. set max=1 if 
+      one expects 0 or 1 morphism)
+filter = only consider morphisms which meet some criteria, expressed as a Julia 
+         function of type ACSetTransformation -> Bool
+
+It does not make sense to specify both `take` and `max`.
+"""
+function homomorphisms(X::ACSet, Y::ACSet, alg::BacktrackingSearch; 
+                       take=-1, max=-1, filter=nothing, kw...) 
   results = []
-  backtracking_search(X, Y; kw...) do α
-    push!(results, map_components(deepcopy, α)); return false
+  take == -1 || max == -1 || error(
+    "Cannot set both `take`=$take and `max`=$max for `homomorphisms`")
+  backtracking_search(X, Y; kw...) do αs
+    for α in αs
+      isnothing(filter) || filter(α) || continue
+      length(results) == max && error("Exceeded $max: $([results; α])")
+      push!(results, map_components(deepcopy, α));
+      length(results) == take && return true
+    end 
+    return false
   end
   results
 end
@@ -132,7 +152,7 @@ is_homomorphic(X::ACSet, Y::ACSet; alg=BacktrackingSearch(), kw...) =
   is_homomorphic(X, Y, alg; kw...)
 
 is_homomorphic(X::ACSet, Y::ACSet, alg::BacktrackingSearch; kw...) =
-  !isnothing(homomorphism(X, Y, alg; kw...))
+  !isempty(homomorphisms(X, Y, alg; take=1, kw...))
 
 """ Find an isomorphism between two attributed ``C``-sets, if one exists.
 
@@ -152,8 +172,8 @@ homomorphisms exist, it is exactly as expensive.
 isomorphisms(X::ACSet, Y::ACSet; alg=BacktrackingSearch(), kw...) =
   isomorphisms(X, Y, alg; kw...)
 
-isomorphisms(X::ACSet, Y::ACSet, alg::BacktrackingSearch; initial=(;)) =
-  homomorphisms(X, Y, alg; iso=true, initial=initial)
+isomorphisms(X::ACSet, Y::ACSet, alg::BacktrackingSearch; initial=(;), kw...) =
+  homomorphisms(X, Y, alg; iso=true, initial=initial, kw...)
 
 """ Are the two attributed ``C``-sets isomorphic?
 
@@ -164,7 +184,7 @@ is_isomorphic(X::ACSet, Y::ACSet; alg=BacktrackingSearch(), kw...) =
   is_isomorphic(X, Y, alg; kw...)
 
 is_isomorphic(X::ACSet, Y::ACSet, alg::BacktrackingSearch; kw...) =
-  !isnothing(isomorphism(X, Y, alg; kw...))
+  !isempty(isomorphisms(X, Y, alg; take=1, kw...))
 
 # Backtracking search
 #--------------------
@@ -198,7 +218,6 @@ struct BacktrackingState{
   predicates::Predicates
   image::Image # Negative of image for epic components or if finding an epimorphism
   unassigned::Unassign # "# of unassigned elems in domain of a component 
-
 end
 
 function backtracking_search(f, X::ACSet, Y::ACSet;
@@ -304,6 +323,10 @@ function backtracking_search(f, X::ACSet, Y::ACSet;
   backtracking_search(f, state, 1; random=random)
 end
 
+"""
+Note: a successful search returns an *iterator* of solutions, rather than 
+a single solution. See `postprocess_res`.
+"""
 function backtracking_search(f, state::BacktrackingState, depth::Int; 
                               random=false) 
   # Choose the next unassigned element.
@@ -311,37 +334,11 @@ function backtracking_search(f, state::BacktrackingState, depth::Int;
   if isnothing(mrv_elem)
     # No unassigned elements remain, so we have a complete assignment.
     if any(!=(identity), state.type_components)
-      return f(LooseACSetTransformation(
-        state.assignment, state.type_components, state.dom, state.codom))
+      return f([LooseACSetTransformation(
+        state.assignment, state.type_components, state.dom, state.codom)])
     else
-      S = acset_schema(state.dom)
-      od = Dict{Symbol,Vector{Int}}(k=>(state.assignment[k]) for k in objects(S))
-
-      # Compute possible assignments for all free variables
-      free_data = map(attrtypes(S)) do k
-        monic = !isnothing(state.inv_assignment[k])
-        assigned = [v.val for (_, v) in state.assignment[k] if v isa AttrVar]
-        valid_targets = setdiff(parts(state.codom, k), monic ? assigned : [])
-        free_vars = findall(==(AttrVar(0)), last.(state.assignment[k]))
-        N = length(free_vars)
-        prod_iter = Iterators.product(fill(valid_targets, N)...)
-        if monic
-          prod_iter = Iterators.filter(x->length(x)==length(unique(x)), prod_iter)
-        end
-        (free_vars, prod_iter) # prod_iter = valid assignments for this attrtype
-      end
-
-      # Homomorphism for each element in the product of the prod_iters
-      for combo in Iterators.product(last.(free_data)...) 
-        ad = Dict(map(zip(attrtypes(S), first.(free_data), combo)) do (k, xs, vs)
-          vec = last.(state.assignment[k])
-          vec[xs] = AttrVar.(collect(vs))
-          k => vec
-        end)
-        comps = merge(NamedTuple(od),NamedTuple(ad))
-        f(ACSetTransformation(comps, state.dom, state.codom))
-      end
-      return false
+      m = Dict(k=>!isnothing(v) for (k,v) in pairs(state.inv_assignment))
+      return f(postprocess_res(state.dom, state.codom, state.assignment, m))
     end
   elseif mrv == 0
     # An element has no allowable assignment, so we must backtrack.
@@ -506,6 +503,48 @@ unassign_elem!(state::BacktrackingState{<:DynamicACSet}, depth, c, x) =
     @ct_ctrl for (f, _, d) in homs(S; from=c)
       unassign_elem!(state, depth, @ct(d), subpart(X,x,@ct(f)))
     end
+  end
+end
+
+""" 
+A hom search result might not have all the data for an ACSetTransformation
+explicitly specified. For example, if there is a cartesian product of possible
+assignments which could not possibly constrain each other, then we should
+iterate through this product at the very end rather than having the backtracking
+search navigate the product space. Currently, this is only done with assignments
+for floating attribute variables, but in principle this could be applied in the
+future to, e.g., free-floating vertices of a graph or other coproducts of 
+representables.
+
+This function takes a result assignment from backtracking search and returns an
+iterator of the implicit set of homomorphisms that it specifies.
+"""
+function postprocess_res(dom, codom, assgn, monic)
+  S = acset_schema(dom)
+  od = Dict{Symbol,Vector{Int}}(k=>(assgn[k]) for k in objects(S))
+
+  # Compute possible assignments for all free variables
+  free_data = map(attrtypes(S)) do k
+    assigned = [v.val for (_, v) in assgn[k] if v isa AttrVar]
+    valid_targets = setdiff(parts(codom, k), monic[k] ? assigned : [])
+    free_vars = findall(==(AttrVar(0)), last.(assgn[k]))
+    N = length(free_vars)
+    prod_iter = Iterators.product(fill(valid_targets, N)...)
+    if monic[k]
+      prod_iter = Iterators.filter(x->length(x)==length(unique(x)), prod_iter)
+    end
+    (free_vars, prod_iter) # prod_iter = valid assignments for this attrtype
+  end
+  
+  # Homomorphism for each element in the product of the prod_iters
+  return Iterators.map(Iterators.product(last.(free_data)...) ) do combo 
+    ad = Dict(map(zip(attrtypes(S), first.(free_data), combo)) do (k, xs, vs)
+      vec = last.(assgn[k])
+      vec[xs] = AttrVar.(collect(vs))
+      k => vec
+    end)
+    comps = merge(NamedTuple(od),NamedTuple(ad))
+    ACSetTransformation(comps, dom, codom)
   end
 end
 

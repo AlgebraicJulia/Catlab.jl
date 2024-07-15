@@ -75,7 +75,7 @@ set_subpart!(s3, :f, [20,10])
 #Backtracking with monic and iso failure objects
 g1, g2 = path_graph(Graph, 3), path_graph(Graph, 2)
 rem_part!(g1,:E,2)
-@test_throws ErrorException homomorphism(g1,g2;monic=true,error_failures=true)
+@test_throws ErrorException homomorphism(g1, g2; monic=true, error_failures=true)
 
 # Epic constraint
 g0, g1, g2 = Graph(2), Graph(2), Graph(2)
@@ -94,6 +94,18 @@ add_edges!(g3,[1,3],[1,3])  # g3: ↻•→•→• ↺
 @test length(homomorphisms(g4,g3; epic=[:E])) == 0 # only have 3 edges to map
 
 @test length(homomorphisms(Graph(4),Graph(2); epic=true)) == 14 # 2^4 - 2
+
+# taking a particular number of morphisms 
+@test length(homomorphisms(Graph(4),Graph(2); epic=true, take=7)) == 7
+
+# throwing an error if max is exceeded 
+@test_throws ErrorException homomorphism(Graph(1), Graph(2))
+@test_throws ErrorException length(homomorphisms(Graph(4),Graph(2); epic=true, max=6))
+@test length(homomorphisms(Graph(4),Graph(2); epic=true, max=16)) == 14
+
+# filtering morphisms
+@test (length(homomorphisms(Graph(3),Graph(5); filter=is_monic))
+      == length(homomorphisms(Graph(3),Graph(5); monic=true)))
 
 # Symmetric graphs
 #-----------------
@@ -114,9 +126,9 @@ K₂, K₃ = complete_graph(SymmetricGraph, 2), complete_graph(SymmetricGraph, 3
 C₅, C₆ = cycle_graph(SymmetricGraph, 5), cycle_graph(SymmetricGraph, 6)
 @test !is_homomorphic(C₅, K₂)
 @test is_homomorphic(C₅, K₃)
-@test is_natural(homomorphism(C₅, K₃))
+@test is_natural(homomorphism(C₅, K₃; any=true))
 @test is_homomorphic(C₆, K₂)
-@test is_natural(homomorphism(C₆, K₂))
+@test is_natural(homomorphism(C₆, K₂; any=true))
 
 # Labeled graphs
 #---------------
@@ -140,7 +152,10 @@ hs = homomorphisms(K₆,K₆)
 rand_hs = homomorphisms(K₆,K₆; random=true)
 @test sort(hs,by=comps) == sort(rand_hs,by=comps) # equal up to order
 @test hs != rand_hs # not equal given order
-@test homomorphism(K₆,K₆) != homomorphism(K₆,K₆;random=true)
+
+# This is very probably true
+@test (homomorphism(K₆, K₆, any=true) 
+      != homomorphism(K₆ ,K₆; any=true, random=true))
 
 # AttrVar constraints (monic and no_bind)
 #----------------------------------------
@@ -358,10 +373,10 @@ exp = @acset WG begin V=3; E=1; src=1; tgt=2; weight=[false] end
 const MADGraph = AbsMADGraph{Symbol}
 
 v1, v2 = MADGraph.(1:2)
-@test !is_isomorphic(v1,v2)
+@test !is_isomorphic(v1, v2)
 rem_part!(v2, :V, 1)
-@test is_isomorphic(v1,v2)
-@test is_isomorphic(v2,v1)
+@test is_isomorphic(v1, v2)
+@test is_isomorphic(v2, v1)
 
 
 end # module
