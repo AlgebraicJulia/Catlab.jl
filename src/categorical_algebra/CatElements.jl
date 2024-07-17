@@ -68,7 +68,7 @@ function elements(f::ACSetTransformation)
   end
   pts = vcat([collect(f[o]).+off for (o, off) in zip(ob(S), offs)]...)
   # *strict* ACSet transformation uniquely determined by its action on vertices
-  return only(homomorphisms(X, Y; initial=Dict([:El=>pts])))
+  return homomorphism(X, Y; initial=Dict([:El=>pts]))
 end
 
 

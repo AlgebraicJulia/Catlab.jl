@@ -8,7 +8,7 @@ using Catlab.CategoricalAlgebra.Chase: egd, tgd, crel_type, pres_to_eds,
 # ACSetTransformations as ACSets on the collage
 ###############################################
 
-h = homomorphism(path_graph(Graph, 2), path_graph(Graph, 3))
+h = homomorphism(path_graph(Graph, 2), path_graph(Graph, 3); initial=(V=[1,2],))
 _, col = collage(h)
 col[Symbol("α_V")] == h[:V] |> collect
 col[Symbol("α_E")] == h[:E] |> collect
@@ -115,7 +115,7 @@ add_parts!(unique_l,:X,3);
 add_parts!(unique_l,:x,2;src_x=[1,1],tgt_x=[2,3]);
 add_parts!(unique_r,:X,2); 
 add_part!(unique_r,:x;src_x=1,tgt_x=2);
-ED_unique = only(homomorphisms(unique_l, unique_r))
+ED_unique = homomorphism(unique_l, unique_r)
 add_part!(total_l,:X)
 ED_total = ACSetTransformation(total_l, unique_r; X=[1])
 # x-path of length 3 = x-path of length 2

@@ -451,10 +451,14 @@ function coerce_components(S, components, X::ACSet{<:PT}, Y) where PT
   return merge(ocomps, acomps)
 end 
   
+# Enforces that function has a valid domain (but not necessarily codomain)
 function coerce_component(ob::Symbol, f::FinFunction{Int,Int},
                           dom_size::Int, codom_size::Int; kw...)
-  length(dom(f)) == dom_size || error("Domain error in component $ob")
-  # length(codom(f)) == codom_size || error("Codomain error in component $ob") # codom size is now Maxpart not nparts
+  if haskey(kw, :dom_parts)
+    !any(i -> f(i) == 0, kw[:dom_parts]) # check domain of mark as deleted
+  else                         
+    length(dom(f)) == dom_size # check domain of dense parts
+  end || error("Domain error in component $ob")
   return f 
 end
 
@@ -472,8 +476,8 @@ end
 function coerce_attrvar_component(
     ob::Symbol, f::VarFunction,::TypeSet{T},::TypeSet{T},
     dom_size::Int, codom_size::Int; kw...) where {T}
-  # length(dom(f.fun)) == dom_size || error("Domain error in component $ob: $(dom(f.fun))!=$dom_size")
-  length(f.codom) == codom_size || error("Codomain error in component $ob: $(f.fun.codom)!=$codom_size")
+  length(f.codom) == codom_size || error(
+    "Codomain error in component $ob: $(f.fun.codom)!=$codom_size")
   return f
 end
 
@@ -1119,9 +1123,10 @@ end
 const SubCSet{S} = Subobject{<:StructCSet{S}}
 const SubACSet{S} = Subobject{<:StructACSet{S}}
 
-# Componentwise subobjects
+# Componentwise subobjects: coerce VarFunctions to FinFunctions
 components(A::SubACSet{S}) where S = 
-  NamedTuple(k => Subobject(vs) for (k,vs) in pairs(components(hom(A)))
+  NamedTuple(k => Subobject(k ∈ ob(S) ? vs : FinFunction(vs)) for (k,vs) in 
+             pairs(components(hom(A)))
 )
 
 force(A::SubACSet) = Subobject(force(hom(A)))

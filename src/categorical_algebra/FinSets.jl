@@ -348,7 +348,7 @@ VarFunction(f::AbstractVector{Int},cod::Int) = VarFunction(FinFunction(f,cod))
 VarFunction(f::FinDomFunction) = VarFunction{Union{}}(AttrVar.(collect(f)),codom(f))
 VarFunction{T}(f::FinDomFunction,cod::FinSet) where T = VarFunction{T}(collect(f),cod)
 FinFunction(f::VarFunction{T}) where T = FinFunction(
-  [f.fun(i) isa AttrVar ? f.fun(i).val : error("Cannot cast to FinFunction") 
+  [f(i) isa AttrVar ? f(i).val : error("Cannot cast to FinFunction") 
    for i in dom(f)], f.codom)
 FinDomFunction(f::VarFunction{T}) where T = f.fun
 Base.length(f::AbsVarFunction{T}) where T = length(collect(f.fun))
