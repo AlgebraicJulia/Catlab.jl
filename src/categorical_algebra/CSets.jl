@@ -1123,9 +1123,10 @@ end
 const SubCSet{S} = Subobject{<:StructCSet{S}}
 const SubACSet{S} = Subobject{<:StructACSet{S}}
 
-# Componentwise subobjects
+# Componentwise subobjects: coerce VarFunctions to FinFunctions
 components(A::SubACSet{S}) where S = 
-  NamedTuple(k => Subobject(vs) for (k,vs) in pairs(components(hom(A)))
+  NamedTuple(k => Subobject(k ∈ ob(S) ? vs : FinFunction(vs)) for (k,vs) in 
+             pairs(components(hom(A)))
 )
 
 force(A::SubACSet) = Subobject(force(hom(A)))
