@@ -451,6 +451,7 @@ function coerce_components(S, components, X::ACSet{<:PT}, Y) where PT
   return merge(ocomps, acomps)
 end 
   
+# Enforces that function has a valid domain (but not necessarily codomain)
 function coerce_component(ob::Symbol, f::FinFunction{Int,Int},
                           dom_size::Int, codom_size::Int; kw...)
   if haskey(kw, :dom_parts)
@@ -458,7 +459,6 @@ function coerce_component(ob::Symbol, f::FinFunction{Int,Int},
   else                         
     length(dom(f)) == dom_size # check domain of dense parts
   end || error("Domain error in component $ob")
-  # length(codom(f)) == codom_size || error("Codomain error in component $ob")
   return f 
 end
 
@@ -476,8 +476,8 @@ end
 function coerce_attrvar_component(
     ob::Symbol, f::VarFunction,::TypeSet{T},::TypeSet{T},
     dom_size::Int, codom_size::Int; kw...) where {T}
-  # length(dom(f.fun)) == dom_size || error("Domain error in component $ob: $(dom(f.fun))!=$dom_size")
-  length(f.codom) == codom_size || error("Codomain error in component $ob: $(f.fun.codom)!=$codom_size")
+  length(f.codom) == codom_size || error(
+    "Codomain error in component $ob: $(f.fun.codom)!=$codom_size")
   return f
 end
 

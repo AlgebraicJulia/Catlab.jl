@@ -116,7 +116,8 @@ homomorphisms exist, it is exactly as expensive.
 homomorphisms(X::ACSet, Y::ACSet; alg=BacktrackingSearch(), kw...) =
   homomorphisms(X, Y, alg; kw...)
 
-"""
+""" Find all homomorphisms between two attributed ``C``-sets via BackTracking Search.
+
 take = number of homomorphisms requested (stop the search process early if this 
        number is reached)
 max = throw an error if we take more than this many morphisms (e.g. set max=1 if 
@@ -325,7 +326,7 @@ end
 
 """
 Note: a successful search returns an *iterator* of solutions, rather than 
-a single solution. See `postprocess_res`.
+a single solution. See `postprocess_search_results`.
 """
 function backtracking_search(f, state::BacktrackingState, depth::Int; 
                               random=false) 
@@ -338,7 +339,7 @@ function backtracking_search(f, state::BacktrackingState, depth::Int;
         state.assignment, state.type_components, state.dom, state.codom)])
     else
       m = Dict(k=>!isnothing(v) for (k,v) in pairs(state.inv_assignment))
-      return f(postprocess_res(state.dom, state.codom, state.assignment, m))
+      return f(postprocess_search_results(state.dom, state.codom, state.assignment, m))
     end
   elseif mrv == 0
     # An element has no allowable assignment, so we must backtrack.
@@ -519,7 +520,7 @@ representables.
 This function takes a result assignment from backtracking search and returns an
 iterator of the implicit set of homomorphisms that it specifies.
 """
-function postprocess_res(dom, codom, assgn, monic)
+function postprocess_search_results(dom, codom, assgn, monic)
   S = acset_schema(dom)
   od = Dict{Symbol,Vector{Int}}(k=>(assgn[k]) for k in objects(S))
 
