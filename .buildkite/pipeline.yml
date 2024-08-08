@@ -10,6 +10,8 @@ steps:
     command: 
       - "module load julia"
       - "julia --project=docs --color=yes -e 'using Pkg; Pkg.update(); Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate(); Pkg.precompile()'"
+    concurrency: 1
+    concurrency_group: "AJ"
          
   - wait 
 
