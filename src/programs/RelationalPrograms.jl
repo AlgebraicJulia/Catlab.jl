@@ -145,9 +145,15 @@ function parse_relation_diagram(head::Expr, body::Expr)
     Expr(:where, expr, context) => (expr, parse_relation_context(context)...)
     _ => (head, nothing, nothing)
   end
-  var_types = if isnothing(all_types) # Untyped case.
+  var_types = if isnothing(all_types)    # Untyped case
     vars -> length(vars)
-  else # Typed case.
+  elseif typeof(all_types[1]) <: Int     # Int typed case
+    var_type_map = Dict{Symbol,Int}(zip(all_vars, all_types))
+    vars -> getindex.(Ref(var_type_map), vars)
+  elseif typeof(all_types[1]) <: Expr    # Expr typed case
+    var_type_map = Dict{Symbol,Expr}(zip(all_vars, all_types))
+    vars -> getindex.(Ref(var_type_map), vars)
+  else                                   # Symbol typed case
     var_type_map = Dict{Symbol,Symbol}(zip(all_vars, all_types))
     vars -> getindex.(Ref(var_type_map), vars)
   end
@@ -194,18 +200,25 @@ function parse_relation_context(context)
   vars = map(terms) do term
     @match term begin
       Expr(:(::), var::Symbol, type::Symbol) => (var => type)
+      Expr(:(::), var::Symbol, type::Int) => (var => type)
+      Expr(:(::), var::Symbol, type::Expr) => (var => type)
       var::Symbol => var
-      _ => error("Invalid syntax in term $expr of context")
+      _ => error("Invalid syntax in term $term of context")
     end
   end
   if vars isa AbstractVector{Symbol}
     (vars, nothing)
   elseif vars isa AbstractVector{Pair{Symbol,Symbol}}
     (first.(vars), last.(vars))
+  elseif vars isa AbstractVector{Pair{Symbol, Int}}
+    (first.(vars), last.(vars))
+  elseif vars isa AbstractVector{Pair{Symbol, Expr}}
+    (first.(vars), last.(vars))
   else
-    error("Context $context mixes typed and untyped variables")
+    error("Context $context mixes variable types")
   end
 end
+
 
 function parse_relation_call(call)
   @match call begin
@@ -242,6 +255,7 @@ function parse_relation_inferred_args(args)
       Expr(:kw, name::Symbol, var::Symbol) => (name => var)
       Expr(:(=), name::Symbol, var::Symbol) => (name => var)
       var::Symbol => var
+      Expr(:(::), _, _) => error("All variable types must be included in the where clause and not in the argument list")
       _ => error("Expected name as positional or keyword argument")
     end
   end
