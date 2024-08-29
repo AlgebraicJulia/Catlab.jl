@@ -174,7 +174,16 @@ function query(X::ACSet, diagram::UndirectedWiringDiagram,
       junction = key isa Integer ? key : only(incident(diagram, key, :variable))
       add_part!(diagram, :Port, port_name=:_value,
                 box=box, junction=junction)
-      SMultispan{1}(ConstantFunction(value, FinSet(1)))
+
+      # Handle possibility of unions in attribute types.
+      name = diagram[first(incident(diagram, junction, :junction)), :port_name]
+      constant = if name ∈ attrs(acset_schema(X), just_names=true)
+        ConstantFunction(value, FinSet(1), TypeSet(subpart_type(X, name)))
+      else
+        ConstantFunction(value, FinSet(1))
+      end
+
+      SMultispan{1}(constant)
     end)
   end
 

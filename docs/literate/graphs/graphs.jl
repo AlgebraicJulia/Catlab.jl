@@ -260,7 +260,7 @@ draw(id(K₃))
 length(homomorphisms(T, esym))
 
 # but we can use 3 colors to color T.
-draw(homomorphism(T, K₃))
+draw(homomorphism(T, K₃; any=true))
 
 # ### Exercise:
 # 1. Find a graph that is not 3-colorable

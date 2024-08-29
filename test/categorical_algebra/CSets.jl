@@ -135,9 +135,9 @@ d = naturality_failures(β)
 G = @acset Graph begin V=2; E=1; src=1; tgt=2 end
 H = @acset Graph begin V=2; E=2; src=1; tgt=2 end
 I = @acset Graph begin V=2; E=2; src=[1,2]; tgt=[1,2] end
-f_ = homomorphism(G, H; monic=true)
+f_ = homomorphism(G, H; monic=true, any=true)
 g_ = homomorphism(H, G)
-h_ = homomorphism(G, I)
+h_ = homomorphism(G, I; initial=(V=[1,1],))
 @test is_monic(f_)
 @test !is_epic(f_)
 @test !is_monic(g_)
@@ -541,6 +541,7 @@ end
 
 @test VarFunction(A,:weight) == VarFunction{Bool}([AttrVar(1), true], FinSet(2))
 
+
 f = ACSetTransformation(
   Dict(:V=>[1],:E=>[1,2],:Weight=>[AttrVar(2), AttrVar(1)]), A, A
 )
@@ -557,6 +558,18 @@ w1,w2,w3 = ws = [WG{x}() for x in [Symbol,Bool,Int]]
 [add_parts!(w, :Weight, 2) for w in ws]
 rem_part!(w1, :Weight, 1)
 @test [nparts(w, :Weight) for w in ws] == [1,2,2]
+
+A′ = WG(FinDomFunctor(A))
+rem_part!(A,:Weight,2) #remove the dangling attrvar from A
+
+C = FinCat(SchWeightedGraph)
+obs = Dict(x=>x for x in ob_generators(C))
+homs = Dict(f=> f for f in hom_generators(C))
+F = FinDomFunctor(obs,homs,C,C)
+A′′ = WG(compose(F,FinDomFunctor(A)))
+#Test both A′ and A′′ for constructing an acset from 
+# an ACSetFunctor, respectively, a FinDomFunctorMap.
+@test A == A′ == A′′
 
 # Construct Tight/Loose ACSet Transformations
 #--------------------------------------------
@@ -676,7 +689,7 @@ rem_part!(X, :E, 2)
 A = @acset WG{Symbol} begin V=1;E=2;Weight=1;src=1;tgt=1;weight=[AttrVar(1),:X] end
 B = @acset WG{Symbol} begin V=1;E=2;Weight=1;src=1;tgt=1;weight=[:X, :Y] end
 C = B ⊕ @acset WG{Symbol} begin V=1 end
-AC = homomorphism(A,C)
+AC = homomorphism(A,C; initial=(E=[1,1],))
 BC = CSetTransformation(B,C; V=[1],E=[1,2], Weight=[:X])
 @test all(is_natural,[AC,BC])
 p1, p2 = product(A,A; cset=true);
@@ -688,8 +701,8 @@ g0, g1, g2 = WG{Symbol}.([2,3,2])
 add_edges!(g0, [1,1,2], [1,2,2]; weight=[:X,:Y,:Z])
 add_edges!(g1, [1,2,3], [2,3,3]; weight=[:Y,:Z,AttrVar(add_part!(g1,:Weight))])
 add_edges!(g2, [1,2,2], [1,2,2]; weight=[AttrVar(add_part!(g2,:Weight)), :Z,:Z])
-ϕ = only(homomorphisms(g1, g0)) |> CSetTransformation
-ψ = only(homomorphisms(g2, g0; initial=(V=[1,2],))) |> CSetTransformation
+ϕ = homomorphism(g1, g0) |> CSetTransformation
+ψ = homomorphism(g2, g0; initial=(V=[1,2],)) |> CSetTransformation
 @test is_natural(ϕ) && is_natural(ψ)
 lim = pullback(ϕ, ψ)
 @test nv(ob(lim)) == 3
@@ -708,30 +721,46 @@ B = Subobject(X, X=[2], D=[1])
 @test A ∨ B |> force == ⊤(X) |> force
 
 const VES = VELabeledGraph{Symbol}
+
+"""
+  e1    e4 
+a ↘  e3  ↗ e        A = [a,b,c,d] + [1,2,3]
+   c → d 
+b ↗     ↘ f         B = [c,d,e,f] + [3,4,5]
+  e2   e5
+"""
 X = @acset VES begin V=6; E=5; Label=5
   src=[1,2,3,4,4]; tgt=[3,3,4,5,6];
   vlabel=[:a,:b,:c,:d,:e,:f]; elabel=AttrVar.(1:5)
 end
-A, B = Subobject(X, V=1:4, E=1:3, Label=1:3), Subobject(X, V=3:6, E=3:5, Label=3:5)
-@test A ∧ B |> force == Subobject(X, V=3:4, E=3:3, Label=3:3) |> force
-expected = @acset VES begin V=2; E=1; Label=1;
-  src=1; tgt=2; vlabel=[:c,:d]; elabel=[AttrVar(1)]
-end
-@test is_isomorphic(dom(hom(A ∧ B )), expected)
-@test A ∨ B |> force == Subobject(X, V=1:6, E=1:5, Label=1:5) |> force
-@test ⊤(X) |> force == A ∨ B |> force
-@test ⊥(X) |> force == Subobject(X, V=1:0, E=1:0, Label=1:0) |> force
-@test force(implies(A, B)) == force(¬(A) ∨ B)
-@test ¬(A ∧ B) == ¬(A) ∨ ¬(B)
-@test ¬(A ∧ B) != ¬(A) ∨ B
-@test (A ∧ implies(A,B)) == B ∧ (A ∧ implies(A,B))
-@test (B ∧ implies(B,A)) == A ∧ (B ∧ implies(B,A))
-@test ¬(A ∨ (¬B)) == ¬(A) ∧ ¬(¬(B))
-@test ¬(A ∨ (¬B)) == ¬(A) ∧ B
-@test A ∧ ¬(¬(A)) == ¬(¬(A))
-@test implies((A∧B), A) == A∨B
-@test dom(hom(subtract(A,B))) == @acset VES begin V=3; E=2; Label=2
-  src=[1,2]; tgt=3; vlabel=[:a,:b,:c]; elabel=AttrVar.(1:2)
+
+A′ = Subobject(X, V=1:4, E=1:3, Label=1:3) # component-wise representation
+B′ = Subobject(X, V=3:6, E=3:5, Label=3:5)
+A′′, B′′ = Subobject.(hom.([A′,B′])) # hom representation
+
+for (A,B) in [A′=>B′, A′′ =>B′′]
+  @test A ∧ B |> force == Subobject(X, V=3:4, E=3:3, Label=3:3) |> force
+  expected = @acset VES begin V=2; E=1; Label=1;
+    src=1; tgt=2; vlabel=[:c,:d]; elabel=[AttrVar(1)]
+  end
+  @test is_isomorphic(dom(hom(A ∧ B )), expected)
+  @test A ∨ B |> force == Subobject(X, V=1:6, E=1:5, Label=1:5) |> force
+  @test ⊤(X) |> force == A ∨ B |> force
+  @test ⊥(X) |> force == Subobject(X, V=1:0, E=1:0, Label=1:0) |> force
+  @test force(implies(A, B)) == force(¬(A) ∨ B)
+  @test ¬(A ∧ B) == ¬(A) ∨ ¬(B)
+  @test ¬(A ∧ B) != ¬(A) ∨ B
+  @test (A ∧ implies(A,B)) == B ∧ (A ∧ implies(A,B))
+  @test (B ∧ implies(B,A)) == A ∧ (B ∧ implies(B,A))
+  @test ¬(A ∨ (¬B)) == ¬(A) ∧ ¬(¬(B))
+  @test ¬(A ∨ (¬B)) == ¬(A) ∧ B
+  @test A ∧ ¬(¬(A)) == ¬(¬(A))
+  @test implies((A∧B), A) == A∨B
+  @test dom(hom(subtract(A,B))) == @acset VES begin V=3; E=2; Label=2
+    src=[1,2]; tgt=3; vlabel=[:a,:b,:c]; elabel=AttrVar.(1:2)
+  end
+
+  @test nv(dom(hom(~A))) == 3
 end
 
 # Limits of CSetTransformations between ACSets

@@ -2,7 +2,7 @@
 """
 module FinSets
 export FinSet, FinFunction, FinDomFunction, TabularSet, TabularLimit,
-  force, is_indexed, preimage, VarFunction, LooseVarFunction,
+  force, is_indexed, preimage, VarSet, VarFunction, LooseVarFunction,
   JoinAlgorithm, SmartJoin, NestedLoopJoin, SortMergeJoin, HashJoin,
   SubFinSet, SubOpBoolean, is_monic, is_epic, is_iso
 
@@ -25,7 +25,7 @@ import ..FinCats: force, ob_generators, hom_generators, ob_generator,
   ob_generator_name, graph, is_discrete
 using ..FinCats: dicttype
 import ..Limits: limit, colimit, universal, BipartiteColimit
-import ..Subobjects: Subobject
+import ..Subobjects: Subobject, SubobjectHom
 using ..Sets: IdentityFunction, SetFunctionCallable
 
 # Finite sets
@@ -229,6 +229,7 @@ FinDomFunction(f::Function, dom, codom) =
 FinDomFunction(::typeof(identity), args...) =
   IdentityFunction((FinSet(arg) for arg in args)...)
 FinDomFunction(f::AbstractDict, args...) = FinDomFunctionDict(f, args...)
+FinDomFunction(f::FinDomFunction) = f
 
 #kw is to capture is_correct, which does nothing for this type.
 function FinDomFunction(f::AbstractVector, args...; index=false, kw...)
@@ -311,17 +312,27 @@ Control dispatch in the category of VarFunctions
   n::Int 
 end
 VarSet(i::Int) = VarSet{Union{}}(i)
-FinSet(s::VarSet) = FinSet(s.n)
-Base.iterate(set::VarSet{T}, args...) where T = iterate(1:set.n, args...)
+SetOb(s::VarSet{Union{}}) = FinSet(s)
+SetOb(s::VarSet{T}) where T = TypeSet{Union{AttrVar,T}}()
+FinSet(s::VarSet) = FinSet(s.n) #Note this throws away `T`, most accurate when thinking about tight `VarFunction`s.
+"""
+The iterable part of a varset is its collection of `AttrVar`s.
+"""
+Base.iterate(set::VarSet{T}, args...) where T = iterate(AttrVar.(1:set.n), args...)
 Base.length(set::VarSet{T}) where T = set.n
 Base.in(set::VarSet{T}, elem) where T = in(elem, 1:set.n)
+Base.eltype(set::VarSet{T}) where T = Union{AttrVar,T}
 
 
 abstract type AbsVarFunction{T} end # either VarFunction or LooseVarFunction
 """
-Data type of a map out of a set of attribute variables
+Data type for a morphism of VarSet{T}s. Note we can equivalently view these 
+as morphisms [n]+T -> [m]+T fixing T or as morphisms [n] -> [m]+T, in the typical
+Kleisli category yoga. 
 
-Currently, domains are FinSet{Int} and codomains are expected to be FinSet{Int}.
+Currently, domains are treated as VarSets. The codom field is treated as a FinSet{Int}.
+Note that the codom accessor gives a VarSet while the codom field is just that VarSet's 
+FinSet of AttrVars.
 This could be generalized to being FinSet{Symbol} to allow for
 symbolic attributes. (Likewise, AttrVars will have to wrap Any rather than Int)
 """
@@ -335,14 +346,19 @@ symbolic attributes. (Likewise, AttrVars will have to wrap Any rather than Int)
 end
 VarFunction(f::AbstractVector{Int},cod::Int) = VarFunction(FinFunction(f,cod))
 VarFunction(f::FinDomFunction) = VarFunction{Union{}}(AttrVar.(collect(f)),codom(f))
+VarFunction{T}(f::FinDomFunction,cod::FinSet) where T = VarFunction{T}(collect(f),cod)
 FinFunction(f::VarFunction{T}) where T = FinFunction(
-  [f.fun(i) isa AttrVar ? f.fun(i).val : error("Cannot cast to FinFunction") 
+  [f(i) isa AttrVar ? f(i).val : error("Cannot cast to FinFunction") 
    for i in dom(f)], f.codom)
+FinDomFunction(f::VarFunction{T}) where T = f.fun
 Base.length(f::AbsVarFunction{T}) where T = length(collect(f.fun))
 Base.collect(f::AbsVarFunction{T}) where T = collect(f.fun)
+ 
 (f::VarFunction{T})(v::T) where T = v 
 (f::AbsVarFunction{T})(v::AttrVar) where T = f.fun(v.val) 
 
+#XX if a VarSet could contain an arbitrary FinSet of variables this
+#   wouldn't need to be so violent
 dom(f::AbsVarFunction{T}) where T = VarSet{T}(length(collect(f.fun)))
 codom(f::VarFunction{T}) where T = VarSet{T}(length(f.codom))
 id(s::VarSet{T}) where T = VarFunction{T}(AttrVar.(1:s.n), FinSet(s.n))
@@ -351,10 +367,13 @@ function is_monic(f::VarFunction)
   vals = [v.val for v in collect(f.fun)]
   return length(vals) == length(unique(vals))
 end
-is_epic(f::VarFunction) = AttrVar.(f.codom) ⊆ collect(f)
+is_epic(f::VarFunction) = AttrVar.(f.codom) ⊆ collect(f) #XXX: tested?
 
 compose(::IdentityFunction{TypeSet{T}}, f::AbsVarFunction{T}) where T = f
 compose(f::VarFunction{T}, ::IdentityFunction{TypeSet{T}}) where T = f
+
+FinDomFunction(f::Function, dom, codom::VarSet{T}) where T =
+  SetFunctionCallable(f, FinSet(dom), SetOb(codom))
 
 """Kleisi composition of [n]->T+[m] and [m]->T'+[p], yielding a [n]->T'+[p]"""
 compose(f::VarFunction{T},g::VarFunction{T}) where {T} =
@@ -366,6 +385,10 @@ compose(f::VarFunction{T},g::VarFunction{T}) where {T} =
 compose(f::VarFunction{T}, g::FinFunction) where T =
   VarFunction{T}([elem isa AttrVar ? AttrVar(g(elem.val)) : elem 
                   for elem in collect(f)], g.codom)
+
+"""Compose [n]->[m] with [m]->[p]+T, yielding a [n]->T+[p]"""
+compose(f::FinFunction,g::VarFunction{T}) where T =
+  VarFunction{T}(compose(f,g.fun), g.codom)
 
 preimage(f::VarFunction{T}, v::AttrVar) where T = preimage(f.fun, v)
 preimage(f::VarFunction{T}, v::T) where T = preimage(f.fun, v)
@@ -1269,7 +1292,7 @@ end
 
 # FIXME: Handle more specific diagrams? Now only VarSet colimits will be bipartite
 function universal(lim::BipartiteColimit{<:VarSet{T}}, cocone::Multicospan) where {T}
-  VarFunction{T}(map(AttrVar.(collect(apex(lim)))) do p 
+  VarFunction{T}(map(collect(apex(lim))) do p 
     for (l, csp) in zip(legs(lim), cocone)
       pre = preimage(l, p) # find some colimit leg which maps onto this part
       if !isempty(pre)
@@ -1441,6 +1464,17 @@ SubFinSet(pred::AbstractBoolVector) = Subobject(FinSet(length(pred)), pred)
 ob(A::SubFinSetVector) = A.set
 hom(A::SubFinSetVector) = FinFunction(findall(A.predicate), A.set)
 predicate(A::SubFinSetVector) = A.predicate
+function predicate(A::SubobjectHom{<:VarSet}) 
+  f = hom(A)
+  pred = falses(length(codom(f)))
+  for x in dom(f)
+    fx = f(x)
+    if fx isa AttrVar
+      pred[fx.val] = true
+    end
+  end
+  pred
+end
 
 function predicate(A::SubFinSet)
   f = hom(A)

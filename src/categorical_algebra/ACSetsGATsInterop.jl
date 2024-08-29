@@ -17,12 +17,19 @@ using MLStyle
 # Schema <-> presentation
 #########################
 
+seq(f::GATExpr{:compose}) = tuple(nameof.(f.args)...)
+seq(::GATExpr{:id}) = ()
+seq(f::GATExpr{:generator}) = (first(f),)
+
 function Schema(p::Presentation)
   obs, attrtypes = map(xs -> Symbol[nameof.(xs)...],
                        [p.generators[:Ob],p.generators[:AttrType]])
   homs, attrs = map(fs -> Tuple{Symbol,Symbol,Symbol}[(nameof(f), nameof(dom(f)), nameof(codom(f))) for f in fs],
                     [p.generators[:Hom], p.generators[:Attr]])
-  BasicSchema(obs,homs,attrtypes,attrs)
+  eqs = map(equations(p)) do (l, r)
+    (nothing, nameof(dom(l)), nameof(codom(l)), (seq(l), seq(r)))
+  end
+  BasicSchema(obs,homs,attrtypes,attrs, eqs)
 end
 
 function Schema(c::GATContext)
@@ -39,7 +46,7 @@ function Schema(c::GATContext)
       end
     end
   end
-  BasicSchema(obs,homs,attrtypes,attrs)
+  return BasicSchema(obs, homs, attrtypes, attrs, [])
 end
 
 function Presentation(::Type{S}) where S <: TypeLevelBasicSchema{Symbol}
@@ -49,6 +56,11 @@ end
 function Presentation(::StructACSet{S}) where S <: TypeLevelBasicSchema{Symbol}
   Presentation(Schema(S))
 end
+
+function Presentation(d::DynamicACSet)
+  Presentation(Schema(acset_schema(d)))
+end
+
 
 function Presentation(::Type{<:StructACSet{S}}) where S <: TypeLevelBasicSchema{Symbol}
   Presentation(Schema(S))
@@ -62,8 +74,16 @@ function Presentation(s::BasicSchema{Symbol})
   attrs = [Attr(f, obs[d], attrtypes[c]) for (f,d,c) in Schemas.attrs(s)]
 
   foreach(gens -> add_generators!(pres, gens), (values(obs), homs, values(attrtypes), attrs))
+  for (_, d, cd, eqs) in equations(s)
+    add_equation!(pres, mk_term.(Ref(pres), d, eqs)...)
+  end
   return pres
 end
+
+mk_term(pres, dom::Symbol, ::Tuple{}) = id(Ob(FreeSchema.Ob, dom)) # id(dom)
+mk_term(pres, ::Symbol, t::Tuple{Symbol}) = generator(pres, only(t)) # generator
+mk_term(pres, ::Symbol, t::Tuple{Vararg{Symbol}}) = compose(generator.(Ref(pres), t)...)
+
 
 function DenseACSets.struct_acset(name::Symbol, parent, p::Presentation;
                                   index::Vector=[], unique_index::Vector=[], 

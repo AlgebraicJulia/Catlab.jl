@@ -2,7 +2,7 @@ module TestACSetsGATsInterop
 using Test
 
 using GATlab, Catlab.CategoricalAlgebra
-using Catlab.Graphs: SchGraph, SchWeightedGraph
+using Catlab.Graphs: SchGraph, SchWeightedGraph, SchSymmetricGraph
 
 @present SchDendrogram(FreeSchema) begin
   X::Ob
@@ -49,7 +49,7 @@ function roundtrip_json_acset_schema(pres::Presentation)
   end
 end
 
-for schema in [SchGraph, SchWeightedGraph]
+for schema in [SchGraph, SchWeightedGraph, SchSymmetricGraph]
   @test roundtrip_json_acset_schema(schema) == schema
 end
 

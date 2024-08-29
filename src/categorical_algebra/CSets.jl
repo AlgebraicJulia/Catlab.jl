@@ -103,7 +103,7 @@ FinDomFunction(c::Column{Int,Union{AttrVar,T}}, dom, codom) where {T} =
 """ Create `VarSet` for attribute type of attributed C-set."""
 function VarSet(X::ACSet, type::Symbol)
   S = acset_schema(X)
-  if type ∈ ob(S)
+  if type ∈ ob(S) #honestly should probably be an error
     return VarSet{Union{}}(nparts(X,type))
   else 
     return VarSet{attrtype_type(X,type)}(nparts(X,type))
@@ -115,7 +115,7 @@ function VarFunction(X::ACSet, f::Symbol)
   if f ∈ attrs(S; just_names=true)
     VarFunction(X.subparts[f], parts(X,dom(S,f)), FinSet(nparts(X,codom(S,f))))
   else
-    VarFunction(FinFunction(X,f))
+    VarFunction(FinFunction(X,f)) #also probably an error
   end
 end
 
@@ -194,31 +194,32 @@ const ACSetDomCat = FinCats.FinCatPresentation{
             TypeCat{Union{FinSet,VarSet},
                     Union{VarFunction,FinDomFunction{Int}}}}
   acset::ACS
-  # FIXME: The equations should not be here. They should be in the acset, which
-  # is not yet supported for struct acsets.
-  equations::Vector{Pair}
 end
-FinDomFunctor(X::ACSet; equations=Pair[]) = ACSetFunctor(X, equations)
+FinDomFunctor(X::ACSet) = ACSetFunctor(X)
 ACSet(X::ACSetFunctor) = X.acset
 
-hasvar(X::ACSet) = any(o->nparts(X,o) > 0, attrtypes(acset_schema(X)))
+function hasvar(X::ACSet,x) 
+  s = acset_schema(X)
+  (x∈ attrs(acset_schema(X),just_names=true) && hasvar(X,codom(s,x))) || 
+  x∈attrtypes(acset_schema(X)) && nparts(X,x)>0
+end
+hasvar(X::ACSet) = any(o->hasvar(X,o), attrtypes(acset_schema(X)))
+hasvar(X::ACSetFunctor,x) = hasvar(X.acset,x)
 hasvar(X::ACSetFunctor) = hasvar(X.acset)
 
-function dom(F::ACSetFunctor)
-  pres = Presentation(F.acset)
-  add_equations!(pres, F.equations)
-  FinCat(pres)
-end
 
+dom(F::ACSetFunctor) = FinCat(Presentation(ACSet(F)))
+
+#not clear this couldn't just always give the Vars
 function codom(F::ACSetFunctor)
-  hasvar(F) ? TypeCat{VarSet,VarFunction}() :
+  hasvar(F) ? TypeCat{Union{SetOb,VarSet},Union{FinDomFunction{Int},VarFunction}}() :
     TypeCat{SetOb,FinDomFunction{Int}}()
 end
 
 Categories.do_ob_map(F::ACSetFunctor, x) = 
-  (hasvar(F) ? VarSet : SetOb)(F.acset, functor_key(x))
+  (hasvar(F,functor_key(x)) ? VarSet : SetOb)(F.acset, functor_key(x))
 Categories.do_hom_map(F::ACSetFunctor, f) =  
-  (hasvar(F) ? VarFunction : FinFunction)(F.acset, functor_key(f))
+  (hasvar(F,functor_key(f)) ? VarFunction : FinFunction)(F.acset, functor_key(f))
 
 functor_key(x) = x
 functor_key(expr::GATExpr{:generator}) = first(expr)
@@ -228,13 +229,15 @@ functor_key(expr::GATExpr{:generator}) = first(expr)
 function (::Type{ACS})(F::FinDomFunctor) where ACS <: ACSet
   X = if ACS isa UnionAll
     pres = presentation(dom(F))
-    ACS{(eltype(ob_map(F, c)) for c in generators(pres, :AttrType))...}()
+    ACS{(strip_attrvars(eltype(ob_map(F, c))) for c in generators(pres, :AttrType))...}()
   else
     ACS()
   end
   copy_parts!(X, F)
   return X
 end
+strip_attrvars(T) = T
+strip_attrvars(::Type{Union{AttrVar, T}}) where T = T
 
 """ Copy parts from a set-valued `FinDomFunctor` to an `ACSet`.
 """
@@ -249,8 +252,13 @@ function ACSetInterface.copy_parts!(X::ACSet, F::FinDomFunctor)
     set_subpart!(X, dom_parts, nameof(f), codom_parts[collect(hom_map(F, f))])
   end
   for f in generators(pres, :Attr)
+    cd = nameof(codom(f))
     dom_parts = added[nameof(dom(f))]
-    set_subpart!(X, dom_parts, nameof(f), collect(hom_map(F, f)))
+    F_of_f = collect(hom_map(F,f))
+    n_attrvars_present = nparts(X, cd)
+    n_attrvars_needed = maximum(map(x->x.val,filter(x->x isa AttrVar,F_of_f)),init=0)
+    add_parts!(X,cd,n_attrvars_needed-n_attrvars_present)
+    set_subpart!(X, dom_parts, nameof(f), F_of_f)
   end
   added
 end
@@ -443,10 +451,14 @@ function coerce_components(S, components, X::ACSet{<:PT}, Y) where PT
   return merge(ocomps, acomps)
 end 
   
+# Enforces that function has a valid domain (but not necessarily codomain)
 function coerce_component(ob::Symbol, f::FinFunction{Int,Int},
                           dom_size::Int, codom_size::Int; kw...)
-  length(dom(f)) == dom_size || error("Domain error in component $ob")
-  # length(codom(f)) == codom_size || error("Codomain error in component $ob") # codom size is now Maxpart not nparts
+  if haskey(kw, :dom_parts)
+    !any(i -> f(i) == 0, kw[:dom_parts]) # check domain of mark as deleted
+  else                         
+    length(dom(f)) == dom_size # check domain of dense parts
+  end || error("Domain error in component $ob")
   return f 
 end
 
@@ -464,8 +476,8 @@ end
 function coerce_attrvar_component(
     ob::Symbol, f::VarFunction,::TypeSet{T},::TypeSet{T},
     dom_size::Int, codom_size::Int; kw...) where {T}
-  # length(dom(f.fun)) == dom_size || error("Domain error in component $ob: $(dom(f.fun))!=$dom_size")
-  length(f.codom) == codom_size || error("Codomain error in component $ob: $(f.fun.codom)!=$codom_size")
+  length(f.codom) == codom_size || error(
+    "Codomain error in component $ob: $(f.fun.codom)!=$codom_size")
   return f
 end
 
@@ -1111,11 +1123,10 @@ end
 const SubCSet{S} = Subobject{<:StructCSet{S}}
 const SubACSet{S} = Subobject{<:StructACSet{S}}
 
-# Cast VarFunctions to FinFunctions
+# Componentwise subobjects: coerce VarFunctions to FinFunctions
 components(A::SubACSet{S}) where S = 
-  NamedTuple(k => Subobject(
-    k ∈ ob(S) ? vs : FinFunction([v.val for v in collect(vs)], FinSet(codom(vs))))
-  for (k,vs) in pairs(components(hom(A)))
+  NamedTuple(k => Subobject(k ∈ ob(S) ? vs : FinFunction(vs)) for (k,vs) in 
+             pairs(components(hom(A)))
 )
 
 force(A::SubACSet) = Subobject(force(hom(A)))
@@ -1240,10 +1251,13 @@ function subtract(A::SubACSet{S}, B::SubACSet{S}, ::SubOpBoolean) where S
   A, B = map(predicate, components(A)), map(predicate, components(B))
   D = NamedTuple(o => falses(nparts(X, o)) for o in types(S))
 
-  function set!(c, x)
+  set!(c::Symbol, x::AttrVar) = D[c][x.val] = true
+  function set!(c::Symbol, x::Int)
     D[c][x] = true
     for (c′,x′) in all_subparts(X, Val{c}, x)
-      if !D[c′][x′]; set!(c′,x′) end
+      if (c′ ∈ ob(S) && !D[c′][x′]) || x′ isa AttrVar 
+        set!(c′,x′) 
+      end
     end
   end
 
@@ -1263,7 +1277,7 @@ end
 
 @generated function all_subparts(X::StructACSet{S},
                                  ::Type{Val{c}}, x::Int) where {S,c}
-  Expr(:tuple, map(homs(S; from=c)) do (f,_,c′)
+  Expr(:tuple, map(arrows(S; from=c)) do (f,_,c′)
     :($(quot(c′)), subpart(X,x,$(quot(f))))
   end...)
 end
