@@ -147,15 +147,10 @@ function parse_relation_diagram(head::Expr, body::Expr)
   end
   var_types = if isnothing(all_types)    # Untyped case
     vars -> length(vars)
-  elseif typeof(all_types[1]) <: Int     # Int typed case
-    var_type_map = Dict{Symbol,Int}(zip(all_vars, all_types))
+  else
+    var_type_map = Dict{Symbol,eltype(all_types)}(zip(all_vars, all_types))    # May have Integer problems
     vars -> getindex.(Ref(var_type_map), vars)
-  elseif typeof(all_types[1]) <: Expr    # Expr typed case
-    var_type_map = Dict{Symbol,Expr}(zip(all_vars, all_types))
-    vars -> getindex.(Ref(var_type_map), vars)
-  else                                   # Symbol typed case
-    var_type_map = Dict{Symbol,Symbol}(zip(all_vars, all_types))
-    vars -> getindex.(Ref(var_type_map), vars)
+
   end
 
   # Create wiring diagram and add outer ports and junctions.
@@ -200,23 +195,28 @@ function parse_relation_context(context)
   vars = map(terms) do term
     @match term begin
       Expr(:(::), var::Symbol, type::Symbol) => (var => type)
-      Expr(:(::), var::Symbol, type::Int) => (var => type)
       Expr(:(::), var::Symbol, type::Expr) => (var => type)
+
+      Expr(:(::), var::Symbol, type) => begin
+      if typeof(type) <: Integer
+        (var => type)
+      else
+        error("Invalid type: $type in term $term of context wasn't an integer")
+      end
+    end
       var::Symbol => var
       _ => error("Invalid syntax in term $term of context")
     end
   end
+
   if vars isa AbstractVector{Symbol}
     (vars, nothing)
-  elseif vars isa AbstractVector{Pair{Symbol,Symbol}}
-    (first.(vars), last.(vars))
-  elseif vars isa AbstractVector{Pair{Symbol, Int}}
-    (first.(vars), last.(vars))
-  elseif vars isa AbstractVector{Pair{Symbol, Expr}}
+  elseif all(x -> x isa Pair{Symbol, <:Union{Symbol, Integer, Expr}}, vars)
     (first.(vars), last.(vars))
   else
-    error("Context $context mixes variable types")
+    error("Context $context mixes typed and untyped variables")
   end
+
 end
 
 
