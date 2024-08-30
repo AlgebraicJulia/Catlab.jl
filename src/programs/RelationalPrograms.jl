@@ -148,9 +148,8 @@ function parse_relation_diagram(head::Expr, body::Expr)
   var_types = if isnothing(all_types)    # Untyped case
     vars -> length(vars)
   else
-    var_type_map = Dict{Symbol,eltype(all_types)}(zip(all_vars, all_types))    # May have Integer problems
+    var_type_map = Dict(zip(all_vars, all_types)) 
     vars -> getindex.(Ref(var_type_map), vars)
-
   end
 
   # Create wiring diagram and add outer ports and junctions.
@@ -196,14 +195,7 @@ function parse_relation_context(context)
     @match term begin
       Expr(:(::), var::Symbol, type::Symbol) => (var => type)
       Expr(:(::), var::Symbol, type::Expr) => (var => type)
-
-      Expr(:(::), var::Symbol, type) => begin
-      if typeof(type) <: Integer
-        (var => type)
-      else
-        error("Invalid type: $type in term $term of context wasn't an integer")
-      end
-    end
+      Expr(:(::), var::Symbol, type::Integer) => (var => type)
       var::Symbol => var
       _ => error("Invalid syntax in term $term of context")
     end
@@ -211,7 +203,7 @@ function parse_relation_context(context)
 
   if vars isa AbstractVector{Symbol}
     (vars, nothing)
-  elseif all(x -> x isa Pair{Symbol, <:Union{Symbol, Integer, Expr}}, vars)
+  elseif eltype(vars) <: Pair
     (first.(vars), last.(vars))
   else
     error("Context $context mixes typed and untyped variables")
