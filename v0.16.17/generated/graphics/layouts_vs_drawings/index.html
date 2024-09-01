@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Layouts versus drawings of wiring diagrams · Catlab.jl</title><meta name="title" content="Layouts versus drawings of wiring diagrams · Catlab.jl"/><meta property="og:title" content="Layouts versus drawings of wiring diagrams · Catlab.jl"/><meta property="twitter:title" content="Layouts versus drawings of wiring diagrams · Catlab.jl"/><meta name="description" content="Documentation for Catlab.jl."/><meta property="og:description" content="Documentation for Catlab.jl."/><meta property="twitter:description" content="Documentation for Catlab.jl."/><script data-outdated-warner src="../../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../search_index.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../assets/themeswap.js"></script><script src="../../../assets/analytics.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../../"><img src="../../../assets/logo.svg" alt="Catlab.jl logo"/></a><div class="docs-package-name"><span class="docs-autofit"><a href="../../../">Catlab.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../../">Catlab.jl</a></li><li><span class="tocitem">Vignettes</span><ul><li><input class="collapse-toggle" id="menuitem-2-1" type="checkbox"/><label class="tocitem" for="menuitem-2-1"><span class="docs-label">Seven Sketches in Compositionality</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../sketches/partitions/">Partitions</a></li><li><a class="tocitem" href="../../sketches/preorders/">Preorders</a></li><li><a class="tocitem" href="../../sketches/meets/">Meets in Preorders</a></li><li><a class="tocitem" href="../../sketches/smc/">Symmetric Monoidal Categories</a></li><li><a class="tocitem" href="../../sketches/cat_elements/">The Category of Elements</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-2" type="checkbox"/><label class="tocitem" for="menuitem-2-2"><span class="docs-label">Graphs</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../graphs/graphs/">The Category of Graphs</a></li><li><a class="tocitem" href="../../graphs/graphs_label/">Labeled Graphs</a></li><li><a class="tocitem" href="../../graphs/subgraphs/">Algebra of subgraphs</a></li></ul></li><li><span class="tocitem">Categorical Algebra</span></li><li><input class="collapse-toggle" id="menuitem-2-4" type="checkbox"/><label class="tocitem" for="menuitem-2-4"><span class="docs-label">Wiring Diagrams</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../wiring_diagrams/wiring_diagram_basics/">Basics of wiring diagrams</a></li><li><a class="tocitem" href="../../wiring_diagrams/diagrams_and_expressions/">Wiring diagrams and syntactic expressions</a></li><li><a class="tocitem" href="../../wiring_diagrams/wd_cset/">Wiring Diagrams as Attributed C-Sets</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-5" type="checkbox" checked/><label class="tocitem" for="menuitem-2-5"><span class="docs-label">Graphics</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../graphviz_graphs/">Drawing graphs in Graphviz</a></li><li><a class="tocitem" href="../graphviz_wiring_diagrams/">Drawing wiring diagrams in Graphviz</a></li><li><a class="tocitem" href="../composejl_wiring_diagrams/">Drawing wiring diagrams in Compose.jl</a></li><li><a class="tocitem" href="../tikz_wiring_diagrams/">Drawing wiring diagrams in TikZ</a></li><li class="is-active"><a class="tocitem" href>Layouts versus drawings of wiring diagrams</a><ul class="internal"><li><a class="tocitem" href="#Graphviz-layout"><span>Graphviz layout</span></a></li><li><a class="tocitem" href="#Series-parallel-layout"><span>Series-parallel layout</span></a></li></ul></li></ul></li></ul></li><li><span class="tocitem">Modules</span><ul><li><a class="tocitem" href="../../../apis/theories/">Standard library of theories</a></li><li><a class="tocitem" href="../../../apis/categorical_algebra/">Categorical algebra</a></li><li><a class="tocitem" href="../../../apis/graphs/">Graphs</a></li><li><a class="tocitem" href="../../../apis/wiring_diagrams/">Wiring diagrams</a></li><li><a class="tocitem" href="../../../apis/graphics/">Graphics</a></li><li><a class="tocitem" href="../../../apis/programs/">Programs</a></li></ul></li><li><span class="tocitem">Developer Docs</span><ul><li><a class="tocitem" href="../../../devdocs/style/">Style Guide for AlgebraicJulia</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Vignettes</a></li><li><a class="is-disabled">Graphics</a></li><li class="is-active"><a href>Layouts versus drawings of wiring diagrams</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Layouts versus drawings of wiring diagrams</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/Catlab.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/Catlab.jl/blob/main/docs/literate/graphics/layouts_vs_drawings.jl" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Layouts-versus-drawings-of-wiring-diagrams"><a class="docs-heading-anchor" href="#Layouts-versus-drawings-of-wiring-diagrams">Layouts versus drawings of wiring diagrams</a><a id="Layouts-versus-drawings-of-wiring-diagrams-1"></a><a class="docs-heading-anchor-permalink" href="#Layouts-versus-drawings-of-wiring-diagrams" title="Permalink"></a></h1><p><a href="https://nbviewer.jupyter.org/github/AlgebraicJulia/Catlab.jl/blob/gh-pages/v0.16.17/generated/graphics/layouts_vs_drawings.ipynb"><img src="https://img.shields.io/badge/show-nbviewer-579ACA.svg" alt/></a></p><p>In Catlab, layout and drawing (rendering) of wiring diagrams are mostly decoupled. This notebook shows how to lay out diagrams using Graphviz&#39;s rank-based layout or Catlab&#39;s series-parallel layout and then render them using Compose.jl or TikZ.</p><p>The morphism we will visualize is:</p><pre><code class="language-julia hljs">using Catlab.Theories
+
+X = Ob(FreeSymmetricMonoidalCategory, :X)
+f, g, h = (Hom(sym, X, X) for sym in (:f, :g, :h))
+
+expr = otimes(f, compose(f,g), compose(f,g,h))</code></pre><p class="math-container">\[f \otimes \left(f \cdot g\right) \otimes \left(f \cdot g \cdot h\right) : X \otimes X \otimes X \to X \otimes X \otimes X\]</p><p>Let&#39;s convert this expression into a wiring diagram. This yields a purely combinatorial object, as evidenced by its underlying graph.</p><pre><code class="language-julia hljs">using Catlab.WiringDiagrams, Catlab.Graphics
+
+diagram = to_wiring_diagram(expr)
+WiringDiagrams.graph(diagram)</code></pre><div class="c-set">
+<span class="c-set-summary">Catlab.WiringDiagrams.DirectedWiringDiagrams.WiringDiagramGraphACSet{Int64} {V:8, E:9, ID:0}</span>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">V</th>
+      <th style = "text-align: right;">box</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">3</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">4</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">5</td>
+      <td style = "text-align: right;">5</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">6</td>
+      <td style = "text-align: right;">6</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">7</td>
+      <td style = "text-align: right;">-2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">8</td>
+      <td style = "text-align: right;">-1</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">E</th>
+      <th style = "text-align: right;">src</th>
+      <th style = "text-align: right;">tgt</th>
+      <th style = "text-align: right;">wire</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">5</td>
+      <td style = "text-align: right;">6</td>
+      <td style = "text-align: right;">2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">5</td>
+      <td style = "text-align: right;">3</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">7</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">5</td>
+      <td style = "text-align: right;">7</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">6</td>
+      <td style = "text-align: right;">7</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">3</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">7</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">8</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">8</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">8</td>
+      <td style = "text-align: right;">2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">9</td>
+      <td style = "text-align: right;">6</td>
+      <td style = "text-align: right;">8</td>
+      <td style = "text-align: right;">3</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+<h2 id="Graphviz-layout"><a class="docs-heading-anchor" href="#Graphviz-layout">Graphviz layout</a><a id="Graphviz-layout-1"></a><a class="docs-heading-anchor-permalink" href="#Graphviz-layout" title="Permalink"></a></h2><p>Calling <code>to_graphviz</code> both lays out and draws the diagram, entirely within Graphviz.</p><pre><code class="language-julia hljs">to_graphviz(diagram, orientation=LeftToRight)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="210pt" height="118pt"
+ viewBox="0.00 0.00 210.00 118.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 114)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-114 206,-114 206,4 -4,4"/>
+<!-- n0in1 -->
+<!-- n0in2 -->
+<!-- n0in1&%2345;&gt;n0in2 -->
+<!-- n1 -->
+<!-- f -->
+<g id="n1" class="node">
+<title>n1</title>
+<polygon fill="none" stroke="black" points="147,-84.5 147,-109.5 163,-109.5 163,-84.5 147,-84.5"/>
+<text text-anchor="start" x="152" y="-93.3" font-family="Serif" font-size="14.00">f</text>
+</g>
+<!-- n0in1&%2345;&gt;n1 -->
+<!-- X -->
+<g id="e1" class="edge">
+<title>n0in1:e&%2345;&gt;n1:w</title>
+<path fill="none" stroke="black" d="M1,-96.5C63.68,-96.5 80.64,-96.5 140.82,-96.5"/>
+<polygon fill="black" stroke="black" points="141,-98.25 146,-96.5 141,-94.75 141,-98.25"/>
+</g>
+<!-- n0in3 -->
+<!-- n0in2&%2345;&gt;n0in3 -->
+<!-- n2 -->
+<!-- f -->
+<g id="n2" class="node">
+<title>n2</title>
+<polygon fill="none" stroke="black" points="37,-42.5 37,-67.5 53,-67.5 53,-42.5 37,-42.5"/>
+<text text-anchor="start" x="42" y="-51.3" font-family="Serif" font-size="14.00">f</text>
+</g>
+<!-- n0in2&%2345;&gt;n2 -->
+<!-- X -->
+<g id="e2" class="edge">
+<title>n0in2:e&%2345;&gt;n2:w</title>
+<path fill="none" stroke="black" d="M1,-54.5C15.12,-54.5 19.9,-54.5 31.83,-54.5"/>
+<polygon fill="black" stroke="black" points="32,-56.25 37,-54.5 32,-52.75 32,-56.25"/>
+</g>
+<!-- n4 -->
+<!-- f -->
+<g id="n4" class="node">
+<title>n4</title>
+<polygon fill="none" stroke="black" points="37,0.5 37,-24.5 53,-24.5 53,0.5 37,0.5"/>
+<text text-anchor="start" x="42" y="-8.3" font-family="Serif" font-size="14.00">f</text>
+</g>
+<!-- n0in3&%2345;&gt;n4 -->
+<!-- X -->
+<g id="e3" class="edge">
+<title>n0in3:e&%2345;&gt;n4:w</title>
+<path fill="none" stroke="black" d="M1,-12.5C15.13,-12.5 19.89,-11.72 31.83,-11.54"/>
+<polygon fill="black" stroke="black" points="32.01,-13.29 37,-11.5 31.99,-9.79 32.01,-13.29"/>
+</g>
+<!-- n0out1 -->
+<!-- n0out2 -->
+<!-- n0out1&%2345;&gt;n0out2 -->
+<!-- n0out3 -->
+<!-- n0out2&%2345;&gt;n0out3 -->
+<!-- n1&%2345;&gt;n0out1 -->
+<!-- X -->
+<g id="e7" class="edge">
+<title>n1:e&%2345;&gt;n0out1:w</title>
+<path fill="none" stroke="black" d="M164,-96.5C178.52,-96.5 183.42,-96.5 195.69,-96.5"/>
+<polygon fill="black" stroke="black" points="196,-98.25 201,-96.5 196,-94.75 196,-98.25"/>
+</g>
+<!-- n3 -->
+<!-- g -->
+<g id="n3" class="node">
+<title>n3</title>
+<polygon fill="none" stroke="black" points="89,-42.5 89,-67.5 109,-67.5 109,-42.5 89,-42.5"/>
+<text text-anchor="start" x="94" y="-51.3" font-family="Serif" font-size="14.00">g</text>
+</g>
+<!-- n2&%2345;&gt;n3 -->
+<!-- X -->
+<g id="e4" class="edge">
+<title>n2:e&%2345;&gt;n3:w</title>
+<path fill="none" stroke="black" d="M53,-54.5C67.12,-54.5 71.9,-54.5 83.83,-54.5"/>
+<polygon fill="black" stroke="black" points="84,-56.25 89,-54.5 84,-52.75 84,-56.25"/>
+</g>
+<!-- n3&%2345;&gt;n0out2 -->
+<!-- X -->
+<g id="e8" class="edge">
+<title>n3:e&%2345;&gt;n0out2:w</title>
+<path fill="none" stroke="black" d="M109,-54.5C148.13,-54.5 159.18,-54.5 195.89,-54.5"/>
+<polygon fill="black" stroke="black" points="196,-56.25 201,-54.5 196,-52.75 196,-56.25"/>
+</g>
+<!-- n5 -->
+<!-- g -->
+<g id="n5" class="node">
+<title>n5</title>
+<polygon fill="none" stroke="black" points="89,0.5 89,-24.5 109,-24.5 109,0.5 89,0.5"/>
+<text text-anchor="start" x="94" y="-8.3" font-family="Serif" font-size="14.00">g</text>
+</g>
+<!-- n4&%2345;&gt;n5 -->
+<!-- X -->
+<g id="e6" class="edge">
+<title>n4:e&%2345;&gt;n5:w</title>
+<path fill="none" stroke="black" d="M53,-11.5C67.12,-11.5 71.9,-11.5 83.83,-11.5"/>
+<polygon fill="black" stroke="black" points="84,-13.25 89,-11.5 84,-9.75 84,-13.25"/>
+</g>
+<!-- n6 -->
+<!-- h -->
+<g id="n6" class="node">
+<title>n6</title>
+<polygon fill="none" stroke="black" points="145,0.5 145,-24.5 165,-24.5 165,0.5 145,0.5"/>
+<text text-anchor="start" x="150" y="-8.3" font-family="Serif" font-size="14.00">h</text>
+</g>
+<!-- n5&%2345;&gt;n6 -->
+<!-- X -->
+<g id="e5" class="edge">
+<title>n5:e&%2345;&gt;n6:w</title>
+<path fill="none" stroke="black" d="M109,-11.5C123.12,-11.5 127.9,-11.5 139.83,-11.5"/>
+<polygon fill="black" stroke="black" points="140,-13.25 145,-11.5 140,-9.75 140,-13.25"/>
+</g>
+<!-- n6&%2345;&gt;n0out3 -->
+<!-- X -->
+<g id="e9" class="edge">
+<title>n6:e&%2345;&gt;n0out3:w</title>
+<path fill="none" stroke="black" d="M165,-11.5C179.13,-11.5 183.89,-12.28 195.83,-12.46"/>
+<polygon fill="black" stroke="black" points="195.99,-14.21 201,-12.5 196.01,-10.71 195.99,-14.21"/>
+</g>
+</g>
+</svg>
+'/><p>To get just the layout from Graphviz, we call <code>graphviz_layout</code> instead. We can then render this layout using Compose.jl. Note that the Graphviz layout has units in points.</p><pre><code class="language-julia hljs">import Compose
+
+layout = graphviz_layout(diagram, orientation=LeftToRight)
+layout_to_composejl(layout, base_unit=Compose.pt)</code></pre><img src="36c9fdad.svg" alt="Example block output"/><p>The same layout can be rendered in TikZ:</p><pre><code class="language-julia hljs">import TikzPictures
+
+layout_to_tikz(layout, base_unit=&quot;1pt&quot;)</code></pre><img src="b4392ad8.svg" alt="Example block output"/><h2 id="Series-parallel-layout"><a class="docs-heading-anchor" href="#Series-parallel-layout">Series-parallel layout</a><a id="Series-parallel-layout-1"></a><a class="docs-heading-anchor-permalink" href="#Series-parallel-layout" title="Permalink"></a></h2><p>Catlab has its own layout system based on series-parallel decomposition. In this case, the layout exactly recovers the structure of the morphism expression created at the beginning.</p><pre><code class="language-julia hljs">layout = layout_diagram(FreeSymmetricMonoidalCategory, diagram,
+                        orientation=LeftToRight)
+layout_to_composejl(layout)</code></pre><img src="ae0b868c.svg" alt="Example block output"/><pre><code class="language-julia hljs">layout_to_tikz(layout)</code></pre><img src="735e92c5.svg" alt="Example block output"/></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../tikz_wiring_diagrams/">« Drawing wiring diagrams in TikZ</a><a class="docs-footer-nextpage" href="../../../apis/theories/">Standard library of theories »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.6.0 on <span class="colophon-date" title="Sunday 1 September 2024 23:01">Sunday 1 September 2024</span>. Using Julia version 1.10.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
