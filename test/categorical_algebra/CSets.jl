@@ -64,6 +64,7 @@ f = ACSetTransformation(X,X; V=[1,2], E=[1,2,3])
 @test components(f) == (V=FinFunction([1,2]), E=FinFunction([1,2,3]), 
                         Weight=VarFunction{Float64}([], FinSet(0)))
 
+@test_throws ErrorException ACSetTransformation(Y,X; V=[1,2], E=1)
 g = ACSetTransformation(Y,X; V=[1,2], E=[1])
 @test is_natural(g)
 @test compose(g,f) |> force == g
@@ -300,6 +301,7 @@ diagram = FreeDiagram([g, ob(terminal(Graph)), Graph(1)], [(α,3,1), (β,3,2)])
 # Constructors and accessors. Test type conversion as well Int -> Float64
 g = path_graph(WeightedGraph{Float64}, 2, E=(weight=2,))
 h = path_graph(WeightedGraph{Float64}, 4, E=(weight=[1,2,3],))
+@test_throws ErrorException ACSetTransformation((V=[2,3], E=2), g, h)
 α = ACSetTransformation((V=[2,3], E=[2]), g, h)
 @test length(components(α)) == 3
 
