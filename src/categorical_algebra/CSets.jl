@@ -462,7 +462,11 @@ function coerce_component(ob::Symbol, f::FinFunction{Int,Int},
   return f 
 end
 
-coerce_component(::Symbol, f, dom_size::Int, codom_size::Int; kw...) =
+coerce_component(ob::Symbol, f::T, dom_size::Int, codom_size::Int; kw...) where {T<:Integer} =
+  error("Scalar component for $ob not allowed; " *
+  "this is probably from a scalar component in an ACSetTransformation, please use a vector")
+
+coerce_component(::Symbol, f::T, dom_size::Int, codom_size::Int; kw...) where {T<:AbstractVector{<:Integer}}=
   FinFunction(f, dom_size, codom_size; kw...)
 
 function coerce_attrvar_component(
