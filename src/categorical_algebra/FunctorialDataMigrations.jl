@@ -4,12 +4,14 @@ module FunctorialDataMigrations
 export SigmaMigration, DeltaMigration, migrate, migrate!,
   representable, yoneda, subobject_classifier, 
   internal_hom, SigmaMigrationFunctor, DeltaMigrationFunctor, 
-  DataMigrationFunctor, functor
+  DataMigrationFunctor, functor, SimpleMigration, ΔMigration, ΣMigration
 
 using MLStyle: @match
+using DataStructures: DefaultDict
 
 using ACSets
-using ACSets.DenseACSets: constructor, datatypes
+using ACSets.DenseACSets: datatypes, attrtype_type
+import ACSets.DenseACSets: constructor
 using GATlab
 using ...Theories: ob, hom, dom, codom, attr, AttrTypeExpr, ⋅
 using ..Categories, ..FinCats, ..Limits, ..Diagrams, ..FinSets, ..CSets, ..HomSearch
@@ -17,8 +19,9 @@ using ...Graphs, ..FreeDiagrams
 import ..Categories: ob_map, hom_map
 import GATlab: functor
 using ..FinCats: make_map, mapvals, presentation_key
-using ..Chase: collage, crel_type, pres_to_eds, add_srctgt, chase
+using ..Chase: collage, crel_type, pres_to_eds, add_srctgt, chase, from_c_rel
 using ..FinSets: VarSet
+using ..CSets: var_reference, sub_vars
 
 # Data types
 ############
@@ -91,20 +94,24 @@ Apply a ``Δ`` migration by simple precomposition.
 migrate(X::FinDomFunctor,M::DeltaSchemaMigration) = X∘functor(M)
 migrate(::Type{T}, X::ACSet, M::DeltaMigration) where T <: ACSet =
   migrate!(T(), X, M)
+
+# This seems like there should be an argument to specify it's a Delta
+# As we can imagine doing a pushforward with the same syntax
 migrate(::Type{T}, X::ACSet, FOb, FHom) where T <: ACSet =
   migrate!(T(), X, FOb, FHom)
 
 
-#Expected usage is with `X` empty.
-function migrate!(X::StructACSet{S}, Y::ACSet, M::DeltaMigration) where S
+# Expected usage is with `X` empty.
+function migrate!(X::ACSet, Y::ACSet, M::DeltaMigration)
+  S = acset_schema(X)
   F = functor(M)
-  partsX = Dict(c => add_parts!(X, c, nparts(Y, nameof(ob_map(F,c))))
-                for c in ob(S))
-  for (f,c,d) in homs(S)
-    set_subpart!(X, partsX[c], f, partsX[d][subpart(Y, hom_map(F,f))])
+  partsX = Dict(c => add_parts!(X, c, nparts(Y, nameof(ob_map(F, c))))
+                for c in types(S))
+  for (f, c, d) in homs(S)
+    set_subpart!(X, partsX[c], f, partsX[d][subpart(Y, hom_map(F, f))])
   end
-  for (f,c,_) in attrs(S)
-    set_subpart!(X, partsX[c], f, subpart(Y, hom_map(F,f)))
+  for (f, c, _) in attrs(S)
+    set_subpart!(X, partsX[c], f, subpart(Y, hom_map(F, f)))
   end
   return X
 end
@@ -120,6 +127,11 @@ migrate(t::Type{T}, f::ACSetTransformation, M::DeltaMigration) where T <: ACSet 
 
 migrate(t::Type{T}, f::ACSetTransformation, F::FinFunctor) where T <: ACSet = 
   migrate(t, f, ob_map(F), hom_map(F))
+
+function (F::DeltaMigration)(f::ACSetTransformation; T=nothing) 
+  T = isnothing(T) ? AnonACSetType(Schema(presentation(dom(functor(F))))) : T
+  migrate(T, f, ob_map(F.functor), hom_map(F.functor))
+end
 
 function migrate(::Type{T}, f::TightACSetTransformation,
                 FOb::AbstractDict, FHom::AbstractDict) where T <: ACSet
@@ -156,15 +168,20 @@ struct DataMigrationFunctor{Dom,Codom,M<:ContravariantMigration} <: AbstractMigr
   migration::M
 end
 migration(F::DataMigrationFunctor) = F.migration
+
 """
 Gives the underlying schema functor of a data migration 
 seen as a functor of acset categories.
 """
 functor(F::DataMigrationFunctor) = functor(migration(F))
 
-DataMigrationFunctor(migration::ContravariantMigration{F}) where {F<:Functor{Dom,Codom} where {Dom,Codom}} = DataMigrationFunctor{Dom,Codom,M}(migration)
+DataMigrationFunctor(migration::ContravariantMigration{F}
+                    ) where {F<:Functor{Dom,Codom} where {Dom,Codom}} = 
+  DataMigrationFunctor{Dom,Codom,M}(migration)
+
 DataMigrationFunctor(functor::F, ::Type{Dom}, ::Type{Codom}) where {F<:FinFunctor,Dom,Codom} =
   DataMigrationFunctor{Dom,Codom,DeltaMigration{F}}(DeltaMigration(functor))
+
 DataMigrationFunctor(functor::F, ::Type{Codom}) where {F<:FinFunctor,Codom} =
   DataMigrationFunctor{ACSet,Codom,DeltaMigration{F}}(DeltaMigration(functor))
 
@@ -182,14 +199,25 @@ struct SigmaMigrationFunctor{Dom,Codom,M<:SigmaSchemaMigration} <: AbstractMigra
   SigmaMigrationFunctor(f::F,d::ACSet,c::ACSet) where F<:FinFunctor = 
     new{typeof(d),typeof(c),SigmaMigration{F}}(SigmaMigration(f),constructor(d),constructor(c))
 end 
+
 migration(F::SigmaMigrationFunctor) = F.migration
+
 functor(F::SigmaMigrationFunctor) = functor(migration(F))
 
-SigmaMigrationFunctor(f,::Type{T},c::ACSet) where T<:StructACSet = SigmaMigrationFunctor(f,T(),constructor(c))
-SigmaMigrationFunctor(f,d::ACSet,::Type{T}) where T<:StructACSet = SigmaMigrationFunctor(f,d,T())
-SigmaMigrationFunctor(f,d::Type{T′},::Type{T}) where {T<:StructACSet, T′<:StructACSet} = SigmaMigrationFunctor(f,d,T())
-SigmaMigrationFunctor(f,T,c::ACSet)  = SigmaMigrationFunctor(f,T(),constructor(c))
-SigmaMigrationFunctor(f,d::ACSet,T)  = SigmaMigrationFunctor(f,d,T())
+SigmaMigrationFunctor(f,::Type{T},c::ACSet) where T<:StructACSet = 
+  SigmaMigrationFunctor(f,T(),constructor(c))
+
+SigmaMigrationFunctor(f, d::ACSet, ::Type{T}) where T<:StructACSet = 
+  SigmaMigrationFunctor(f,d,T())
+
+SigmaMigrationFunctor(f,d::Type{T′},::Type{T}
+                     ) where {T<:StructACSet, T′<:StructACSet} = 
+  SigmaMigrationFunctor(f,d,T())
+
+SigmaMigrationFunctor(f,T,c::ACSet) = 
+  SigmaMigrationFunctor(f,T(),constructor(c))
+
+SigmaMigrationFunctor(f, d::ACSet, T) = SigmaMigrationFunctor(f,d,T())
 
 """
 Create a C-Set for the collage of the functor. Initialize data in the domain 
@@ -198,22 +226,31 @@ portion of the collage, then run the chase.
 When `return_unit` is true, returns the diagram morphism given by the unit of
 the adjunction between Σ and Δ migration functors.
 """
-#This should be replaced or at least paired with a new migrate function if anybody works on sigma migrations sometime.
-#Also, we probably don't want to construct the collage every time we migrate using M, at least it should
-#be possible to cache.
+# This should be replaced or at least paired with a new migrate function if 
+# anybody works on sigma migrations sometime.
+# Also, we probably don't want to construct the collage every time we migrate 
+# using M, at least it should be possible to cache.
 function (M::SigmaMigrationFunctor)(d::ACSet; n=100, return_unit::Bool=false)
-  D,CD = M.dom_constructor(), M.codom_constructor()
+  D, CD = M.dom_constructor(), M.codom_constructor()
   F = functor(M)
   S = acset_schema(d)
-  #ask the collage to represent a transformation that's natural
-  #only on the non-attrtype objects of the domain
-  obs = map(x->Ob(FreeSchema.Ob,x),S.obs)
+  # ask the collage to represent a transformation that's natural
+  # only on the non-attrtype objects of the domain
+  obs = map(x->Ob(FreeSchema.Ob,x), S.obs)
   col, col_pres = collage(functor(M),objects=obs)
-  i1,i2 = legs(col)
+  i1, i2 = legs(col)
+
   # Initialize collage C-Set with data from `d`
   atypes = Dict{Symbol,Type}()
-  for (k,v) in datatypes(D)  atypes[Symbol(ob_map(i1,k))] = v end
-  for (k,v) in datatypes(CD) atypes[Symbol(ob_map(i2,k))] = v end
+  for (k,v) in datatypes(D)  
+    atypes[Symbol(ob_map(i1,k))] = v 
+  end
+  for (k,v) in datatypes(CD) 
+    atypes[Symbol(ob_map(i2,k))] = v 
+  end
+  # collage ACSet type
+  fun_type = AnonACSet(presentation(apex(col)); type_assignment=atypes)
+  # collage type where the arrows are replaced with spans
   col_type = crel_type(presentation(apex(col)); types=atypes, name="Sigma")()
   for o in types(S)
     add_parts!(col_type, Symbol(ob_map(i1,o)), nparts(d,o))
@@ -231,51 +268,98 @@ function (M::SigmaMigrationFunctor)(d::ACSet; n=100, return_unit::Bool=false)
   ok || error("Sigma migration did not terminate with n=$n")
   res = CD
   rel_res = codom(chase_rel_res)
-  S2 = acset_schema(res)
-  for o in types(S2)
-    add_parts!(res, o, nparts(rel_res, Symbol(ob_map(i2,o))))
-  end 
-  for h in arrows(S2;just_names=true)
-    hsrc, htgt = add_srctgt(hom_map(i2,h))
-    for (domval, codomval) in zip(rel_res[hsrc], rel_res[htgt])
-      res[domval,h] = codomval
+  fun_res, ok = from_c_rel(rel_res, fun_type)
+  ok || error("Relations are not functional")
+  # println("FUN RES")
+  # show(stdout,"text/plain",fun_res)
+  S′ = acset_schema(fun_res)
+
+  # Handle attribute values (merging, setting explicit values)
+  eval_dict = DefaultDict{Symbol, Dict}(() -> Dict())
+  merge_dict = DefaultDict{Symbol, DefaultDict{Int,Vector{Int}}}(
+    ()->DefaultDict{Int,Vector{Int}}(() -> Int[]))
+  for (f, a, _) in attrs(S)
+    f′ = hom_map(F⋅i2 , f)
+    α = generator(Presentation(S′), Symbol("α_$a"))
+    b′ = Symbol(codom(f′))
+    for iₐ in parts(d, a)
+      val = d[iₐ, f]
+      val′ = fun_res[iₐ, α ⋅ f′]
+      val′ isa AttrVar || error("Codomain is all attrvars")
+      if !(val isa AttrVar)
+        eval_dict[b′][val′.val] = val
+      else 
+        push!(merge_dict[b′][val.val], val′.val)
+      end
     end
   end
-  #Go back and make sure attributes that ought to have
-  #specific values because of d do have those values.
-  for (k,kdom,kcod) in attrs(S)
-    f = hom_map(F,k)
-    #split f into its hom part and its attr part
-    f1,f2 = split_r(f)
-    #Need f1 on the collage for rel_res but f2 
-    #on the target schema
-    f1 = hom_map(i2,f1)
-    for i in parts(d,kdom)
-      oldval = subpart(d,i,k)
-      src_a,tgt_a=add_srctgt(Symbol("α_$kdom"))
-      src_f,tgt_f=add_srctgt(Symbol("$f1"))
-      #Find where i goes under alpha, and then where that goes
-      #under the hom part of f, by walking the spans in rel_res.
-      j = rel_res[only(incident(rel_res,i,src_a)),
-                  tgt_a] 
-      f1j = f1 isa GATExpr{:id} ? j :
-       rel_res[only(incident(rel_res,j,src_f)),
-              tgt_f]
-      res[f1j,nameof(f2)] = oldval
+  # @show eval_dict
+  # @show merge_dict
+  fun_res = codom(sub_vars(fun_res, eval_dict, 
+                  Dict([k=>collect(values(v)) for (k,v) in merge_dict])))
+
+  # Copy data over into result
+  res = ΔMigration(i2, constructor(res))(fun_res)
+
+
+  wandering_vars = Dict(map(attrtypes(S)) do o 
+    o′, o′′ = Symbol(ob_map(i1,o)), Symbol(ob_map(F⋅i2,o))
+    dic = Dict{Int, AttrVar}()
+    for i in parts(rel_res, o′)
+      if isnothing(var_reference(fun_res, o′, i))
+        add_part!(res, o)
+        dic[i] = AttrVar(add_part!(fun_res, o′′))
+      end
     end
-  end
-  rem_free_vars!(res)
+    o => dic 
+  end)
+
   return_unit || return res
 
+  # @show wandering_vars
   # Return result as DiagramHom{id}.
-  diagram_map = Dict(map(types(S)) do o
-    s, t= add_srctgt("α_$o")
-    m = last.(sort(collect(zip([rel_res[x] for x in [s,t]]...))))
-    ff = o ∈ ob(S) ? FinFunction : VarFunction{attrtype_type(D,o)}
-    o => ff(m, nparts(rel_res, nameof(ob_map(functor(M)⋅i2,o))))
+  diagram_map = Dict{Symbol, Any}(map(ob(S)) do o
+    o => FinFunction(fun_res, Symbol("α_$o"))
   end)
-  DiagramHom{id}(functor(M), diagram_map, FinDomFunctor(d), FinDomFunctor(res))
+  # @show diagram_map
+  for o in attrtypes(S)
+    o′, o′′ = Symbol.([ob_map(i1, o), ob_map(i2, o)])
+    T = attrtype_type(D,o)
+
+    diagram_map[o] = VarFunction{T}(map(parts(fun_res, o′)) do i
+      v_r = var_reference(fun_res, o′, i)
+      if isnothing(v_r)
+        wandering_vars[o][i]
+      else
+        f1, c1, j = v_r
+        c = only([a for a in ob(S) if Symbol(ob_map(i1, a)) == c1])
+        f = only([a for a in attrs(S; just_names=true) if 
+                  Symbol(last(split_r(hom_map(i1, a)))) == f1])
+        f2 = Symbol(last(split_r(hom_map(i2, f))))
+        fun_res[diagram_map[c](j), f2]
+      end
+    end, FinSet(nparts(fun_res, o′′)))
+  end
+  # @show diagram_map
+  # show(stdout,"text/plain",res)
+  # println("FinDomFunctor(d) $(FinDomFunctor(d))")
+  # println("FinDomFunctor(res) $(FinDomFunctor(res))")
+
+  # Delt = ΔMigration(functor(M), M.dom_constructor)(res)
+  # ϕ = FinTransformation(diagram_map, FinDomFunctor(d), FinDomFunctor(Delt))
+  # final_res = DiagramHom{id}(functor(M), ϕ, FinDomFunctor(res))
+  final_res = DiagramHom{id}(functor(M), diagram_map, FinDomFunctor.([d,res])...)
+  # println(codom(final_res.diagram_map))
+  is_natural(final_res.diagram_map) || error("HERE")
+  final_res
 end
+
+
+# function DiagramHom{id}(f::FinFunctor, components, D::ACSetFunctor, D′::ACSetFunctor;kw...)
+#   error("HERE")
+#   ϕ = FinTransformation(components, D, f⋅D′)
+#   DiagramHom{id}(f, ϕ, D′;kw...)
+# end
 
 """
 Split an n-fold composite (n may be 1) 
@@ -283,6 +367,96 @@ Hom or Attr into its left n-1 and rightmost 1 components
 """
 split_r(f) = head(f) == :compose ?
   (compose(args(f)[1:end-1]),last(f)) : (id(dom(f)),f)
+
+
+# "Simple" migration functors ... maybe integrable into the above hierarchy 
+#--------------------------------------------------------------------------
+abstract type SimpleMigration end 
+
+struct ΔMigration <: SimpleMigration
+  F::FinFunctor
+  constructor
+end
+
+functor(m::SimpleMigration) = m.F 
+constructor(m::SimpleMigration) = m.constructor
+
+function (F::ΔMigration)(X::ACSet)
+  migrate!(constructor(F)(), X, DeltaMigration(functor(F))) # ob_map(functor(F)), hom_map(functor(F)))
+end
+
+function (F::ΔMigration)(f::TightACSetTransformation)
+  d = Dict()
+  for (ob_dom, ob_codom) in pairs(ob_map(functor(F)))
+    if haskey(components(f), Symbol(ob_codom))
+      d[Symbol(ob_dom)] = f[Symbol(ob_codom)]
+    end
+  end
+  ACSetTransformation(F(dom(f)), F(codom(f)); d...)
+end
+
+struct ΣMigration <: SimpleMigration
+  F::FinFunctor
+  constructor
+end
+
+function (M::ΣMigration)(X::ACSet; kw...)::Union{ACSet, DiagramHom}
+  SigmaMigrationFunctor(functor(M), X, constructor(M)())(X; kw...)
+end
+
+"""
+Sigma migration on morphisms begins with migrating the dom, X, and codom, Y.
+
+The new components, e.g. for some object "a" in the schema, are the unique ones
+which make the following square commute:
+
+```  
+         fₐ
+        Xₐ  →  Yₐ        
+    αXₐ ↓      ↓ αYₐ
+      F(X) ⤑ F(X)'
+```
+
+This is because the results of the sigma migrations are freely generated by some 
+generators, and we stipulate the homomorphism by saying where the generators go.
+"""
+function (M::ΣMigration)(f::ACSetTransformation)::ACSetTransformation
+
+  d, cd = Xs = dom(f), codom(f)
+  ηs = M.(Xs; return_unit=true)
+  αd, αcd = diagram_map.(ηs)
+  Fd, Fcd = ACSet.(codom.(ηs))
+
+  S = acset_schema(d)
+
+  initial = DefaultDict{Symbol, Dict{Int, Union{Int, AttrVar}}}(
+    () -> Dict{Int, Union{Int, AttrVar}}())
+  for o in ob(S)
+    Fo = Symbol(ob_map(functor(M), o))
+    for i in parts(d, o)
+      initial[Fo][αd[o](i)] = αcd[o](f[o](i))
+    end
+  end
+  for o in attrtypes(S)
+    Fo = Symbol(ob_map(functor(M), o))
+    for i in AttrVar.(parts(d, o))
+      initial[Fo][αd[o](i).val] = αcd[o](f[o](i))
+    end
+  end
+
+  h = homomorphism(Fd, Fcd; initial)
+  isnothing(h) &&  show(stdout,"text/plain", d)
+  isnothing(h) &&  show(stdout,"text/plain", cd)
+  h
+end
+
+# Derivative applications of migration functors to other data structures
+#-----------------------------------------------------------------------
+(m::SimpleMigration)(::Nothing) = nothing
+
+(F::SimpleMigration)(s::Multispan) = Multispan(F(apex(s)), F.(collect(s)))
+
+(F::SimpleMigration)(s::Multicospan) = Multicospan(F(apex(s)), F.(collect(s)))
 
 # Yoneda embedding
 #-----------------

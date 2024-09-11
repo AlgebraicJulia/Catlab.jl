@@ -1,7 +1,6 @@
 module TestFunctorialDataMigrations
-using Test
 
-using Catlab.Theories, Catlab.Graphs, Catlab.CategoricalAlgebra
+using Test, Catlab
 
 @present SchSet(FreeSchema) begin
   X::Ob
@@ -32,17 +31,20 @@ add_parts!(dds, :X, 3, Φ=[2,3,1])
 X = SchDDS[:X]
 FOb = Dict(:V => :X, :E => :X)
 FHom = Dict(:src => id(X), :tgt => :Φ)
-F = DeltaMigration(FinFunctor(FOb,FHom,SchGraph,SchDDS))
+Ff = FinFunctor(FOb,FHom,SchGraph,SchDDS)
+F = DeltaMigration(Ff)
 Δ(x) = migrate(Graph, x, FOb,FHom)
 
 @test h == Δ(dds)
 
-# test on morphisms
+# test SimpleMigration on objects and morphisms
+Delta = ΔMigration(Ff, Graph)
 dds′ = @acset DDS begin X=5; Φ=[2,3,4,4,3] end
 dds2 = @acset DDS begin X=3; Φ=[2,3,3] end 
 f = ACSetTransformation(dds′,dds2; X=[1,2,3,3,3])
-Δf = homomorphism(Δ(dds′),Δ(dds2); initial=(V=[1,2,3,3,3],))
+Δf = homomorphism(Delta(dds′),Delta(dds2); initial=(V=[1,2,3,3,3],))
 @test Δf == migrate(Graph, f, F)
+@test Delta(f) == Δf
 
 # Mutating migration
 h2 = copy(h)
@@ -110,11 +112,7 @@ Y = ΣF(X)
 @test nparts(Y, :E) == 0
 
 X = @acset UndirectedBipartiteGraph begin
-  V₁ = 4
-  V₂ = 3
-  E = 4
-  src = [1,2,2,3]
-  tgt = [1,1,2,3]
+  V₁ = 4; V₂ = 3; E = 4; src = [1,2,2,3]; tgt = [1,1,2,3]
 end
 
 Yd = ΣF(X; return_unit=true)
@@ -125,7 +123,40 @@ Y = Graph(codom(Yd))
 @test length(Y[:src] ∩ Y[:tgt]) == 0
 @test isempty(collect(α[:V₁]) ∩ collect(α[:V₂]))
 
+# SimpleMigration Sigma acting on objects and morphisms
+Sigma = ΣMigration(F, Graph)
+Y = Sigma(X)
+X′ = @acset UndirectedBipartiteGraph begin
+  V₁ = 4; V₂ = 3; E = 4; src = [1,2,2,3]; tgt = [1,1,2,1]
+end
+f = homomorphism(X, X′; initial=(V₁=1:4,E=1:4))
+@test is_natural(Sigma(f))
+
+# Id action
 @test SigmaMigrationFunctor(idF, Graph, Graph)(Y) == Y
+
+
+# With AttrVars
+@present SchAttrSet(FreeSchema) begin X::Ob; D::AttrType; (f)::Attr(X,D) end
+@acset_type AttrSet(SchAttrSet){Symbol}
+
+F = id(FinCat(SchAttrSet))
+s = ΣMigration(F, AttrSet)
+X = @acset AttrSet begin X=2; D=1; f=[:abc, AttrVar(1)] end
+s(X; return_unit=true)
+
+# Sheep example (abstracted to MWE)
+@present SchQ(FreeSchema) begin (X)::Ob; D::AttrType; (f,g)::Attr(X, D) end
+@acset_type Q(SchQ, part_type=BitSetParts){Symbol}
+X = @acset Q begin X=1; D=1; f=[AttrVar(1)]; g=[AttrVar(1)]  end
+r = ΣMigration(id(FinCat(SchQ)), Q)(id(X));
+
+# Migrate wandering attrvars
+X = @acset AttrSet begin X=1; D=3; f=[AttrVar(2)] end
+@test is_isomorphic(X, s(X)) # not equal, though due to reordering of attrvars
+ΣX = s(X;return_unit=true)
+@test is_natural(ΣX.diagram_map)
+
 
 # Sigma migrations with attributes
 #---------------------------------
@@ -159,20 +190,14 @@ end
 @acset_type Thing2WithProp(SchThing2WithProp)
 
 X = @acset Thing2WithProp{Bool,String} begin
-  Th1 = 2
-  Th2 = 4
-  f = [1,3]
-  prop = [false,false,true,true]
+  Th1 = 2; Th2 = 4; f = [1,3]; prop = [false,false,true,true]; 
   id = ["ffee cup","doughnut"]
 end
 
 Y = @acset Thing1WithProp{Bool,String} begin
-  Th1 = 2
-  Th2 = 4
-  f = [1,3]
-  prop = [false,true]
-  id = ["ffee cup","doughnut"]
+  Th1 = 2; Th2 = 4; f = [1,3]; prop = [false,true]; id = ["ffee cup","doughnut"]
 end
+
 C1,C2 = FinCat(SchThing1WithProp),FinCat(SchThing2WithProp)
 th1,th2,property,ID = ob_generators(C1)
 f1,id1,prop1 = hom_generators(C1)
@@ -188,7 +213,7 @@ F = FinFunctor(
 ΣF = SigmaMigrationFunctor(F, Thing1WithProp{Bool,String}, Thing2WithProp{Bool,String})
 
 YY = ΔF(X)
-XX = ΣF(Y)
+XX = ΣF(Y);
 @test YY == Y
 @test incident(XX,false,[:f,:prop]) == incident(XX,"ffee cup",:id)
 
@@ -201,13 +226,7 @@ XX = ΣF(Y)
 end
 @acset_type Span(ThSpan, index=[:l1, :l2])
 
-X = @acset Span begin
-  L1 = 3
-  L2 = 4
-  A = 3
-  l1 = [1,1,2]
-  l2 = [1,2,3]
-end
+X = @acset Span begin L1 = 3; L2 = 4; A = 3; l1 = [1,1,2]; l2 = [1,2,3] end
 
 @present ThInitial(FreeSchema) begin
   I::Ob
@@ -256,7 +275,7 @@ G = path_graph(Graph,3)
 Σ = SigmaMigrationFunctor(F, Graph, ReflexiveGraph)
 expected = @acset ReflexiveGraph  begin 
   V=3; E=5; refl=1:3; src=[1,2,3,1,2]; tgt=[1,2,3,2,3] 
-end 
+end
 @test is_isomorphic(Σ(G), expected)
 
 # Sigma with attributes 
@@ -279,7 +298,18 @@ expected = @acset WG{Float64} begin
 end
 
 @test is_isomorphic(Σ(G), expected)
+
+W = @acset WG{Float64} begin Color=1 end
+Σ = ΣMigration(id(FinCat(SchWG)), WG{Float64})
+Σ(W; return_unit=true)
+ob_map(force(FinDomFunctor(W)), :Color)
  
+
+# Reduced sheep example
+@present SchZ(FreeSchema) begin D::AttrType; end
+@acset_type Z2(SchZ, part_type=BitSetParts){Symbol}
+ΣMigration(id(FinCat(SchZ)), Z2)(Z2(); return_unit=true)
+
 # Yoneda embedding
 #-----------------
 

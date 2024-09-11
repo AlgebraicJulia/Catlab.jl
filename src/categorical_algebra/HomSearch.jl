@@ -264,7 +264,7 @@ function backtracking_search(f, X::ACSet, Y::ACSet;
   for a_type in attrtypes(S) 
     a_type ∈ (monic ∪ iso ∪ no_bind) && continue # attrvars ↦ attrvars
     attrs′ = attrs(S, just_names=true, to=a_type)
-    avars = union(collect.([filter(x->x isa AttrVar, X[f]) for f in attrs′])...)
+    avars = union(Set{AttrVar}(), collect.([filter(x->x isa AttrVar, X[f]) for f in attrs′])...)
     assigned = partial_assignments(get(initial, a_type, []); is_attr=true)
     assigned′ = first.(collect(assigned))
     unassigned = setdiff(parts(X, a_type), [v.val for v in avars] ∪ assigned′)
