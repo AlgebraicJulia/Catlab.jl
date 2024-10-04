@@ -350,7 +350,7 @@ function (M::SigmaMigrationFunctor)(d::ACSet; n=100, return_unit::Bool=false)
   # final_res = DiagramHom{id}(functor(M), ϕ, FinDomFunctor(res))
   final_res = DiagramHom{id}(functor(M), diagram_map, FinDomFunctor.([d,res])...)
   # println(codom(final_res.diagram_map))
-  is_natural(final_res.diagram_map) || error("HERE")
+  is_natural(final_res.diagram_map) || error("lol so close, sigma mig is unnatural :( )")
   final_res
 end
 

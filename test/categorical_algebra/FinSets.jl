@@ -580,7 +580,7 @@ f = VarFunction{Bool}(AttrVar.([1,2,true]),FinSet(2))
 @test !is_monic(f) && is_epic(f)
 
 # Create 
-@test dom(create(VarSet{Int}(1))) == VarSet{Int}(0)
+@test dom(create(VarSet{Int}(1))) == FinSet(0)
 
 # VarSets to FinSets
 #############

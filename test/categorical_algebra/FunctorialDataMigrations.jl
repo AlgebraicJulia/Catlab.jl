@@ -133,7 +133,7 @@ f = homomorphism(X, X′; initial=(V₁=1:4,E=1:4))
 @test is_natural(Sigma(f))
 
 # Id action
-@test SigmaMigrationFunctor(idF, Graph, Graph)(Y) == Y
+ @test SigmaMigrationFunctor(idF, Graph, Graph)(Y) == Y
 
 
 # With AttrVars
@@ -155,9 +155,7 @@ r = ΣMigration(id(FinCat(SchQ)), Q)(id(X));
 X = @acset AttrSet begin X=1; D=3; f=[AttrVar(2)] end
 @test is_isomorphic(X, s(X)) # not equal, though due to reordering of attrvars
 ΣX = s(X;return_unit=true)
-@test is_natural(ΣX.diagram_map)
-
-
+@test is_natural(ΣX.diagram_map) 
 # Sigma migrations with attributes
 #---------------------------------
 
@@ -278,6 +276,7 @@ expected = @acset ReflexiveGraph  begin
 end
 @test is_isomorphic(Σ(G), expected)
 
+
 # Sigma with attributes 
 #----------------------
 #XX: Isn't this tested twice?
@@ -309,6 +308,7 @@ ob_map(force(FinDomFunctor(W)), :Color)
 @present SchZ(FreeSchema) begin D::AttrType; end
 @acset_type Z2(SchZ, part_type=BitSetParts){Symbol}
 ΣMigration(id(FinCat(SchZ)), Z2)(Z2(); return_unit=true)
+
 
 # Yoneda embedding
 #-----------------
