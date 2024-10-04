@@ -469,11 +469,18 @@ end
 """
 const FinFunctor{Dom<:FinCat,Codom<:FinCat} = FinDomFunctor{Dom,Codom}
 
+
 FinFunctor(maps, dom::FinCat, codom::FinCat) = FinDomFunctor(maps, dom, codom)
 FinFunctor(ob_map, hom_map, dom::FinCat, codom::FinCat) =
   FinDomFunctor(ob_map, hom_map, dom, codom)
 FinFunctor(ob_map, hom_map, dom::Presentation, codom::Presentation) =
   FinDomFunctor(ob_map, hom_map, FinCat(dom), FinCat(codom))
+
+"""Assume that dom ⊆ codom"""
+FinFunctor(dom::Presentation, codom::Presentation) = FinFunctor(
+  Dict(x=>x for x in ob_generators(FinCat(dom))), 
+  Dict(x=>x for x in hom_generators(FinCat(dom))), 
+  dom, codom)
 
 Categories.show_type_constructor(io::IO, ::Type{<:FinFunctor}) =
   print(io, "FinFunctor")
@@ -615,8 +622,20 @@ See also: [`is_functorial`](@ref).
 function is_natural(α::FinTransformation; check_equations::Bool=true)
   F, G = dom(α), codom(α)
   C, D = dom(F), codom(F) # == dom(G), codom(G)
+  # @show typeof(F)
+  # @show typeof(G)
+  # println("F"); show(stdout,"text/plain", force(F))
+  # println("\nG"); show(stdout,"text/plain", force(G))
+  # println("\nC"); show(stdout,"text/plain", C)
+  # println("\nD"); show(stdout,"text/plain", D)
   all(ob_generators(C)) do c
     α_c = α[c]
+    # println("")
+    # @show (α_c, c) 
+    # @show (dom(D, α_c), ob_map(F,c))
+    # @show dom(D, α_c) == ob_map(F,c) 
+    # @show (codom(D, α_c) , ob_map(G,c))
+    # @show (codom(D, α_c) == ob_map(G,c))
     dom(D, α_c) == ob_map(F,c) && codom(D, α_c) == ob_map(G,c)
   end || return false
 
@@ -624,6 +643,11 @@ function is_natural(α::FinTransformation; check_equations::Bool=true)
     all(hom_generators(C)) do f
       Ff, Gf = hom_map(F,f), hom_map(G,f)
       α_c, α_d = α[dom(C,f)], α[codom(C,f)]
+      # @show (f, Ff, Gf)
+      # @show (α_c, α_d)
+      # @show compose(D, α_c, Gf)
+      # @show compose(D, Ff, α_d)
+      # @show is_hom_equal(D, compose(D, α_c, Gf), compose(D, Ff, α_d))
       is_hom_equal(D, compose(D, α_c, Gf), compose(D, Ff, α_d))
     end || return false
   end

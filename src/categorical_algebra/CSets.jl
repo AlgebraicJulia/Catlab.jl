@@ -211,15 +211,25 @@ hasvar(X::ACSetFunctor) = hasvar(X.acset)
 dom(F::ACSetFunctor) = FinCat(Presentation(ACSet(F)))
 
 #not clear this couldn't just always give the Vars
-function codom(F::ACSetFunctor)
-  hasvar(F) ? TypeCat{Union{SetOb,VarSet},Union{FinDomFunction{Int},VarFunction}}() :
-    TypeCat{SetOb,FinDomFunction{Int}}()
+function codom(::ACSetFunctor)
+  TypeCat{Union{SetOb,VarSet},Union{FinDomFunction{Int},VarFunction}}()
+  # hasvar(F) ? TypeCat{Union{SetOb,VarSet},Union{FinDomFunction{Int},VarFunction}}() :
+  #   TypeCat{SetOb,FinDomFunction{Int}}()
 end
 
-Categories.do_ob_map(F::ACSetFunctor, x) = 
-  (hasvar(F,functor_key(x)) ? VarSet : SetOb)(F.acset, functor_key(x))
-Categories.do_hom_map(F::ACSetFunctor, f) =  
-  (hasvar(F,functor_key(f)) ? VarFunction : FinFunction)(F.acset, functor_key(f))
+function Categories.do_ob_map(F::ACSetFunctor, x)
+  S = acset_schema(F.acset)
+  Symbol(x) ∈ ob(S) && return SetOb(F.acset, functor_key(x))
+  Symbol(x) ∈ attrtypes(S) && return VarSet(F.acset, functor_key(x))
+  error("Bad object $S $x")
+end
+function Categories.do_hom_map(F::ACSetFunctor, x)
+  S = acset_schema(F.acset)
+  kx = functor_key(x)
+  Symbol(kx) ∈ homs(S; just_names=true) && return FinFunction(F.acset, kx)
+  Symbol(kx) ∈ attrs(S; just_names=true) && return VarFunction(F.acset, kx)
+  error("Bad hom $S $x")
+end 
 
 functor_key(x) = x
 functor_key(expr::GATExpr{:generator}) = first(expr)
@@ -442,11 +452,11 @@ function coerce_components(S, components, X::ACSet{<:PT}, Y) where PT
   end)
   ocomps = NamedTuple(map(objects(S)) do c
     c => coerce_component(c, get(components, c, 1:0), 
-                          nparts(X,c), nparts(Y,c); kw[c]...)
+                          maxpart(X,c), maxpart(Y,c); kw[c]...)
   end)
   acomps = NamedTuple(map(attrtypes(S)) do c
     c => coerce_attrvar_component(c, get(components, c, 1:0), 
-          TypeSet(X, c), TypeSet(Y, c), nparts(X,c), nparts(Y,c); kw[c]...)
+          TypeSet(X, c), TypeSet(Y, c), maxpart(X,c), maxpart(Y,c); kw[c]...)
   end)
   return merge(ocomps, acomps)
 end 
@@ -1129,9 +1139,8 @@ const SubACSet{S} = Subobject{<:StructACSet{S}}
 
 # Componentwise subobjects: coerce VarFunctions to FinFunctions
 components(A::SubACSet{S}) where S = 
-  NamedTuple(k => Subobject(k ∈ ob(S) ? vs : FinFunction(vs)) for (k,vs) in 
-             pairs(components(hom(A)))
-)
+  NamedTuple(k => Subobject(k ∈ ob(S) ? vs : FinFunction(vs)) 
+            for (k,vs) in  pairs(components(hom(A))))
 
 force(A::SubACSet) = Subobject(force(hom(A)))
 
@@ -1357,7 +1366,7 @@ abstract_attributes(f::ACSetTransformation) = abstract_attributes(dom(f)) ⋅ f
 
 """
 Find some part + attr that refers to an AttrVar. 
-Throw error if none exists (i.e. `i` is a wandering variable).
+Return `nothing` if none exists (i.e. `i` is a wandering variable).
 """
 function var_reference(X::ACSet, at::Symbol, i::Int)
   S = acset_schema(X)
@@ -1367,8 +1376,49 @@ function var_reference(X::ACSet, at::Symbol, i::Int)
       return (f, c, first(inc))
     end
   end
-  error("Wandering variable $at#$p")
 end
+
+
+"""
+Given a value for each variable, create a morphism X → X′ which applies the 
+substitution. We do this via pushout.
+
+  O --> X    where C has AttrVars for `merge` equivalence classes 
+  ↓          and O has only AttrVars (sent to concrete values or eq classes 
+  C          in the map to C.
+
+`subs` and `merge` are dictionaries keyed by attrtype names
+
+`subs` values are int-keyed dictionaries indicating binding, e.g. 
+`; subs = (Weight = Dict(1 => 3.20, 5 => 2.32), ...)`
+
+`merge` values are vectors of vectors indicating equivalence classes, e.g.
+`; merge = (Weight = [[2,3], [4,6]], ...)`
+"""
+function sub_vars(X::ACSet, subs::AbstractDict=Dict(), merge::AbstractDict=Dict()) 
+  S = acset_schema(X)
+  O, C = [constructor(X)() for _ in 1:2]
+  ox_, oc_ = Dict{Symbol, Any}(), Dict{Symbol,Any}()
+  for at in attrtypes(S)
+    d = get(subs, at, Dict())
+    ox_[at] = AttrVar.(filter(p->p ∈ keys(d) && !(d[p] isa AttrVar), parts(X,at)))
+    oc_[at] = Any[d[p.val] for p in ox_[at]]
+    add_parts!(O, at, length(oc_[at]))
+
+    for eq in get(merge, at, [])
+      isempty(eq) && error("Cannot have empty eq class")
+      c = AttrVar(add_part!(C, at))
+      for var in eq
+        add_part!(O, at)
+        push!(ox_[at], AttrVar(var))
+        push!(oc_[at], c)
+      end
+    end
+  end
+  ox = ACSetTransformation(O,X; ox_...)
+  oc = ACSetTransformation(O,C; oc_...)
+  return first(legs(pushout(ox, oc)))
+end 
 
 # Mark as deleted
 #################

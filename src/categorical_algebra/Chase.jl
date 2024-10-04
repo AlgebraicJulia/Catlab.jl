@@ -95,7 +95,7 @@ function pres_to_eds(S::Presentation; types=Dict(), name="")
     eds["$(f_)_total"] = tot
   end
 
-  return Dict([Symbol(k) => v for (k,v) in collect(eds)])
+  return Dict{Symbol, ACSetTransformation}(Symbol(k) => v for (k,v) in eds)
 end
 
 """
@@ -226,17 +226,15 @@ this occured).
 function from_c_rel(J::ACSet,cset::ACSet) 
     S = acset_schema(cset)
     res = typeof(cset)()
-    for o in ob(S)
+    for o in types(S)
       add_parts!(res, o, nparts(J, o))
     end
     total = true
-    for (m, s, _) in homs(S)
+    for (m, s, _) in arrows(S)
       msrc, mtgt = add_srctgt(m)
       length(J[msrc]) == length(Set(J[msrc])) || error("non-unique $J")
-      total &= length(J[msrc]) != nparts(J, s)
-      for (domval, codomval) in zip(J[msrc], J[mtgt])
-        set_subpart!(res, domval, m, codomval)
-      end
+      total &= length(J[msrc]) == nparts(J, s)
+      res[J[msrc], m] = J[mtgt]
     end
     return res => total
 end
