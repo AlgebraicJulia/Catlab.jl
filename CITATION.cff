@@ -1,0 +1,26 @@
+cff-version: 1.2.0
+title: Catlab.jl
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Evan
+    family-names: Patterson
+    email: evan@epatters.org
+    affiliation: Topos Institute
+    orcid: 'https://orcid.org/0000-0002-8600-949X'
+  - given-names: Owen
+    family-names: Lynch
+    email: root@owenlynch.org
+    affiliation: Topos Institute
+    orcid: 'https://orcid.org/0000-0002-3031-3695'
+doi: 10.17605/OSF.IO/HMNFE
+repository-code: 'https://github.com/AlgebraicJulia/Catlab.jl'
+url: 'https://algebraicjulia.github.io/Catlab.jl'
+abstract: >-
+  Catlab.jl is a framework for applied and computational category theory, written in the Julia language.
+keywords:
+  - category theory
+  - julia
+license: MIT
