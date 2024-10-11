@@ -54,7 +54,8 @@ to infinite ``C``-sets when ``C`` is infinite (but possibly finitely presented).
 """
 struct HomomorphismQuery <: ACSetHomomorphismAlgorithm end
 
-""" Find a homomorphism between two attributed ``C``-sets.
+""" Find a unique homomorphism between two attributed ``C``-sets (subject to a
+variety of constraints), if one exists.
 
 Returns `nothing` if no homomorphism exists. For many categories ``C``, the
 ``C``-set homomorphism problem is NP-complete and thus this procedure generally
@@ -68,33 +69,43 @@ that the vertex map is injective but imposes no constraints on the edge map.
 
 To restrict the homomorphism to a given partial assignment, set the keyword
 argument `initial`. For example, to fix the first source vertex to the third
-target vertex in a graph homomorphism, set `initial=(V=Dict(1 => 3),)`. Use 
-the keyword argument `type_components` to specify nontrivial components on 
-attribute types for a loose homomorphism. These components must be callable:
-either Julia functions on the appropriate types or FinFunction(Dict(...)).
+target vertex in a graph homomorphism, set `initial=(V=Dict(1 => 3),)`. Use the
+keyword argument `type_components` to specify nontrivial components on attribute
+types for a loose homomorphism. These components must be callable: either Julia
+functions on the appropriate types or FinFunction(Dict(...)).
 
 Use the keyword argument `alg` to set the homomorphism-finding algorithm. By
 default, a backtracking search algorithm is used ([`BacktrackingSearch`](@ref)).
-Use the keyword argument error_failures = true to get errors explaining 
-any immediate inconsistencies in specified initial data.
+Use the keyword argument error_failures = true to get errors explaining any
+immediate inconsistencies in specified initial data.
 
-The keyword `predicates` accepts a Dict{Ob, Dict{Int, Union{Nothing, AbstractVector{Int}}}}
-For each part of the domain, we have the option to give a constraint as a
-boolean function of the current assignment and tentative value to assign. E.g.
-`predicates = (E = Dict(2 => [2,4,6]))` would only find matches
+The keyword `predicates` accepts a Dict{Ob, Dict{Int, Union{Nothing,
+AbstractVector{Int}}}} For each part of the domain, we have the option to give a
+constraint as a boolean function of the current assignment and tentative value
+to assign. E.g. `predicates = (E = Dict(2 => [2,4,6]))` would only find matches
 which assigned edge#2 to edge #2, #4, or #6 in the codomain.
+
+The keyword `no_bind` can be a boolean (applying to all AttrTypes) or an
+iterable of specific components: it prevents attribute variables in the domain
+from being sent to concrete values in the codomain. When the AttrType component
+is `monic`, it is also the case that attribute variables cannot be sent to
+concrete values (therefore it is redundant to set `no_bind=true` in such cases).
+In both of these cases, it's possible to compute homomorphisms when there are
+"free-floating" attribute variables (which are not referred to by any Attr in
+the domain), as each such variable has a finite number of possibilities for it
+to be mapped to.
+
+Setting `any=true` relaxes the constraint that the returned homomorphism is 
+unique.
 
 See also: [`homomorphisms`](@ref), [`isomorphism`](@ref).
 """
 homomorphism(X::ACSet, Y::ACSet; alg=BacktrackingSearch(), kw...) =
   homomorphism(X, Y, alg; kw...)
 
-function homomorphism(X::ACSet, Y::ACSet, alg::BacktrackingSearch; kw...)
-  result = nothing
-  backtracking_search(X, Y; kw...) do α
-    result = α; return true
-  end
-  result
+function homomorphism(X::ACSet, Y::ACSet, alg::BacktrackingSearch; any=false, kw...)
+  res = homomorphisms(X, Y, alg; Dict((any ? :take : :max) => 1)..., kw...)
+  isempty(res) ? nothing : only(res)
 end
 
 """ Find all homomorphisms between two attributed ``C``-sets.
@@ -105,10 +116,30 @@ homomorphisms exist, it is exactly as expensive.
 homomorphisms(X::ACSet, Y::ACSet; alg=BacktrackingSearch(), kw...) =
   homomorphisms(X, Y, alg; kw...)
 
-function homomorphisms(X::ACSet, Y::ACSet, alg::BacktrackingSearch; kw...) 
+""" Find all homomorphisms between two attributed ``C``-sets via BackTracking Search.
+
+take = number of homomorphisms requested (stop the search process early if this 
+       number is reached)
+max = throw an error if we take more than this many morphisms (e.g. set max=1 if 
+      one expects 0 or 1 morphism)
+filter = only consider morphisms which meet some criteria, expressed as a Julia 
+         function of type ACSetTransformation -> Bool
+
+It does not make sense to specify both `take` and `max`.
+"""
+function homomorphisms(X::ACSet, Y::ACSet, alg::BacktrackingSearch; 
+                       take=nothing, max=nothing, filter=nothing, kw...) 
   results = []
-  backtracking_search(X, Y; kw...) do α
-    push!(results, map_components(deepcopy, α)); return false
+  isnothing(take) || isnothing(max) || error(
+    "Cannot set both `take`=$take and `max`=$max for `homomorphisms`")
+  backtracking_search(X, Y; kw...) do αs
+    for α in αs
+      isnothing(filter) || filter(α) || continue
+      length(results) == max && error("Exceeded $max: $([results; α])")
+      push!(results, map_components(deepcopy, α));
+      length(results) == take && return true
+    end 
+    return false
   end
   results
 end
@@ -122,7 +153,7 @@ is_homomorphic(X::ACSet, Y::ACSet; alg=BacktrackingSearch(), kw...) =
   is_homomorphic(X, Y, alg; kw...)
 
 is_homomorphic(X::ACSet, Y::ACSet, alg::BacktrackingSearch; kw...) =
-  !isnothing(homomorphism(X, Y, alg; kw...))
+  !isempty(homomorphisms(X, Y, alg; take=1, kw...))
 
 """ Find an isomorphism between two attributed ``C``-sets, if one exists.
 
@@ -142,8 +173,8 @@ homomorphisms exist, it is exactly as expensive.
 isomorphisms(X::ACSet, Y::ACSet; alg=BacktrackingSearch(), kw...) =
   isomorphisms(X, Y, alg; kw...)
 
-isomorphisms(X::ACSet, Y::ACSet, alg::BacktrackingSearch; initial=(;)) =
-  homomorphisms(X, Y, alg; iso=true, initial=initial)
+isomorphisms(X::ACSet, Y::ACSet, alg::BacktrackingSearch; initial=(;), kw...) =
+  homomorphisms(X, Y, alg; iso=true, initial=initial, kw...)
 
 """ Are the two attributed ``C``-sets isomorphic?
 
@@ -154,7 +185,7 @@ is_isomorphic(X::ACSet, Y::ACSet; alg=BacktrackingSearch(), kw...) =
   is_isomorphic(X, Y, alg; kw...)
 
 is_isomorphic(X::ACSet, Y::ACSet, alg::BacktrackingSearch; kw...) =
-  !isnothing(isomorphism(X, Y, alg; kw...))
+  !isempty(isomorphisms(X, Y, alg; take=1, kw...))
 
 # Backtracking search
 #--------------------
@@ -177,7 +208,7 @@ been bound.
 struct BacktrackingState{
   Dom <: ACSet, Codom <: ACSet,
   Assign <: NamedTuple, PartialAssign <: NamedTuple, LooseFun <: NamedTuple,
-  Predicates <: NamedTuple
+  Predicates <: NamedTuple,Image <: NamedTuple, Unassign<: NamedTuple
   }
   assignment::Assign
   assignment_depth::Assign
@@ -186,24 +217,18 @@ struct BacktrackingState{
   codom::Codom
   type_components::LooseFun
   predicates::Predicates
+  image::Image # Negative of image for epic components or if finding an epimorphism
+  unassigned::Unassign # "# of unassigned elems in domain of a component 
 end
 
 function backtracking_search(f, X::ACSet, Y::ACSet;
-    monic=false, iso=false, random=false, predicates=(;),
-    type_components=(;), initial=(;), error_failures=false)
+    monic=false, epic=false, iso=false, random=false, predicates=(;),
+    type_components=(;), initial=(;), error_failures=false, no_bind=false)
   S, Sy = acset_schema.([X,Y])
   S == Sy || error("Schemas must match for morphism search")
   Ob = Tuple(objects(S))
   Attr = Tuple(attrtypes(S))
   ObAttr = Tuple(objects(S) ∪ attrtypes(S))
-  # Fail if there are "free floating attribute variables"
-  all(attrtypes(S)) do a_type
-    ats = attrs(S, just_names=true, to=a_type)
-    avs = collect.([filter(x->x isa AttrVar, X[f]) for f in ats])
-    pa = partial_assignments(get(initial, a_type, []); is_attr=true)
-    initkeys = AttrVar.(keys(collect(pa)))
-    length(unique(vcat(initkeys, avs...))) == nparts(X, a_type) 
-  end || error("Cannot search for morphisms with free-floating variables")
 
   # Fail early if no monic/isos exist on cardinality grounds.
   if iso isa Bool
@@ -212,18 +237,42 @@ function backtracking_search(f, X::ACSet, Y::ACSet;
   if monic isa Bool
     monic = monic ? ObAttr : ()
   end
+  if epic isa Bool
+    epic = epic ? Ob : ()
+  end
+  if no_bind isa Bool 
+    no_bind = no_bind ? Attr : ()
+  end
+
   iso_failures = Iterators.filter(c->nparts(X,c)!=nparts(Y,c),iso)
   mono_failures = Iterators.filter(c->nparts(X,c)>nparts(Y,c),monic)  
-  if (!isempty(iso_failures) || !isempty(mono_failures))
+  epi_failures = Iterators.filter(c->nparts(X,c)<nparts(Y,c),epic)  
+
+  if !all(isempty, [iso_failures, mono_failures, epi_failures])
     if !error_failures 
       return false 
     else error("""
       Cardinalities inconsistent with request for...
         iso at object(s) $iso_failures
         mono at object(s) $mono_failures
+        epi at object(s) $epi_failures
       """)
     end
   end
+  
+  # Fail if there are "free floating attribute variables"
+  for a_type in attrtypes(S) 
+    a_type ∈ (monic ∪ iso ∪ no_bind) && continue # attrvars ↦ attrvars
+    attrs′ = attrs(S, just_names=true, to=a_type)
+    avars = union(collect.([filter(x->x isa AttrVar, X[f]) for f in attrs′])...)
+    assigned = partial_assignments(get(initial, a_type, []); is_attr=true)
+    assigned′ = first.(collect(assigned))
+    unassigned = setdiff(parts(X, a_type), [v.val for v in avars] ∪ assigned′)
+    if !isempty(unassigned)
+      error("Cannot search for morphisms with free-floating variables: $unassigned")
+    end
+  end
+  
 
   # Injections between finite sets of the same size are bijections, so reduce to that case.
   monic = unique([iso..., monic...])
@@ -249,8 +298,15 @@ function backtracking_search(f, X::ACSet, Y::ACSet;
     (c in monic ? zeros(Int, maxpart(Y, c)) : nothing) for c in ObAttr)
   loosefuns = NamedTuple{Attr}(
     isnothing(type_components) ? identity : get(type_components, c, identity) for c in Attr)
+
+  images = NamedTuple{Ob}(
+    (c in epic ? zeros(Int, nparts(Y, c)) : nothing) for c in Ob)
+  unassigned = NamedTuple{Ob}(
+    (c in epic ? [nparts(X, c)] : nothing) for c in Ob)
+
   state = BacktrackingState(assignment, assignment_depth, 
-                                  inv_assignment, X, Y, loosefuns, pred_nt)
+                            inv_assignment, X, Y, loosefuns, pred_nt,
+                            images, unassigned)
 
   # Make any initial assignments, failing immediately if inconsistent.
   for (c, c_assignments) in pairs(initial)
@@ -268,6 +324,10 @@ function backtracking_search(f, X::ACSet, Y::ACSet;
   backtracking_search(f, state, 1; random=random)
 end
 
+"""
+Note: a successful search returns an *iterator* of solutions, rather than 
+a single solution. See `postprocess_search_results`.
+"""
 function backtracking_search(f, state::BacktrackingState, depth::Int; 
                               random=false) 
   # Choose the next unassigned element.
@@ -275,14 +335,11 @@ function backtracking_search(f, state::BacktrackingState, depth::Int;
   if isnothing(mrv_elem)
     # No unassigned elements remain, so we have a complete assignment.
     if any(!=(identity), state.type_components)
-      return f(LooseACSetTransformation(
-        state.assignment, state.type_components, state.dom, state.codom))
+      return f([LooseACSetTransformation(
+        state.assignment, state.type_components, state.dom, state.codom)])
     else
-      S = acset_schema(state.dom)
-      od = Dict{Symbol,Vector{Int}}(k=>(state.assignment[k]) for k in objects(S))
-      ad = Dict(k=>last.(state.assignment[k]) for k in attrtypes(S))
-      comps = merge(NamedTuple(od),NamedTuple(ad))
-      return f(ACSetTransformation(comps, state.dom, state.codom))
+      m = Dict(k=>!isnothing(v) for (k,v) in pairs(state.inv_assignment))
+      return f(postprocess_search_results(state.dom, state.codom, state.assignment, m))
     end
   elseif mrv == 0
     # An element has no allowable assignment, so we must backtrack.
@@ -350,6 +407,13 @@ assign_elem!(state::BacktrackingState{<:DynamicACSet}, depth, c, x, y) =
     return false
   end
 
+  # With an epic constraint, fail based on the # of unassigned in dom vs codom
+  if (!isnothing(state.image[@ct c]) && state.image[@ct c][y]!=0
+      && only(state.unassigned[@ct c]) <= count(==(0), state.image[@ct c]))
+    return false
+  end
+
+
   isnothing(state.predicates[c][x]) || y ∈ state.predicates[c][x] || return false
 
   # Check attributes first to fail as quickly as possible.
@@ -373,17 +437,29 @@ assign_elem!(state::BacktrackingState{<:DynamicACSet}, depth, c, x, y) =
   if !isnothing(state.inv_assignment[@ct c])
     state.inv_assignment[@ct c][y] = x
   end
+  if !isnothing(state.image[@ct c])
+    state.image[@ct c][y] += 1
+    state.unassigned[@ct c][1] -= 1
+  end
 
-  @ct_ctrl for (f,_,d) in attrs(S; from=c)
-    if subpart(X,x,@ct(f)) isa AttrVar
-      v = subpart(X,x,@ct(f)).val
-      xcount,_ = state.assignment[@ct d][v]
-      state.assignment[@ct d][v] = xcount+1 => subpart(Y,y,@ct(f))
+  # Enforce naturality for all attrs, e.g. assigning an edge fixes its weight
+  @ct_ctrl for (f, _, d) in attrs(S; from=c)
+    if subpart(X, x, @ct(f)) isa AttrVar 
+      v = subpart(X, x, @ct(f)).val
+      xcount, _ = state.assignment[@ct d][v]
+      Yf = subpart(Y, y, @ct(f))
+      invD = state.inv_assignment[@ct d]
+      state.assignment[@ct d][v] = xcount+1 => Yf
+      if !isnothing(invD)
+        (Yf isa AttrVar && invD[Yf.val] ∈ [0, v]) || return false
+        invD[Yf.val] = v 
+      end
     end
   end
 
   @ct_ctrl for (f, _, d) in homs(S; from=c) 
-    assign_elem!(state, depth, @ct(d), subpart(X,x,@ct f),subpart(Y,y,@ct f)) || return false
+    assign_elem!(state, depth, @ct(d), subpart(X, x, @ct f),
+                 subpart(Y, y, @ct f)) || return false
   end
   return true
 end
@@ -405,12 +481,21 @@ unassign_elem!(state::BacktrackingState{<:DynamicACSet}, depth, c, x) =
       y = state.assignment[@ct c][x]
       state.inv_assignment[@ct c][y] = 0
     end
+    if !isnothing(state.unassigned[@ct c])
+      state.unassigned[@ct c][1] += 1
+      state.image[@ct c][state.assignment[@ct c][x]] -= 1
+    end
 
     @ct_ctrl for (f,_,d) in attrs(S; from=c)
       if subpart(X,x,@ct(f)) isa AttrVar
         v = subpart(X,x,@ct(f)).val
         n, αv = state.assignment[@ct(d)][v]
         state.assignment[@ct(d)][v]= (n-1 => αv)
+        invD = state.inv_assignment[@ct d]
+        # Reset inv assignment if it's we're unsetting last reference
+        if n == 1 && αv isa AttrVar && !isnothing(invD) && invD[αv.val] == v
+          invD[αv.val] = 0
+        end
       end
     end
 
@@ -419,6 +504,48 @@ unassign_elem!(state::BacktrackingState{<:DynamicACSet}, depth, c, x) =
     @ct_ctrl for (f, _, d) in homs(S; from=c)
       unassign_elem!(state, depth, @ct(d), subpart(X,x,@ct(f)))
     end
+  end
+end
+
+""" 
+A hom search result might not have all the data for an ACSetTransformation
+explicitly specified. For example, if there is a cartesian product of possible
+assignments which could not possibly constrain each other, then we should
+iterate through this product at the very end rather than having the backtracking
+search navigate the product space. Currently, this is only done with assignments
+for floating attribute variables, but in principle this could be applied in the
+future to, e.g., free-floating vertices of a graph or other coproducts of 
+representables.
+
+This function takes a result assignment from backtracking search and returns an
+iterator of the implicit set of homomorphisms that it specifies.
+"""
+function postprocess_search_results(dom, codom, assgn, monic)
+  S = acset_schema(dom)
+  od = Dict{Symbol,Vector{Int}}(k=>(assgn[k]) for k in objects(S))
+
+  # Compute possible assignments for all free variables
+  free_data = map(attrtypes(S)) do k
+    assigned = [v.val for (_, v) in assgn[k] if v isa AttrVar]
+    valid_targets = setdiff(parts(codom, k), monic[k] ? assigned : [])
+    free_vars = findall(==(AttrVar(0)), last.(assgn[k]))
+    N = length(free_vars)
+    prod_iter = Iterators.product(fill(valid_targets, N)...)
+    if monic[k]
+      prod_iter = Iterators.filter(x->length(x)==length(unique(x)), prod_iter)
+    end
+    (free_vars, prod_iter) # prod_iter = valid assignments for this attrtype
+  end
+  
+  # Homomorphism for each element in the product of the prod_iters
+  return Iterators.map(Iterators.product(last.(free_data)...) ) do combo 
+    ad = Dict(map(zip(attrtypes(S), first.(free_data), combo)) do (k, xs, vs)
+      vec = last.(assgn[k])
+      vec[xs] = AttrVar.(collect(vs))
+      k => vec
+    end)
+    comps = merge(NamedTuple(od),NamedTuple(ad))
+    ACSetTransformation(comps, dom, codom)
   end
 end
 

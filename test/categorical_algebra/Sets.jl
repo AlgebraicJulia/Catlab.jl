@@ -2,6 +2,7 @@ module TestSets
 using Test
 
 using Catlab.Theories, Catlab.CategoricalAlgebra
+using Catlab.CategoricalAlgebra.FinSets: VarSet
 
 # Sets from Julia types
 #######################
@@ -123,5 +124,9 @@ colim = colimit(SingletonDiagram(TypeSet(Int)))
 
 f = SetFunction(string, TypeSet(Int), TypeSet(String))
 @test universal(colim, SMulticospan{1}(f)) === f
+
+# VarSets
+S = SetOb(VarSet{Union{}}(5))
+@test SetOb(S) == S
 
 end

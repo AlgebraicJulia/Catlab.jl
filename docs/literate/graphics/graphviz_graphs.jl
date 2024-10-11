@@ -38,7 +38,7 @@ to_graphviz(g, node_attrs=Dict(:color => "cornflowerblue"),
 
 using Catlab.CategoricalAlgebra
 
-f = homomorphism(cycle_graph(Graph, 4), complete_graph(Graph, 2))
+f = homomorphisms(cycle_graph(Graph, 4), complete_graph(Graph, 2)) |> first
 
 # By default, the domain and codomain graph are both drawn, as well the vertex
 # mapping between them.

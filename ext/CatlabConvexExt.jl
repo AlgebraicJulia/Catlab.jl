@@ -23,8 +23,7 @@ function solve_isotonic(y::Vector, solver=nothing;
   if upper != Inf
     push!(constraints, x[end] <= upper)
   end
-  solve!(minimize(loss(x-y), constraints), solver;
-         verbose=false, silent_solver=true)
+  solve!(minimize(loss(x-y), constraints), solver; silent=true)
   length(x) == 1 ? [ x.value ] : dropdims(x.value, dims=2) # XXX: MATLAB-ism.
 end
 

@@ -75,7 +75,37 @@ set_subpart!(s3, :f, [20,10])
 #Backtracking with monic and iso failure objects
 g1, g2 = path_graph(Graph, 3), path_graph(Graph, 2)
 rem_part!(g1,:E,2)
-@test_throws ErrorException homomorphism(g1,g2;monic=true,error_failures=true)
+@test_throws ErrorException homomorphism(g1, g2; monic=true, error_failures=true)
+
+# Epic constraint
+g0, g1, g2 = Graph(2), Graph(2), Graph(2)
+add_edges!(g0, [1,1],[1,2]) # ↻•→•
+add_edges!(g1, [1,1],[2,2]) # •⇉•
+add_edges!(g2, [1,1,1],[1,1,2]) # ↻↻•→•
+@test length(homomorphisms(g1, g2, epic=[:V])) == 1
+@test length(homomorphisms(g1, g2, epic=[:E])) == 0
+@test length(homomorphisms(g2, g0, epic=[:E])) == 1
+@test length(homomorphisms(g2, g0, epic=[:V])) == 1
+
+g3, g4 = path_graph(Graph,3), path_graph(Graph,4)
+add_edges!(g3,[1,3],[1,3])  # g3: ↻•→•→• ↺
+@test length(homomorphisms(g4,g3)) == 6 # 2 for each: 1/2/3 edges sent to loop
+@test length(homomorphisms(g4,g3; epic=[:V])) == 2 # send only one edge to loop
+@test length(homomorphisms(g4,g3; epic=[:E])) == 0 # only have 3 edges to map
+
+@test length(homomorphisms(Graph(4),Graph(2); epic=true)) == 14 # 2^4 - 2
+
+# taking a particular number of morphisms 
+@test length(homomorphisms(Graph(4),Graph(2); epic=true, take=7)) == 7
+
+# throwing an error if max is exceeded 
+@test_throws ErrorException homomorphism(Graph(1), Graph(2))
+@test_throws ErrorException length(homomorphisms(Graph(4),Graph(2); epic=true, max=6))
+@test length(homomorphisms(Graph(4),Graph(2); epic=true, max=16)) == 14
+
+# filtering morphisms
+@test (length(homomorphisms(Graph(3),Graph(5); filter=is_monic))
+      == length(homomorphisms(Graph(3),Graph(5); monic=true)))
 
 # Symmetric graphs
 #-----------------
@@ -96,9 +126,9 @@ K₂, K₃ = complete_graph(SymmetricGraph, 2), complete_graph(SymmetricGraph, 3
 C₅, C₆ = cycle_graph(SymmetricGraph, 5), cycle_graph(SymmetricGraph, 6)
 @test !is_homomorphic(C₅, K₂)
 @test is_homomorphic(C₅, K₃)
-@test is_natural(homomorphism(C₅, K₃))
+@test is_natural(homomorphism(C₅, K₃; any=true))
 @test is_homomorphic(C₆, K₂)
-@test is_natural(homomorphism(C₆, K₂))
+@test is_natural(homomorphism(C₆, K₂; any=true))
 
 # Labeled graphs
 #---------------
@@ -122,7 +152,50 @@ hs = homomorphisms(K₆,K₆)
 rand_hs = homomorphisms(K₆,K₆; random=true)
 @test sort(hs,by=comps) == sort(rand_hs,by=comps) # equal up to order
 @test hs != rand_hs # not equal given order
-@test homomorphism(K₆,K₆) != homomorphism(K₆,K₆;random=true)
+
+# This is very probably true
+@test (homomorphism(K₆, K₆, any=true) 
+      != homomorphism(K₆ ,K₆; any=true, random=true))
+
+# AttrVar constraints (monic and no_bind)
+#----------------------------------------
+@present SchLSet(FreeSchema) begin X::Ob; D::AttrType; f::Attr(X,D) end
+@acset_type LSet(SchLSet){Symbol}
+
+# Simple example
+A = @acset LSet begin X=2; D=2; f=AttrVar.(1:2) end
+B = @acset LSet begin X=1; D=1; f=[AttrVar(1)] end
+@test isempty(homomorphisms(A, B; monic=[:D]))
+@test length(homomorphisms(B, A; monic=[:D])) == 2
+@test length(homomorphisms(A, A; monic=[:D])) == 2
+
+# More complicated example
+G = @acset LSet begin X=3; D=2; f=[:a; AttrVar.(1:2)] end
+H = @acset LSet begin X=4; D=3; f=[:a, :b, AttrVar.(1:2)...] end
+
+# X₂ and X₃ in G can go to any of the 4 Xs in H
+@test length(homomorphisms(G, H)) == 16
+
+G′ = copy(G)
+add_part!(G′, :D) # add a free floating variable to domain
+
+# If we don't put any constraints on the free var, error b/c of infinite homs
+@test_throws ErrorException homomorphisms(G′, H)
+
+# All attrvars going to :b forces all Xs going to X₂
+@test length(homomorphisms(G′, H; initial=(D=[:b,:b,:b],),)) == 1
+
+# If we just force the free variable to go to a fixed place, it's the same as before
+@test length(homomorphisms(G′, H; initial=(D=Dict(3=>:b),))) == 16
+@test length(homomorphisms(G′, H; initial=(D=Dict(3=>AttrVar(1)),))) == 16
+
+# [2,1] and [1,2] for where AttrVars go
+@test length(homomorphisms(G, H; monic=[:D])) == 2 
+# free var forced to go to D₃
+@test length(homomorphisms(G′, H; monic=[:D])) == 2 
+# D₁ D₂ go to any of the 4 Xs. D₃ goes to any of the 3 Ds
+@test length(homomorphisms(G′, H; no_bind=[:D])) == 4*4*3
+
 
 # As a macro
 #-----------
@@ -300,10 +373,10 @@ exp = @acset WG begin V=3; E=1; src=1; tgt=2; weight=[false] end
 const MADGraph = AbsMADGraph{Symbol}
 
 v1, v2 = MADGraph.(1:2)
-@test !is_isomorphic(v1,v2)
+@test !is_isomorphic(v1, v2)
 rem_part!(v2, :V, 1)
-@test is_isomorphic(v1,v2)
-@test is_isomorphic(v2,v1)
+@test is_isomorphic(v1, v2)
+@test is_isomorphic(v2, v1)
 
 
 end # module
