@@ -835,12 +835,12 @@ the combinatorial part of the limit legs. The type components of the j'th leg of
 the limit is just the j'th cartesian projection.
 """
 function limit(::Type{Tuple{ACS,Hom}}, diagram; product_attrs::Bool=false) where
-    {S, Ts, ACS <: StructACSet{S,Ts}, Hom <: LooseACSetTransformation}
+    {S, ACS <: StructACSet{S}, Hom <: LooseACSetTransformation}
   limits = map(limit, unpack_diagram(diagram, S=S, all=!product_attrs))
   Xs = cone_objects(diagram)
 
   attr_lims = (product_attrs ?
-    map(limit, unpack_diagram(DiscreteDiagram(Xs, Hom), S=S,Ts=Ts,all=true)) : limits )
+    map(limit, unpack_diagram(DiscreteDiagram(Xs, Hom), S=S, all=true)) : limits )
 
   LimitACS = if isempty(attrtypes(S)); ACS
   else

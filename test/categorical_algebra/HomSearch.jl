@@ -7,7 +7,7 @@ using Random: seed!
 # Setup
 #######
 
-seed!(100)
+seed!(10)
 
 @present SchSetAttr(FreeSchema) begin
   X::Ob
