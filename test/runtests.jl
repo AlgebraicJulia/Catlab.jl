@@ -23,3 +23,7 @@ end
 @testset "Programs" begin
   include("programs/Programs.jl")
 end
+
+@testset "Sheaves" begin
+  include("sheaves/sheaves.jl")
+end
