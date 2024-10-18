@@ -4,10 +4,10 @@ module ADTs
 
 using Reexport
 
+include("ADTsCore.jl")
 include("RelationTerm.jl")
-include("ADTsBase.jl")
 
+@reexport using .ADTsCore
 @reexport using .RelationTerm
-@reexport using .ADTsBase
 
 end

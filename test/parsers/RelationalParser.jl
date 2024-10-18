@@ -2,8 +2,7 @@ __precompile__(false) #REMOVE
 # ## Testing our parser
 module ParserTests
 using Test
-using SyntacticModels
-using SyntacticModels.ASKEMUWDs
+using Catlab.ADTs.RelationTerm
 using Catlab.Programs.RelationalPrograms
 using Catlab.Parsers.RelationalParser
 
@@ -70,7 +69,7 @@ end
   @test uwd("""{R(a,b); S(b,c);}
    where {a:A,b:B,c:C}""")[1].statements == [Statement(:R, [Typed(:a, :A), Typed(:b, :B)]),
     Statement(:S, [Typed(:b, :B), Typed(:c, :C)])]
-  @test uwd("""{R(a,b); S(b,c);} where {a:A,b:B,c:C}""")[1] isa ASKEMUWDs.UWDExpr
+  @test uwd("""{R(a,b); S(b,c);} where {a:A,b:B,c:C}""")[1] isa RelationTerm.UWDExpr
 end
 
 # Test Error Handling:
@@ -128,7 +127,7 @@ end
   s = [Statement(:R, [v1,v2]),
     Statement(:S, [v2,v3])]
   u = UWDExpr(c, s)
-  uwd_result = ASKEMUWDs.construct(RelationDiagram, u)
+  uwd_result = RelationTerm.construct(RelationDiagram, u)
   
   @test parsed_result == uwd_result
 
@@ -156,7 +155,7 @@ end
     Statement(:S, [v2,v3]),
     Statement(:T, [v3,v2, v4])]
   u = UWDExpr(c, s)
-  uwd_result = ASKEMUWDs.construct(RelationDiagram, u)
+  uwd_result = RelationTerm.construct(RelationDiagram, u)
 
   @test parsed_result == uwd_result
 

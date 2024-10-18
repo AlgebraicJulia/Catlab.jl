@@ -8,33 +8,17 @@ module RelationTerm
 
 export Var, Typed, Untyped, Statement, UWDExpr, UWDModel, UWDTerm, context
 
-using ..ADTsBase
-
 using MLStyle
 using StructTypes
+using ..ADTsCore
 using ...Programs.RelationalPrograms
 using ...WiringDiagrams.UndirectedWiringDiagrams
 import Base: show
 
 
-@doc """ Header 
-
-1. Marks the header of our UWDModel. Provides basic metadata.
-2. amr_to_string() allows us to represent the header as a string.
-"""
-
-@as_record struct Header <: AbstractTerm
-  name::String
-  schema::String
-  description::String
-  schema_name::String
-  model_version::String
-end
-
-function amr_to_string(amr)
-  @match amr begin
-    Header(name, s, d, sn, mv) => "\"\"\"\nASKE Model Representation: $name$mv :: $sn \n   $s\n\n$d\n\"\"\""
-  end
+@data Var <: AbstractTerm begin
+  Untyped(var::Symbol)
+  Typed(var::Symbol, type::Symbol)
 end
 
 @doc """    Var
@@ -48,10 +32,6 @@ Subtypes include:
 
 which are used for representing typed or untyped variables.
 """
-@data Var <: AbstractTerm begin
-  Untyped(var::Symbol)
-  Typed(var::Symbol, type::Symbol)
-end
 
 Var
 
@@ -62,7 +42,7 @@ StructTypes.subtypes(::Type{Var}) = (Untyped=Untyped, Typed=Typed)
 @data UWDTerm <: AbstractTerm begin
   Statement(relation::Symbol, variables::Vector{Var})
   UWDExpr(context::Vector{Var}, statements::Vector{Statement})
-  UWDModel(header::AMR.Header, uwd::UWDExpr)
+  UWDModel(header::ADTsCore.Header, uwd::UWDExpr)
 end
 
 @doc """    UWDTerm
