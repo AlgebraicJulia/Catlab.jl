@@ -10,6 +10,7 @@ include("wiring_diagrams/WiringDiagrams.jl")
 include("graphics/Graphics.jl")
 include("programs/Programs.jl")
 include("parsers/Parsers.jl")
+include("adts/ADTs.jl")
 
 @reexport using .Theories
 @reexport using .Graphs
@@ -18,5 +19,6 @@ include("parsers/Parsers.jl")
 @reexport using .Graphics
 @reexport using .Programs
 @reexport using .Parsers
+@reexport using .ADTs
 
 end
