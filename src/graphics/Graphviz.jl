@@ -275,4 +275,18 @@ end
 
 indent(io::IO, n::Int) = print(io, " "^n)
 
+function to_graphviz_with_viewer(g::Graph; path::String="", kw...)
+    filepath = isempty(path) ? "$(tempname()).png" : path
+    open(filepath, "w") do io
+        run_graphviz(io, to_graphviz(g), format="png")
+    end
+    if Sys.islinux()
+        run(`feh $filepath`, wait=false)
+    elseif Sys.isapple()
+        run(`open $filepath`, wait=false)
+    elseif Sys.iswindows()
+        run(`start $filepath`, wait=false)
+    end
+end
+
 end
