@@ -34,6 +34,8 @@ abstract type HomExpr{T} <: CategoryExpr{T} end
 Ob(mod::Module, args...) = Ob(mod.Ob, args...)
 Ob(typ::Type, x1, x2, args...) = [Ob(typ, arg) for arg in [x1; x2; args...]]
 
+include("GATlabUpstream.jl") # temporary, not reexported
+
 include("Category.jl")
 include("Limits.jl")
 include("Monoidal.jl")

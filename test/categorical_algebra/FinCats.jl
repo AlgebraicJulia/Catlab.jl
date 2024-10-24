@@ -1,7 +1,6 @@
 module TestFinCats
-using Test
 
-using Catlab.Theories, Catlab.CategoricalAlgebra, Catlab.Graphs
+using Test, Catlab
 
 # Categories on graphs
 ######################
@@ -84,7 +83,7 @@ f, g = FinFunction([1,3], 3), FinFunction([2,3], 3)
 F = FinDomFunctor([FinSet(2), FinSet(3)], [f,g], C)
 @test is_functorial(F)
 @test dom(F) == C
-@test codom(F) isa TypeCat{<:FinSet{Int},<:FinFunction{Int}}
+@test codom(F) isa TypeCat{<:FinSet,<:FinFunction}
 @test startswith(sprint(show, F), "FinDomFunctor(")
 
 @test ob_map(F, 1) == FinSet(2)

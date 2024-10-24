@@ -1,7 +1,8 @@
 module TestFreeDiagrams
-using Test
 
-using Catlab.Theories, Catlab.Graphs, Catlab.CategoricalAlgebra
+using Test, ACSets, Catlab
+
+const T = (FreeCategory.Ob, FreeCategory.Hom)
 
 A, B, C, D = Ob(FreeCategory, :A, :B, :C, :D)
 
@@ -19,7 +20,8 @@ F = FinDomFunctor([A, C], [f, h⋅g], J)
 @test cone_objects(F) == [A, C]
 @test cocone_objects(F) == [A, C]
 
-diagram = FreeDiagram(ParallelPair(f, h⋅g))
+diagram = FreeDiagram{FreeCategory.Ob{:generator},FreeCategory.Hom}(
+  ParallelPair(f, h⋅g))
 @test FreeDiagram(F) == diagram
 F = FinDomFunctor(diagram)
 @test dom(F) isa FinCat
@@ -49,7 +51,7 @@ bd = BipartiteFreeDiagram([A,B], [C], [(f,1,1),(g,2,1)])
 @test (src(bd), tgt(bd)) == ([1,2], [1,1])
 @test FreeDiagram(bd) == FreeDiagram([A,B,C], [(f,1,3),(g,2,3)])
 
-as_basic_bipartite(diagram::BipartiteFreeDiagram{Ob,Hom}) where {Ob,Hom} =
+as_basic_bipartite(diagram::AbsBipartiteFreeDiagram{Ob,Hom}) where {Ob,Hom} =
   (d = BipartiteFreeDiagram{Ob,Hom}(); copy_parts!(d, diagram); d)
 
 # Diagrams of fixed shape
@@ -88,14 +90,14 @@ span = Span(f,g)
 @test (left(span), right(span)) == (f, g)
 
 f = Hom(:f, A, A)
-@test legs(Span(id(A), f)) == [id(A),f]
+@test legs(Span{T...}(id(A), f)) == [id(A),f]
 
 f = Hom(:f, A, B)
-@test_throws ErrorException Span(f,g)
+@test_throws ErrorException Span{T...}(f,g)
 
 # Multispans.
 f, g, h = Hom(:f, C, A), Hom(:g, C, B), Hom(:h, C, A)
-span = Multispan([f,g,h])
+span = Multispan{T...}([f,g,h])
 @test apex(span) == C
 @test legs(span) == [f,g,h]
 @test feet(span) == [A,B,A]
@@ -111,8 +113,8 @@ diagram = BipartiteFreeDiagram(span)
 @test (src(diagram), tgt(diagram)) == ([1,1,1], [1,2,3])
 @test diagram == as_basic_bipartite(BipartiteFreeDiagram(FreeDiagram(span)))
 
-span = Multispan([ id(FinSet(2)) for i in 1:3 ])
-span = bundle_legs(span, [1, (2,3)])
+span = Multispan{AbsSet,SetFunction}([ id[SetC()](FinSet(2)) for i in 1:3 ])
+span = bundle_legs(span, [1, (2,3)], SetC())
 @test apex(span) == FinSet(2)
 @test codom.(legs(span)) == [FinSet(2), FinSet(4)]
 
@@ -125,14 +127,14 @@ cospan = Cospan(f,g)
 @test (left(cospan), right(cospan)) == (f, g)
 
 f = Hom(:f, A, A)
-@test legs(Cospan(f, id(A))) == [f,id(A)]
+@test legs(Cospan{T...}(f, id(A))) == [f,id(A)]
 
 f = Hom(:f, A ,B)
-@test_throws ErrorException Cospan(f,g)
+@test_throws ErrorException Cospan{T...}(f,g)
 
 # Multicospans.
 f, g, h = Hom(:f, A, C), Hom(:g, B, C), Hom(:h, A, C)
-cospan = Multicospan([f,g,h])
+cospan = Multicospan{T...}([f,g,h])
 @test apex(cospan) == C
 @test legs(cospan) == [f,g,h]
 @test feet(cospan) == [A,B,A]
@@ -148,8 +150,8 @@ diagram = BipartiteFreeDiagram(cospan)
 @test (src(diagram), tgt(diagram)) == ([1,2,3], [1,1,1])
 @test diagram == as_basic_bipartite(BipartiteFreeDiagram(FreeDiagram(cospan)))
 
-cospan = Multicospan([FinFunction([i],3) for i in 1:3])
-cospan = bundle_legs(cospan, [(1,3), 2])
+cospan = Multicospan{AbsSet, SetFunction}([FinFunction([i],3) for i in 1:3])
+cospan = bundle_legs(cospan, [(1,3), 2], SetC())
 @test apex(cospan) == FinSet(3)
 @test legs(cospan) == [FinFunction([1,3], 3), FinFunction([2], 3)]
 

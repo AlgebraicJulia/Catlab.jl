@@ -2,45 +2,71 @@ module CategoricalAlgebra
 
 using Reexport
 
-include("Categories.jl")
-include("FinCats.jl")
-include("FreeDiagrams.jl")
-include("Limits.jl")
-include("Subobjects.jl")
-include("Sets.jl")
-include("FinSets.jl")
-include("Permutations.jl")
-include("Matrices.jl")
-include("FinRelations.jl")
-include("Diagrams.jl")
-include("CSets.jl")
-include("HomSearch.jl")
-include("GraphCategories.jl")
-include("CommutativeDiagrams.jl")
-include("CatElements.jl")
-include("Chase.jl")
-include("FunctorialDataMigrations.jl")
-include("StructuredCospans.jl")
-include("SliceCategories.jl")
 
+include("Matrices.jl") # (no deps, not reexported)
+include("Permutations.jl") # (no deps)
+include("Categories.jl") # (no deps)
+include("FreeDiagrams.jl") # FinCats
+
+
+include("FinRelations.jl") # Matrices
+
+
+include("Limits.jl") # FreeDiagrams
+
+
+include("FinCats.jl") # Categories, FreeDiagrams
+include("Subobjects.jl") # LimitsOld
+
+
+include("Sets.jl") # Categories
+include("SetFunctions.jl") # Sets
+include("FinSets.jl") # Sets
+include("FinFunctions.jl") # SetFunctions
+
+include("SetCLimits.jl") # 
+include("FinCLimits.jl") # Limits
+
+include("Subsets.jl") # Subobjects, FinSets
+
+
+
+# include("Diagrams.jl") # Categories, Limits, FinCats, FinSets
+
+# include("CSets.jl")
+
+# include("HomSearch.jl")
+include("GraphCategories.jl")
+# include("CommutativeDiagrams.jl")
+# include("CatElements.jl")
+# include("Chase.jl")
+# include("FunctorialDataMigrations.jl")
+# include("StructuredCospans.jl")
+# include("SliceCategories.jl")
+
+@reexport using .Permutations
 @reexport using .Categories
+
 @reexport using .FinCats
 @reexport using .FreeDiagrams
 @reexport using .Limits
 @reexport using .Subobjects
 
 @reexport using .Sets
+@reexport using .SetFunctions
 @reexport using .FinSets
-@reexport using .Permutations
-@reexport using .CSets
-@reexport using .HomSearch
-@reexport using .CatElements
+@reexport using .FinFunctions
+@reexport using .Subsets
 
-@reexport using .Diagrams
-@reexport using .CommutativeDiagrams
-@reexport using .Chase
-@reexport using .FunctorialDataMigrations
-@reexport using .StructuredCospans
-@reexport using .SliceCategories
+# @reexport using .CSets
+# @reexport using .HomSearch
+# @reexport using .CatElements
+
+# @reexport using .Diagrams
+# @reexport using .CommutativeDiagrams
+# @reexport using .Chase
+# @reexport using .FunctorialDataMigrations
+# @reexport using .StructuredCospans
+# @reexport using .SliceCategories
 
 end
