@@ -2,7 +2,7 @@ name = "Catlab"
 uuid = "134e5e36-593f-5add-ad60-77f754baafbe"
 license = "MIT"
 authors = ["Evan Patterson <evan@epatters.org>"]
-version = "0.16.18"
+version = "0.17.1"
 
 [deps]
 ACSets = "227ef7b5-1206-438b-ac65-934d6da304b8"
@@ -37,12 +37,9 @@ SCS = "c946c3f1-0d1f-5ce8-9dea-7daa1f7e2d13"
 TikzPictures = "37f6aa50-8035-52d0-81c2-5a1d08754b2d"
 
 [extensions]
-CatlabConvexExt = "Convex"
-CatlabDataFramesExt = "DataFrames"
 CatlabGraphsExt = "Graphs"
 CatlabGraphvizExt = "Graphviz_jll"
 CatlabMetaGraphsExt = "MetaGraphs"
-CatlabSCSExt = "SCS"
 CatlabTikzPicturesExt = "TikzPictures"
 
 [compat]

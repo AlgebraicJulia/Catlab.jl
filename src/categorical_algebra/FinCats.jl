@@ -32,6 +32,8 @@ using ...Graphs
 import ...Graphs: edges, src, tgt, enumerate_paths
 @reexport using ..Categories
 import ..Categories: CatSize, ob, hom, ob_map, hom_map, component, op
+using ..FreeDiagrams: AbstractFreeDiagram
+import ..FreeDiagrams: cone_objects, cocone_objects, diagram_type, FreeDiagram
 # Categories
 ############
 
@@ -556,6 +558,50 @@ function Categories.do_compose(F::FinDomFunctorMap, G::FinDomFunctorMap)
                    mapvals(f -> hom_map(G, f), F.hom_map), dom(F), codom(G))
 end
 
+diagram_type(F::FinDomFunctor{Dom,Codom}) where {Ob,Hom,Dom,Codom<:Cat{Ob,Hom}} =
+  Tuple{Ob,Hom}
+
+cone_objects(F::FinDomFunctor) = collect_ob(F)
+
+cocone_objects(F::FinDomFunctor) = collect_ob(F)
+
+function FreeDiagram(F::FinDomFunctor{Dom,Codom}) where {Ob,Hom,Dom,Codom<:Cat{Ob,Hom}} 
+  C = dom(F)
+  diagram = FreeDiagram{Ob,Hom}()
+  ob_dict = Dict(map(ob_generators(C)) do x 
+    x => add_vertex!(diagram; ob=ob_map(F, x))
+  end)
+  for h in hom_generators(C)
+    add_edge!(diagram, ob_dict[dom(C,h)], ob_dict[codom(C,h)], hom=hom_map(F,h))
+  end
+  diagram 
+end
+
+""" Wrapper type to interpret `FreeDiagram` as a `FinDomFunctor`.
+"""
+@struct_hash_equal struct FreeDiagramFunctor{Ob,Hom,Codom} <:
+    FinDomFunctor{FreeCatGraph{AbstractFreeDiagram{<:Any,Tuple{Ob,Hom}}},Codom}
+  diagram::FreeDiagram{Ob,Hom}
+  codom::Codom
+end
+
+FinDomFunctor(diagram::FreeDiagram, codom::Cat) =
+  FreeDiagramFunctor(diagram, codom)
+
+FinDomFunctor(diagram::FreeDiagram{Ob,Hom}) where {Ob,Hom} =
+  FreeDiagramFunctor(diagram, TypeCat(Ob, Hom))
+
+dom(F::FreeDiagramFunctor) = FreeCatGraph(getvalue(F.diagram))
+
+Categories.do_ob_map(F::FreeDiagramFunctor, x) = ob(F.diagram, x)
+
+Categories.do_hom_map(F::FreeDiagramFunctor, f) = hom(F.diagram, f)
+
+collect_ob(F::FreeDiagramFunctor) = ob(F.diagram)
+
+collect_hom(F::FreeDiagramFunctor) = hom(F.diagram)
+
+
 """
 Reinterpret a functor on a finitely presented category
 as a functor on the equivalent category (ignoring equations)
@@ -571,6 +617,7 @@ function dom_to_graph(F::FinDomFunctor{Dom,<:Cat{Ob,Hom}},obtype=Ob,homtype=Hom)
   new_homs = homtype[hom_map(F,hom) for hom in hom_generators(D)]
   FinDomFunctorMap(new_obs,new_homs,C,TypeCat(obtype,homtype))
 end
+
 function Base.show(io::IO, F::T) where T <: FinDomFunctorMap
   Categories.show_type_constructor(io, T); print(io, "(")
   show(io, F.ob_map)

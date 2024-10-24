@@ -6,13 +6,15 @@ using DataStructures
 
 using ACSets
 using ..FinSets, ..Limits
+using ..SetFunctions: SetC
+using ..FinFunctions: FinFunction
 using ...Graphs.BasicGraphs
 import ...Graphs.GraphAlgorithms: connected_component_projection,
   connected_component_projection_bfs
 
 function connected_component_projection(g::ACSet)::FinFunction
   proj(coequalizer(FinFunction(src(g), nv(g)),
-                   FinFunction(tgt(g), nv(g))))
+                   FinFunction(tgt(g), nv(g)), SetC()))
 end
 
 # This algorithm is linear in the number of vertices of g, so it should be

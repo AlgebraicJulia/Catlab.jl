@@ -18,6 +18,9 @@ using StaticArrays: SVector
 using GATlab
 import ...Theories: ob, hom, meet, ∧, join, ∨, top, ⊤, bottom, ⊥
 using ...Theories, ..Limits
+using ..FreeDiagrams: legs
+
+const M{Ob,Hom} = Model{Tuple{Ob,Hom}}
 
 # Theories
 ##########
@@ -110,33 +113,40 @@ struct SubOpWithLimits <: SubOpAlgorithm end
 
 """ Meet (intersection) of subobjects.
 """
-function meet(A::Subobject, B::Subobject, ::SubOpWithLimits)
-  meet(SVector(A,B), SubOpWithLimits())
+function meet(A::Subobject{O}, B::Subobject{O}, m::M{Ob,Hom}, 
+              ::SubOpWithLimits) where {Ob,Hom,O<:Ob}
+  meet(SVector(A,B), m, SubOpWithLimits())
 end
-function meet(As::AbstractVector{<:Subobject}, ::SubOpWithLimits)
+function meet(As::AbstractVector{<:Subobject{O}}, m::M{Ob,Hom}, 
+              ::SubOpWithLimits) where {Ob,Hom,O<:Ob}
   fs = map(hom, As)
-  lim = pullback(fs)
-  Subobject(compose(first(legs(lim)), first(fs))) # Arbitrarily use first leg.
+  lim = legs(pullback(fs, m))
+  Subobject(compose[m](first(lim), first(fs))) # Arbitrarily use first leg.
 end
 
 """ Join (union) of subobjects.
 """
-function join(A::Subobject, B::Subobject, ::SubOpWithLimits)
-  join(SVector(A,B), SubOpWithLimits())
+function join(A::Subobject{O}, B::Subobject{O}, m::M{Ob,Hom}, 
+              ::SubOpWithLimits) where {Ob,Hom,O<:Ob}
+  join(SVector(A,B), m, SubOpWithLimits())
 end
-function join(As::AbstractVector{<:Subobject}, ::SubOpWithLimits)
+
+function join(As::AbstractVector{<:Subobject{O}},  m::M{Ob,Hom}, 
+              ::SubOpWithLimits) where {Ob,Hom,O<:Ob}
   fs = map(hom, As)
-  lim = pullback(fs)
-  colim = pushout(legs(lim))
+  lim = pullback(fs, m)
+  colim = pushout(legs(lim)..., m)
   Subobject(copair(colim, fs))
 end
 
 """ Top (full) subobject.
 """
-top(X, ::SubOpWithLimits) = Subobject(id(X))
+top(X::O, m::M{Ob,Hom}, ::SubOpWithLimits) where {Ob, Hom, O<:Ob} = 
+  Subobject(id[m](X))
 
 """ Bottom (empty) subobject.
 """
-bottom(X::T, ::SubOpWithLimits) where T = Subobject(create(initial(T), X))
+bottom(X::O, m::M{Ob,Hom}, ::SubOpWithLimits) where {Ob, Hom, O<:Ob} = 
+  Subobject(create(initial(m), X))
 
 end

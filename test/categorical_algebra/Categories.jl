@@ -1,8 +1,6 @@
 module TestCategories
-using Test
 
-using Catlab.Theories
-using Catlab.CategoricalAlgebra
+using Test, Catlab
 
 # Instances
 ###########
@@ -11,7 +9,7 @@ using Catlab.CategoricalAlgebra
 #-----------
 
 C = TypeCat(FreeCategory.Ob, FreeCategory.Hom)
-@test Ob(C) == TypeSet(FreeCategory.Ob)
+@test Ob(C) == SetOb(FreeCategory.Ob)
 @test sprint(show, C) == "TypeCat($(FreeCategory.Ob), $(FreeCategory.Hom))"
 
 x, y = Ob(FreeCategory, :x, :y)
