@@ -28,8 +28,8 @@ abstract type AbstractTerm end
   model_version::String
 end
 
-function amr_to_string(amr)
-  @match amr begin
+function header_to_string(header)
+  @match header begin
     Header(name, s, d, sn, mv) => "\"\"\"\nASKE Model Representation: $name$mv :: $sn \n   $s\n\n$d\n\"\"\""
   end
 end

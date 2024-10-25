@@ -7,10 +7,6 @@ using Catlab.Programs.RelationalPrograms
 using Catlab.Parsers.RelationalParser
 
 
-#Overloading Comparison Operator for ADT
-Base.:(==)(s::Statement, t::Statement) = s.relation == t.relation && s.variables == t.variables
-Base.:(==)(s::Untyped, t::Untyped) = s.var == t.var
-
 # Now we write some unit tests. This is how I wrote this code, by writing the tests from the bottom up.
 @testset "Parens" begin
   @test lparen("(")[1] == "("

@@ -12,16 +12,16 @@ using MLStyle
 using StructTypes
 using ..ADTsCore
 using ...Programs.RelationalPrograms
-using ...WiringDiagrams.UndirectedWiringDiagrams
+using ...WiringDiagrams
 import Base: show
 
 
 @data Var <: AbstractTerm begin
-  Untyped(var::Symbol)
-  Typed(var::Symbol, type::Symbol)
+ Untyped(var::Symbol)
+ Typed(var::Symbol, type::Symbol)
 end
 
-@doc """    Var
+@doc """   Var
 
 Variables of a UWD. Types are the domain types, ScalarField, VectorField, Dual1Form, Primal2Form NOT Float64,Complex128
 
@@ -40,8 +40,8 @@ StructTypes.subtypekey(::Type{Var}) = :_type
 StructTypes.subtypes(::Type{Var}) = (Untyped=Untyped, Typed=Typed)
 
 @data UWDTerm <: AbstractTerm begin
-  Statement(relation::Symbol, variables::Vector{Var})
-  UWDExpr(context::Vector{Var}, statements::Vector{Statement})
+ Statement(relation::Symbol, variables::Vector{Var})
+ UWDExpr(context::Vector{Var}, statements::Vector{Statement})
   UWDModel(header::ADTsCore.Header, uwd::UWDExpr)
 end
 
@@ -134,7 +134,7 @@ function show(io::IO, s::UWDTerm)
         print(io, " where ")
         show(io, c)
       end
-      UWDModel(h, uwd) => begin println(io, amr_to_string(h)); println(io, "UWD:"); !(io, uwd); end
+      UWDModel(h, uwd) => begin println(io, header_to_string(h)); println(io, "UWD:"); !(io, uwd); end
     end
   end
 end
