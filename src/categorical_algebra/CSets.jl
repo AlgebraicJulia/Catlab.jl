@@ -462,7 +462,11 @@ function coerce_component(ob::Symbol, f::FinFunction{Int,Int},
   return f 
 end
 
-coerce_component(::Symbol, f, dom_size::Int, codom_size::Int; kw...) =
+coerce_component(ob::Symbol, f::T, dom_size::Int, codom_size::Int; kw...) where {T<:Integer} =
+  error("Scalar component for $ob not allowed; " *
+  "this is probably from a scalar component in an ACSetTransformation, please use a vector")
+
+coerce_component(::Symbol, f::T, dom_size::Int, codom_size::Int; kw...) where {T<:AbstractVector{<:Integer}}=
   FinFunction(f, dom_size, codom_size; kw...)
 
 function coerce_attrvar_component(
@@ -831,12 +835,12 @@ the combinatorial part of the limit legs. The type components of the j'th leg of
 the limit is just the j'th cartesian projection.
 """
 function limit(::Type{Tuple{ACS,Hom}}, diagram; product_attrs::Bool=false) where
-    {S, Ts, ACS <: StructACSet{S,Ts}, Hom <: LooseACSetTransformation}
+    {S, ACS <: StructACSet{S}, Hom <: LooseACSetTransformation}
   limits = map(limit, unpack_diagram(diagram, S=S, all=!product_attrs))
   Xs = cone_objects(diagram)
 
   attr_lims = (product_attrs ?
-    map(limit, unpack_diagram(DiscreteDiagram(Xs, Hom), S=S,Ts=Ts,all=true)) : limits )
+    map(limit, unpack_diagram(DiscreteDiagram(Xs, Hom), S=S, all=true)) : limits )
 
   LimitACS = if isempty(attrtypes(S)); ACS
   else
