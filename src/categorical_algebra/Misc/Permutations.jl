@@ -5,7 +5,7 @@ export cycles, permutation_to_expr, adjacent_transpositions_by_bubble_sort!,
   adjacent_transpositions_by_insertion_sort!
 
 using GATlab
-using ...Theories: dom, codom, compose, id, otimes, munit, braid
+using ....Theories: dom, codom, compose, id, otimes, munit, braid
 
 # Decomposition
 ###############

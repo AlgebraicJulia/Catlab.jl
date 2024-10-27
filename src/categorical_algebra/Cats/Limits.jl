@@ -19,9 +19,9 @@ using ACSets: incident
 using ..FreeDiagrams
 import ..FreeDiagrams: apex, legs
 using ..FreeDiagrams: cone_objects, cocone_objects, objects, getcategory
-using ...Graphs: nv₁, nv₂
-using ...Theories: dom, codom
-import ...Theories: initial, terminal, product, coproduct, create, delete, 
+using ....Graphs: nv₁, nv₂
+using ....Theories: dom, codom
+import ....Theories: initial, terminal, product, coproduct, create, delete, 
                     proj, incl, proj1, proj2, coproj1, coproj2, ob, factorize,
                     pair, copair, universal, equalizer, coequalizer
 

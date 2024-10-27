@@ -5,8 +5,8 @@ using StructEquality
 
 using GATlab
 using ..FreeDiagrams, ..Limits, ..CSets
-using ...Theories: ThCategory
-import ...Theories: dom, codom, compose, id
+using ....Theories: ThCategory
+import ....Theories: dom, codom, compose, id
 import ..Limits: limit, colimit, universal
 import ..FinSets: force
 

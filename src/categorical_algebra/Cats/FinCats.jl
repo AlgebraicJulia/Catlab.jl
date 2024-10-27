@@ -25,11 +25,11 @@ using DataStructures: IntDisjointSets, in_same_set, num_groups
 using ACSets
 using GATlab
 import GATlab: equations
-using ...Theories: ThCategory, ThSchema, ThPointedSetCategory, ThPointedSetSchema,
+using ....Theories: ThCategory, ThSchema, ThPointedSetCategory, ThPointedSetSchema,
   ObExpr, HomExpr, AttrExpr, AttrTypeExpr, FreeSchema, FreePointedSetCategory, zeromap
-import ...Theories: dom, codom, id, compose, ⋅, ∘
-using ...Graphs
-import ...Graphs: edges, src, tgt, enumerate_paths
+import ....Theories: dom, codom, id, compose, ⋅, ∘
+using ....Graphs
+import ....Graphs: edges, src, tgt, enumerate_paths
 @reexport using ..Categories
 import ..Categories: CatSize, ob, hom, ob_map, hom_map, component, op
 using ..FreeDiagrams: AbstractFreeDiagram
@@ -37,9 +37,24 @@ import ..FreeDiagrams: cone_objects, cocone_objects, diagram_type, FreeDiagram
 # Categories
 ############
 
-""" Size of a finitely presented category.
 """
-struct FinCatSize <: CatSize end
+A FinCat extends the category interface with nullary functions to list the 
+ob/hom generators.
+"""
+@theory ThFinCat <: ThCategory begin
+  Any′::TYPE
+  ob_generators()::Any′
+  hom_generators()::Any′
+end
+
+@struct_hash_equal struct FinCat 
+  impl::FinCatImpl
+  model::Any
+  function FinCat(impl::T, model) where {T<:FinCatImpl} 
+    implements(model, ThFinCat) || error("Model isn't a FinCat")
+    new(impl, model)
+  end
+end
 
 """ A finitely presented (but not necessarily finite!) category.
 """

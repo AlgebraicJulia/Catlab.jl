@@ -6,17 +6,17 @@ using ACSets: incident, copy_parts!
 using GATlab: ThCategory
 using .ThCategory
 
-using ..Limits, ..FreeDiagrams, ..FinFunctions,  ..FinSets
+using ...Cats.Limits, ...Cats.FreeDiagrams, ..FinFunctions,  ..FinSets
 using ..Sets: AbsSet, TypeSet, SetOb
 using ..SetFunctions: SetC, SetFunction, ConstantFunction
 using ..FinFunctions: ensure_indexed
-using ..FreeDiagrams: AbsBipartiteFreeDiagram, DiagramImpl, objects
-using ..Limits: LimitAlgorithm, NamedColimit, LimitImpl
-import ..Limits: limit, colimit, _universal, cone, ob
-using ...Graphs: edges, src, tgt, add_vertices₁!, add_vertex₁!, vertices₂, nv₁, 
+using ...Cats.FreeDiagrams: AbsBipartiteFreeDiagram, DiagramImpl, objects
+using ...Cats.Limits: LimitAlgorithm, NamedColimit, LimitImpl
+import ...Cats.Limits: limit, colimit, _universal, cone, ob
+using ....Graphs: edges, src, tgt, add_vertices₁!, add_vertex₁!, vertices₂, nv₁, 
                  nv₂, add_vertices₂!, add_edges!,add_edge!, vertices₁, 
                  rem_vertices₂!, inneighbors, add_vertex₂!, rem_edges!
-using ...Theories: ThCocartesianCategory, hom
+using ....Theories: ThCocartesianCategory, hom
 
 # Note: Cartesian monoidal structure is implemented generically for Set but
 # cocartesian only for FinSet.

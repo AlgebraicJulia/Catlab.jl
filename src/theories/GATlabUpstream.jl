@@ -6,6 +6,7 @@ using GATlab.Models.SymbolicModels: symbolic_structs, internal_accessors,
 using GATlab.Models.ModelInterface: args_from_sorts, generate_instance,
   parse_model_param
 
+const iflatten = Iterators.flatten
 """
 Create an @instance for a model `M` whose methods are determined by type 
 dispatch, e.g.:
@@ -41,7 +42,8 @@ end
 ```
 """
 function default_model(theorymodule, theory, jltype_by_sort, model, model2)
-  termcon_funs = map(last.(termcons(theory))) do x 
+  acc = iflatten(values.(values(theory.accessors)))
+  termcon_funs = map(last.(termcons(theory)) ∪ acc) do x 
     generate_function(use_model_method_impl(x, theory, jltype_by_sort, model2))
   end
   generate_instance(
@@ -95,10 +97,10 @@ A canonical implementation that just calls the method with the implementation
 of another model, `m`.
 """
 function use_model_method_impl(x::Ident, theory::GAT, 
-                                  jltype_by_sort::Dict{AlgSort}, m::Expr0)
+                               jltype_by_sort::Dict{AlgSort}, m::Expr0)
   op = getvalue(theory[x])
   name = nameof(getdecl(op))
-  return_type = jltype_by_sort[AlgSort(op.type)]
+  return_type = op isa AlgAccessor ? nothing : jltype_by_sort[AlgSort(op.type)]
   args = args_from_sorts(sortsignature(op), jltype_by_sort)
   impl = :(return $(name)[$m()]($(args...)))
   JuliaFunction(name=name, args=args, return_type=return_type, impl=impl)
@@ -145,9 +147,15 @@ macro symbolic_model(decl, theoryname, body)
   module_structs = symbolic_structs(theory, abstract_types, __module__)
 
   # Part 1.5: Generate a model
-  mod_params = [Expr(:., __module__, QuoteNode(t)) for t in abstract_types ]
+  # mod_params = [Expr(:., __module__, QuoteNode(t)) for t in abstract_types ]
+  # mod_params = [Expr(:., Expr(:call, :parentmodule, name), 
+  #                    QuoteNode(nameof(t))) for t in theory.sorts ]
+  mod_params = nameof.(theory.sorts)
   jltype_by_sort = Dict(zip(sorts(theory), mod_params))
   instance_code = default_instance(theorymodule, theory, jltype_by_sort, :M)
+  imps = [theoryname, nameof.(theory.sorts)...]
+  imp = Expr(:import, Expr(:(:), Expr(:(.), :(.),:(.), name), 
+    [Expr(:(.), n) for n in [theoryname; nameof.(theory.sorts)]]...))
 
   # Part 2: Generating internal methods
 
@@ -159,8 +167,11 @@ macro symbolic_model(decl, theoryname, body)
     using ..($(nameof(__module__)))
     import ..($(nameof(__module__))): $theoryname
     using GATlab: @instance
+
+    $(module_structs...)
+
     module $(esc(:Meta))
-      import ..($(name)): $theoryname
+      $imp
       const $(esc(:theory_module)) = $(esc(theoryname))
       const $(esc(:theory)) = $(theory)
       const $(esc(:theory_type)) = $(esc(theoryname)).Meta.T
@@ -170,7 +181,6 @@ macro symbolic_model(decl, theoryname, body)
       $instance_code
     end
 
-    $(module_structs...)
     $(generate_function.(module_methods)...)
 
 

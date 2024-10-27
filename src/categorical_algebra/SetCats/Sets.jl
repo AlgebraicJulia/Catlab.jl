@@ -6,14 +6,15 @@ type to view Julia types as sets ([`TypeSet`](@ref)). Extensive support for
 finite sets is provided by another module, [`FinSets`](@ref).
 """
 module Sets
-export AbsSet, SetOb, TypeSet, PredicatedSet, EitherSet, getmodel
+export AbsSet, SetOb, TypeSet, PredicatedSet, EitherSet
 
 using StructEquality
 
 using GATlab
-import ...Theories: Ob
-import ..FreeDiagrams: left, right
-using ..Categories: TypeCat
+import ....Theories: Ob
+import ...Cats.FreeDiagrams: left, right
+using ...Cats.Categories: Cat
+import ...Cats.Categories: getmodel
 
 # Theory of Sets
 ################
@@ -86,7 +87,7 @@ SetOb(s::TypeSet{T}) where T = SetOb(s, TypeSetImpl{T}())
 
 Sends a category to its set of objects and a functor to its object map.
 """
-Ob(::TypeCat{T}) where T = SetOb(TypeSet{T}())
+Ob(::Cat{O,H}) where {O,H} = SetOb(O)
 
 # EitherSets
 #-----------
@@ -112,7 +113,6 @@ end
 # Default ThSet model 
 
 SetOb(s::EitherSet) = SetOb(s, EitherSetImpl())
-
 
 # Predicated sets
 #----------------

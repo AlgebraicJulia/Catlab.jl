@@ -7,8 +7,8 @@ export Diagram, SimpleDiagram, DiagramHom, id, op, co,
 using StructEquality
 
 using GATlab
-import ...Theories: dom, codom, id, compose, ⋅, ∘, munit
-using ...Theories: ThCategory, composeH, FreeSchema
+import ....Theories: dom, codom, id, compose, ⋅, ∘, munit
+using ....Theories: ThCategory, composeH, FreeSchema
 import ..Categories: ob_map, hom_map, op, co
 using ..FinCats, ..FreeDiagrams, ..FinSets
 using ..FinCats: mapvals,FinDomFunctorMap,FinCatPresentation

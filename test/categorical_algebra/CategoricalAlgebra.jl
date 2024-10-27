@@ -2,42 +2,33 @@ module TestCategoricalAlgebra
 
 using Test
 
-@testset "Permutations" begin
-  include("Permutations.jl")
+@testset "Misc" begin
+  include("Misc/Permutations.jl")
+  include("Misc/Matrices.jl")
+  include("Misc/FinRelations.jl")
 end
-
-@testset "Matrices" begin
-  include("Matrices.jl")
-end
-
 
 @testset "Categories" begin
-  include("Categories.jl")
-  # include("FinCats.jl")
+  include("Cats/Categories.jl")
+  # include("Cats/FinCats.jl")
 end
 
 @testset "FreeDiagrams" begin
-  include("FreeDiagrams.jl")
+  # include("Cats/FreeDiagrams.jl")
 end
 
-include("Limits.jl")
+include("Cats/Limits.jl")
 
 @testset "Sets" begin
-  include("Sets.jl")
-  include("SetFunctions.jl")
-  include("FinSets.jl")
-  include("FinFunctions.jl")
-  include("Subsets.jl")
-end
-
-@testset "Limits" begin
-  include("FinCLimits.jl")
+  include("SetCats/Sets.jl")
+  include("SetCats/SetFunctions.jl")
+  include("SetCats/FinSets.jl")
+  include("SetCats/FinFunctions.jl")
+  include("SetCats/Subsets.jl")
+  include("SetCats/FinCLimits.jl")
 end
 
 
-@testset "Relations" begin
-  include("FinRelations.jl")
-end
 
 # @testset "CSets" begin
 #   include("ACSetsGATsInterop.jl")

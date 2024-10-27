@@ -12,9 +12,9 @@ using ..Sets, ..SetFunctions
 using ..Sets: ThSet′, M, SetImpl
 import ..Sets: getmodel, SetOb
 
-import ...Theories: Ob
+import ....Theories: Ob
 
-using ..FinCats: FinCat, ob_generators
+# using ..FinCats: FinCat, ob_generators
 
 # Theory of FinSets
 ###################
@@ -103,7 +103,7 @@ FinSet(i::Int) = FinSet(FinSetInt(i))
 """ Default FinSet with no parameters """
 FinSet() = FinSet(0)
 
-Ob(C::FinCat{Int}) = FinSet(length(ob_generators(C)))
+# Ob(C::FinCat{Int}) = FinSet(length(ob_generators(C)))
 
 # FinSetHash
 #-----------

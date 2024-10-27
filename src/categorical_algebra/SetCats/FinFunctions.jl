@@ -13,14 +13,14 @@ import GATlab: getvalue
 import ACSets.Columns: preimage
 import AlgebraicInterfaces: dom, codom
 
-import ...Theories: dom, codom, Ob 
+import ....Theories: dom, codom, Ob 
 
 using ..Sets, ..SetFunctions, ..FinSets
 using ..Sets: SetImpl
 using ..SetFunctions: SetFunctionImpl, M, ThSetFunction, ConstEither
-using ..Categories: Functor
-using ..FinCats: FinCat, collect_ob
-import ..FreeDiagrams: left, right
+using ...Cats.Categories: Functor
+# using ..FinCats: FinCat, collect_ob
+import ...Cats.FreeDiagrams: left, right
 
 import ..SetFunctions: force
 
@@ -443,6 +443,6 @@ codom(f::VarFunction{T}) where T  = codom[AttrC{T}()](f)
 
 # FinCats
 
-Ob(F::Functor{<:FinCat{Int}}) = FinDomFunction(collect_ob(F), Ob(codom(F))) 
+# Ob(F::Functor{<:FinCat{Int}}) = FinDomFunction(collect_ob(F), Ob(codom(F))) 
 
 end # module

@@ -11,9 +11,9 @@ using StaticArrays: StaticVector, SVector
 
 using GATlab, ACSets
 import ACSets: objects
-import ...Theories: ob, dom, codom, hom
-using ...Graphs
-import ...Graphs: add_vertices!, add_vertices₁!, add_vertices₂!, nv, ne, nv₁, nv₂, 
+import ....Theories: ob, dom, codom, hom
+using ....Graphs
+import ....Graphs: add_vertices!, add_vertices₁!, add_vertices₂!, nv, ne, nv₁, nv₂, 
                   vertices, vertices₁, vertices₂, edges, src, tgt, rem_vertices₂!,
                   add_vertex!, add_vertex₁!, add_vertex₂!, add_edge!, add_edges!,
                   inneighbors, rem_edges!

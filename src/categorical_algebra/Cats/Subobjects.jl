@@ -16,9 +16,9 @@ using StructEquality
 using StaticArrays: SVector
 
 using GATlab
-import ...Theories: ob, hom, meet, ∧, join, ∨, top, ⊤, bottom, ⊥
-using ...Theories, ..Limits
-using ..FreeDiagrams: legs
+import ....Theories: ob, hom, meet, ∧, join, ∨, top, ⊤, bottom, ⊥
+using ....Theories, ..Limits
+using ..Limits: legs
 
 const M{Ob,Hom} = Model{Tuple{Ob,Hom}}
 

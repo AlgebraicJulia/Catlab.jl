@@ -1,7 +1,7 @@
 module SetFunctions
 
 export SetFunction, SetFunction, ConstantFunction, SetFunctionCallable, 
-       CompositeFunction, IdentityFunction, PredicatedFunction, SetC
+       CompositeFunction, IdentityFunction, PredicatedFunction, SetC, force
 
 using StructEquality
 
@@ -12,7 +12,7 @@ import ACSets.Columns: preimage
 
 using ..Sets
 import ..Sets: getmodel, left, right
-import ..FinCats: force
+# import ..FinCats: force
 
 # Theory of SetFunctions
 ########################

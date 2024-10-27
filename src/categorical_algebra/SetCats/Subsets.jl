@@ -6,13 +6,13 @@ using StructEquality
 
 using GATlab
 
-using ..Subobjects 
-import ..Subobjects: Subobject, meet, join, top, bottom
+using ...Cats.Subobjects 
+import ...Cats.Subobjects: Subobject, meet, join, top, bottom
 using ..FinSets, ..FinFunctions
 using ..SetFunctions: SetC
 import ..FinFunctions: force
-using ...Theories: dom, codom
-import ...Theories: ob, hom
+using ....Theories: dom, codom
+import ....Theories: ob, hom
 
 """ Subset of a finite set. """
 const SubFinSet = Subobject{FinSet}

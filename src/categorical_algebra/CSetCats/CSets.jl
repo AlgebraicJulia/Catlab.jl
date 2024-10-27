@@ -16,7 +16,7 @@ using StructEquality
 
 using CompTime
 @reexport using ACSets
-@reexport using ...ACSetsGATsInterop
+@reexport using ....ACSetsGATsInterop
 using ACSets.Columns
 using ACSets.DenseACSets: indices, unique_indices, attr_type, attrtype_type,
   datatypes, constructor
