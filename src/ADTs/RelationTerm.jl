@@ -13,6 +13,7 @@ using StructTypes
 using ..ADTsCore
 using ...Programs.RelationalPrograms
 using ...WiringDiagrams
+using ACSets.ACSetInterface
 import Base: show
 
 

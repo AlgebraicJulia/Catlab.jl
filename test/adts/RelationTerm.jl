@@ -6,6 +6,7 @@ ACSet representation.
 module RelationTermTests
 
 using Test
+using Catlab
 using Catlab.ADTs.RelationTerm
 using Catlab.WiringDiagrams.UndirectedWiringDiagrams
 using Catlab.Programs.RelationalPrograms
@@ -20,7 +21,7 @@ using Catlab.Programs.RelationalPrograms
   v1 = Untyped(:x)
   v2 = Untyped(:y)
   v3 = Untyped(:z)
-  c = [v1 , v3]
+  c = [v1, v3]
   s = [Statement(:R, [v1, v2]), Statement(:S, [v2, v3])]
   u = UWDExpr(c, s)
 
@@ -35,7 +36,9 @@ using Catlab.Programs.RelationalPrograms
   set_junction!(d, [1,3], outer=true)
 
   #Test Equality
-  @test uwd_result = d
+  @test uwd_result == d
+  d
+
 end
 
 end
