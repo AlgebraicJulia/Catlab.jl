@@ -8,17 +8,22 @@ using Test, Catlab, GATlab
 # Categories
 #-----------
 M = FreeCategory.Meta.M();
-C = Category(M) # TypeCat(FreeCategory.Ob, FreeCategory.Hom)
+C = Category(M)
+@test getvalue(C) isa TypeCat{FreeCategory.Ob, FreeCategory.Hom}
 @test Ob(C) == SetOb(FreeCategory.Ob)
 @test C isa Category{FreeCategory.Ob, FreeCategory.Hom}
 
 x, y = Ob(FreeCategory, :x, :y)
 f = Hom(:f, x, y)
 
+Co = op(C)
+@test codom(C, f) == dom(Co, f) == codom(f) == y
+
 # Functors
 #---------
 const Ct = CatC()
-
+using Catlab.CategoricalAlgebra.Cats.Categories: IdentityFunctor
+i = IdentityFunctor(C)
 F = id(C);
 
 
@@ -38,8 +43,10 @@ Map = @theorymap Incl(ThCategory,ThCategory2) begin
   compose(f,g) ⊣ [(x,y,z)::Ob, f::Hom(x,y), g::Hom(y,z)] => compose(f,g)
 end
 
-
 MM = Category(migrate_model(Map, FreeCategory2.Meta.M()))
+
+@test MM isa Category{FreeCategory2.Ob, FreeCategory2.Hom}
+
 
 F = InstanceFunctor(MM)
 @test dom(F) == C
@@ -49,8 +56,11 @@ f′ = Hom(:f, x′, y′)
 @test F(x) == x′
 @test F(f) == f′
 
+id(MM, x′)
+
+
 F_op = op(F)
-@test F_op isa Categories.OppositeFunctor
+@test getvalue(F_op) isa Categories.OppositeFunctor
 @test (dom(F_op), codom(F_op)) == (op(dom(F)), op(codom(F)))
 @test F_op(x) == x′
 @test F_op(f) == f′
@@ -58,8 +68,10 @@ F_op = op(F)
 # Transformations
 #----------------
 
-α = id(F)
-@test (dom(α), codom(α)) == (F, F)
+α = id[Cat2()](F)
+
+@test (dom[Cat2()](α), codom[Cat2()](α)) == (F, F)
+
 @test component(α, x) == id(F(x))
 
 end

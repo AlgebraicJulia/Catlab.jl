@@ -31,7 +31,7 @@ Catlab.Theories.@symbolic_model FreeCategory{ObExpr, HomExpr} ThCategory begin
 end
 
 M = FreeCategory.Meta.M() 
-@test M isa GATlab.Models.SymbolicModels.Model{Tuple{ObExpr, HomExpr}}
+@test M isa GATlab.Models.SymbolicModels.Model{Tuple{FreeCategory.Ob, FreeCategory.Hom}}
 x, y = FreeCategory.Ob{:generator}([:x], []), FreeCategory.Ob{:generator}([:y], [])
 f = FreeCategory.Hom{:generator}([:f], [x, y])
 

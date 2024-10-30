@@ -14,25 +14,22 @@ using GATlab
 import ....Theories: Ob
 import ...Cats.FreeDiagrams: left, right
 using ...Cats.Categories: Cat
-import ...Cats.Categories: getmodel
 
 # Theory of Sets
 ################
 
 @theory ThSet′ begin
   Bool′::TYPE
-  Int′::TYPE
   Any′::TYPE
-  Set′::TYPE
-  in′(e::Any′, s::Set′)::Bool′
-  eltype′(s::Set′)::Any′
+  in′(e::Any′)::Bool′
+  eltype′()::Any′
 end
 
-const M{T} = Model{Tuple{Bool, Int, Any, T}} # shorthand
+const M = Model{Tuple{Bool, Any}} # shorthand
 
 abstract type AbsSet end
 
-abstract type SetImpl end 
+abstract type SetImpl <: M end 
 
 """
 Generic type for a set. It has some implementation of the theory of sets and 
@@ -40,17 +37,15 @@ a model which provides the information for how it implements the theory.
 """
 @struct_hash_equal struct SetOb <: AbsSet
   impl::SetImpl
-  mod::Any
-  SetOb(i::T, m::M{T}) where {T<:SetImpl} = 
-    implements(m, ThSet′) ? new(i, m) : throw(MethodError("Bad model $i $m"))
+  SetOb(i::SetImpl) = implements(i, ThSet′) ? new(i) : throw(MethodError(
+    "Bad model $i"))
 end
 
 GATlab.getvalue(s::SetOb) = s.impl
-getmodel(s::SetOb) = s.mod
 
-Base.in(e, f::SetOb) = ThSet′.in′[getmodel(f)](e, getvalue(f))
+Base.in(e, s::SetOb) = ThSet′.in′[getvalue(s)](e)
 
-Base.eltype(s::SetOb) = ThSet′.eltype′[getmodel(s)](getvalue(s))
+Base.eltype(s::SetOb) = ThSet′.eltype′[getvalue(s)]()
 
 Base.show(io::IO, s::SetOb) = show(io, getvalue(s))
 
@@ -69,18 +64,15 @@ Base.show(io::IO, ::TypeSet{T}) where T = print(io, "TypeSet($T)")
 
 # ThSet implementation 
 
-@struct_hash_equal struct TypeSetImpl{T} <: M{TypeSet{T}} end
-
-@instance ThSet′{Bool, Int, Any, TypeSet{T}} [model::TypeSetImpl{T}] where T begin
-  in′(i::Any, s::TypeSet{T})::Bool = i isa T
-  eltype′(s::TypeSet{T})::Any = T
+@instance ThSet′{Bool, Any} [model::TypeSet{T}] where T begin
+  in′(i::Any)::Bool = i isa T
+  eltype′()::Any = T
 end
 
 # Default models
 
 """ Default model for a Set made out of a Julia `Type` """
 SetOb(T::Type) = SetOb(TypeSet{T}())
-SetOb(s::TypeSet{T}) where T = SetOb(s, TypeSetImpl{T}())
 
 
 """ Forgetful functor Ob: Cat → Set.
@@ -103,16 +95,12 @@ right(e::EitherSet) = e.right
 
 # ThSet implementation
 
-@struct_hash_equal struct EitherSetImpl <: M{EitherSet} end
-
-@instance ThSet′{Bool, Int, Any, EitherSet} [model::EitherSetImpl] begin
-  in′(i::Any, s::EitherSet)::Bool = i ∈ left(s) || i ∈ right(s)
-  eltype′(s::EitherSet)::Any = Union{eltype(left(s)), eltype(right(s))}
+@instance ThSet′{Bool, Any} [model::EitherSet] begin
+  in′(i::Any)::Bool = i ∈ left(model) || i ∈ right(model)
+  eltype′()::Any = Union{eltype(left(model)), eltype(right(model))}
 end
 
-# Default ThSet model 
-
-SetOb(s::EitherSet) = SetOb(s, EitherSetImpl())
+SetOb(x::AbsSet, y::AbsSet) = SetOb(EitherSetImpl(x, y))
 
 # Predicated sets
 #----------------
@@ -137,16 +125,9 @@ function Base.show(io::IO, s::PredicatedSet{T}) where T
 end
 
 # ThSet implementation 
-
-@struct_hash_equal struct PredicatedSetImpl{T} <: M{PredicatedSet{T}} end
-
-@instance ThSet′{Bool, Int, Any, PredicatedSet{T}} [model::PredicatedSetImpl{T}] where T begin
-  in′(i::Any, s::PredicatedSet{T})::Bool = i isa T && s(i)
-  eltype′(s::PredicatedSet{T})::Any = T
+@instance ThSet′{Bool, Any} [model::PredicatedSet{T}] where T begin
+  in′(i::Any)::Bool = i isa T && model(i)
+  eltype′()::Any = T
 end
-
-# Default ThSet model 
-
-SetOb(s::PredicatedSet{T}) where T = SetOb(s, PredicatedSetImpl{T}())
 
 end # module

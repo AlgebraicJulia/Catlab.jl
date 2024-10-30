@@ -17,11 +17,10 @@ import ....Theories: dom, codom, Ob
 
 using ..Sets, ..SetFunctions, ..FinSets
 using ..Sets: SetImpl
-using ..SetFunctions: SetFunctionImpl, M, ThSetFunction, ConstEither
+using ..SetFunctions: SetFunctionImpl, ThSetFunction, ConstEither
 using ...Cats.Categories: Functor
-# using ..FinCats: FinCat, collect_ob
 import ...Cats.FreeDiagrams: left, right
-
+using ...Cats.FinFunctors: FinFunctor, collect_ob
 import ..SetFunctions: force
 
 # Finite functions
@@ -125,28 +124,14 @@ function Base.show(io::IO, f::AbsFinFunctionVector)
   print(io, ")")
 end
 
-
-@struct_hash_equal struct FinFunctionVectorImpl <: M{AbsFinFunctionVector} end
-
-@instance ThSetFunction{Any, AbsSet, SetFunction, AbsFinFunctionVector
-                       } [model::FinFunctionVectorImpl] begin
-  dom(s::AbsFinFunctionVector)::AbsSet = FinSet(length(getvalue(s)))
-  codom(s::AbsFinFunctionVector)::AbsSet = s.codom
-  app(i::Any, f::AbsFinFunctionVector)::Any = getvalue(f)[i]
-  function postcompose(s::AbsFinFunctionVector, f::SetFunction)::SetFunction
-    FinDomFunction(FF(is_indexed(s))(f.(getvalue(s)), codom(f)))
+@instance ThSetFunction{Any, AbsSet, SetFunction} [model::T] where {T<:AbsFinFunctionVector} begin
+  dom()::AbsSet = FinSet(length(getvalue(model)))
+  codom()::AbsSet = model.codom
+  app(i::Any)::Any = getvalue(model)[i]
+  function postcompose(f::SetFunction)::SetFunction
+    FinDomFunction(FF(is_indexed(model))(f.(getvalue(model)), codom(f)))
   end
 end
-
-
-""" 
-`FinFunctionVectorImpl` is default model of SetFunctions for `FinFunctionVector`s 
-"""
-FinFunction(i::AbsFinFunctionVector) = FinFunction(i, FinFunctionVectorImpl())
-
-FinDomFunction(i::AbsFinFunctionVector) = FinDomFunction(i, FinFunctionVectorImpl())
-
-SetFunction(i::AbsFinFunctionVector) = SetFunction(i, FinFunctionVectorImpl())
 
 """ 
 Default `FinFunction` or `FinDomFunction` from a `AbstractVector` and codom
@@ -194,15 +179,15 @@ function Base.show(io::IO, f::FinFunctionDict)
 end
 
 
-@struct_hash_equal struct FinFunctionDictImpl <: M{FinFunctionDict} end
+@instance ThSetFunction{Any, AbsSet, SetFunction} [model::FinFunctionDict] begin
+  dom()::AbsSet = FinSet(Set(collect(keys(getvalue(model)))))
 
-@instance ThSetFunction{Any, AbsSet, SetFunction, FinFunctionDict
-                       } [model::FinFunctionDictImpl] begin
-  dom(f::FinFunctionDict)::AbsSet = FinSet(Set(collect(keys(getvalue(f)))))
-  codom(s::FinFunctionDict)::AbsSet = s.codom
-  app(i::Any, f::FinFunctionDict)::Any = getvalue(f)[i]
-  postcompose(f::FinFunctionDict, g::SetFunction)::SetFunction = 
-    FinDomFunction(FinFunctionDict(Dict(k => g(v) for (k,v) in getvalue(f)), 
+  codom()::AbsSet = model.codom
+
+  app(i::Any, )::Any = getvalue(model)[i]
+
+  postcompose(g::SetFunction)::SetFunction = 
+    FinDomFunction(FinFunctionDict(Dict(k => g(v) for (k,v) in getvalue(model)), 
                                    codom(g)))
 end
   
@@ -211,19 +196,11 @@ FinFunction(f::AbstractDict) = FinFunction(f, FinSet(Set(values(f))))
 
 """ Default `FinFunction` from a `AbstractDict` and codom"""
 FinFunction(f::AbstractDict, cod::FinSet) = 
-  FinFunction(FinFunctionDict(f, cod), FinFunctionDictImpl())
+  FinFunction(FinFunctionDict(f, cod))
 
 FinDomFunction(f::AbstractDict, cod::SetOb) = 
-  FinDomFunction(FinFunctionDict(f, cod), FinFunctionDictImpl())
+  FinDomFunction(FinFunctionDict(f, cod))
 
-""" 
-`FinFunctionDictImpl` is default model of SetFunctions for `FinFunctionDict`s 
-"""
-FinFunction(i::FinFunctionDict) = FinFunction(i, FinFunctionDictImpl())
-
-FinDomFunction(i::FinFunctionDict) = FinDomFunction(i, FinFunctionDictImpl())
-
-SetFunction(i::FinFunctionDict) = SetFunction(i, FinFunctionDictImpl())
 
 # VarFunctions
 ##############
@@ -268,7 +245,7 @@ function either_cod_inv(cod::EitherSet, T::Type)::Union{Nothing, FinSet}
   FinSet(L)
 end
 
-either_cod_inv(e::SetImpl, ::Type) = nothing
+either_cod_inv(::SetImpl, ::Type) = nothing
 
 """ Take a FinDomFunction X->Y and make it into a function X+T->Y+T """
 plus_T_dom(f::FinDomFunction, T::Type) =
@@ -396,7 +373,7 @@ end
 function force(s::CompositeVarFunctionLR{T})::VarFunction{T} where T
   f, g = getvalue(force(left(s))), getvalue(force(right(s)))
   g′ = plus_T_dom(g, T)
-  VarFunction{T}(ThSetFunction.postcompose[getmodel(f)](getvalue(f), g′))
+  VarFunction{T}(ThSetFunction.postcompose[getvalue(f)](g′))
 end
 
 
@@ -440,9 +417,7 @@ dom(f::VarFunction{T}) where T  = dom[AttrC{T}()](f)
 
 codom(f::VarFunction{T}) where T  = codom[AttrC{T}()](f)
 
-
-# FinCats
-
-# Ob(F::Functor{<:FinCat{Int}}) = FinDomFunction(collect_ob(F), Ob(codom(F))) 
+# Forgetful functor Cat to Set
+Ob(F::FinFunctor{Int}) = FinDomFunction(collect_ob(F), Ob(codom(F)))
 
 end # module

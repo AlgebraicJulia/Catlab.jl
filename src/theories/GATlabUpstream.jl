@@ -22,7 +22,9 @@ Use this with caution! For example, using this with two different models of
 the same theory with the same types would cause a conflict.
 """
 function default_instance(theorymodule, theory, jltype_by_sort, model)
-  termcon_funs = map(last.(termcons(theory))) do x 
+  acc = iflatten(values.(values(theory.accessors)))
+
+  termcon_funs = map(last.(termcons(theory)) ∪ acc) do x 
     generate_function(use_dispatch_method_impl(x, theory, jltype_by_sort))
   end
   generate_instance(
@@ -86,7 +88,7 @@ function use_dispatch_method_impl(x::Ident, theory::GAT,
                                   jltype_by_sort::Dict{AlgSort})
   op = getvalue(theory[x])
   name = nameof(getdecl(op))
-  return_type = jltype_by_sort[AlgSort(op.type)]
+  return_type = op isa AlgAccessor ? nothing : jltype_by_sort[AlgSort(op.type)]
   args = args_from_sorts(sortsignature(op), jltype_by_sort)
   impl = :(return $(name)($(args...)))
   JuliaFunction(name=name, args=args, return_type=return_type, impl=impl)

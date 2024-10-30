@@ -11,7 +11,7 @@ import AlgebraicInterfaces: dom, codom
 import ACSets.Columns: preimage
 
 using ..Sets
-import ..Sets: getmodel, left, right
+import ..Sets: left, right
 # import ..FinCats: force
 
 # Theory of SetFunctions
@@ -34,14 +34,17 @@ using `force` to evaluate a `CompositeFunction`.
   Any′::TYPE
   Set′::TYPE
   Fun′::TYPE
-  Fun::TYPE
-  dom(s::Fun)::Set′
-  codom(s::Fun)::Set′
-  app(e::Any′, s::Fun)::Any′
-  postcompose(s::Fun, t::Fun′)::Fun′
+  dom()::Set′
+  codom()::Set′
+  app(e::Any′)::Any′
+  postcompose(t::Fun′)::Fun′
 end
 
-abstract type SetFunctionImpl end
+abstract type AbsSetFunction end # ONLY subtyped by SetFunction
+
+const M = Model{Tuple{Any, AbsSet, AbsSetFunction}}
+
+abstract type SetFunctionImpl <: M end
 
 # Functions
 ###########
@@ -51,15 +54,13 @@ abstract type SetFunctionImpl end
 Note: This type would be better called simply `Function` but that name is
 already taken by the base Julia type.
 """
-@struct_hash_equal struct SetFunction{Dom,Cod}
+@struct_hash_equal struct SetFunction{Dom,Cod} <: AbsSetFunction
   impl::Any 
-  mod::Any
-  function SetFunction(i::T, m::Model{Tuple{Any, AbsSet, SetFunction, T}}
-                       ) where {T<:SetFunctionImpl} 
-    implements(m, ThSetFunction) || throw(MethodError("Bad model $i $m"))
-    d = ThSetFunction.dom[m](i) |> typeof
-    c = ThSetFunction.codom[m](i) |> typeof 
-    new{d,c}(i, m)
+  function SetFunction(i::SetFunctionImpl)
+    implements(i, ThSetFunction) || throw(MethodError("Bad model $i"))
+    d = ThSetFunction.dom[i]() |> typeof
+    c = ThSetFunction.codom[i]() |> typeof 
+    new{d,c}(i)
   end
 end
 
@@ -76,21 +77,19 @@ function SetFunction{Dom}(args...) where {Dom}
   res
 end
 
-
-const M{T} = Model{Tuple{Any, AbsSet, SetFunction, T}}
-
 getvalue(s::SetFunction) = s.impl 
 
-getmodel(s::SetFunction) = s.mod
-
 """ Default `dom` overload """
-dom(s::SetFunction) = ThSetFunction.dom[getmodel(s)](getvalue(s))
+dom(s::SetFunction) = ThSetFunction.dom[getvalue(s)]()
 
-codom(s::SetFunction) = ThSetFunction.codom[getmodel(s)](getvalue(s))
+codom(s::SetFunction) = ThSetFunction.codom[getvalue(s)]()
 
-(s::SetFunction)(x::Any) = ThSetFunction.app[getmodel(s)](x, getvalue(s))
+(s::SetFunction)(x::Any) = ThSetFunction.app[getvalue(s)](x)
 
 Base.show(io::IO, f::SetFunction) = show(io, getvalue(f)) 
+
+postcompose(f::SetFunction, g::SetFunction) = 
+  ThSetFunction.postcompose[getvalue(f)](g)
 
 SetFunction(f::SetFunction) = f
 
@@ -123,15 +122,13 @@ end
 
 # SetFunction implementation
 
-@struct_hash_equal struct SetFunctionCallableImpl <: M{SetFunctionCallable} end
-
-@instance ThSetFunction{Any, AbsSet, SetFunction, SetFunctionCallable
-                       } [model::SetFunctionCallableImpl] begin
-  dom(s::SetFunctionCallable)::AbsSet = s.dom
-  codom(s::SetFunctionCallable)::AbsSet = s.codom
-  app(i::Any, s::SetFunctionCallable)::Any = s.func(i)
-  postcompose(s::SetFunctionCallable, f::SetFunction)::SetFunction = 
-    SetFunction(SetFunctionCallable(i -> f(s.func(i)), dom(s), codom(f)))
+@instance ThSetFunction{Any, AbsSet, SetFunction} [model::SetFunctionCallable] begin
+  dom()::AbsSet = model.dom
+  codom()::AbsSet = model.codom
+  app(i::Any)::Any = getvalue(model)(i)
+  postcompose(f::SetFunction)::SetFunction = 
+    SetFunction(SetFunctionCallable(  
+      i -> f(getvalue(model.func)(i)), model.dom, codom(f)))
 end
 
 
@@ -143,9 +140,6 @@ function SetFunction(f::Function, d::AbsSet, c::AbsSet)
   pred ? SetFunction(PredicatedFunction(s)) : s
 end
 
-SetFunction(f::SetFunctionCallable) = SetFunction(f, SetFunctionCallableImpl())
-
-
 # Identity 
 #---------
 
@@ -154,6 +148,8 @@ SetFunction(f::SetFunctionCallable) = SetFunction(f, SetFunctionCallableImpl())
 @struct_hash_equal struct IdentityFunction <: SetFunctionImpl
   dom::AbsSet
 end
+
+getvalue(i::IdentityFunction) = i.dom
 
 function IdentityFunction(dom::SetOb, codom::SetOb)
   dom == codom || error("Domain mismatch in identity function: $dom != $codom")
@@ -173,18 +169,15 @@ end
 
 # SetFunction implementation 
 
-@struct_hash_equal struct IdentityFunctionImpl <: M{IdentityFunction} end
+@instance ThSetFunction{Any, AbsSet, SetFunction} [model::IdentityFunction] begin
 
-@instance ThSetFunction{Any, AbsSet, SetFunction, IdentityFunction
-                       } [model::IdentityFunctionImpl] begin
+  dom()::AbsSet = getvalue(model)
 
-  dom(s::IdentityFunction)::AbsSet = s.dom
+  codom()::AbsSet = getvalue(model)
 
-  codom(s::IdentityFunction)::AbsSet = s.dom
+  app(i::Any)::Any = i
 
-  app(i::Any, s::IdentityFunction)::Any = i
-
-  postcompose(s::IdentityFunction, f::SetFunction)::SetFunction = f
+  postcompose(f::SetFunction)::SetFunction = f
 end
 
 # Constructors 
@@ -192,8 +185,6 @@ end
 SetFunction(::typeof(identity), arg::AbsSet) = SetFunction(IdentityFunction(arg))
 
 SetFunction(s::AbsSet) = SetFunction(IdentityFunction(s))
-
-SetFunction(i::IdentityFunction) = SetFunction(i, IdentityFunctionImpl())
 
 # Composite
 #----------
@@ -231,24 +222,20 @@ function force(s::SetFunction)::SetFunction
   getvalue(g) isa ConstantFunction && return SetFunction(
     ConstantFunction(getvalue(getvalue(g)), dom(f), codom(g)))
   
-  ThSetFunction.postcompose[getmodel(f)](getvalue(f), g)
+  postcompose(f, g)
 end
 
 # SetFunction implementation 
 
-@struct_hash_equal struct CompositeFunctionImpl <: M{CompositeFunction} end
+@instance ThSetFunction{Any, AbsSet, SetFunction} [model::CompositeFunction] begin
 
-@instance ThSetFunction{Any, AbsSet, SetFunction, CompositeFunction
-                       } [model::CompositeFunctionImpl] begin
-
-  dom(s::CompositeFunction)::AbsSet = dom(first(s))
+  dom()::AbsSet = dom(first(model))
   
-  codom(s::CompositeFunction)::AbsSet = codom(last(s))
+  codom()::AbsSet = codom(last(model))
 
-  app(i::Any, f::CompositeFunction)::Any = f.snd(f.fst(i))
+  app(i::Any)::Any = last(model)(first(model)(i))
 
-  postcompose(s::CompositeFunction, f::SetFunction)::SetFunction =
-    SetFunction(SetFunction(s), f) 
+  postcompose(f::SetFunction)::SetFunction = SetFunction(SetFunction(model), f) 
 end
 
 # Default SetFunction model
@@ -256,7 +243,7 @@ end
 function SetFunction(f::SetFunction, g::SetFunction)
   getvalue(f) isa IdentityFunction && return g 
   getvalue(g) isa IdentityFunction && return f
-  SetFunction(CompositeFunction(f,g), CompositeFunctionImpl())
+  SetFunction(CompositeFunction(f,g))
 end
 
 # Constant functions
@@ -281,22 +268,20 @@ getvalue(c::ConstantFunction) = c.value
 
 # SetFunction implementation
 
-@struct_hash_equal struct ConstantFunctionImpl <: M{ConstantFunction} end
+@instance ThSetFunction{Any, AbsSet, SetFunction} [model::ConstantFunction] begin
+  dom()::AbsSet = model.dom
+  
+  codom()::AbsSet = model.codom
 
-@instance ThSetFunction{Any, AbsSet, SetFunction, ConstantFunction
-                       } [model::ConstantFunctionImpl] begin
-  dom(s::ConstantFunction)::AbsSet = s.dom
-  codom(s::ConstantFunction)::AbsSet = s.codom
-  app(i::Any, f::ConstantFunction)::Any = getvalue(f)
-  postcompose(s::ConstantFunction, f::SetFunction)::SetFunction = 
-    SetFunction(ConstantFunction(f(getvalue(s)), s.dom, codom(f)))
+  app(x::Any)::Any = getvalue(model)
+
+  postcompose(f::SetFunction)::SetFunction = 
+    SetFunction(ConstantFunction(f(getvalue(model)), model.dom, codom(f)))
 end
 
 # Default constructors 
 
 SetFunction(value, dom::AbsSet) = SetFunction(ConstantFunction(value, dom))
-
-SetFunction(c::ConstantFunction) = SetFunction(c, ConstantFunctionImpl())
 
 # ConstEither 
 #------------
@@ -322,21 +307,18 @@ getvalue(c::ConstEither) = c.fun
 
 # SetFunction implementation
 
-@struct_hash_equal struct ConstEitherImpl <: M{ConstEither} end
+@instance ThSetFunction{Any, AbsSet, SetFunction} [model::ConstEither] begin
+  dom()::AbsSet = model.dom
 
-@instance ThSetFunction{Any, AbsSet, SetFunction, ConstEither
-                       } [model::ConstEitherImpl] begin
-  dom(s::ConstEither)::AbsSet = s.dom
-  codom(s::ConstEither)::AbsSet = s.codom
-  app(i::Any, f::ConstEither)::Any = 
-    i ∈ right(getvalue(codom[model](f))) ? i : getvalue(f)(i)
-  postcompose(s::ConstEither, f::SetFunction)::SetFunction = 
-    SetFunction(ConstEither(f(getvalue(s)), s.dom, codom[model](f)))
+  codom()::AbsSet = model.codom
+
+  app(i::Any)::Any = 
+    i ∈ right(getvalue(model.codom)) ? i : getvalue(model)(i)
+
+  postcompose(f::SetFunction)::SetFunction = 
+    SetFunction(ConstEither(f(getvalue(model)), model.dom, codom[model](f)))
 end
 
-# Default SetFunction model
-
-SetFunction(c::ConstEither) = SetFunction(c, ConstEitherImpl())
 
 # Predicated function
 #--------------------
@@ -351,26 +333,20 @@ end
 
 getvalue(p::PredicatedFunction) = p.val
 
-@struct_hash_equal struct PredicatedFunctionImpl <: M{PredicatedFunction} end
-
-
-@instance ThSetFunction{Any, SetOb, SetFunction, PredicatedFunction
-                       } [model::PredicatedFunctionImpl] begin
-  dom(s::PredicatedFunction)::SetOb = dom(getvalue(s))
-  codom(s::PredicatedFunction)::SetOb = codom(getvalue(s))
-  function app(i::Any, s::PredicatedFunction)::Any
-    v, m = getvalue(getvalue(s)), getmodel(getvalue(s))
-    d, c = dom[m](v), codom[m](v)
+@instance ThSetFunction{Any, SetOb, SetFunction} [model::PredicatedFunction] begin
+  dom()::SetOb = dom(getvalue(model))
+  codom()::SetOb = codom(getvalue(model))
+  function app(i::Any)::Any
+    f = getvalue(model)
+    d, c = dom(f), codom(f)
     getvalue(d) isa PredicatedSet && i ∉ d && error("Bad domain input")
-    v = getvalue(s)(i)
+    v = f(i)
     getvalue(c) isa PredicatedSet && v ∉ c && error("Bad codomain output")
     v
   end
-  postcompose(s::PredicatedFunction, f::SetFunction)::SetFunction = 
-    SetFunction(PredicatedFunction(i -> f(s.func(i)), dom[model](s), codom[model](f)))
+  postcompose(f::SetFunction)::SetFunction = 
+    SetFunction(PredicatedFunction(i -> f(model.func(i)), dom[model](model), codom[model](f)))
 end
-
-SetFunction(c::PredicatedFunction) = SetFunction(c, PredicatedFunctionImpl())
 
 # Category 
 ##########

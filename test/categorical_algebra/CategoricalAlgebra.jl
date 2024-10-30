@@ -10,14 +10,13 @@ end
 
 @testset "Categories" begin
   include("Cats/Categories.jl")
-  # include("Cats/FinCats.jl")
-end
+  # include("Cats/FreeDiagrams.jl") # really depends on C-Sets
+  include("Cats/CommutativeDiagrams.jl")
+  include("Cats/Limits.jl")
+  include("Cats/FinCats.jl")
+#   include("Cats/Diagrams.jl")
 
-@testset "FreeDiagrams" begin
-  # include("Cats/FreeDiagrams.jl")
 end
-
-include("Cats/Limits.jl")
 
 @testset "Sets" begin
   include("SetCats/Sets.jl")
@@ -28,34 +27,15 @@ include("Cats/Limits.jl")
   include("SetCats/FinCLimits.jl")
 end
 
-
-
 # @testset "CSets" begin
-#   include("ACSetsGATsInterop.jl")
-#   include("CSets.jl")
-#   include("HomSearch.jl")
-#   include("CatElements.jl")
-# end
-
-# @testset "Diagrams" begin
-#   include("Diagrams.jl")
-#   include("CommutativeDiagrams.jl")
-# end
-
-# @testset "Chase" begin
-#   include("Chase.jl")
-# end
-
-# @testset "FunctorialDataMigrations" begin
-#   include("FunctorialDataMigrations.jl")
-# end
-
-# @testset "StructuredCospans" begin
-#   include("StructuredCospans.jl")
-# end
-
-# @testset "SliceCategories" begin
-#   include("SliceCategories.jl")
+#   include("CSetCats/ACSetsGATsInterop.jl")
+#   include("CSetCats/CSets.jl")
+#   include("CSetCats/HomSearch.jl")
+#   include("CSetCats/CatElements.jl")
+#   include("CSetCats/Chase.jl")
+#   include("CSetCats/FunctorialDataMigrations.jl")
+#   include("CSetCats/StructuredCospans.jl")
+#   include("CSetCats/SliceCategories.jl")
 # end
 
 

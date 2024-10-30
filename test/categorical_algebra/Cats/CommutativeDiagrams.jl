@@ -1,8 +1,6 @@
 module TestCommutativeDiagrams
-using Test
 
-using Catlab.Theories
-using Catlab.CategoricalAlgebra.CommutativeDiagrams
+using Test, Catlab
 
 # Commutative squares
 #####################

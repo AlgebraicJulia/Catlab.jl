@@ -4,28 +4,33 @@ module FinSets
 export FinSet, FinSetInt, FinSetHash, TabularSet
 
 using GATlab
+import GATlab: getvalue
 using StructEquality
 using Reexport
 import Tables, PrettyTables
 
 using ..Sets, ..SetFunctions
-using ..Sets: ThSet′, M, SetImpl
-import ..Sets: getmodel, SetOb
+using ..Sets: ThSet′, SetImpl
+import ..Sets: SetOb, left, right
 
 import ....Theories: Ob
 
-# using ..FinCats: FinCat, ob_generators
+using ...Cats.Categories: Functor
+using ...Cats.FinCats: FinCat, ob_generators
 
 # Theory of FinSets
 ###################
 
 @theory ThFinSet <: ThSet′ begin
-  length′(s::Set′)::Int′
-  iterate′(s::Set′)::Any′
-  iterate′(s::Set′,a::Any′)::Any′
+  Int′::TYPE
+  length′()::Int′
+  iterate′()::Any′
+  iterate′(a::Any′)::Any′
 end
 
-abstract type FinSetImpl <: SetImpl end 
+const M = Model{Tuple{Bool, Any, Int}} # shorthand
+
+abstract type FinSetImpl <: M end 
 
 """ Finite set.
 
@@ -37,32 +42,29 @@ addition, the skeleton of the category **FinSet** is the important special case
 `FinSet{Int,Int}`.
 """
 @struct_hash_equal struct FinSet <: AbsSet
-  impl::Any
-  mod::Any
-  FinSet(i::T, m::M{T}) where {T<:FinSetImpl} = 
-    implements(m, ThFinSet) ? new(i, m) : throw(MethodError("Bad model $i $m"))
+  impl::FinSetImpl
+  FinSet(i::FinSetImpl) = implements(i, ThFinSet) ? new(i) : throw(MethodError(
+    "Bad model $i"))
 end
 
-GATlab.getvalue(f::FinSet) = f.impl
+getvalue(f::FinSet) = f.impl
 
-getmodel(f::FinSet) = f.mod
+Base.in(e, f::FinSet) = ThFinSet.in′[getvalue(f)](e)
 
-Base.in(e, f::FinSet) = ThFinSet.in′[getmodel(f)](e, getvalue(f))
-
-Base.length(f::FinSet) = ThFinSet.length′[getmodel(f)](getvalue(f))
+Base.length(f::FinSet) = ThFinSet.length′[getvalue(f)]()
 
 Base.iterate(f::FinSet, args...) = 
-  ThFinSet.iterate′[getmodel(f)](getvalue(f), args...)
+  ThFinSet.iterate′[getvalue(f)](args...)
 
-Base.eltype(s::FinSet) = ThFinSet.eltype′[getmodel(s)](getvalue(s))
+Base.eltype(s::FinSet) = ThFinSet.eltype′[getvalue(s)]()
 
 # Normally we would have to migrate the model, but because the sorts are the 
 # same between the two theories, this is unnecessary.
 """ Explicitly cast FinSet as SetOb. This will always succeed. """
-SetOb(f::FinSet) = SetOb(f.impl, getmodel(f)) # migrate_model(ι, f.mod)) 
+# SetOb(f::FinSet) = SetOb(f.impl, getmodel(f)) # migrate_model(ι, f.mod)) 
 
 """ Attempt to cast SetOb to FinSet ... this can throw runtime error."""
-FinSet(s::SetOb) = FinSet(s.impl, s.mod) 
+# FinSet(s::SetOb) = FinSet(s.impl, s.mod) 
 
 FinSet(set::FinSet) = set
 
@@ -82,20 +84,17 @@ A set {1,2,...,n} represented by a single `Int`
   n::Int
 end 
 
+getvalue(f::FinSetInt) = f.n
+
 Base.show(io::IO, set::FinSetInt) = print(io, "FinSet($(set.n))")
 
-@struct_hash_equal struct FinSetIntImpl <: M{FinSetInt} end
-
-@instance ThFinSet{Bool, Int, Any, FinSetInt} [model::FinSetIntImpl] begin
-  in′(i::Any, s::FinSetInt)::Bool = i isa Int && 0 < i ≤ s.n
-  eltype′(s::FinSetInt)::Any = Int
-  length′(s::FinSetInt)::Int = s.n
-  iterate′(s::FinSetInt)::Any = iterate(1:s.n)
-  iterate′(s::FinSetInt, x::Any)::Any = iterate(1:s.n, x)
+@instance ThFinSet{Bool, Any, Int} [model::FinSetInt] begin
+  in′(i::Any)::Bool = i isa Int && 0 < i ≤ getvalue(model)
+  eltype′()::Any = Int
+  length′()::Int = getvalue(model)
+  iterate′()::Any = iterate(1:getvalue(model))
+  iterate′(x::Any)::Any = iterate(1:getvalue(model), x)
 end
-
-""" Default `ThFinSet` model for a FinSetInt` """
-FinSet(i::FinSetInt) = FinSet(i, FinSetIntImpl())
 
 """ Default model for a finset made out of a Julia `Int` """
 FinSet(i::Int) = FinSet(FinSetInt(i))
@@ -115,7 +114,7 @@ A Julia finite set.
   set::Set{T}
 end 
 
-GATlab.getvalue(f::FinSetHash) = f.set
+getvalue(f::FinSetHash) = f.set
 
 function Base.show(io::IO, set::FinSetHash)
   print(io, "FinSet(")
@@ -123,19 +122,16 @@ function Base.show(io::IO, set::FinSetHash)
   print(io, ")")
 end
 
-@struct_hash_equal struct FinSetHashImpl{T} <: M{FinSetHash{T}} end
-
-@instance ThFinSet{Bool, Int, Any, FinSetHash{T}
-                  } [model::FinSetHashImpl{T}] where T begin
-  in′(i::Any, s::FinSetHash{T})::Bool = i ∈ s.set
-  eltype′(s::FinSetHash{T}) = T
-  length′(s::FinSetHash{T})::Int = length(s.set)
-  iterate′(s::FinSetHash{T})::Any = iterate(s.set)
-  iterate′(s::FinSetHash{T}, x::Any)::Any = iterate(s.set, x)
+@instance ThFinSet{Bool, Any, Int} [model::FinSetHash{T}] where T begin
+  in′(i::Any)::Bool = i ∈ getvalue(model)
+  eltype′() = T
+  length′()::Int = length(getvalue(model))
+  iterate′()::Any = iterate(getvalue(model))
+  iterate′(x::Any)::Any = iterate(getvalue(model), x)
 end
 
 """ Default model for a finset made out of a Julia `Set` """
-FinSet(s::Set{T}) where T = FinSet(FinSetHash(s), FinSetHashImpl{T}())
+FinSet(s::Set{T}) where T = FinSet(FinSetHash(s))
 
 # EitherFinSet
 #-------------
@@ -146,18 +142,19 @@ FinSet(s::Set{T}) where T = FinSet(FinSetHash(s), FinSetHashImpl{T}())
   right::FinSet
 end
 
-@struct_hash_equal struct EitherFinSetImpl  <: M{EitherFinSet} end
+left(e::EitherFinSet) = e.left
+right(e::EitherFinSet) = e.right
 
-@instance ThFinSet{Bool, Int, Any, EitherFinSet} [model::EitherFinSetImpl] begin
-  in′(i::Any, s::EitherFinSet)::Bool = i ∈ s.left || i ∈ s.right
-  eltype′(f::EitherFinSet)::Any = Union{eltype(s.left), eltype(s.right)}
-  length′(s::EitherFinSet)::Int = length(s.left) + length(s.right)
-  iterate′(s::EitherFinSet)::Any = iterate([s.left...,s.right...])
-  iterate′(s::EitherFinSet, x::Any)::Any = iterate([s.left...,s.right...], x)
+@instance ThFinSet{Bool, Any, Int} [model::EitherFinSet] begin
+  in′(i::Any)::Bool = i ∈ left(model) || i ∈ right(model)
+  eltype′()::Any = Union{eltype(left(model)), eltype(right(model))}
+  length′()::Int = length(left(model)) + length(right(model))
+  iterate′()::Any = iterate([left(model)...,right(model)...])
+  iterate′(x::Any)::Any = iterate([left(model)...,right(model)...], x)
 end
 
-""" Default model for an eitherset """
-FinSet(s::EitherFinSet) = FinSet(s, EitherFinSetImpl())
+""" Default model for a pair of finsets """
+FinSet(s::FinSet, r::FinSet) = FinSet(EitherFinSet(s, r))
 
 
 """ Finite set whose elements are rows of a table.
@@ -176,18 +173,16 @@ see the Tables.jl documentation for further discussion.
   end
 end
 
-GATlab.getvalue(t::TabularSet) = t.table
+getvalue(t::TabularSet) = t.table
 
-@struct_hash_equal struct TabularSetImpl  <: M{TabularSet} end
-
-@instance ThFinSet{Bool, Int, Any, TabularSet} [model::TabularSetImpl] begin
-  in′(i::Any, s::TabularSet)::Bool = i ∈ getvalue(s)
-  eltype′(f::TabularSet)::Any = f.T
-  length′(s::TabularSet)::Int = Tables.rowcount(s.table)
-  iterate′(s::TabularSet)::Any = 
-    iterate(Tables.namedtupleiterator(getvalue(s)))
-  iterate′(s::TabularSet, x::Any)::Any = 
-    iterate(Tables.namedtupleiterator(getvalue(s)), x)
+@instance ThFinSet{Bool, Any, Int} [model::TabularSet] begin
+  in′(i::Any)::Bool = i ∈ getvalue(model)
+  eltype′()::Any = model.T
+  length′()::Int = Tables.rowcount(getvalue(model))
+  iterate′()::Any = 
+    iterate(Tables.namedtupleiterator(getvalue(model)))
+  iterate′(x::Any)::Any = 
+    iterate(Tables.namedtupleiterator(getvalue(model)), x)
 end
 
 function Base.show(io::IO, set::TabularSet)
@@ -213,7 +208,9 @@ function Base.show(io::IO, ::MIME"text/html", set::TabularSet)
 end
 
 """ Default kind of FinSet for a `NamedTuple` """
-FinSet(nt::NamedTuple) = FinSet(TabularSet(nt), TabularSetImpl())
+FinSet(nt::NamedTuple) = FinSet(TabularSet(nt))
 
+# FinCat forgetful functor to Set
+Ob(C::FinCat{Int}) = FinSet(length(ob_generators(C)))
 
 end # module
