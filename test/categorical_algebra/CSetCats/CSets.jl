@@ -16,82 +16,6 @@ end
 end
 @acset_type SetAttr(SchSetAttr)
 
-# Sets interop
-##############
-
-g = Graph(6)
-add_edges!(g, 2:4, 3:5)
-@test FinSet(g, :V) == FinSet(6)
-f = FinFunction(g, :V)
-@test collect(f) == 1:6
-# @test is_indexed(f)
-f = FinFunction(g, :src)
-@test codom(f) == FinSet(6)
-@test collect(f) == 2:4
-# @test is_indexed(f)
-
-f = FinDomFunction(g, :E)
-@test collect(f) == 1:3
-# @test is_indexed(f)
-f = FinDomFunction(g, :tgt)
-@test codom(f) == TypeSet(Int)
-@test collect(f) == 3:5
-# @test is_indexed(f)
-
-g = path_graph(WeightedGraph{Float64}, 3, E=(weight=[0.5, 1.5],))
-@test TypeSet(g, :Weight) == TypeSet(Float64)
-@test TypeSet(g, :V) == TypeSet(Int)
-@test_throws ArgumentError TypeSet(g, :W)
-
-f = FinDomFunction(g, :weight)
-@test codom(f) == TypeSet(Float64)
-@test collect(f) == [0.5, 1.5]
-
-# Dynamic ACSets 
-################
-
-X,Y = [DynamicACSet("WG", SchWeightedGraph; type_assignment=Dict(:Weight=>Float64)) 
-      for _ in 1:2]
-add_parts!(X, :V, 2)
-add_parts!(X, :E, 3; src=[1,1,2],tgt=[2,1,1,],weight=[4.,3.,4.])
-add_parts!(Y, :V, 2)
-add_part!(Y, :E; src=1, tgt=2, weight=4.)
-
-f = ACSetTransformation(X,X; V=[1,2], E=[1,2,3])
-@test is_natural(f)
-@test !is_natural(ACSetTransformation(X,X; V=[2,1], E=[1,2,3])) # bad homs
-@test !is_natural(ACSetTransformation(X,X; V=[1,1], E=[2,1,3])) # bad attrs
-@test components(f) == (V=FinFunction([1,2]), E=FinFunction([1,2,3]), 
-                        Weight=VarFunction{Float64}([], FinSet(0)))
-
-@test_throws ErrorException ACSetTransformation(Y,X; V=[1,2], E=1)
-g = ACSetTransformation(Y,X; V=[1,2], E=[1])
-@test is_natural(g)
-@test compose(g,f) |> force == g
-
-G, H = [DynamicACSet("Grph",SchGraph) for _ in 1:2];
-add_parts!(G, :V, 2); 
-add_parts!(H,:V,2);
-add_part!(G, :E; src=1, tgt=2)
-add_parts!(H, :E,2; src=[1,2], tgt=[1,2])
-hs = homomorphisms(G,H)
-@test length(hs) == 2
-@test all(is_natural, hs)
-
-@test is_natural(id(G))
-
-G, H, expected =[DynamicACSet("WG", SchWeightedGraph; type_assignment=Dict(:Weight=>Float64)) 
-                 for _ in 1:3]
-add_parts!(G, :V, 2); 
-add_parts!(H, :V, 2);
-add_parts!(expected, :V, 3);
-add_part!(G, :E; src=1, tgt=2, weight=1.0)
-add_parts!(H, :E,2; src=[1,2], tgt=[1,2], weight=1.0)
-add_parts!(expected, :E, 3; src=[1,2,3], tgt=[1,2,3], weight=1.0)
-h1,h2 = homomorphisms(G,H)
-clim = colimit(Span(h1,h2));
-@test apex(clim) == expected
-
 # C-set morphisms
 #################
 
@@ -806,6 +730,52 @@ expected = @acset WeightedGraph{Float64} begin V=6; E=7;
   src=[1,1,2,3,3,4,5]; tgt=[2,3,4,4,5,6,6]; weight=[-5,-2,-2,-5,-3,-3,-5]
 end
 @test is_isomorphic(apex(ABC),expected)
+
+
+# Dynamic ACSets 
+################
+
+X,Y = [DynamicACSet("WG", SchWeightedGraph; type_assignment=Dict(:Weight=>Float64)) 
+      for _ in 1:2]
+add_parts!(X, :V, 2)
+add_parts!(X, :E, 3; src=[1,1,2],tgt=[2,1,1,],weight=[4.,3.,4.])
+add_parts!(Y, :V, 2)
+add_part!(Y, :E; src=1, tgt=2, weight=4.)
+
+f = ACSetTransformation(X,X; V=[1,2], E=[1,2,3])
+@test is_natural(f)
+@test !is_natural(ACSetTransformation(X,X; V=[2,1], E=[1,2,3])) # bad homs
+@test !is_natural(ACSetTransformation(X,X; V=[1,1], E=[2,1,3])) # bad attrs
+@test components(f) == (V=FinFunction([1,2]), E=FinFunction([1,2,3]), 
+                        Weight=VarFunction{Float64}([], FinSet(0)))
+
+@test_throws ErrorException ACSetTransformation(Y,X; V=[1,2], E=1)
+g = ACSetTransformation(Y,X; V=[1,2], E=[1])
+@test is_natural(g)
+@test compose(g,f) |> force == g
+
+G, H = [DynamicACSet("Grph",SchGraph) for _ in 1:2];
+add_parts!(G, :V, 2); 
+add_parts!(H,:V,2);
+add_part!(G, :E; src=1, tgt=2)
+add_parts!(H, :E,2; src=[1,2], tgt=[1,2])
+hs = homomorphisms(G,H)
+@test length(hs) == 2
+@test all(is_natural, hs)
+
+@test is_natural(id(G))
+
+G, H, expected =[DynamicACSet("WG", SchWeightedGraph; type_assignment=Dict(:Weight=>Float64)) 
+                 for _ in 1:3]
+add_parts!(G, :V, 2); 
+add_parts!(H, :V, 2);
+add_parts!(expected, :V, 3);
+add_part!(G, :E; src=1, tgt=2, weight=1.0)
+add_parts!(H, :E,2; src=[1,2], tgt=[1,2], weight=1.0)
+add_parts!(expected, :E, 3; src=[1,2,3], tgt=[1,2,3], weight=1.0)
+h1,h2 = homomorphisms(G,H)
+clim = colimit(Span(h1,h2));
+@test apex(clim) == expected
 
 # Mark as deleted
 #################

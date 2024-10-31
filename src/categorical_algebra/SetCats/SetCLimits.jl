@@ -1,8 +1,8 @@
 module SetCLimits 
 
 using GATlab
-using ..Sets: AbsSet
-using ..SetFunctions: SetC, SetFunction
+using ...BasicSets.Sets: AbsSet
+using ...BasicSets.SetFunctions: SetC, SetFunction
 using ....Theories: ThCartesianCategory
 using ...Cats.Limits: @cartesian_monoidal_instance
 

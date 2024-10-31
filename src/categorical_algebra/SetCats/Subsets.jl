@@ -8,9 +8,9 @@ using GATlab
 
 using ...Cats.Subobjects 
 import ...Cats.Subobjects: Subobject, meet, join, top, bottom
-using ..FinSets, ..FinFunctions
-using ..SetFunctions: SetC
-import ..FinFunctions: force
+using ...BasicSets.FinSets, ...BasicSets.FinFunctions
+using ...BasicSets.SetFunctions: SetC
+import ...BasicSets.FinFunctions: force
 using ....Theories: dom, codom
 import ....Theories: ob, hom
 

@@ -86,48 +86,10 @@ Base.show(io::IO, m::AbsCat) = Base.show(io, getvalue(m))
 # Implementations
 #----------------
 
-""" A TypeCat is just a wrapper around a model of a Category """
-@struct_hash_equal struct TypeCat{Ob,Hom} <: CatImpl{Ob,Hom}
-  m::Model{Tuple{Ob,Hom}}
-  function TypeCat(m::Model{Tuple{Ob,Hom}}) where {Ob,Hom}
-    implements(m, ThCategory) ? new{Ob,Hom}(m) : error("Bad model")
-  end 
-end
+include("CatImpls/TypeCat.jl")
 
-getvalue(c::TypeCat) = c.m
+include("CatImpls/OpCat.jl")
 
-
-@instance ThCategory{Ob,Hom} [model::TypeCat{Ob,Hom}] where {Ob,Hom} begin
-  dom(f::Hom) = dom[getvalue(model)](f)
-  codom(f::Hom) = codom[getvalue(model)](f)
-  id(x::Ob) = id[getvalue(model)](x)
-  compose(f::Hom,g::Hom) = compose[getvalue(model)](f,g)
-end
-
-
-Category(m::Model{Tuple{Ob,Hom}}) where {Ob, Hom} = Category(TypeCat(m))
-
-""" Opposite category, where morphism are reversed.
-
-Call `op(::Cat)` instead of directly instantiating this type.
-"""
-@struct_hash_equal struct OppositeCat{Ob,Hom} <: CatImpl{Ob,Hom}
-  cat::Category{Ob,Hom}
-end
-
-getvalue(c::OppositeCat) = c.cat
-
-op(c::Cat) = Category(OppositeCat(c))
-
-@instance ThCategory{Ob,Hom} [model::OppositeCat{Ob,Hom}] where {Ob,Hom} begin
-  dom(f::Hom) = codom(getvalue(model), f)
-
-  codom(f::Hom) = dom(getvalue(model), f)
-
-  id(x::Ob) = id(getvalue(model), x)
-
-  compose(f::Hom,g::Hom) = compose(getvalue(model), g, f)
-end
 
 # Functors
 ##########
@@ -167,7 +129,7 @@ abstract type AbsFunctorImpl{DO,CO,DH,CH,DG,CG,DC,CC} <: F{DO,CO,DH,CH,DG,CG,DC,
 abstract type FunctorImpl{DO,CO,DH,CH,DC,CC} <: AbsFunctorImpl{DO,CO,DH,CH,DH,CH,DC,CC} end
 
 """
-
+Wrapper of an implementation of ThFunctor
 """
 @struct_hash_equal struct Functor{DO,CO,DH,CH,DG,CG,DC,CC
                                  } <: AbsFunctor{DO,CO,DH,CH,DG,CG,DC,CC}
@@ -183,7 +145,7 @@ abstract type FunctorImpl{DO,CO,DH,CH,DC,CC} <: AbsFunctorImpl{DO,CO,DH,CH,DH,CH
 end 
 
 Functor(impl::AbsFunctorImpl{DO,CO,DH,CH,DG,CG,DC,CC}
-       ) where {DO,CO,DH,CH,DG,CG,DC,CC} = Functor{DO,CO,DH,CH,DG,CG,DC,CC}(impl)
+  ) where {DO,CO,DH,CH,DG,CG,DC,CC} = Functor{DO,CO,DH,CH,DG,CG,DC,CC}(impl)
 
 Functor(impl::FunctorImpl{DO,CO,DH,CH,DC,CC}) where {DO,CO,DH,CH,DC,CC} = 
   Functor{DO,CO,DH,CH,DH,CH,DC,CC}(impl)
@@ -227,121 +189,13 @@ end
 
 # Implementations
 #----------------
+include("FunctorImpls/IdFunctor.jl")
 
-""" Identity functor on a category.
-"""
-@struct_hash_equal struct IdentityFunctor{Ob,Hom,T<:AbsCat{Ob,Hom}
-                                         } <: FunctorImpl{Ob,Ob,Hom,Hom,T,T}
-  dom::T
-end
+include("FunctorImpls/CompFunctor.jl")
 
-Functor(c::AbsCat) = Functor(IdentityFunctor(c))
+include("FunctorImpls/CallFunctor.jl")
 
-function Base.show(io::IO, F::IdentityFunctor)
-  print(io, "id(")
-  #show_domains(io, F, codomain=false)
-  print(io, ")")
-end
-
-@instance ThFunctor{O,O,H,H,H,H,T,T} [model::IdentityFunctor{O,H,T}] where {O,H,T} begin 
-  dom() = model.dom
-
-  codom() = model.dom
-
-  ob_map(x::O) = x
-
-  hom_map(x::H) = x
-end
-
-""" Composite of functors.
-"""
-@struct_hash_equal struct CompositeFunctor{AO,BO,CO,AH,BH,CH,AG,BG,CG,AC,BC,CC
-                                          } <: AbsFunctorImpl{AO,CO,AH,BH,AG,CG,AC,CC}
-  fst::Functor{AO,BO,AH,BH,AG,BG,AC,BC}
-  snd::Functor{BO,CO,BH,CH,BG,CG,BC,CC}
-end
-
-Base.first(F::CompositeFunctor) = F.fst
-
-Base.last(F::CompositeFunctor) = F.snd
-
-@instance ThFunctor{AO,CO,AH,CH,AG,CG,AC,BC
-                    } [model::CompositeFunctor{AO,BO,CO,AH,BH,CH,AG,BG,CG,AC,BC,CC}
-                      ] where {AO,BO,CO,AH,BH,CH,AG,BG,CG,AC,BC,CC} begin 
-  dom() = dom(first(model))
-
-  codom() = codom(last(model))
-
-  ob_map(x::AO) = ob_map(last(model), ob_map(first(model), x))
-
-  hom_map(x::AG) = hom_map(last(model), hom_map(first(model), x))
-end
-
-function Base.show(io::IO, F::CompositeFunctor)
-  print(io, "compose(")
-  show(io, first(F))
-  print(io, ", ")
-  show(io, last(F))
-  print(io, ")")
-end
-
-""" Functor defined by two Julia callables, an object map and a morphism map.
-"""
-@struct_hash_equal struct FunctorCallable{
-    DO,CO,DH,CH,DC<:AbsCat{DO,DH},CC<:AbsCat{CO,CH}
-    } <: FunctorImpl{DO,CO,DH,CH,DC,CC}
-  ob_map::Any
-  hom_map::Any
-  dom::DC
-  codom::CC
-end
-
-@instance ThFunctor{DO,CO,DH,CH,DH,CH,CC,DC
-                   } [model::FunctorCallable{DO,CO,DH,CH,CC,DC}
-                     ] where {DO,CO,DH,CH,CC,DC} begin 
-  dom() = model.dom
-
-  codom() = model.codom
-
-  ob_map(x::DO) = model.ob_map(x) 
-
-  hom_map(f::DH) = model.hom_map(f)
-end
-
-Functor(f::Function, g::Function, C::Cat{DO,DH}, D::Cat{CO,CH}
-       ) where {DO,CO,DH,CH} = Functor(FunctorCallable(f, g, C, D))
-
-
-""" Opposite functor, given by the same mapping between opposite categories.
-
-Call `op(::Functor)` instead of directly instantiating this type.
-"""
-@struct_hash_equal struct OppositeFunctor{DO,CO,DH,CH,DG,CG,DC,CC
-                                         } <: AbsFunctorImpl{DO,CO,DH,CH,DG,CG,DC,CC}
-  func::Functor{DO,CO,DH,CH,DG,CG,DC,CC}
-end
-
-getvalue(F::OppositeFunctor) = F.func
-
-op(f::Functor) = if getvalue(f) isa OppositeFunctor 
-  getvalue(getvalue(f)) # optimization
-else 
-  Functor(OppositeFunctor(f))
-end
-
-@instance ThFunctor{DO,CO,DH,CH,DG,CG,DC,CC} [model::OppositeFunctor{DO,CO,DH,CH,DG,CG,DC,CC}
-                                       ] where {DO,CO,DH,CH,DG,CG,DC,CC} begin 
-  dom() = op(dom(getvalue(model)))
-
-  codom() = op(codom(getvalue(model)))
-
-  ob_map(x::DO) = ob_map(getvalue(model), x) 
-
-  hom_map(f::DG) = hom_map(getvalue(model), f) 
-end
-
-# do_compose(F::OppositeFunctor, G::OppositeFunctor) =
-#   OppositeFunctor(do_compose(F.func, G.func))
+include("FunctorImpls/OpFunctor.jl")
 
 # Category of Categories
 ########################
@@ -420,26 +274,8 @@ codom_ob(α::Transformation) = codom(dom(α)) # == codom(codom(α))
 # Implementations
 #----------------
 
-@struct_hash_equal struct IdentityTransformation{DO,CO,DH,CH} <: NatTransImpl{DO,CO,DH,CH}
-  dom::Functor{DO,CO,DH,CH}
-end
-
-Transformation(f::Functor) = Transformation(IdentityTransformation(f))
-Transformation(C::Cat) = Transformation(Functor(C))
-
-
-@instance ThTransformation{DO,CO,DH,CH,Functor{DO,CO,DH,CH},Functor{DO,CO,DH,CH}
-                          } [model::IdentityTransformation{DO,CO,DH,CH}
-                            ] where {DO,CO,DH,CH} begin
-  codom() = model.dom
-  dom() = model.dom
-  component(x::DO) = let F = dom[model](); id(codom(F), ob_map(F, x)) end
-end 
-
-
-IdentityTransformation(C::Cat{Ob,Hom}) where {Ob,Hom} = 
-  IdentityTransformation(IdentityFunctor(C))
-
+include("NatTransImpls/IdTrans.jl")
+  
 
 # # 2-category of categories
 # ##########################
@@ -456,7 +292,7 @@ struct Cat2 <: Model{Tuple{Cat,Functor,Transformation}} end
   end
 
   dom(α::Transformation) = ThTransformation.dom[getvalue(α)]()
-  codom(α::Transformation) =ThTransformation.codom[getvalue(α)]()
+  codom(α::Transformation) = ThTransformation.codom[getvalue(α)]()
   id(F::Functor) = Transformation(F)
 
   function compose(α::Transformation, β::Transformation)
@@ -475,10 +311,6 @@ end
 
 
 # TODO: port over the rest of 2 category code
-# if false 
-
-
-
 # # XXX: Is this normalization of identities using multiple dispatch a good idea?
 # # Unlike in `Sets`, it doesn't feel great since it requires so much boilerplate.
 
@@ -525,38 +357,6 @@ end
 #   compose_id(composeH_id(F, β), composeH_id(α, K))
 # end
 
-# # Oppositization 2-functor
-# #-------------------------
-
-
-
-# #= Not yet needed because the only natural transformations we currently support
-# #are `FinTransformationMap`, for which can just implement `op` directly.
-
-# """ Opposite natural transformation between opposite functors.
-
-# Call `op(::Transformation)` instead of directly instantiating this type.
-# """
-# @struct_hash_equal struct OppositeTransformation{C,D,F,G,T<:Transformation{C,D,F,G}} <: Transformation{C,D,F,G}
-#     # XXX: Requires more type parameters: ObC, HomC, ObD, HomD.
-#     #Transformation{OppositeCat{C},OppositeCat{D},OppositeFunctor{C,D,G},OppositeFunctor{C,D,F}}
-#   trans::T
-# end
-
-# dom(α::OppositeTransformation) = op(codom(α.trans))
-# codom(α::OppositeTransformation) = op(dom(α.trans))
-
-# component(α::OppositeTransformation, x) = component(α.trans, x)
-
-# do_compose(α::OppositeTransformation, β::OppositeTransformation) =
-#   OppositeTransformation(do_compose(β.trans, α.trans))
-# do_composeH(α::OppositeTransformation, β::OppositeTransformation) =
-#   OppositeTransformation(do_composeH(α.trans, β.trans))
-# do_composeH(F::OppositeFunctor, β::OppositeTransformation) =
-#   OppositeTransformation(do_composeH(F.func, β.trans))
-# do_composeH(α::OppositeTransformation, H::OppositeFunctor) =
-#   OppositeTransformation(do_composeH(α.trans, H.func))
-# =#
 
 # """ Oppositization 2-functor.
 
@@ -572,9 +372,8 @@ end
 # op(F::OppositeFunctor) = F.func
 # #op(α::OppositeTransformation) = α.trans
 
-# """ 2-cell dual of a 2-category.
-# """
-# function co end
-# end 
+""" 2-cell dual of a 2-category.
+"""
+function co end
 
 end

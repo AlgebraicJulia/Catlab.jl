@@ -8,6 +8,13 @@ using Test
   include("Misc/FinRelations.jl")
 end
 
+@testset "BasicSets" begin 
+  include("BasicSets/Sets.jl")
+  include("BasicSets/SetFunctions.jl")
+  include("BasicSets/FinSets.jl")
+  include("BasicSets/FinFunctions.jl")
+end
+
 @testset "Categories" begin
   include("Cats/Categories.jl")
   # include("Cats/FreeDiagrams.jl") # really depends on C-Sets
@@ -19,10 +26,6 @@ end
 end
 
 @testset "Sets" begin
-  include("SetCats/Sets.jl")
-  include("SetCats/SetFunctions.jl")
-  include("SetCats/FinSets.jl")
-  include("SetCats/FinFunctions.jl")
   include("SetCats/Subsets.jl")
   include("SetCats/FinCLimits.jl")
 end

@@ -1,205 +1,19 @@
-module FinFunctions 
-export FinFunction, FinDomFunction, VarFunction, preimage, is_indexed,
-       FinFunctionVector, FinFunctionDict, IndexedFinFunctionVector, 
-       is_monic, is_epic, is_iso, AttrVal, AttrC
+module VarFunctions 
 
+export VarFunction, AttrVal, AttrC
 
-using StructEquality, DataStructures
-import StaticArrays
-# using StaticArrays: StaticVector, SVector, SizedVector, similar_type
+using StructEquality
+
 using GATlab
 import GATlab: getvalue
 
-import ACSets.Columns: preimage
-import AlgebraicInterfaces: dom, codom
-
-import ....Theories: dom, codom, Ob 
-
-using ..Sets, ..SetFunctions, ..FinSets
-using ..Sets: SetImpl
-using ..SetFunctions: SetFunctionImpl, ThSetFunction, ConstEither
-using ...Cats.Categories: Functor
-import ...Cats.FreeDiagrams: left, right
-using ...Cats.FinFunctors: FinFunctor, collect_ob
-import ..SetFunctions: force
-
-# Finite functions
-##################
-
-""" Function between finite sets.
-
-The function can be defined implicitly by an arbitrary Julia function, in which
-case it is evaluated lazily, or explictly by a vector of integers. In the vector
-representation, the function (1↦1, 2↦3, 3↦2, 4↦3), for example, is represented
-by the vector [1,3,2,3].
-
-FinFunctions can be constructed with or without an explicitly provided codomain.
-If a codomain is provided, by default the constructor checks it is valid.
-
-This type is mildly generalized by [`FinDomFunction`](@ref).
-"""
-const FinFunction = SetFunction{FinSet,FinSet}
-
-const FinDomFunction = SetFunction{FinSet}
-
-
-# These could be made to fail early if ever used in performance-critical areas
-is_epic(f::FinFunction) = length(codom(f)) == length(Set(values(collect(f))))
-
-is_monic(f::FinDomFunction) = length(dom(f)) == length(Set(values(collect(f))))
-
-is_iso(f::FinDomFunction) = is_monic(f) && is_epic(f)
-
-Base.iterate(f::FinDomFunction, xs...) = iterate(f.(dom(f)), xs...)
-
-Base.length(f::FinDomFunction) = length(dom(f))
-
-# Indexing 
-##########
-
-""" Preimage of a FinDomFunction """
-preimage(f::FinDomFunction, x) = if x ∈ codom(f)
-  is_indexed(f) && return preimage(getvalue(f), x) # use cached value
-  filter(y -> f(y) == x, collect(dom(f)))
-else
-  error("Cannot take preimage: $x not found in codomain of $f") 
-end
-
-is_indexed(f::SetFunction) = is_indexed(getvalue(f))
-
-is_indexed(::T) where {T<:SetFunctionImpl} = 
-  !isempty(methods(preimage, (T, Any)))
-
-""" Try to index the function, if it isn't already """
-function ensure_indexed(f::FinDomFunction)
-  is_indexed(f) && return f
-  if getvalue(f) isa FinFunctionVector
-    return FinDomFunction(collect(f), codom(f); index=true)
-  end
-  f # error("Cannot index $(getvalue(f))")
-end
-
-# Implementations
-#################
-
-# FinFunctionVector
-#------------------
-abstract type AbsFinFunctionVector <: SetFunctionImpl end
-
-""" 
-Implicitly domain is `FinSet(length(v))`
-"""
-@struct_hash_equal struct FinFunctionVector <: AbsFinFunctionVector
-  val::Vector
-  codom::AbsSet
-end
-
-"""  Implicitly domain is `FinSet(length(v))` """
-@struct_hash_equal struct IndexedFinFunctionVector <: AbsFinFunctionVector
-  val::Vector
-  codom::AbsSet
-  index::DefaultDict
-  """ Create the index cache upon creating the vector """
-  function IndexedFinFunctionVector(v, c)
-    index = DefaultDict{eltype(c), Vector{Int}}(()->[])
-    for (i, x) in enumerate(v)
-      push!(index[x], i)
-    end
-    new(v, c, index)
-  end
-end
-
-preimage(f::IndexedFinFunctionVector, x) = f.index[x]
-
-FF(i::Bool) = i ? IndexedFinFunctionVector : FinFunctionVector
-
-getvalue(f::AbsFinFunctionVector) = f.val
-
-function Base.show(io::IO, f::AbsFinFunctionVector)
-  print(io, "Fin")
-  f.codom isa FinSet || print(io, "Dom")  
-  print(io, "Function($(getvalue(f)), ")
-  print(io, f.codom)
-  is_indexed(f) &&  print(io, ", index=true")
-  print(io, ")")
-end
-
-@instance ThSetFunction{Any, AbsSet, SetFunction} [model::T] where {T<:AbsFinFunctionVector} begin
-  dom()::AbsSet = FinSet(length(getvalue(model)))
-  codom()::AbsSet = model.codom
-  app(i::Any)::Any = getvalue(model)[i]
-  function postcompose(f::SetFunction)::SetFunction
-    FinDomFunction(FF(is_indexed(model))(f.(getvalue(model)), codom(f)))
-  end
-end
-
-""" 
-Default `FinFunction` or `FinDomFunction` from a `AbstractVector` and codom
-"""
-FinFunction(f::AbstractVector, cod::FinSet; index=false) = 
-  FinFunction(FF(index)(f, cod))
-
-FinDomFunction(f::AbstractVector, cod::AbsSet; index=false) = 
-  FinDomFunction(FF(index)(f, cod))
-
-const Maybe{T} = Union{T, Nothing}
-
-""" Default `FinFunction` between `FinSetInt`s. """
-FinFunction(f::AbstractVector{Int}, cod::Maybe{Int}=nothing; index=false) = 
-  FinFunction(f, FinSet(isnothing(cod) ? maximum(f) : cod); index)
-  
-FinDomFunction(f::AbstractVector, cod::Maybe{Int}=nothing; index=false) = 
-  FinFunction(f, isnothing(cod) ? maximum(f) : cod; index)
-
-""" Explicitly pass domain and check it's correct """
-FinFunction(f::AbstractVector, dom::Int, cod::Int; index=false) = 
-  length(f) == dom ? FinFunction(f, FinSet(cod); index) : error(
-    "Mismatched dom=$dom for vector $f ($(length(f)))")
-
-# FinFunctionDict
-#----------------
-
-""" 
-Valid function when domain is indexed by positive integers less than the 
-vector length.
-"""
-@struct_hash_equal struct FinFunctionDict <: SetFunctionImpl
-  val::Dict
-  codom::AbsSet
-end
-
-getvalue(f::FinFunctionDict) = f.val
-
-function Base.show(io::IO, f::FinFunctionDict)
-  print(io, "Fin")
-  f.codom isa FinSet || print(io, "Dom")  
-  print(io, "Function($(getvalue(f)), ")
-  print(io, f.codom)
-  print(io, ")")
-end
-
-
-@instance ThSetFunction{Any, AbsSet, SetFunction} [model::FinFunctionDict] begin
-  dom()::AbsSet = FinSet(Set(collect(keys(getvalue(model)))))
-
-  codom()::AbsSet = model.codom
-
-  app(i::Any, )::Any = getvalue(model)[i]
-
-  postcompose(g::SetFunction)::SetFunction = 
-    FinDomFunction(FinFunctionDict(Dict(k => g(v) for (k,v) in getvalue(model)), 
-                                   codom(g)))
-end
-  
-""" Default `FinFunction` from a `AbstractDict`"""
-FinFunction(f::AbstractDict) = FinFunction(f, FinSet(Set(values(f))))
-
-""" Default `FinFunction` from a `AbstractDict` and codom"""
-FinFunction(f::AbstractDict, cod::FinSet) = 
-  FinFunction(FinFunctionDict(f, cod))
-
-FinDomFunction(f::AbstractDict, cod::SetOb) = 
-  FinDomFunction(FinFunctionDict(f, cod))
+using ...BasicSets.Sets, ...BasicSets.SetFunctions, ...BasicSets.FinSets, ...BasicSets.FinFunctions
+using ...BasicSets.Sets: SetImpl
+import ....Theories: dom, codom 
+import ...BasicSets.Sets: left, right
+using ...BasicSets.SetFunctions: ThSetFunction, ConstEither
+import ...BasicSets.FinSets: force
+import ...BasicSets.FinFunctions: preimage, is_monic, is_epic
 
 
 # VarFunctions
@@ -416,8 +230,5 @@ end
 dom(f::VarFunction{T}) where T  = dom[AttrC{T}()](f)
 
 codom(f::VarFunction{T}) where T  = codom[AttrC{T}()](f)
-
-# Forgetful functor Cat to Set
-Ob(F::FinFunctor{Int}) = FinDomFunction(collect_ob(F), Ob(codom(F)))
 
 end # module

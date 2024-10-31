@@ -6,10 +6,10 @@ using ACSets: incident, copy_parts!
 using GATlab: ThCategory
 using .ThCategory
 
-using ...Cats.Limits, ...Cats.FreeDiagrams, ..FinFunctions,  ..FinSets
-using ..Sets: AbsSet, TypeSet, SetOb
-using ..SetFunctions: SetC, SetFunction, ConstantFunction
-using ..FinFunctions: ensure_indexed
+using ...Cats.Limits, ...Cats.FreeDiagrams, ...BasicSets.FinFunctions,  ...BasicSets.FinSets
+using ...BasicSets.Sets: AbsSet, TypeSet, SetOb
+using ...BasicSets.SetFunctions: SetC, SetFunction, ConstantFunction
+using ...BasicSets.FinFunctions: ensure_indexed
 using ...Cats.FreeDiagrams: AbsBipartiteFreeDiagram, DiagramImpl, objects
 using ...Cats.Limits: LimitAlgorithm, NamedColimit, LimitImpl
 import ...Cats.Limits: limit, colimit, _universal, cone, ob

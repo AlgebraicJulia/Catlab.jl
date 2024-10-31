@@ -4,7 +4,7 @@ export Diagram, EmptyDiagram,SingletonDiagram, ObjectPair, DiscreteDiagram,
        ComposablePair, ComposableMorphisms, cocone_objects,
        Multispan, Multicospan, ParallelPair, diagram_type, cone_objects, 
        ParallelMorphisms, BipartiteFreeDiagram, apex, legs, feet, Span, Cospan, 
-       left, right, FreeDiagram, ob₁, ob₂, AbsBipartiteFreeDiagram, specialize
+       FreeDiagram, ob₁, ob₂, AbsBipartiteFreeDiagram, specialize
 
 using StructEquality
 using StaticArrays: StaticVector, SVector
@@ -12,6 +12,7 @@ using StaticArrays: StaticVector, SVector
 using GATlab, ACSets
 import ACSets: objects
 import ....Theories: ob, dom, codom, hom
+import ...BasicSets.Sets: left, right
 using ....Graphs
 import ....Graphs: add_vertices!, add_vertices₁!, add_vertices₂!, nv, ne, nv₁, nv₂, 
                   vertices, vertices₁, vertices₂, edges, src, tgt, rem_vertices₂!,
@@ -24,7 +25,16 @@ import ....Graphs: add_vertices!, add_vertices₁!, add_vertices₂!, nv, ne, nv
 (co)cone_objects()
 objects()
 """
-abstract type DiagramImpl{Ob,Hom} end 
+abstract type DiagramImpl{Ob,Hom} end
+
+# @theory ThFreeDiagram begin 
+#   Ob::TYPE
+#   Hom::TYPE
+#   Any′::TYPE
+#   objects()::Any′
+#   cone_objects()::Any′
+#   cocone_objects()::Any′
+# end
 
 diagram_type(::DiagramImpl{Ob,Hom}) where {Ob,Hom} = Tuple{Ob,Hom}
 

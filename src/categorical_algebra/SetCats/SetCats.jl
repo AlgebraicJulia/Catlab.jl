@@ -2,23 +2,16 @@ module SetCats
 
 using Reexport
 
-include("Sets.jl") # Categories
-include("SetFunctions.jl") # Sets
-include("FinSets.jl") # Sets
-include("FinFunctions.jl") # SetFunctions
 
+include("CatsInterop.jl") # SetFunctions
 include("SetCLimits.jl") # SetFunctions
 include("FinCLimits.jl") # Limits
-
 include("Subsets.jl") # Subobjects, FinSets
-
 include("GraphCategories.jl") # (not reexported)
+include("VarFunctions.jl") # (not reexported)
 
-@reexport using .Sets
-@reexport using .SetFunctions
-@reexport using .FinSets
-@reexport using .FinFunctions
 @reexport using .Subsets
+@reexport using .VarFunctions
 
 
 end # module

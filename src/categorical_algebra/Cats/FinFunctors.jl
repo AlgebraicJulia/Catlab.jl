@@ -1,6 +1,6 @@
 module FinFunctors 
 export FinFunctor, FinDomFunctor, is_functorial, functoriality_failures,
-        collect_ob, collect_hom, force, make_map,
+        collect_ob, collect_hom, make_map,
         FinTransformation, components, is_natural, is_initial,dom_to_graph
 
 using DataStructures: IntDisjointSets, in_same_set, num_groups
@@ -10,6 +10,9 @@ using GATlab
 using ....Theories: ObExpr, HomExpr, AttrExpr
 using ..FinCats, ..Categories
 using ..Categories: AbsCat, AbsFunctorImpl, ThFunctor
+import ..FreeDiagrams: FreeDiagram
+import ...BasicSets.SetFunctions: force
+
 # using ..FinCats: 
 
 # Functors
@@ -28,91 +31,9 @@ const FinDomFunctor{DO,CO,DH,CH,DG,CG,DC<:FinCat{DO,DH,DG},CC<:AbsCat{CO,CH}} =
 const FinFunctor{DO,CO,DH,CH,DG,CG,DC<:FinCat{DO,DH,DG},CC<:FinCat{CO,CH,CG}} = 
   Functor{DO,CO,DH,CH,DG,CG,DC,CC}
 
+
 # # Mapping-based functors
 # #-----------------------
-
-""" View Vectors equivalently as Int-keyed Dictionaries """
-const VD{K,V} = Union{AbstractVector{V},AbstractDict{K,V}}
-
-""" Functor out of a finitely presented category given by explicit mappings.
-"""
-@struct_hash_equal struct FinDomFunctorMap{DO,CO,DH,CH,DG,CG,
-    Dom<:FinCat{DO,DH,DG}, Codom<:AbsCat{CO,CH}, ObMap, HomMap
-    } <: FinDomFunctorImpl{DO,CO,DH,CH,DG,CG,Dom,Codom}
-  ob_map::ObMap
-  hom_map::HomMap
-  dom::Dom
-  codom::Codom
-end
-
-""" Construct FinDomFunctorMap from two vectors """
-FinDomFunctorMap(om::OM, hm::HM, d::D, c::C
-                ) where {DH,CO,CH,CG,OM<:AbstractVector{<:CO}, 
-                         HM<:AbstractVector{<:CH},D<:FinCat{Int,DH,Int},
-                         C<:FinCat{CO,CH,CG}} = 
-  FinDomFunctorMap{Int,CO,DH,CH,Int,CG,D,C,OM,HM}(om,hm,d,c)
-
-""" 
-Construct FinDomFunctorMap from two vectors. Hom vector given in terms of 
-codom generators. 
-"""
-function FinDomFunctorMap(om::OM, hm::HM, d::D, c::C
-                ) where {DH,CO,CH,CG,OM<:AbstractVector{<:CO}, 
-                         HM<:AbstractVector{<:AbstractVector{<:CG}},
-                         D<:FinCat{Int,DH,Int},
-                         C<:FinCat{CO,CH,CG}} 
-  v= CH[compose(c, h) for h in hm]
-  FinDomFunctorMap{Int,CO,DH,CH,Int,CG,D,C,OM,typeof(v)}(om,v,d,c)
-end 
-""" Construct FinDomFunctorMap from two dictionaries """
-FinDomFunctorMap(om::OM, hm::HM, d::D, c::C
-                ) where {DO,DH,DG,CO,CH,CG,OM<:AbstractDict{<:DO,<:CO}, 
-                         HM<:AbstractDict{<:DG,<:CH},D<:FinCat{DO,DH,DG},
-                         C<:FinCat{CO,CH,CG}} = 
-  FinDomFunctorMap{DO,CO,DH,CH,DG,CG,D,C,OM,HM}(om,hm,d,c)
-
-@instance ThFunctor{DO,CO,DH,CH,DG,CG,CC,DC
-                   } [model::FinDomFunctorMap{DO,CO,DH,CH,DG,CG,CC,DC,OM,HM}
-                     ] where {DO,CO,DH,CH,DG,CG,CC,DC,OM,HM} begin 
-  dom() = model.dom
-
-  codom() = model.codom
-
-  ob_map(x::DO) = model.ob_map[x]  
-
-  hom_map(f::DG) = model.hom_map[f]
-end
-
-function FinDomFunctor(ob_map::Union{<:AbstractVector,<:AbstractDict}, 
-                       hom_map::Union{<:AbstractVector,<:AbstractDict},
-                       dom::FinCat{DO,DH,DG}, 
-                       codom::Union{AbsCat{CO,CH},Nothing}=nothing
-                       ) where {DO,DH,DG,CO,CH}
-  length(ob_map) == length(ob_generators(dom)) ||
-    error("Length of object map $ob_map does not match domain $dom")
-  length(hom_map) == length(hom_generators(dom)) ||
-    error("Length of morphism map $hom_map does not match domain $dom")
-  # NOTE: removed the empty checks which avoid Julia blowing up the type
-  codom = isnothing(codom) ? Cat(TypeCat{CO,CH}()) : codom
-  FinDomFunctorMap(ob_map, hom_map, dom, codom) |> Functor
-end
-
-
-FinDomFunctor(maps::NamedTuple{(:V,:E)}, dom::FinCat, codom::AbsCat) =
-  if getvalue(dom) isa FinCatGraph 
-    FinDomFunctor(maps.V, maps.E, dom, codom)
-  else 
-    error("bad maps $maps for dom $dom")
-  end
-
-function FinDomFunctor(ob_map, dom::FinCat, codom::AbsCat{Ob,Hom}) where {Ob,Hom}
-  is_discrete(dom) ||
-    error("Morphism map omitted by domain category is not discrete: $dom")
-  FinDomFunctor(FinDomFunctorMap(ob_map, empty(ob_map, Hom), dom, codom))
-end
-
-FinDomFunctor(ob_map, ::Nothing, dom::FinCat, codom::AbsCat) =
-  FinDomFunctor(ob_map, dom, codom)
 
 function hom_map(F::FinDomFunctor{<:Any,<:Any,H,<:Any,G}, path::H) where {H,G}
   C, D = dom(F), codom(F)
@@ -188,9 +109,6 @@ function Base.map(F::Functor{<:FinCat,<:TypeCat}, f_ob, f_hom)
                 map(f -> f_hom(hom_map(F, f)), hom_generators(C)), C)
 end
 
-
-
-
 FinFunctor(maps, dom::FinCat, codom::FinCat) = FinDomFunctor(maps, dom, codom)
 
 FinFunctor(ob_map, hom_map, dom::FinCat, codom::FinCat) =
@@ -201,6 +119,10 @@ FinFunctor(ob_map, hom_map, dom::Presentation, codom::Presentation) =
 
 Categories.show_type_constructor(io::IO, ::Type{<:FinFunctor}) =
   print(io, "FinFunctor")
+
+# Implementations
+#################
+include("FunctorImpls/FinDomMap.jl")
 
 # Dict utilities
 ################
@@ -247,7 +169,7 @@ dicttype(::Type{<:Iterators.Pairs}) = Dict
 
 """
 Maps `f` over a `UnitRange` to produce a `Vector`,
-or else over anything to produce a `Dict`. The type paramter
+or else over anything to produce a `Dict`. The type parameter
 functions to ensure the return type is as desired even when the
 input is empty.
 """
@@ -271,69 +193,31 @@ function make_map(f, xs, ::Type{T}) where T
   end
 end
 
-# # Symbolic categories
-# #####################
 
+""" Force evaluation of lazily defined function or functor.
+The resulting ob_map and hom_map are guaranteed to have 
+valtype or eltype, as appropriate, equal to Ob and Hom,
+respectively. 
+"""
+function force(F::FinDomFunctor, Obtype::Type=Any, Homtype::Type=Any)
+  C = dom(F)
+  FinDomFunctor(
+    make_map(x -> ob_map(F, x), ob_generators(C), Obtype),
+    make_map(f -> hom_map(F,f), hom_generators(C), Homtype), 
+    C)
+end
 
-# # Functors
-# ##########
-
-
-# ob_key(C::FinCat, x) = ob_generator(C, x)
-# hom_key(C::FinCat, f) = hom_generator(C, f)
-# ob_map(F::FinDomFunctorMap) = F.ob_map
-# hom_map(F::FinDomFunctorMap) = F.hom_map
-
-# ob_key(C::OppositeFinCat, x) = ob_key(C.cat,x)
-# hom_key(C::OppositeFinCat, f) = hom_key(C.cat,f)
-
-# Categories.do_ob_map(F::FinDomFunctorMap, x) = F.ob_map[ob_key(F.dom, x)]
-# Categories.do_hom_map(F::FinDomFunctorMap, f) = F.hom_map[hom_key(F.dom, f)]
-
-# collect_ob(F::FinDomFunctorMap) = collect_values(F.ob_map)
-# collect_hom(F::FinDomFunctorMap) = collect_values(F.hom_map)
-# collect_values(vect::AbstractVector) = vect
-# collect_values(dict::AbstractDict) = collect(values(dict))
-
-# op(F::FinDomFunctorMap) = FinDomFunctorMap(F.ob_map, F.hom_map,
-#                                            op(dom(F)), op(codom(F)))
-
-# """ Force evaluation of lazily defined function or functor.
-# The resulting ob_map and hom_map are guaranteed to have 
-# valtype or eltype, as appropriate, equal to Ob and Hom,
-# respectively. 
-# """
-# function force(F::FinDomFunctor, Obtype::Type=Any, Homtype::Type=Any)
-#   C = dom(F)
-#   FinDomFunctor(
-#     make_map(x -> ob_map(F, x), ob_generators(C), Obtype),
-#     make_map(f -> hom_map(F,f), hom_generators(C), Homtype), 
-#     C)
-# end
-
-# function Categories.do_compose(F::FinDomFunctorMap, G::FinDomFunctorMap)
-#   FinDomFunctor(mapvals(x -> ob_map(G, x), F.ob_map),
-#                    mapvals(f -> hom_map(G, f), F.hom_map), dom(F), codom(G))
-# end
-
-# diagram_type(F::FinDomFunctor{Dom,Codom}) where {Ob,Hom,Dom,Codom<:Cat{Ob,Hom}} =
-#   Tuple{Ob,Hom}
-
-# cone_objects(F::FinDomFunctor) = collect_ob(F)
-
-# cocone_objects(F::FinDomFunctor) = collect_ob(F)
-
-# function FreeDiagram(F::FinDomFunctor{Dom,Codom}) where {Ob,Hom,Dom,Codom<:Cat{Ob,Hom}} 
-#   C = dom(F)
-#   diagram = FreeDiagram{Ob,Hom}()
-#   ob_dict = Dict(map(ob_generators(C)) do x 
-#     x => add_vertex!(diagram; ob=ob_map(F, x))
-#   end)
-#   for h in hom_generators(C)
-#     add_edge!(diagram, ob_dict[dom(C,h)], ob_dict[codom(C,h)], hom=hom_map(F,h))
-#   end
-#   diagram 
-# end
+function FreeDiagram(F::FinDomFunctor{<:Any,<:Any,Ob,Hom,<:Any,Codom}) where {Ob,Hom,Codom<:Cat{Ob,Hom}} 
+  C = dom(F)
+  diagram = FreeDiagram{Ob,Hom}()
+  ob_dict = Dict(map(ob_generators(C)) do x 
+    x => add_vertex!(diagram; ob=ob_map(F, x))
+  end)
+  for h in hom_generators(C)
+    add_edge!(diagram, ob_dict[dom(C,h)], ob_dict[codom(C,h)], hom=hom_map(F,h))
+  end
+  diagram 
+end
 
 # """ Wrapper type to interpret `FreeDiagram` as a `FinDomFunctor`.
 # """
