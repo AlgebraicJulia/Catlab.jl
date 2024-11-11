@@ -1,9 +1,9 @@
 module SetFunctions
 
-export SetFunction, SetFunction, ConstantFunction, SetFunctionCallable, 
-       CompositeFunction, IdentityFunction, PredicatedFunction, SetC, force
+export SetFunction, SetC, force
 
 using StructEquality
+using Reexport
 
 using GATlab
 import GATlab: getvalue
@@ -11,8 +11,6 @@ import AlgebraicInterfaces: dom, codom
 import ACSets.Columns: preimage
 
 using ..Sets
-import ..Sets: left, right
-# import ...Cats.FinFunctors: force
 
 # Theory of SetFunctions
 ########################
@@ -42,12 +40,11 @@ end
 
 abstract type AbsSetFunction end # ONLY subtyped by SetFunction
 
-const M = Model{Tuple{Any, AbsSet, AbsSetFunction}}
+""" Any type which subtypes this should implement ThSetFunction """
+abstract type SetFunctionImpl <: Model{Tuple{Any, AbsSet, AbsSetFunction}} end
 
-abstract type SetFunctionImpl <: M end
-
-# Functions
-###########
+# Wrapper type for models of ThSetFunction
+##########################################
 
 """ Generic type for morphism in the category **Set**.
 
@@ -64,6 +61,11 @@ already taken by the base Julia type.
   end
 end
 
+getvalue(s::SetFunction) = s.impl 
+
+# Other constructors
+####################
+
 function SetFunction{Dom,Cod}(args...; kw...) where {Dom, Cod}
   res = SetFunction(args...; kw...)
   dom(res) isa Dom || error("Bad dom")
@@ -77,9 +79,11 @@ function SetFunction{Dom}(args...) where {Dom}
   res
 end
 
-getvalue(s::SetFunction) = s.impl 
+SetFunction(f::SetFunction) = f
 
-""" Default `dom` overload """
+# Access the model methods
+#-------------------------
+
 dom(s::SetFunction) = ThSetFunction.dom[getvalue(s)]()
 
 codom(s::SetFunction) = ThSetFunction.codom[getvalue(s)]()
@@ -91,10 +95,11 @@ Base.show(io::IO, f::SetFunction) = show(io, getvalue(f))
 postcompose(f::SetFunction, g::SetFunction) = 
   ThSetFunction.postcompose[getvalue(f)](g)
 
-SetFunction(f::SetFunction) = f
+# Other methods
+#--------------
 
 """
-Evaluation of a CompositFunction. This is where `postcompose` gets used.
+Evaluation of a CompositeFunction. This is where `postcompose` gets used.
 """
 function force(s::SetFunction)::SetFunction
   i = getvalue(s) 
@@ -108,19 +113,30 @@ function force(s::SetFunction)::SetFunction
   postcompose(f, g)
 end
 
+function show_domains(io::IO, f::SetFunction; domain::Bool=true, 
+    codomain::Bool=true, recurse::Bool=true)
+  get(io, :hide_domains, false) && return print(io, "…")
+  domain && show(IOContext(io, :compact=>true, :hide_domains=>!recurse), dom(f))
+  domain && codomain && print(io, ", ")
+  codomain && show(IOContext(io, :compact=>true, :hide_domains=>!recurse), codom(f))
+end
+
 # Implementations
 #################
-include("FunctionImpls/Callable.jl")
 
 include("FunctionImpls/IdFunction.jl")
-
 include("FunctionImpls/CompFunction.jl")
-
 include("FunctionImpls/ConstFn.jl")
-
 include("FunctionImpls/ConstEither.jl")
-
 include("FunctionImpls/PredFn.jl")
+include("FunctionImpls/Callable.jl")
+
+@reexport using .IdFunction
+@reexport using .CompFn
+@reexport using .ConstFn
+@reexport using .ConstEitherFn
+@reexport using .PredFn
+@reexport using .CallableFn
 
 # Category 
 ##########
@@ -140,12 +156,5 @@ include("FunctionImpls/PredFn.jl")
   end
 end
 
-function show_domains(io::IO, f::SetFunction; domain::Bool=true, 
-                      codomain::Bool=true, recurse::Bool=true)
-  get(io, :hide_domains, false) && return print(io, "…")
-  domain && show(IOContext(io, :compact=>true, :hide_domains=>!recurse), dom(f))
-  domain && codomain && print(io, ", ")
-  codomain && show(IOContext(io, :compact=>true, :hide_domains=>!recurse), codom(f))
-end
 
 end # module

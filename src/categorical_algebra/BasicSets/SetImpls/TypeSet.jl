@@ -1,3 +1,14 @@
+module TypeSets 
+
+export TypeSet
+
+using StructEquality
+
+using GATlab
+
+using ..Sets: SetImpl, ThSet′
+import ..Sets: SetOb
+
 """ Raw Julia type considered as a set"""
 @struct_hash_equal struct TypeSet{T} <: SetImpl end
 
@@ -12,7 +23,9 @@ Base.show(io::IO, ::TypeSet{T}) where T = print(io, "TypeSet($T)")
   eltype′()::Any = T
 end
 
-# Default models
+# Default model, for convenience
 
 """ Default model for a Set made out of a Julia `Type` """
 SetOb(T::Type) = SetOb(TypeSet{T}())
+
+end # module

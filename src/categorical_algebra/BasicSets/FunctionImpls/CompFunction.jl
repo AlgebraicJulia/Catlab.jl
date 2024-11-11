@@ -1,6 +1,15 @@
+module CompFn 
 
-# Composite
-#----------
+export CompositeFunction
+
+using StructEquality
+
+using GATlab
+
+using ...Sets: AbsSet
+using ..SetFunctions: SetFunctionImpl, ThSetFunction, dom, codom
+import ..SetFunctions: SetFunction
+using ..IdFunction: IdentityFunction
 
 """ Composite of functions in **Set**.
 
@@ -11,9 +20,15 @@ Not to be confused with `Base.ComposedFunctions` for ordinary Julia functions.
   snd::SetFunction
 end
 
+# Accessors 
+###########
+
 Base.first(f::CompositeFunction) = f.fst
 
 Base.last(f::CompositeFunction) = f.snd
+
+# Other methods
+###############
 
 function Base.show(io::IO, f::CompositeFunction)
   print(io, "compose(")
@@ -24,6 +39,7 @@ function Base.show(io::IO, f::CompositeFunction)
 end
 
 # SetFunction implementation 
+############################
 
 @instance ThSetFunction{Any, AbsSet, SetFunction} [model::CompositeFunction] begin
 
@@ -36,10 +52,16 @@ end
   postcompose(f::SetFunction)::SetFunction = SetFunction(SetFunction(model), f) 
 end
 
-# Default SetFunction model
+# Default SetFunction constructor
+#################################
 
+"""
+Automatically remove identity functions when creating a composite.
+"""
 function SetFunction(f::SetFunction, g::SetFunction)
   getvalue(f) isa IdentityFunction && return g 
   getvalue(g) isa IdentityFunction && return f
   SetFunction(CompositeFunction(f,g))
 end
+
+end # module

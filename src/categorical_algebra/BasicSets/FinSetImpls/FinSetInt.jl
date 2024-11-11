@@ -1,6 +1,15 @@
+module FSetInt 
 
-# FinSetInt
-#---------
+export FinSetInt
+
+using StructEquality
+
+using GATlab
+import GATlab: getvalue
+
+using ..FinSets: FinSetImpl, ThFinSet
+import ..FinSets: FinSet
+
 """
 A set {1,2,...,n} represented by a single `Int`
 """
@@ -8,9 +17,18 @@ A set {1,2,...,n} represented by a single `Int`
   n::Int
 end 
 
+# Accessor
+###########
+
 getvalue(f::FinSetInt) = f.n
 
+# Other methods
+###############
+
 Base.show(io::IO, set::FinSetInt) = print(io, "FinSet($(set.n))")
+
+# FinSet Implementation
+#######################
 
 @instance ThFinSet{Bool, Any, Int} [model::FinSetInt] begin
   in′(i::Any)::Bool = i isa Int && 0 < i ≤ getvalue(model)
@@ -25,3 +43,5 @@ FinSet(i::Int) = FinSet(FinSetInt(i))
 
 """ Default FinSet with no parameters """
 FinSet() = FinSet(0)
+
+end # module

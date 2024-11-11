@@ -1,11 +1,26 @@
+module FinFnVector 
 
-# FinFunctionVector
-#------------------
+export AbsFinFunctionVector, FinFunctionVector, IndexedFinFunctionVector
+
+using StructEquality
+using DataStructures
+
+using GATlab
+import GATlab: getvalue
+import ACSets.Columns: preimage
+
+using ...Sets: AbsSet
+using ...SetFunctions: SetFunctionImpl, ThSetFunction, SetFunction, codom
+using ...FinSets: FinSet
+import ..FinFunctions: FinFunction, FinDomFunction, is_indexed
+
+"""
+There are two kinds of FinFunctionVector: `FinFunctionVector` and 
+`IndexedFinFunctionVector`.
+"""
 abstract type AbsFinFunctionVector <: SetFunctionImpl end
 
-""" 
-Implicitly domain is `FinSet(length(v))`
-"""
+""" Implicitly domain is `FinSet(length(v))` """
 @struct_hash_equal struct FinFunctionVector <: AbsFinFunctionVector
   val::Vector
   codom::AbsSet
@@ -26,11 +41,17 @@ end
   end
 end
 
-preimage(f::IndexedFinFunctionVector, x) = f.index[x]
-
 FF(i::Bool) = i ? IndexedFinFunctionVector : FinFunctionVector
 
+# Accessor
+##########
+
 getvalue(f::AbsFinFunctionVector) = f.val
+
+# Other methods
+###############
+
+preimage(f::IndexedFinFunctionVector, x) = f.index[x]
 
 function Base.show(io::IO, f::AbsFinFunctionVector)
   print(io, "Fin")
@@ -41,14 +62,26 @@ function Base.show(io::IO, f::AbsFinFunctionVector)
   print(io, ")")
 end
 
-@instance ThSetFunction{Any, AbsSet, SetFunction} [model::T] where {T<:AbsFinFunctionVector} begin
+# SetFunction implementation
+############################
+
+@instance ThSetFunction{Any, AbsSet, SetFunction} [model::T] where {
+    T<:AbsFinFunctionVector} begin
+
   dom()::AbsSet = FinSet(length(getvalue(model)))
+
   codom()::AbsSet = model.codom
+
   app(i::Any)::Any = getvalue(model)[i]
+
   function postcompose(f::SetFunction)::SetFunction
     FinDomFunction(FF(is_indexed(model))(f.(getvalue(model)), codom(f)))
   end
+
 end
+
+# Default constructors
+######################
 
 """ 
 Default `FinFunction` or `FinDomFunction` from a `AbstractVector` and codom
@@ -72,3 +105,5 @@ FinDomFunction(f::AbstractVector, cod::Maybe{Int}=nothing; index=false) =
 FinFunction(f::AbstractVector, dom::Int, cod::Int; index=false) = 
   length(f) == dom ? FinFunction(f, FinSet(cod); index) : error(
     "Mismatched dom=$dom for vector $f ($(length(f)))")
+
+end # module

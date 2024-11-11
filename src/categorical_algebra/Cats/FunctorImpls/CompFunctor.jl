@@ -1,28 +1,34 @@
+module CompFunctor 
+
+export CompositeFunctor 
+
+using StructEquality
+using GATlab
+
+using ...Categories: Cat
+using ..Functors: FunctorImpl, ThFunctor, Functor
 
 """ Composite of functors.
 """
-@struct_hash_equal struct CompositeFunctor{AO,BO,CO,AH,BH,CH,AG,BG,CG,AC,BC,CC
-                                          } <: AbsFunctorImpl{AO,CO,AH,BH,AG,CG,AC,CC}
-  fst::Functor{AO,BO,AH,BH,AG,BG,AC,BC}
-  snd::Functor{BO,CO,BH,CH,BG,CG,BC,CC}
+@struct_hash_equal struct CompositeFunctor{AO,CO,AH,CH} <: FunctorImpl{AO,CO,AH,CH}
+  fst::Functor
+  snd::Functor
+  function CompositeFunctor(fst::Functor,snd::Functor)
+    dom(snd) == codom(fst) || error("Cannot compose $fst and $snd")
+    A, C = dom(fst), codom(snd)
+    new{obtype(A), obtype(C), homtype(A), homtype(C)}(fst, snd)
+  end
 end
+
+# Accessors
+###########
 
 Base.first(F::CompositeFunctor) = F.fst
 
 Base.last(F::CompositeFunctor) = F.snd
 
-@instance ThFunctor{AO,CO,AH,CH,AG,CG,AC,BC
-                    } [model::CompositeFunctor{AO,BO,CO,AH,BH,CH,AG,BG,CG,AC,BC,CC}
-                      ] where {AO,BO,CO,AH,BH,CH,AG,BG,CG,AC,BC,CC} begin 
-  dom() = dom(first(model))
-
-  codom() = codom(last(model))
-
-  ob_map(x::AO) = ob_map(last(model), ob_map(first(model), x))
-
-  hom_map(x::AG) = hom_map(last(model), hom_map(first(model), x))
-end
-
+# Other methods
+###############
 function Base.show(io::IO, F::CompositeFunctor)
   print(io, "compose(")
   show(io, first(F))
@@ -30,3 +36,20 @@ function Base.show(io::IO, F::CompositeFunctor)
   show(io, last(F))
   print(io, ")")
 end
+
+# ThFunctor interface
+####################
+
+@instance ThFunctor{AO,CO,AH,CH,Cat} [model::CompositeFunctor{AO,CO,AH,CH}
+                                     ] where {AO,CO,AH,CH} begin 
+  dom() = dom(first(model))
+
+  codom() = codom(last(model))
+
+  ob_map(x::AO) = ob_map(last(model), ob_map(first(model), x))
+
+  hom_map(x::AH) = hom_map(last(model), hom_map(first(model), x))
+end
+
+
+end # module

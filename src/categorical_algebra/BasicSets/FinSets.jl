@@ -1,13 +1,12 @@
 """ The category of finite sets and functions, and its skeleton.
 """
 module FinSets
-export FinSet, FinSetInt, FinSetHash, TabularSet
+export FinSet
 
 using GATlab
 import GATlab: getvalue
 using StructEquality
 using Reexport
-import Tables, PrettyTables
 
 using ..Sets, ..SetFunctions
 using ..Sets: ThSet′, SetImpl
@@ -18,6 +17,10 @@ import ....Theories: Ob
 # Theory of FinSets
 ###################
 
+"""
+Any finite set must satisfy the interface of `ThSet′` in addition to providing 
+Julia's interator interface and having a integer cardinality, i.e. `length`.
+"""
 @theory ThFinSet <: ThSet′ begin
   Int′::TYPE
   length′()::Int′
@@ -25,7 +28,11 @@ import ....Theories: Ob
   iterate′(a::Any′)::Any′
 end
 
+""" Any type which subtypes FinSetImpl is expected to implement ThFinSet """
 abstract type FinSetImpl <: Model{Tuple{Bool, Any, Int}} end 
+
+# Wrapper type for Models of ThFinSet
+#####################################
 
 """ Finite set.
 
@@ -44,24 +51,23 @@ end
 
 getvalue(f::FinSet) = f.impl
 
+# Access model methods
+#---------------------
+
 Base.in(e, f::FinSet) = ThFinSet.in′[getvalue(f)](e)
+
+Base.eltype(s::FinSet) = ThFinSet.eltype′[getvalue(s)]()
 
 Base.length(f::FinSet) = ThFinSet.length′[getvalue(f)]()
 
 Base.iterate(f::FinSet, args...) = 
   ThFinSet.iterate′[getvalue(f)](args...)
 
-Base.eltype(s::FinSet) = ThFinSet.eltype′[getvalue(s)]()
 
-# Normally we would have to migrate the model, but because the sorts are the 
-# same between the two theories, this is unnecessary.
-""" Explicitly cast FinSet as SetOb. This will always succeed. """
-# SetOb(f::FinSet) = SetOb(f.impl, getmodel(f)) # migrate_model(ι, f.mod)) 
+# Other methods 
+#--------------
 
-""" Attempt to cast SetOb to FinSet ... this can throw runtime error."""
-# FinSet(s::SetOb) = FinSet(s.impl, s.mod) 
-
-FinSet(set::FinSet) = set
+FinSet(set::FinSet) = set # no-op
 
 Base.show(io::IO, set::FinSet) = show(io, getvalue(set))
 
@@ -73,12 +79,18 @@ Base.show(io::IO, mime::MIME"text/html", set::FinSet) =
 
 # Implementations
 #################
+
 include("FinSetImpls/FinSetInt.jl")
-
 include("FinSetImpls/EitherFinSet.jl")
-
 include("FinSetImpls/TabularSet.jl")
-
 include("FinSetImpls/FinSetHash.jl")
+include("FinSetImpls/FinSetVect.jl")
+
+@reexport using .FSetInt
+@reexport using .EitherFSet
+@reexport using .TabSet
+@reexport using .FSetHash
+@reexport using .FSetVect
+
 
 end # module

@@ -1,6 +1,6 @@
-module FSetHash 
+module FSetVect 
 
-export FinSetHash
+export FinSetVect
 
 using StructEquality
 
@@ -10,26 +10,26 @@ import GATlab: getvalue
 using ..FinSets: FinSetImpl, ThFinSet
 import ..FinSets: FinSet
 
-""" Wrapper around a Julia `Set`. """
-@struct_hash_equal struct FinSetHash{T} <: FinSetImpl
-  set::Set{T}
+""" Wrapper around a Julia `Vector`. """
+@struct_hash_equal struct FinSetVect{T} <: FinSetImpl
+  vect::AbstractVector{T}
 end 
 
 # Accessor
 ###########
 
-getvalue(f::FinSetHash) = f.set
+getvalue(f::FinSetVect) = f.vect
 
-function Base.show(io::IO, set::FinSetHash)
+function Base.show(io::IO, set::FinSetVect)
   print(io, "FinSet(")
-  show(io, set.set)
+  show(io, getvalue(set))
   print(io, ")")
 end
 
 # FinSet Implementation
 #######################
 
-@instance ThFinSet{Bool, Any, Int} [model::FinSetHash{T}] where T begin
+@instance ThFinSet{Bool, Any, Int} [model::FinSetVect{T}] where T begin
   in′(i::Any)::Bool = i ∈ getvalue(model)
   eltype′() = T
   length′()::Int = length(getvalue(model))
@@ -38,6 +38,6 @@ end
 end
 
 """ Default model for a finset made out of a Julia `Set` """
-FinSet(s::Set{T}) where T = FinSet(FinSetHash(s))
+FinSet(s::AbstractVector{T}) where T = FinSet(FinSetVect(s))
 
 end # module

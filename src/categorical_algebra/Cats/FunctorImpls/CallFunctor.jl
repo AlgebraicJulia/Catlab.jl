@@ -1,26 +1,46 @@
+module CallFunctor
+
+export FunctorCallable
+
+using StructEquality
+using GATlab
+
+using ...Categories: Cat, obtype, homtype
+using ..Functors: FunctorImpl, ThFunctor
+import ..Functors: Functor
+
 
 """ Functor defined by two Julia callables, an object map and a morphism map.
 """
-@struct_hash_equal struct FunctorCallable{
-    DO,CO,DH,CH,DC<:AbsCat{DO,DH},CC<:AbsCat{CO,CH}
-    } <: FunctorImpl{DO,CO,DH,CH,DC,CC}
+@struct_hash_equal struct FunctorCallable{DO,CO,DH,CH} <: FunctorImpl{DO,CO,DH,CH}
   ob_map::Any
   hom_map::Any
-  dom::DC
-  codom::CC
+  dom::Cat
+  codom::Cat
+  function FunctorCallable(o, h, d, c)
+    (DO, CO), (DH,CH) = obtype.([d,c]), homtype.([d,c])
+    new{DO,CO,DH,CH}(o, h, d, c)
+  end
 end
 
-@instance ThFunctor{DO,CO,DH,CH,DH,CH,CC,DC
-                   } [model::FunctorCallable{DO,CO,DH,CH,CC,DC}
-                     ] where {DO,CO,DH,CH,CC,DC} begin 
-  dom() = model.dom
+# ThFunctor implementation
+##########################
 
-  codom() = model.codom
+@instance ThFunctor{DO,CO,DH,CH,Cat} [model::FunctorCallable{DO,CO,DH,CH} 
+                                     ] where {DO,CO,DH,CH} begin 
+  dom()::Cat = model.dom
+
+  codom()::Cat = model.codom
 
   ob_map(x::DO) = model.ob_map(x) 
 
   hom_map(f::DH) = model.hom_map(f)
 end
 
-Functor(f::Function, g::Function, C::Cat{DO,DH}, D::Cat{CO,CH}
-       ) where {DO,CO,DH,CH} = Functor(FunctorCallable(f, g, C, D))
+# Convenience constructor 
+#########################
+
+Functor(f::Function, g::Function, C::Cat, D::Cat) = 
+  Functor(FunctorCallable(f, g, C, D))
+
+end # module

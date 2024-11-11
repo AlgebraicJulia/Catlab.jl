@@ -1,3 +1,15 @@
+module TabSet 
+export TabularSet
+
+import Tables, PrettyTables
+
+using StructEquality
+
+using GATlab
+import GATlab: getvalue
+
+using ..FinSets: FinSetImpl, ThFinSet
+import ..FinSets: FinSet
 
 """ Finite set whose elements are rows of a table.
 
@@ -15,17 +27,13 @@ see the Tables.jl documentation for further discussion.
   end
 end
 
+# Accessor
+###########
+
 getvalue(t::TabularSet) = t.table
 
-@instance ThFinSet{Bool, Any, Int} [model::TabularSet] begin
-  in′(i::Any)::Bool = i ∈ getvalue(model)
-  eltype′()::Any = model.T
-  length′()::Int = Tables.rowcount(getvalue(model))
-  iterate′()::Any = 
-    iterate(Tables.namedtupleiterator(getvalue(model)))
-  iterate′(x::Any)::Any = 
-    iterate(Tables.namedtupleiterator(getvalue(model)), x)
-end
+# Other methods 
+###############
 
 function Base.show(io::IO, set::TabularSet)
   print(io, "TabularSet(")
@@ -49,5 +57,29 @@ function Base.show(io::IO, ::MIME"text/html", set::TabularSet)
   println(io, "</div>")
 end
 
+# FinSet Implementation
+#######################
+
+@instance ThFinSet{Bool, Any, Int} [model::TabularSet] begin
+
+  in′(i::Any)::Bool = i ∈ getvalue(model)
+
+  eltype′()::Any = model.T
+
+  length′()::Int = Tables.rowcount(getvalue(model))
+
+  iterate′()::Any = 
+    iterate(Tables.namedtupleiterator(getvalue(model)))
+
+  iterate′(x::Any)::Any = 
+    iterate(Tables.namedtupleiterator(getvalue(model)), x)
+
+end
+
+# Default constructor
+######################
+
 """ Default kind of FinSet for a `NamedTuple` """
 FinSet(nt::NamedTuple) = FinSet(TabularSet(nt))
+
+end # module

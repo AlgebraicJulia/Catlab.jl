@@ -1,6 +1,16 @@
+module ConstEitherFn 
 
-# ConstEither 
-#------------
+export ConstEither
+
+using StructEquality
+
+using GATlab
+import GATlab: getvalue
+
+using ...Sets: AbsSet, EitherSet, left, right
+using ..SetFunctions: SetFunctionImpl, ThSetFunction, dom, codom
+import ..SetFunctions: SetFunction
+
 """
 A map out A + C -> B + C, where we interpret C as constant. Because these use 
 EitherSets rather than disjoint sets, any overlap between A and C gets treated 
@@ -19,11 +29,15 @@ as constant.
   end
 end
 
+# Accessor
+##########
 getvalue(c::ConstEither) = c.fun
 
 # SetFunction implementation
+############################
 
 @instance ThSetFunction{Any, AbsSet, SetFunction} [model::ConstEither] begin
+
   dom()::AbsSet = model.dom
 
   codom()::AbsSet = model.codom
@@ -33,4 +47,7 @@ getvalue(c::ConstEither) = c.fun
 
   postcompose(f::SetFunction)::SetFunction = 
     SetFunction(ConstEither(f(getvalue(model)), model.dom, codom[model](f)))
+
 end
+
+end # module

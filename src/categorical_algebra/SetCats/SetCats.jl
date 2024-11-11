@@ -10,6 +10,7 @@ include("Subsets.jl") # Subobjects, FinSets
 include("GraphCategories.jl") # (not reexported)
 include("VarFunctions.jl") # (not reexported)
 
+@reexport using .CatsInterop
 @reexport using .Subsets
 @reexport using .VarFunctions
 

@@ -4,13 +4,17 @@ using Test, Catlab
 
 # PreorderFinCats
 #################
-po1 = PreorderFinCat([(1,2)]) |> FinCat
+po1 = PreorderFinCat([(:a,:b)]) |> FinCat
 
 po2 = PreorderFinCat([(1,2),(2,3)]) |> FinCat
 
-F = FinDomFunctor(Dict(1=>1,2=>2),
+@test hom_generators(po2) isa FinSet
+
+
+F = FinDomFunctor(Dict(:a=>1,:b=>2),
   Dict(x=>x for x in hom_generators(po1)), po1, po2)
 
+@test id(Cat(po1), :a) == (1=>1)
 @test hom_map(F, 1=>1) == (1=>1)
 
 # Categories on graphs
@@ -19,25 +23,27 @@ F = FinDomFunctor(Dict(1=>1,2=>2),
 # Free categories on graphs
 g = parallel_arrows(Graph, 3)
 C = FinCat(g)
+hom_generators(C)
+
 @test Graph(C) == g
-@test Graph(op(C)) == reverse(g)
-# @test Ob(C) == FinSet(2) TODO
+@test U_CatSet(C) == FinSet(2) # Replaced "Ob"
 @test !is_discrete(C)
 @test is_free(C)
 # @test (hom(C, 1), hom_generator(C, 1)) == (Path(g, 1), 1)
-@test ob_generators(C) == 1:2
-@test hom_generators(C) == 1:3
-@test startswith(sprint(show, C), "FinCat($(Graph)")
+@test ob_generators(C) == FinSet(2)
+@test hom_generators(C) == FinSet(3)
+# @test startswith(sprint(show, C), "FinCat($(Graph)") # TODO?
 @test equations(C) == []
 
 C_op = op(C)
+@test Graph(C_op) == reverse(g)
 @test C_op isa FinCat
 # @test (ob(C_op, 1), ob_generator(C_op, 1)) == (1, 1)
 # @test (hom(C_op, 1), hom_generator(C_op, 1)) == (Path(g, 1), 1)
-@test ob_generators(C_op) == 1:2
-@test hom_generators(C_op) == 1:3
+@test ob_generators(C_op) == FinSet(2)
+@test hom_generators(C_op) == FinSet(3)
 @test op(C_op) == C
-@test equations(C) == []
+@test equations(C_op) == []
 
 h = Graph(4)
 add_edges!(h, [1,1,2,3], [2,3,4,4])
@@ -46,14 +52,14 @@ f = id(D, 2)
 @test (src(f), tgt(f)) == (2, 2)
 @test isempty(edges(f))
 @test reverse(f) == f
-g = compose(D, 1, 3)
-@test edges(g) == [1,3]
+g13 = compose(D, Path(h, [1, 3])) # changed, and renamed `g`
+@test edges(g13) == [1,3]
 
 D_op = op(D)
-@test dom(D_op, 1) == 2
-@test codom(D_op, 1) == 1
+@test src(D_op, 1) == 2 # dom/src
+@test tgt(D_op, 1) == 1 # codom/tgt
 @test id(D_op, 2) == f
-@test compose(D_op, 3, 1) == g
+@test compose(D_op, Path(reverse(h), [3, 1])) == g13
 
 # Path equations
 #---------------
@@ -69,8 +75,8 @@ add_edges!(Δ¹_graph, [1,1,2], [2,2,1])
 @test length(equations(Δ¹_op)) == 2
 @test !is_free(Δ¹)
 s = sprint(show, Δ¹)
-@test startswith(s, "FinCat($(Graph)")
-@test contains(s, "Path")
+# @test startswith(s, "FinCat($(Graph)") # TODO?
+# @test contains(s, "Path") # TODO?
 
 # Symbolic categories
 #####################

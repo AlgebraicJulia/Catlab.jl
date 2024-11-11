@@ -1,61 +1,91 @@
 module FinFunctors 
-export FinFunctor, FinDomFunctor, is_functorial, functoriality_failures,
+export FinDomFunctor, is_functorial, functoriality_failures,
         collect_ob, collect_hom, make_map,
-        FinTransformation, components, is_natural, is_initial,dom_to_graph
+        FinTransformation, components, is_natural, is_initial,dom_to_graph, gen_map
 
 using DataStructures: IntDisjointSets, in_same_set, num_groups
 using StructEquality
 using GATlab
 
 using ....Theories: ObExpr, HomExpr, AttrExpr
-using ..FinCats, ..Categories
-using ..Categories: AbsCat, AbsFunctorImpl, ThFunctor
+using ..Categories
+using ..Functors: FunctorImpl, ThFunctor, Functor
+import ..Functors: hom_map, show_type_constructor
 import ..FreeDiagrams: FreeDiagram
-import ...BasicSets.SetFunctions: force
+import ...BasicSets: force
 
 # using ..FinCats: 
 
 # Functors
 ##########
 
-abstract type FinDomFunctorImpl{DO,CO,DH,CH,DG,CG,DC<:FinCat{DO,DH,DG},
-  CC<:AbsCat{CO,CH}} <: AbsFunctorImpl{DO,CO,DH,CH,DG,CG,DC,CC} end 
+
+@theory ThFinDomFunctor begin
+  DomOb::TYPE; CodomOb::TYPE; DomHom::TYPE; CodomHom::TYPE; DomGen::TYPE; 
+  FCat::TYPE; Cat′::TYPE;
+  dom()::FCat
+  codom()::Cat′
+  ob_map(o::DomOb)::CodomOb
+  gen_map(o::DomGen)::CodomHom
+end
+
+abstract type FinDomFunctorImpl{DO,CO,DH,CH,DG} <: Model{
+  Tuple{DO,CO,DG,CH,FinCat,Cat}} end 
   
 """ A functor out of a finitely-presented category.
 """
-const FinDomFunctor{DO,CO,DH,CH,DG,CG,DC<:FinCat{DO,DH,DG},CC<:AbsCat{CO,CH}} = 
-  Functor{DO,CO,DH,CH,DG,CG,DC,CC}
+struct FinDomFunctor{DO,CO,DH,CH,DG} <: FunctorImpl{DO,CO,DH,CH}
+  impl::FinDomFunctorImpl{DO,CO,DH,CH,DG}
+  function FinDomFunctor(i::FinDomFunctorImpl{DO,CO,DH,CH,DG}) where {DO,CO,DH,CH,DG}
+    # check types
+    D, C = ThFinDomFunctor.dom[i](), ThFinDomFunctor.codom[i]()
+    obtype(D) == DO || error("Bad dom ob type")
+    homtype(D) == DH || error("Bad dom hom type")
+    gentype(D) == DG || error("Bad dom hom type")
+    obtype(C) == CO || error("Bad dom ob type")
+    homtype(C) == CH || error("Bad dom hom type")
+    new{DO,CO,DH,CH,DG}(i)
+  end 
+end
 
-""" A functor between finitely-presented categories.
-"""
-const FinFunctor{DO,CO,DH,CH,DG,CG,DC<:FinCat{DO,DH,DG},CC<:FinCat{CO,CH,CG}} = 
-  Functor{DO,CO,DH,CH,DG,CG,DC,CC}
+GATlab.getvalue(f::FinDomFunctor) = f.impl
 
+dom(f::FinDomFunctor) = ThFinDomFunctor.dom[getvalue(f)]()
 
-# # Mapping-based functors
-# #-----------------------
+codom(f::FinDomFunctor) = ThFinDomFunctor.codom[getvalue(f)]()
 
-function hom_map(F::FinDomFunctor{<:Any,<:Any,H,<:Any,G}, path::H) where {H,G}
+ob_map(f::FinDomFunctor, x) = ThFinDomFunctor.ob_map[getvalue(f)](x)
+
+gen_map(f::FinDomFunctor, x) = ThFinDomFunctor.gen_map[getvalue(f)](x)
+
+""" Apply a FinDomFunctor to a path of generators """
+function path_map(F::FinDomFunctor, path::Path)
   C, D = dom(F), codom(F)
-  path = decompose(getvalue(C), path)
-  mapreduce(e -> hom_map(F, e), (gs...) -> compose(D, gs...),
-             edges(path), init=id(D, ob_map(F, dom(C, path))))
+  init = id(D, ob_map(F, src(path)))
+  mapreduce(e -> gen_map(F, e), (gs...) -> compose(D, gs...), edges(path); init)
 end
 
 
-function hom_map(F::FinDomFunctor, f::GATExpr{:compose})
-  C, D = dom(F), codom(F)
-  mapreduce(f -> hom_map(F, f), (gs...) -> compose(D, gs...), decompose(C, f))
+""" Apply a FinDomFunctor defined on generators by decompose the hom into a path of generators """
+function hom_map(F::FinDomFunctor, h)
+  path_map(F, decompose(dom(F), h))
 end
 
-function hom_map(F::FinDomFunctor, f::GATExpr{:id})
-  id(codom(F), ob_map(F, dom(f)))
-end
 
-(F::FinDomFunctor)(expr::ObExpr) = ob_map(F, expr)
-(F::FinDomFunctor)(expr::HomExpr) = hom_map(F, expr)
+# function hom_map(F::FinDomFunctor, f::GATExpr{:compose})
+#   C, D = dom(F), codom(F)
+#   mapreduce(f -> hom_map(F, f), (gs...) -> compose(D, gs...), decompose(C, f))
+# end
 
-Categories.show_type_constructor(io::IO, ::Type{<:FinDomFunctor}) =
+# function hom_map(F::FinDomFunctor, f::GATExpr{:id})
+#   id(codom(F), ob_map(F, dom(f)))
+# end
+
+# (F::FinDomFunctor)(expr::ObExpr) = ob_map(F, expr)
+
+# (F::FinDomFunctor)(expr::HomExpr) = hom_map(F, expr)
+
+show_type_constructor(io::IO, ::Type{<:FinDomFunctor}) =
   print(io, "FinDomFunctor")
 
 """ Collect assignments of functor's object map as a vector.
@@ -103,22 +133,11 @@ function functoriality_failures(F::FinDomFunctor; check_equations::Bool=false)
   (bad_dom, bad_cod, bad_eqs)
 end
 
-function Base.map(F::Functor{<:FinCat,<:TypeCat}, f_ob, f_hom)
+function Base.map(F::Functor, f_ob, f_hom)
   C = dom(F)
   FinDomFunctor(map(x -> f_ob(ob_map(F, x)), ob_generators(C)),
                 map(f -> f_hom(hom_map(F, f)), hom_generators(C)), C)
 end
-
-FinFunctor(maps, dom::FinCat, codom::FinCat) = FinDomFunctor(maps, dom, codom)
-
-FinFunctor(ob_map, hom_map, dom::FinCat, codom::FinCat) =
-  FinDomFunctor(ob_map, hom_map, dom, codom)
-
-FinFunctor(ob_map, hom_map, dom::Presentation, codom::Presentation) =
-  FinDomFunctor(ob_map, hom_map, FinCat(dom), FinCat(codom))
-
-Categories.show_type_constructor(io::IO, ::Type{<:FinFunctor}) =
-  print(io, "FinFunctor")
 
 # Implementations
 #################
@@ -207,9 +226,9 @@ function force(F::FinDomFunctor, Obtype::Type=Any, Homtype::Type=Any)
     C)
 end
 
-function FreeDiagram(F::FinDomFunctor{<:Any,<:Any,Ob,Hom,<:Any,Codom}) where {Ob,Hom,Codom<:Cat{Ob,Hom}} 
-  C = dom(F)
-  diagram = FreeDiagram{Ob,Hom}()
+function FreeDiagram(F::FinDomFunctor)
+  C, D = dom(F), codom(F)
+  diagram = FreeDiagram{obtype(D),homtype(D)}()
   ob_dict = Dict(map(ob_generators(C)) do x 
     x => add_vertex!(diagram; ob=ob_map(F, x))
   end)

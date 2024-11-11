@@ -1,24 +1,14 @@
 module FinFunctions 
 export FinFunction, FinDomFunction, preimage, is_indexed,
-       FinFunctionVector, FinFunctionDict, IndexedFinFunctionVector, 
        is_monic, is_epic, is_iso
 
-
-using StructEquality, DataStructures
-import StaticArrays
-# using StaticArrays: StaticVector, SVector, SizedVector, similar_type
-using GATlab
-import GATlab: getvalue
+using Reexport
 
 import ACSets.Columns: preimage
-import AlgebraicInterfaces: dom, codom
+using GATlab: getvalue
 
-import ....Theories: dom, codom
-
-using ..Sets, ..SetFunctions, ..FinSets
-using ..Sets: SetImpl
-using ..SetFunctions: SetFunctionImpl, ThSetFunction
-import ..Sets: left, right
+using ..FinSets: FinSet
+using ..SetFunctions: SetFunction, SetFunctionImpl, dom, codom
 import ..SetFunctions: force
 
 # Finite functions
@@ -48,6 +38,7 @@ is_monic(f::FinDomFunction) = length(dom(f)) == length(Set(values(collect(f))))
 
 is_iso(f::FinDomFunction) = is_monic(f) && is_epic(f)
 
+""" Iterate over image of function """
 Base.iterate(f::FinDomFunction, xs...) = iterate(f.(dom(f)), xs...)
 
 Base.length(f::FinDomFunction) = length(dom(f))
@@ -63,10 +54,12 @@ else
   error("Cannot take preimage: $x not found in codomain of $f") 
 end
 
+""" A SetFunction is indexed iff its implementation is """
 is_indexed(f::SetFunction) = is_indexed(getvalue(f))
 
-is_indexed(::T) where {T<:SetFunctionImpl} = 
-  !isempty(methods(preimage, (T, Any)))
+""" If an implementation specifically comes with its own `preimage` method, we 
+consider the SetFunction to be indexed """
+is_indexed(::T) where {T<:SetFunctionImpl} = !isempty(methods(preimage, (T, Any)))
 
 """ Try to index the function, if it isn't already """
 function ensure_indexed(f::FinDomFunction)
@@ -77,13 +70,14 @@ function ensure_indexed(f::FinDomFunction)
   f # error("Cannot index $(getvalue(f))")
 end
 
-
 # Implementations
 #################
 
 include("FinFnImpls/FinFnVector.jl")
-
 include("FinFnImpls/FinFnDict.jl")
+
+@reexport using .FinFnVector 
+@reexport using .FinFnDict
 
 
 end # module

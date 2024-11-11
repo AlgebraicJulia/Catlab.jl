@@ -1,3 +1,18 @@
+module FinCatPres 
+export FinCatPresentation
+
+using StructEquality
+
+using GATlab 
+import GATlab: equations, getvalue
+
+using ......Theories: ThSchema, ThPointedSetSchema, AttrTypeExpr, FreeSchema
+import ......Theories: id, compose, dom, codom
+                      
+using .....BasicSets: FinSet
+using ....Paths: Path
+using ..FinCats: FinCatImpl, ThFinCat
+import ..FinCats: FinCat
 
 # Symbolic categories
 #####################
@@ -19,6 +34,8 @@ end
 
 getvalue(f::FinCatPresentation) = f.presentation
 
+# Constructors
+#--------------
 FinCat(pres::Presentation, args...; kw...) =
   FinCat(FinCatPresentation(pres, args...; kw...))
 
@@ -29,38 +46,45 @@ function FinCatPresentation(pres::Presentation{ThPointedSetSchema.Meta.T})
   FinCatPresentation{ThPointedSetSchema.Meta.T,Ob,Hom}(pres)
 end
 
-"""
-Computes the graph generating a finitely presented category. Ignores any attribute
-side and any equations. Optionally returns the mappings from generators to their indices
-in the resulting graph.
-"""
-presentation(C::FinCatPresentation) = C.presentation
+# Other methods
+#-------------
 
-@instance ThFinCat{GATExpr{:generator}, GATExpr, GATExpr{:generator}, Any
+equations(C::FinCatPresentation) = equations(presentation(C))
+
+presentation(C::FinCatPresentation) = C.presentation # synonym for getvalue
+
+# Implementation of FinCat interface
+####################################
+
+@instance ThFinCat{GATExpr{:generator}, GATExpr, GATExpr{:generator}, 
+                   Path{GATExpr{:generator}, GATExpr}, FinSet
                   } [model::FinCatPresentation{T}] where {T} begin
-  dom(f::GATExpr)::Ob = dom(getvalue(model), f)
+  src(f::GATExpr{:generator})::GATExpr{:generator} = dom(getvalue(model), f)
 
-  codom(f::GATExpr)::Ob = codom(getvalue(model), f)
+  tgt(f::GATExpr{:generator})::GATExpr{:generator} = codom(getvalue(model), f)
+
+  dom(f::GATExpr)::GATExpr{:generator} = dom(getvalue(model), f)
+
+  codom(f::GATExpr)::GATExpr{:generator} = codom(getvalue(model), f)
 
   id(x::GATExpr{:generator})::GATExpr = id(getvalue(model), x)
 
-  compose(f::GATExpr, g::GATExpr)::GATExpr = compose(getvalue(model), g, f)
+  compose(f::Path{GATExpr{:generator}, GATExpr})::GATExpr = compose(getvalue(model), collect(f)...)
 
-  singleton(f::GATExpr{:generator})::GATExpr = f
+  decompose(f::GATExpr) = f.args # TODO
 
-  function ob_generators() 
+  function ob_set()::FinSet
     P = getvalue(model)
-    haskey(P.generators, :AttrType) || return generators(P, :Ob)
-    vcat(generators(P, :Ob), generators(P, :AttrType))
+    haskey(P.generators, :AttrType) || return FinSet(generators(P, :Ob))
+    FinSet(vcat(generators(P, :Ob), generators(P, :AttrType)))
   end
 
-  function hom_generators()
+  function gen_set()::FinSet
     P = getvalue(model) 
-    haskey(P.generators, :Attr) || return generators(P, :Hom)
-    vcat(generators(P, :Hom), generators(P, :Attr))
+    haskey(P.generators, :Attr) || return FinSet(generators(P, :Hom))
+    FinSet(vcat(generators(P, :Hom), generators(P, :Attr)))
   end
 end
-
 
 # ob_generators(C::FinCatPresentation) = generators(presentation(C), :Ob)
 # ob_generators(C::Union{FinCatPresentation{ThSchema.Meta.T},FinCatPresentation{ThPointedSetSchema.Meta.T}}) = let P = presentation(C)
@@ -71,7 +95,6 @@ end
 #   vcat(generators(P, :Hom), generators(P, :Attr))
 # end
 
-equations(C::FinCatPresentation) = equations(presentation(C))
 
 # ob_generator(C::FinCatPresentation, x) = ob(C, presentation(C)[x])
 # ob_generator(C::FinCatPresentation, x::GATExpr{:generator}) = ob(C, x)
@@ -117,3 +140,5 @@ function Base.show(io::IO, C::FinCatPresentation)
   show(io, presentation(C))
   print(io, ")")
 end
+
+end # module

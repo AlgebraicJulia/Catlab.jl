@@ -1,6 +1,16 @@
+module FinFnDict 
 
-# FinFunctionDict
-#----------------
+export FinFunctionDict
+
+using StructEquality
+
+using GATlab
+import GATlab: getvalue
+
+using ...Sets: AbsSet, SetOb
+using ...SetFunctions: SetFunctionImpl, ThSetFunction, SetFunction, dom, codom
+using ...FinSets: FinSet
+import ..FinFunctions: FinFunction, FinDomFunction
 
 """ 
 Valid function when domain is indexed by positive integers less than the 
@@ -11,7 +21,13 @@ vector length.
   codom::AbsSet
 end
 
+# Accessor
+##########
+
 getvalue(f::FinFunctionDict) = f.val
+
+# Other methods
+###############
 
 function Base.show(io::IO, f::FinFunctionDict)
   print(io, "Fin")
@@ -21,17 +37,20 @@ function Base.show(io::IO, f::FinFunctionDict)
   print(io, ")")
 end
 
+# SetFunction implementation
+############################
 
 @instance ThSetFunction{Any, AbsSet, SetFunction} [model::FinFunctionDict] begin
+
   dom()::AbsSet = FinSet(Set(collect(keys(getvalue(model)))))
 
   codom()::AbsSet = model.codom
 
   app(i::Any, )::Any = getvalue(model)[i]
 
-  postcompose(g::SetFunction)::SetFunction = 
-    FinDomFunction(FinFunctionDict(Dict(k => g(v) for (k,v) in getvalue(model)), 
-                                   codom(g)))
+  postcompose(g::SetFunction)::SetFunction = FinDomFunction(
+    FinFunctionDict(Dict(k => g(v) for (k,v) in getvalue(model)), codom(g)))
+
 end
   
 """ Default `FinFunction` from a `AbstractDict`"""
@@ -43,3 +62,5 @@ FinFunction(f::AbstractDict, cod::FinSet) =
 
 FinDomFunction(f::AbstractDict, cod::SetOb) = 
   FinDomFunction(FinFunctionDict(f, cod))
+
+end # module

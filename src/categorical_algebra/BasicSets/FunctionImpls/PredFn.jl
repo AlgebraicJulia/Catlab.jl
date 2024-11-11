@@ -1,6 +1,15 @@
+module PredFn 
 
-# Predicated function
-#--------------------
+export PredicatedFunction
+
+using StructEquality
+
+using GATlab
+import GATlab: getvalue
+
+using ...Sets: SetOb, PredicatedSet
+using ..SetFunctions: SetFunctionImpl, ThSetFunction, dom, codom
+import ..SetFunctions: SetFunction
 
 """ 
 Wrapper around `SetFunction` that checks inputs/outputs are compatible with 
@@ -10,11 +19,20 @@ Wrapper around `SetFunction` that checks inputs/outputs are compatible with
   val::SetFunction
 end
 
+# Accessor
+##########
+
 getvalue(p::PredicatedFunction) = p.val
 
+# SetFunction Implementation
+############################
+
 @instance ThSetFunction{Any, SetOb, SetFunction} [model::PredicatedFunction] begin
+
   dom()::SetOb = dom(getvalue(model))
+
   codom()::SetOb = codom(getvalue(model))
+
   function app(i::Any)::Any
     f = getvalue(model)
     d, c = dom(f), codom(f)
@@ -23,6 +41,9 @@ getvalue(p::PredicatedFunction) = p.val
     getvalue(c) isa PredicatedSet && v ∉ c && error("Bad codomain output")
     v
   end
-  postcompose(f::SetFunction)::SetFunction = 
-    SetFunction(PredicatedFunction(i -> f(model.func(i)), dom[model](model), codom[model](f)))
+
+  postcompose(f::SetFunction)::SetFunction = PredicatedFunction(
+    i -> f(getvalue(model)(i)), dom[model](model), codom[model](f)) |> SetFunction
 end
+
+end # module

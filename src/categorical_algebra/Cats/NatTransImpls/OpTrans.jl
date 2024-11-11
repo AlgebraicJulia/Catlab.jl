@@ -1,3 +1,4 @@
+module OpTrans 
 # Oppositization 2-functor
 #-------------------------
 
@@ -28,3 +29,5 @@ do_composeH(F::OppositeFunctor, β::OppositeTransformation) =
 do_composeH(α::OppositeTransformation, H::OppositeFunctor) =
   OppositeTransformation(do_composeH(α.trans, H.func))
 =#
+
+end # module

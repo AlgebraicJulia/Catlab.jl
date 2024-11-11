@@ -1,11 +1,21 @@
+module OpFunctor 
+
+export OppositeFunctor
+
+using StructEquality
+using GATlab
+
+using ...Categories: Cat
+using ..Functors: FunctorImpl, ThFunctor, Functor
 
 """ Opposite functor, given by the same mapping between opposite categories.
 
 Call `op(::Functor)` instead of directly instantiating this type.
 """
-@struct_hash_equal struct OppositeFunctor{DO,CO,DH,CH,DG,CG,DC,CC
-                                         } <: AbsFunctorImpl{DO,CO,DH,CH,DG,CG,DC,CC}
-  func::Functor{DO,CO,DH,CH,DG,CG,DC,CC}
+@struct_hash_equal struct OppositeFunctor{DO,CO,DH,CH} <: FunctorImpl{DO,CO,DH,CH}
+  func::Functor
+  OppositeFunctor(f::Functor) = 
+    new{obtype(dom(f)), obtype(codom(f)), homtype(dom(f)), homtype(codom(f))}(f)
 end
 
 getvalue(F::OppositeFunctor) = F.func
@@ -16,16 +26,19 @@ else
   Functor(OppositeFunctor(f))
 end
 
-@instance ThFunctor{DO,CO,DH,CH,DG,CG,DC,CC} [model::OppositeFunctor{DO,CO,DH,CH,DG,CG,DC,CC}
-                                       ] where {DO,CO,DH,CH,DG,CG,DC,CC} begin 
+@instance ThFunctor{DO,CO,DH,CH,Cat} [model::OppositeFunctor{DO,CO,DH,CH}
+                                     ] where {DO,CO,DH,CH} begin 
   dom() = op(dom(getvalue(model)))
 
   codom() = op(codom(getvalue(model)))
 
   ob_map(x::DO) = ob_map(getvalue(model), x) 
 
-  hom_map(f::DG) = hom_map(getvalue(model), f) 
+  hom_map(f::DH) = hom_map(getvalue(model), f) 
 end
 
 # do_compose(F::OppositeFunctor, G::OppositeFunctor) =
 #   OppositeFunctor(do_compose(F.func, G.func))
+
+
+end # module
