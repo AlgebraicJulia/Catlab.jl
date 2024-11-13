@@ -42,7 +42,7 @@ StructTypes.subtypes(::Type{Var}) = (Untyped=Untyped, Typed=Typed)
 
 @data UWDTerm <: AbstractTerm begin
  Statement(relation::Symbol, variables::Vector{Var})
- UWDExpr(context::Vector{Var}, statements::Vector{Statement})
+ UWDExpr(outer_ports::Vector{Var}, context::Vector{Var}, statements::Vector{Statement})
 end
 
 @doc """    UWDTerm
@@ -52,7 +52,7 @@ Term specifying UWD.
 Subtypes
 ========
 
-1. UWDExpr: A Context of variables and a list of statements defining a UWD
+1. UWDExpr: A list of outer ports, context of variables, and statements defining a UWD
 1. Statement: R(x,y,z) a relation that acts on its arguments (which are Vars)
 
 Example
@@ -74,11 +74,12 @@ v1 = Typed(:x, :X)
 v2 = Typed(:y, :Y)
 v3 = Typed(:z, :Z)
 v4 = Untyped(:u)
-c = [v1, v3]
+c = [v1, v2, v3, v4]
+op = [v1, v3]
 s = [Statement(:R, [v1,v2]),
   Statement(:S, [v2,v3]),
   Statement(:T, [v3,v2, v4])]
-u = UWDExpr(c, s)
+u = UWDExpr(op, c, s)
 ```
 """
 UWDTerm
@@ -97,12 +98,17 @@ end
 
 vartype(v::Var) = @match v begin
   Typed(v, t) => t
-  Untyped(v) => :untyped
+  Untyped(v) => :untyped # Maybe want to output nothing stored if it is untyped
 end
 
 context(t::UWDTerm) = @match t begin
   Statement(R, xs) => xs
-  UWDExpr(context, statements) => context
+  UWDExpr(outer_ports, context, statements) => context
+end
+
+outer_ports(t::UWDTerm) = @match t begin
+  Statement(R, xs) => nothing # Not sure if this is the ideal way. 
+  UWDExpr(outer_ports, context, statements) => outer_ports
 end
 
 """    show(io::IO, s::UWDTerm)
@@ -113,7 +119,7 @@ function show(io::IO, s::UWDTerm)
   let ! = show
     @match s begin
       Statement(r, v) => begin print(io, "$r("); show(io, v, wrap=false); print(io, ")") end
-      UWDExpr(c, body) => begin 
+      UWDExpr(op, c, body) => begin 
         map(enumerate(body)) do (i,s)
           if i == 1
             print(io, "{ ")
@@ -163,11 +169,13 @@ function construct(::Type{RelationDiagram}, ex::UWDExpr)
   # to_graphviz(RelationalPrograms.SchRelationDiagram)
   uwd = RelationDiagram(map(varname, ex.context))
   junctions = Dict()
+  # Store context vars in a dictionary with their indices.
+  context_index = Dict(j => i for (i, j) in enumerate(ex.context))
   # first we add in all the outer ports and make junctions for them.
-  for (i,j) in enumerate(ex.context)
-    k = add_part!(uwd, :Junction, variable=varname(j), junction_type=vartype(j))
-    junctions[varname(j)] = k
-    set_subpart!(uwd, i, :outer_junction, k)
+  for var in ex.outer_ports
+    k = add_part!(uwd, :Junction, variable=varname(var), junction_type=vartype(var))
+    junctions[varname(var)] = k
+    set_subpart!(uwd, context_index[var], :outer_junction, k)
   end
 
   # then for each statement we add a box, and its ports

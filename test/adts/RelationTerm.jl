@@ -6,7 +6,6 @@ ACSet representation.
 module RelationTermTests
 
 using Test
-using Catlab
 using Catlab.ADTs.RelationTerm
 using Catlab.WiringDiagrams.UndirectedWiringDiagrams
 using Catlab.Programs.RelationalPrograms
@@ -18,6 +17,7 @@ using Catlab.Programs.RelationalPrograms
   # S(y,z)
   # end
 
+  # TODO: Update Show function in RelationTerm to work with new outer ports
   # TODO: need to bring the implementation of construct into compliance with existing catlab impl.
   # TODO: add outer ports to UWDExpr and then to the construct function
   # TODO: add outer ports to parser
@@ -27,12 +27,10 @@ using Catlab.Programs.RelationalPrograms
   v1 = Untyped(:x)
   v2 = Untyped(:y)
   v3 = Untyped(:z)
-  c = [v1, v3]
-  # Idea: c = [v1, v2, v3]
-  # idea: op = [v1, v3]
+  c = [v1, v2, v3]
+  op = [v1, v3]
   s = [Statement(:R, [v1, v2]), Statement(:S, [v2, v3])]
-  u = UWDExpr(c, s)
-  # Idea: u = UWDExpr(op, c, s)
+  u = UWDExpr(op, c, s)
 
   # ADT Based Construction
   uwd_result = RelationTerm.construct(RelationDiagram, u)
