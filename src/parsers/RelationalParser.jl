@@ -6,8 +6,8 @@ create a more modular grammar for RelationalProgram DSL.
 module RelationalParser
 
 using MLStyle
-using SyntacticModels.ASKEMUWDs
-using Catlab.Programs.RelationalPrograms
+using ...ADTs.RelationTerm
+using ...Programs.RelationalPrograms
 using Base.Iterators
 using Reexport
 
@@ -70,7 +70,7 @@ export finjudgement, judgement, context, statement, body, uwd, line
 
 # Some of our rules construct higher level structures for the results. Those methods are defined here:
 
-ASKEMUWDs.Typed(j::Vector{Any}) = begin
+RelationTerm.Typed(j::Vector{Any}) = begin
   Typed(Symbol(j[1]), Symbol(j[3]))
 end
 
@@ -79,7 +79,7 @@ buildcontext(v::Vector{Any}) = begin
   return v[2]
 end
 
-ASKEMUWDs.Statement(v::Vector{Any}) = begin
+RelationTerm.Statement(v::Vector{Any}) = begin
   args = (Untyped∘Symbol∘first).(v[4])
   push!(args, Untyped(Symbol(v[5])))
   Statement(Symbol(v[1]), args)
@@ -112,7 +112,7 @@ end
 #  macro that parses and constructs UWD diagram from relationalProgram syntax.
 macro relation_str(x::String) begin
   uwd_exp = parse_whole(uwd, x) end
-  return ASKEMUWDs.construct(RelationDiagram, parse_whole(uwd, x))
+  return RelationTerm.construct(RelationDiagram, parse_whole(uwd, x))
 end
 
 end

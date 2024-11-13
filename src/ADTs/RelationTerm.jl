@@ -6,7 +6,7 @@ in text format and a constructor to create an ACSet Representation.
 """
 module RelationTerm
 
-export Var, Typed, Untyped, Statement, UWDExpr, UWDModel, UWDTerm, context
+export Var, Typed, Untyped, Statement, UWDExpr, UWDTerm, context
 
 using MLStyle
 using StructTypes
@@ -43,7 +43,6 @@ StructTypes.subtypes(::Type{Var}) = (Untyped=Untyped, Typed=Typed)
 @data UWDTerm <: AbstractTerm begin
  Statement(relation::Symbol, variables::Vector{Var})
  UWDExpr(context::Vector{Var}, statements::Vector{Statement})
-  UWDModel(header::ADTsCore.Header, uwd::UWDExpr)
 end
 
 @doc """    UWDTerm
@@ -53,7 +52,6 @@ Term specifying UWD.
 Subtypes
 ========
 
-1. UWDModel: A header and UWD Expr
 1. UWDExpr: A Context of variables and a list of statements defining a UWD
 1. Statement: R(x,y,z) a relation that acts on its arguments (which are Vars)
 
@@ -90,7 +88,7 @@ Base.:(==)(s::Untyped, t::Untyped) = s.var == t.var
 
 StructTypes.StructType(::Type{UWDTerm}) = StructTypes.AbstractType()
 StructTypes.subtypekey(::Type{UWDTerm}) = :_type
-StructTypes.subtypes(::Type{UWDTerm}) = (Statement=Statement, UWDExpr=UWDExpr, UWDModel=UWDModel)
+StructTypes.subtypes(::Type{UWDTerm}) = (Statement=Statement, UWDExpr=UWDExpr)
 
 varname(v::Var) = @match v begin
   Untyped(v) => v
@@ -105,7 +103,6 @@ end
 context(t::UWDTerm) = @match t begin
   Statement(R, xs) => xs
   UWDExpr(context, statements) => context
-  UWDModel(h, uwd) => context(uwd)
 end
 
 """    show(io::IO, s::UWDTerm)
@@ -135,7 +132,6 @@ function show(io::IO, s::UWDTerm)
         print(io, " where ")
         show(io, c)
       end
-      UWDModel(h, uwd) => begin println(io, header_to_string(h)); println(io, "UWD:"); !(io, uwd); end
     end
   end
 end

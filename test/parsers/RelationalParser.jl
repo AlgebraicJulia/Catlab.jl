@@ -1,4 +1,4 @@
-__precompile__(false) #REMOVE
+# __precompile__(false) #REMOVE
 # ## Testing our parser
 module ParserTests
 using Test

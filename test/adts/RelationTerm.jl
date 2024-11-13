@@ -12,18 +12,27 @@ using Catlab.WiringDiagrams.UndirectedWiringDiagrams
 using Catlab.Programs.RelationalPrograms
 
 
-@testset "UWD Construction" begin
+#@testset "UWD Construction" begin
   # parsed = @relation (x,z) where (x,y,z) begin
   # R(x,y)
   # S(y,z)
   # end
 
+  # TODO: need to bring the implementation of construct into compliance with existing catlab impl.
+  # TODO: add outer ports to UWDExpr and then to the construct function
+  # TODO: add outer ports to parser
+  # TODO; relation macro should emit a RelationTerm instead of using the PEG Parser.
+  # TODO: refactor the lexer out of the parser and make those reusable.
+
   v1 = Untyped(:x)
   v2 = Untyped(:y)
   v3 = Untyped(:z)
   c = [v1, v3]
+  # Idea: c = [v1, v2, v3]
+  # idea: op = [v1, v3]
   s = [Statement(:R, [v1, v2]), Statement(:S, [v2, v3])]
   u = UWDExpr(c, s)
+  # Idea: u = UWDExpr(op, c, s)
 
   # ADT Based Construction
   uwd_result = RelationTerm.construct(RelationDiagram, u)
@@ -39,6 +48,7 @@ using Catlab.Programs.RelationalPrograms
   @test uwd_result == d
   d
 
-end
+  
+  #end
 
 end
