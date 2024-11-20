@@ -26,10 +26,10 @@ g, h = path_graph(Graph, 3), path_graph(Graph, 4)
 homs = [ACSetTransformation((V=[1,2,3], E=[1,2]), g, h),
         ACSetTransformation((V=[2,3,4], E=[2,3]), g, h)]
 @test homomorphisms(g, h) == homs
-@test homomorphisms(g, h, alg=HomomorphismQuery()) == homs
+@test homomorphisms(g, h, alg=HomomorphismQuery()) == hom # TODO
 @test !is_isomorphic(g, h)
 
-I = ob(terminal(Graph))
+I = @acset Graph begin V=1; E=1; src=1; tgt=1 end
 α = ACSetTransformation((V=[1,1,1], E=[1,1]), g, I)
 @test homomorphism(g, I) == α
 @test homomorphism(g, I, alg=HomomorphismQuery()) == α

@@ -2,6 +2,8 @@ module SubCSets
 
 using ...SetCats.Subsets: predicate
 
+using Base.Meta: quot
+
 # Sub-C-sets
 ############
 

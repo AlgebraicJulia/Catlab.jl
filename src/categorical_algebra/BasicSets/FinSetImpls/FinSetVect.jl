@@ -13,6 +13,9 @@ import ..FinSets: FinSet
 """ Wrapper around a Julia `Vector`. """
 @struct_hash_equal struct FinSetVect{T} <: FinSetImpl
   vect::AbstractVector{T}
+  function FinSetVect(v::AbstractVector{T}) where T 
+    new{T}(unique(v)) # remove duplicates
+  end
 end 
 
 # Accessor

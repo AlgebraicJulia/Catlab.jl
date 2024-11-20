@@ -7,10 +7,11 @@ using StructEquality
 using GATlab 
 import GATlab: getvalue, equations
 
+import ......Graphs: src, tgt
 using .....BasicSets: FinSet
 using ....Paths: Path
 using ..FinCats: FinCatImpl, ThFinCat
-import ..FinCats: FinCat
+import ..FinCats: FinCat, dom, codom
 
 # Theory of Categories where homs are presumed to be paths of generators
 ########################################################################
@@ -53,6 +54,11 @@ getvalue(p::PathCat) = p.impl
 src(p::PathCat, x) = ThPathCat.src[getvalue(p)](x)
 
 tgt(p::PathCat, x) = ThPathCat.tgt[getvalue(p)](x)
+
+dom(::PathCat, x::Path) = src(x)
+
+codom(::PathCat, x::Path) = tgt(x)
+
 
 ob_set(p::PathCat) = ThPathCat.ob_set[getvalue(p)]()
 

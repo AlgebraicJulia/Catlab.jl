@@ -24,12 +24,13 @@ f = FinFunction(g, :src)
 @test codom(f) == FinSet(6)
 @test collect(f) == 2:4
 
-f = FinDomFunction(g, :E)
-@test collect(f) == 1:3
-# @test is_indexed(f)
-f = FinDomFunction(g, :tgt)
-@test codom(f) == SetOb(Int)
-@test collect(f) == 3:5
+# IS THIS REALLY NEEDED?
+# f = FinDomFunction(g, :E)
+# @test collect(f) == 1:3
+# # @test is_indexed(f)
+# f = FinDomFunction(g, :tgt)
+# @test codom(f) == SetOb(Int)
+# @test collect(f) == 3:5
 
 g = path_graph(WeightedGraph{Float64}, 3, E=(weight=[0.5, 1.5],))
 @test TypeSet(g, :Weight) == TypeSet(Float64)

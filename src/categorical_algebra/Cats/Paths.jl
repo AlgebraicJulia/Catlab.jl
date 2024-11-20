@@ -22,17 +22,33 @@ The path is allowed to be empty but always has definite start and end points
   tgt::V
 end
 
+Path{V,E}(v::V) where {V,E} = Path(E[], v, v)
+
+# Accessors
+#----------
 edges(path::Path) = path.edges
 
 src(path::Path) = path.src
 
 tgt(path::Path) = path.tgt
 
+# Other methods
+#--------------
 
-Path{V,E}(v::V) where {V,E} = Path(E[], v, v)
+function Base.show(io::IO, path::Path)
+  print(io, "Path(")
+  show(io, edges(path))
+  print(io, ": $(src(path)) → $(tgt(path)))")
+end
+
+Base.length(p::Path) = length(edges(p))
+
+Base.reverse(p::Path) = Path(reverse(edges(p)), tgt(p), src(p))
+
+Base.iterate(p::Path, x...) = iterate(edges(p), x...)
 
 # Graph-specific Path constructions
-##################################
+###################################
 
 function Path(g::HasGraph, es::AbstractVector)
   !isempty(es) || error("Nonempty edge list needed for nontrivial path")
@@ -50,8 +66,6 @@ function Base.empty(::Type{Path}, g::HasGraph, v::T) where T
   Path(SVector{0,T}(), v, v)
 end
 
-Base.reverse(p::Path) = Path(reverse(edges(p)), tgt(p), src(p))
-
 function Base.vcat(p1::Path, p2::Path)
   tgt(p1) == src(p2) ||
     error("Path start/end points do not match: $(tgt(p1)) != $(src(p2))")
@@ -61,12 +75,5 @@ end
 coerce_path(::HasGraph, path::Path) = path
 
 coerce_path(g::HasGraph, x) = Path(g, x)
-
-function Base.show(io::IO, path::Path)
-  print(io, "Path(")
-  show(io, edges(path))
-  print(io, ": $(src(path)) → $(tgt(path)))")
-end
-
 
 end  # module

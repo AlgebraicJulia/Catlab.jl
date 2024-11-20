@@ -1,4 +1,4 @@
-module PreorderCat 
+module PreorderCats 
 
 export PreorderFinCat
 

@@ -1,10 +1,10 @@
 module CatsInterop 
 export U_CatSet
 
-using ...Cats.Categories: Cat, ob_set
+using ...Cats.Categories: Cat, ob_set, codom
 using ...Cats.FinCats: FinCat
 
-using ...BasicSets.Sets: SetOb
+using ...BasicSets: SetOb, FinDomFunction
 using ...Cats.FinFunctors: FinDomFunctor, collect_ob
 
 """ Forgetful functor Cat → Set.

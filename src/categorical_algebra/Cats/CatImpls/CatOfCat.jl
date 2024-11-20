@@ -1,6 +1,6 @@
-module CatCat 
+module CatOfCat 
 
-export CatC
+export CatC, FinCatC
 
 using StructEquality
 
@@ -15,6 +15,7 @@ using ..Functors: Functor, CompositeFunctor, ThFunctor
 @struct_hash_equal struct CatC <: Model{Tuple{Category, Functor}} end
 
 @instance ThCategory{Category, Functor} [model::CatC] begin
+
   dom(f::Functor)::Category = ThFunctor.dom[getvalue(f)]()
 
   codom(f::Functor)::Category = ThFunctor.codom[getvalue(f)]()
@@ -22,6 +23,7 @@ using ..Functors: Functor, CompositeFunctor, ThFunctor
   id(c::Category) = Functor(c)
 
   compose(f::Functor, g::Functor) = Functor(CompositeFunctor(f,g))
+
 end
 
 @default_model ThCategory{Category, Functor} [model::CatC]

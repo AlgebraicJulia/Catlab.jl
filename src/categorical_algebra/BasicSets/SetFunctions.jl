@@ -143,9 +143,14 @@ include("FunctionImpls/Callable.jl")
 
 @struct_hash_equal struct SetC <: Model{Tuple{AbsSet, SetFunction}} end
 
+
+# # FinSet wrapper for anything which implements ThFinSet 
+
+# @struct_hash_equal struct SkelFinSet <: Model{Tuple{FinSetInt, FinFunction}} end
+
 @instance ThCategory{AbsSet, SetFunction} [model::SetC] begin
-  dom(f::SetFunction) = dom[model(f)](getvalue(f))
-  codom(f::SetFunction) = codom[model(f)](getvalue(f))
+  dom(f::SetFunction) = dom(f)
+  codom(f::SetFunction) = codom(f)
 
   id(A::AbsSet) = SetFunction(A)
 
@@ -155,6 +160,5 @@ include("FunctionImpls/Callable.jl")
     SetFunction(f, g)
   end
 end
-
 
 end # module

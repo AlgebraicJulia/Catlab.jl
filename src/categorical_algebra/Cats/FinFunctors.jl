@@ -1,147 +1,20 @@
 module FinFunctors 
-export FinDomFunctor, is_functorial, functoriality_failures,
-        collect_ob, collect_hom, make_map,
-        FinTransformation, components, is_natural, is_initial,dom_to_graph, gen_map
+export FinDomFunctor, is_functorial, functoriality_failures, is_initial, 
+        collect_ob, collect_hom, make_map, components, gen_map, dom_to_graph
 
 using DataStructures: IntDisjointSets, in_same_set, num_groups
 using StructEquality
-using GATlab
+using Reexport
+using GATlab, ACSets
 
-using ....Theories: ObExpr, HomExpr, AttrExpr
+import ....Theories: dom, codom
+using ....Graphs
 using ..Categories
 using ..Functors: FunctorImpl, ThFunctor, Functor
-import ..Functors: hom_map, show_type_constructor
+import ..Functors: ob_map, hom_map, show_type_constructor
 import ..FreeDiagrams: FreeDiagram
 import ...BasicSets: force
 
-# using ..FinCats: 
-
-# Functors
-##########
-
-
-@theory ThFinDomFunctor begin
-  DomOb::TYPE; CodomOb::TYPE; DomHom::TYPE; CodomHom::TYPE; DomGen::TYPE; 
-  FCat::TYPE; Cat′::TYPE;
-  dom()::FCat
-  codom()::Cat′
-  ob_map(o::DomOb)::CodomOb
-  gen_map(o::DomGen)::CodomHom
-end
-
-abstract type FinDomFunctorImpl{DO,CO,DH,CH,DG} <: Model{
-  Tuple{DO,CO,DG,CH,FinCat,Cat}} end 
-  
-""" A functor out of a finitely-presented category.
-"""
-struct FinDomFunctor{DO,CO,DH,CH,DG} <: FunctorImpl{DO,CO,DH,CH}
-  impl::FinDomFunctorImpl{DO,CO,DH,CH,DG}
-  function FinDomFunctor(i::FinDomFunctorImpl{DO,CO,DH,CH,DG}) where {DO,CO,DH,CH,DG}
-    # check types
-    D, C = ThFinDomFunctor.dom[i](), ThFinDomFunctor.codom[i]()
-    obtype(D) == DO || error("Bad dom ob type")
-    homtype(D) == DH || error("Bad dom hom type")
-    gentype(D) == DG || error("Bad dom hom type")
-    obtype(C) == CO || error("Bad dom ob type")
-    homtype(C) == CH || error("Bad dom hom type")
-    new{DO,CO,DH,CH,DG}(i)
-  end 
-end
-
-GATlab.getvalue(f::FinDomFunctor) = f.impl
-
-dom(f::FinDomFunctor) = ThFinDomFunctor.dom[getvalue(f)]()
-
-codom(f::FinDomFunctor) = ThFinDomFunctor.codom[getvalue(f)]()
-
-ob_map(f::FinDomFunctor, x) = ThFinDomFunctor.ob_map[getvalue(f)](x)
-
-gen_map(f::FinDomFunctor, x) = ThFinDomFunctor.gen_map[getvalue(f)](x)
-
-""" Apply a FinDomFunctor to a path of generators """
-function path_map(F::FinDomFunctor, path::Path)
-  C, D = dom(F), codom(F)
-  init = id(D, ob_map(F, src(path)))
-  mapreduce(e -> gen_map(F, e), (gs...) -> compose(D, gs...), edges(path); init)
-end
-
-
-""" Apply a FinDomFunctor defined on generators by decompose the hom into a path of generators """
-function hom_map(F::FinDomFunctor, h)
-  path_map(F, decompose(dom(F), h))
-end
-
-
-# function hom_map(F::FinDomFunctor, f::GATExpr{:compose})
-#   C, D = dom(F), codom(F)
-#   mapreduce(f -> hom_map(F, f), (gs...) -> compose(D, gs...), decompose(C, f))
-# end
-
-# function hom_map(F::FinDomFunctor, f::GATExpr{:id})
-#   id(codom(F), ob_map(F, dom(f)))
-# end
-
-# (F::FinDomFunctor)(expr::ObExpr) = ob_map(F, expr)
-
-# (F::FinDomFunctor)(expr::HomExpr) = hom_map(F, expr)
-
-show_type_constructor(io::IO, ::Type{<:FinDomFunctor}) =
-  print(io, "FinDomFunctor")
-
-""" Collect assignments of functor's object map as a vector.
-"""
-collect_ob(F::FinDomFunctor) = map(x -> ob_map(F, x), ob_generators(dom(F)))
-
-""" Collect assignments of functor's morphism map as a vector.
-"""
-collect_hom(F::FinDomFunctor) = map(f -> hom_map(F, f), hom_generators(dom(F)))
-
-""" Is the purported functor on a presented category functorial?
-
-This function checks that functor preserves domains and codomains. When
-`check_equations` is `true` (the default is `false`), it also purports to check
-that the functor preserves all equations in the domain category. No nontrivial 
-checks are currently implemented, so this only functions for identity functors.
-
-See also: [`functoriality_failures'](@ref) and [`is_natural`](@ref).
-"""
-function is_functorial(F::FinDomFunctor; kw...)
-  failures = functoriality_failures(F; kw...)
-  all(isempty, failures)
-end
-
-""" Failures of the purported functor on a presented category to be functorial.
-
-Similar to [`is_functorial`](@ref) (and with the same caveats) but returns
-iterators of functoriality failures: one for domain incompatibilities, one for
-codomain incompatibilities, and one for equations that are not satisfied.
-"""
-function functoriality_failures(F::FinDomFunctor; check_equations::Bool=false)
-  C, D = dom(F), codom(F)
-  bad_dom = Iterators.filter(hom_generators(C)) do f 
-    dom(D, hom_map(F, f)) != ob_map(F, dom(C,f))
-  end 
-  bad_cod = Iterators.filter(hom_generators(C)) do f 
-    codom(D, hom_map(F, f)) != ob_map(F, codom(C,f))
-  end
-  bad_eqs = if check_equations
-    # TODO: Currently this won't check for nontrivial equalities
-    Iterators.filter(equations(C)) do (lhs,rhs)
-      !is_hom_equal(D,hom_map(F,lhs),hom_map(F,rhs))
-    end
-  else () end
-  (bad_dom, bad_cod, bad_eqs)
-end
-
-function Base.map(F::Functor, f_ob, f_hom)
-  C = dom(F)
-  FinDomFunctor(map(x -> f_ob(ob_map(F, x)), ob_generators(C)),
-                map(f -> f_hom(hom_map(F, f)), hom_generators(C)), C)
-end
-
-# Implementations
-#################
-include("FunctorImpls/FinDomMap.jl")
 
 # Dict utilities
 ################
@@ -212,6 +85,147 @@ function make_map(f, xs, ::Type{T}) where T
   end
 end
 
+# Theory of FinDomFunctors
+##########################
+
+"""
+Theory of functors with a finitely-presented domain (ob and hom generators).
+The functor assigns codom homs to dom *generators*.
+"""
+@theory ThFinDomFunctor begin
+  DomOb::TYPE; CodomOb::TYPE; DomHom::TYPE; CodomHom::TYPE; DomGen::TYPE; 
+  FCat::TYPE; Cat′::TYPE;
+  dom()::FCat
+  codom()::Cat′
+  ob_map(o::DomOb)::CodomOb
+  gen_map(o::DomGen)::CodomHom
+end
+
+""" Subtypes of this must implement `ThFinDomFunctor` """
+abstract type FinDomFunctorImpl{DO,CO,DH,CH,DG} <: Model{
+  Tuple{DO,CO,DG,CH,FinCat,Cat}} end 
+
+# Wrapper type for models of ThFinDomFunctor
+############################################
+""" A functor out of a finitely-presented category.
+
+Wrapper type for models of `ThFinDomFunctor`.
+"""
+struct FinDomFunctor{DO,CO,DH,CH,DG} <: FunctorImpl{DO,CO,DH,CH}
+  impl::FinDomFunctorImpl{DO,CO,DH,CH,DG}
+  function FinDomFunctor(i::FinDomFunctorImpl{DO,CO,DH,CH,DG}) where {DO,CO,DH,CH,DG}
+    # check types
+    D, C = ThFinDomFunctor.dom[i](), ThFinDomFunctor.codom[i]()
+    obtype(D) == DO || error("Bad dom ob type")
+    homtype(D) == DH || error("Bad dom hom type")
+    gentype(D) == DG || error("Bad dom hom type")
+    obtype(C) == CO || error("Bad dom ob type")
+    homtype(C) == CH || error("Bad dom hom type")
+    new{DO,CO,DH,CH,DG}(i)
+  end 
+end
+
+GATlab.getvalue(f::FinDomFunctor) = f.impl
+
+# Access model methods
+######################
+
+dom(f::FinDomFunctor) = ThFinDomFunctor.dom[getvalue(f)]()
+
+codom(f::FinDomFunctor) = ThFinDomFunctor.codom[getvalue(f)]()
+
+ob_map(f::FinDomFunctor, x) = ThFinDomFunctor.ob_map[getvalue(f)](x)
+
+gen_map(f::FinDomFunctor, x) = ThFinDomFunctor.gen_map[getvalue(f)](x)
+
+# Other methods
+###############
+
+""" Apply a FinDomFunctor to a path of generators """
+function path_map(F::FinDomFunctor, path::Path)
+  C, D = dom(F), codom(F)
+  init = id(D, ob_map(F, src(path)))
+  mapreduce(e -> gen_map(F, e), (gs...) -> compose(D, gs...), edges(path); init)
+end
+
+""" Apply a FinDomFunctor defined on generators by decompose the hom into a path of generators """
+function hom_map(F::FinDomFunctor, h)
+  path_map(F, decompose(dom(F), h))
+end
+
+Base.show(io::IO, s::FinDomFunctor) = show(io, getvalue(s))
+
+show_type_constructor(io::IO, ::Type{<:FinDomFunctor}) =
+  print(io, "FinDomFunctor")
+
+""" Collect assignments of functor's object map as a vector.
+"""
+collect_ob(F::FinDomFunctor) = map(x -> ob_map(F, x), ob_generators(dom(F)))
+
+""" Collect assignments of functor's morphism map as a vector.
+"""
+collect_hom(F::FinDomFunctor) = map(f -> gen_map(F, f), hom_generators(dom(F)))
+
+""" Is the purported functor on a presented category functorial?
+
+This function checks that functor preserves domains and codomains. When
+`check_equations` is `true` (the default is `false`), it also purports to check
+that the functor preserves all equations in the domain category. No nontrivial 
+checks are currently implemented, so this only functions for identity functors.
+
+See also: [`functoriality_failures'](@ref) and [`is_natural`](@ref).
+"""
+function is_functorial(F::FinDomFunctor; kw...)
+  failures = functoriality_failures(F; kw...)
+  all(isempty, failures)
+end
+
+""" Failures of the purported functor on a presented category to be functorial.
+
+Similar to [`is_functorial`](@ref) (and with the same caveats) but returns
+iterators of functoriality failures: one for domain incompatibilities, one for
+codomain incompatibilities, and one for equations that are not satisfied.
+"""
+function functoriality_failures(F::FinDomFunctor; check_equations::Bool=false)
+  C, D = dom(F), codom(F)
+  bad_dom = Iterators.filter(hom_generators(C)) do f 
+    dom(D, gen_map(F, f)) != ob_map(F, src(C,f))
+  end 
+  bad_cod = Iterators.filter(hom_generators(C)) do f 
+    codom(D, gen_map(F, f)) != ob_map(F, tgt(C,f))
+  end
+  bad_eqs = if check_equations
+    # TODO: Currently this won't check for nontrivial equalities
+    Iterators.filter(equations(C)) do (lhs,rhs)
+      !is_hom_equal(D,gen_map(F,lhs),gen_map(F,rhs))
+    end
+  else () end
+  (bad_dom, bad_cod, bad_eqs)
+end
+
+
+""" Construct a `FinDomMap` from an existing `FinDomFunctor` """
+function Base.map(F::Functor, f_ob, f_hom)
+  C = dom(F)
+  FinDomFunctor(map(x -> f_ob(ob_map(F, x)), ob_generators(C)),
+                map(f -> f_hom(hom_map(F, f)), hom_generators(C)), C)
+end
+
+# Implementations
+#################
+include("FunctorImpls/FinFunctorImpls/IdFinFunctor.jl")
+include("FunctorImpls/FinFunctorImpls/OpFinFunctor.jl")
+include("FunctorImpls/FinFunctorImpls/FinDomMap.jl")
+include("FunctorImpls/FinFunctorImpls/ACSetFunctors.jl")
+include("FunctorImpls/FinFunctorImpls/CompFinFunctor.jl")
+
+@reexport using .IdFinFunctor
+@reexport using .OpFinFunctor
+@reexport using .FinDomMap
+@reexport using .ACSetFunctors
+@reexport using .CompFinFunctor
+
+
 
 """ Force evaluation of lazily defined function or functor.
 The resulting ob_map and hom_map are guaranteed to have 
@@ -223,7 +237,7 @@ function force(F::FinDomFunctor, Obtype::Type=Any, Homtype::Type=Any)
   FinDomFunctor(
     make_map(x -> ob_map(F, x), ob_generators(C), Obtype),
     make_map(f -> hom_map(F,f), hom_generators(C), Homtype), 
-    C)
+    C, codom(F))
 end
 
 function FreeDiagram(F::FinDomFunctor)
@@ -263,203 +277,87 @@ end
 # collect_hom(F::FreeDiagramFunctor) = hom(F.diagram)
 
 
-# """
-# Reinterpret a functor on a finitely presented category
-# as a functor on the equivalent category (ignoring equations)
-# free on a graph. Also normalizes the input to have vector ob_map
-# and hom_map, with valtype optionally specified. This is useful when
-# the domain is empty or when the maps might be tightly typed but need to
-# allow for types such as that of identity morphisms upon mutation.
-# """
-# function dom_to_graph(F::FinDomFunctor{Dom,<:Cat{Ob,Hom}},obtype=Ob,homtype=Hom) where {Dom,Ob,Hom} 
-#   D = dom(F)
-#   C = FinCat(graph(D))
-#   new_obs = obtype[ob_map(F,ob) for ob in ob_generators(D)]
-#   new_homs = homtype[hom_map(F,hom) for hom in hom_generators(D)]
-#   FinDomFunctorMap(new_obs,new_homs,C,TypeCat(obtype,homtype))
-# end
+"""
+Reinterpret a functor on a finitely presented category
+as a functor on the equivalent category (ignoring equations)
+free on a graph. Also normalizes the input to have vector ob_map
+and hom_map, with valtype optionally specified. This is useful when
+the domain is empty or when the maps might be tightly typed but need to
+allow for types such as that of identity morphisms upon mutation.
+"""
+function dom_to_graph(F::FinDomFunctor)
+  D = dom(F)
+  C = FinCat(graph(D))
+  new_obs = obtype[ob_map(F,ob) for ob in ob_generators(D)]
+  new_homs = homtype[hom_map(F,hom) for hom in hom_generators(D)]
+  FinDomFunctorMap(new_obs,new_homs,C,TypeCat(obtype,homtype))
+end
 
-# function Base.show(io::IO, F::T) where T <: FinDomFunctorMap
-#   Categories.show_type_constructor(io, T); print(io, "(")
-#   show(io, F.ob_map)
-#   print(io, ", ")
-#   show(io, F.hom_map)
-#   print(io, ", ")
-#   Categories.show_domains(io, F)
-#   print(io, ")")
-# end
+function Base.show(io::IO, F::T) where T <: FinDomFunctorMap
+  Categories.show_type_constructor(io, T); print(io, "(")
+  show(io, F.ob_map)
+  print(io, ", ")
+  show(io, F.hom_map)
+  print(io, ", ")
+  Categories.show_domains(io, F)
+  print(io, ")")
+end
 
-# # Natural transformations
-# #########################
 
-# """ A natural transformation whose domain category is finitely generated.
+# Initial functors
+##################
 
-# This type is for natural transformations ``α: F ⇒ G: C → D`` such that the
-# domain category ``C`` is finitely generated. Such a natural transformation is
-# given by a finite amount of data (one morphism in ``D`` for each generating
-# object of ``C``) and its naturality is verified by finitely many equations (one
-# equation for each generating morphism of ``C``).
-# """
-# const FinTransformation{C<:FinCat,D<:Cat,Dom<:FinDomFunctor,Codom<:FinDomFunctor} =
-#   Transformation{C,D,Dom,Codom}
+"""
+Dual to a [final functor](https://ncatlab.org/nlab/show/final+functor), an
+*initial functor* is one for which pulling back diagrams along it does not
+change the limits of these diagrams.
 
-# FinTransformation(F, G; components...) = FinTransformation(components, F, G)
+This amounts to checking, for a functor C->D, that, for every object d in
+Ob(D), the comma category (F/d) is connected.
+"""
+function is_initial(F::FinDomFunctor)::Bool
+  cod = getvalue(codom(F))
+  cod isa FinCat || error("Can only check initiality for functors with f.p. codom")
+  Gₛ, Gₜ = Graph(dom(F)), Graph(cod)
+  pathₛ, pathₜ = enumerate_paths.([Gₛ, Gₜ])
 
-# """ Components of a natural transformation.
-# """
-# components(α::FinTransformation) =
-#   make_map(x -> component(α, x), ob_generators(dom_ob(α)))
+  function connected_nonempty_slice(t::Int)::Bool
+    paths_into_t = incident(pathₜ, t, :tgt)
+    # Generate slice objects
+    ob_slice = Pair{Int,Vector{Int}}[] # s ∈ Ob(S) and a path ∈ T(F(s), t)
+    for s in vertices(Gₛ)
+      paths_s_to_t = incident(pathₜ, ob_map(F,s), :src) ∩ paths_into_t
+      append!(ob_slice, [s => pathₜ[p, :eprops] for p in paths_s_to_t])
+    end
 
-# """ Is the transformation between `FinDomFunctors` a natural transformation?
+    # Empty case
+    isempty(ob_slice) && return false
 
-# This function uses the fact that to check whether a transformation is natural,
-# it suffices to check the naturality equations on a generating set of morphisms
-# of the domain category. In some cases, checking the equations may be expensive
-# or impossible. When the keyword argument `check_equations` is `false`, only the
-# domains and codomains of the components are checked.
+    """
+    For two slice objects (m,pₘ) and (n,pₙ) check for a morphism f ∈ S(M,N) such
+    that there is a commutative triangle pₘ = f;pₙ
+    """
+    function check_pair(i::Int, j::Int)::Bool
+      (m,pₘ), (n,pₙ) = ob_slice[i], ob_slice[j]
+      es = incident(pathₛ, m, :src) ∩ incident(pathₛ, n, :tgt)
+      paths = Path.(Ref(dom(F)), pathₛ[es, :eprops], m, n)
+      return any(f -> pₘ == vcat(edges(hom_map(F,f))..., pₙ), paths)
+    end
 
-# See also: [`is_functorial`](@ref).
-# """
-# function is_natural(α::FinTransformation; check_equations::Bool=true)
-#   F, G = dom(α), codom(α)
-#   C, D = dom(F), codom(F) # == dom(G), codom(G)
-#   all(ob_generators(C)) do c
-#     α_c = α[c]
-#     dom(D, α_c) == ob_map(F,c) && codom(D, α_c) == ob_map(G,c)
-#   end || return false
+    # Use check_pair to determine pairwise connectivity
+    connected = IntDisjointSets(length(ob_slice)) # sym/trans/refl closure
+    obs = 1:length(ob_slice)
+    for (i,j) in Base.Iterators.product(obs, obs)
+      if !in_same_set(connected, i, j) && check_pair(i,j)
+        union!(connected, i, j)
+      end
+    end
+    return num_groups(connected) == 1
+  end
 
-#   if check_equations
-#     all(hom_generators(C)) do f
-#       Ff, Gf = hom_map(F,f), hom_map(G,f)
-#       α_c, α_d = α[dom(C,f)], α[codom(C,f)]
-#       is_hom_equal(D, compose(D, α_c, Gf), compose(D, Ff, α_d))
-#     end || return false
-#   end
-
-#   true
-# end
-
-# function check_transformation_domains(F::Functor, G::Functor)
-#   # XXX: Equality of TypeCats is too strict, so for now we are punting on
-#   # (co)domain checks in that case.
-#   C, C′ = dom(F), dom(G)
-#   (C isa TypeCat && C′ isa TypeCat) || C == C′ ||
-#     error("Mismatched domains in functors $F and $G")
-#   D, D′ = codom(F), codom(G)
-#   (D isa TypeCat && D′ isa TypeCat) || D == D′ ||
-#     error("Mismatched codomains in functors $F and $G")
-#   (C, D)
-# end
-
-# # Mapping-based transformations
-# #------------------------------
-
-# """ Natural transformation with components given by explicit mapping.
-# """
-# @struct_hash_equal struct FinTransformationMap{C<:FinCat,D<:Cat,
-#     Dom<:FinDomFunctor{C,D},Codom<:FinDomFunctor,Comp} <: FinTransformation{C,D,Dom,Codom}
-#   components::Comp
-#   dom::Dom
-#   codom::Codom
-# end
-
-# function FinTransformation(components::Union{AbstractVector,AbstractDict},
-#                            F::FinDomFunctor, G::FinDomFunctor)
-#   C, D = check_transformation_domains(F, G)
-#   length(components) == length(ob_generators(C)) ||
-#     error("Incorrect number of components in $components for domain category $C")
-#   components = mappairs(x -> ob_key(C,x), f -> hom(D,f), components)
-#   FinTransformationMap(components, F, G)
-# end
-
-# component(α::FinTransformationMap, x) = α.components[ob_key(dom_ob(α), x)]
-# components(α::FinTransformationMap) = α.components
-
-# op(α::FinTransformationMap) = FinTransformationMap(components(α),
-#                                                    op(codom(α)), op(dom(α)))
-
-# function Categories.do_compose(α::FinTransformationMap, β::FinTransformation)
-#   F = dom(α)
-#   D = codom(F)
-#   FinTransformationMap(mapvals(α.components, keys=true) do c, f
-#                          compose(D, f, component(β, c))
-#                        end, F, codom(β))
-# end
-
-# function Categories.do_composeH(F::FinDomFunctorMap, β::Transformation)
-#   G, H = dom(β), codom(β)
-#   FinTransformationMap(mapvals(c -> component(β, c), F.ob_map),
-#                        compose(F, G), compose(F, H))
-# end
-
-# function Categories.do_composeH(α::FinTransformationMap, H::Functor)
-#   F, G = dom(α), codom(α)
-#   FinTransformationMap(mapvals(f->hom_map(H,f),α.components),
-#                       compose(F, H), compose(G, H))
-# end
-
-# function Base.show(io::IO, α::FinTransformationMap)
-#   print(io, "FinTransformation(")
-#   show(io, components(α))
-#   print(io, ", ")
-#   Categories.show_domains(io, α, recurse=false)
-#   print(io, ", ")
-#   Categories.show_domains(io, dom(α))
-#   print(io, ")")
-# end
-
-# # Initial functors
-# ##################
-
-# """
-# Dual to a [final functor](https://ncatlab.org/nlab/show/final+functor), an
-# *initial functor* is one for which pulling back diagrams along it does not
-# change the limits of these diagrams.
-
-# This amounts to checking, for a functor C->D, that, for every object d in
-# Ob(D), the comma category (F/d) is connected.
-# """
-# function is_initial(F::FinFunctor)::Bool
-#   Gₛ, Gₜ = graph(dom(F)), graph(codom(F))
-#   pathₛ, pathₜ = enumerate_paths.([Gₛ, Gₜ])
-
-#   function connected_nonempty_slice(t::Int)::Bool
-#     paths_into_t = incident(pathₜ, t, :tgt)
-#     # Generate slice objects
-#     ob_slice = Pair{Int,Vector{Int}}[] # s ∈ Ob(S) and a path ∈ T(F(s), t)
-#     for s in vertices(Gₛ)
-#       paths_s_to_t = incident(pathₜ, ob_map(F,s), :src) ∩ paths_into_t
-#       append!(ob_slice, [s => pathₜ[p, :eprops] for p in paths_s_to_t])
-#     end
-
-#     # Empty case
-#     isempty(ob_slice) && return false
-
-#     """
-#     For two slice objects (m,pₘ) and (n,pₙ) check for a morphism f ∈ S(M,N) such
-#     that there is a commutative triangle pₘ = f;pₙ
-#     """
-#     function check_pair(i::Int, j::Int)::Bool
-#       (m,pₘ), (n,pₙ) = ob_slice[i], ob_slice[j]
-#       es = incident(pathₛ, m, :src) ∩ incident(pathₛ, n, :tgt)
-#       paths = pathₛ[es, :eprops]
-#       return any(f -> pₘ == vcat(edges.(hom_map(F,f))..., pₙ), paths)
-#     end
-
-#     # Use check_pair to determine pairwise connectivity
-#     connected = IntDisjointSets(length(ob_slice)) # sym/trans/refl closure
-#     obs = 1:length(ob_slice)
-#     for (i,j) in Base.Iterators.product(obs, obs)
-#       if !in_same_set(connected, i, j) && check_pair(i,j)
-#         union!(connected, i, j)
-#       end
-#     end
-#     return num_groups(connected) == 1
-#   end
-
-#   # Check for each t ∈ T whether F/t is connected
-#   return all(connected_nonempty_slice, 1:nv(Gₜ))
-# end
+  # Check for each t ∈ T whether F/t is connected
+  return all(connected_nonempty_slice, 1:nv(Gₜ))
+end
 
 
 end # module

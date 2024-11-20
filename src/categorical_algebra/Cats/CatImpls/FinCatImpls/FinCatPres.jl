@@ -1,3 +1,4 @@
+""" Symbolic categories """
 module FinCatPres 
 export FinCatPresentation
 
@@ -14,8 +15,6 @@ using ....Paths: Path
 using ..FinCats: FinCatImpl, ThFinCat
 import ..FinCats: FinCat
 
-# Symbolic categories
-#####################
 
 """ Category defined by a `Presentation` object.
 

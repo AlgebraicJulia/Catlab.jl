@@ -4,9 +4,10 @@ export OppositeFunctor
 
 using StructEquality
 using GATlab
+import GATlab: op, getvalue
 
-using ...Categories: Cat
-using ..Functors: FunctorImpl, ThFunctor, Functor
+using ...Categories: Cat, dom, codom, obtype, homtype
+using ..Functors: FunctorImpl, ThFunctor, Functor, ob_map, hom_map
 
 """ Opposite functor, given by the same mapping between opposite categories.
 

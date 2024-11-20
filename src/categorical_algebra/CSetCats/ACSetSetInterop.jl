@@ -1,14 +1,14 @@
 module ACSetSetInterop
 
+export sets
+
 using ACSets, CompTime
 using ACSets.Columns
+using ACSets.DenseACSets: datatypes
 
-import ...BasicSets.Sets: SetOb, TypeSet
-import ...BasicSets.SetFunctions: SetFunction
-
-import ...BasicSets.FinSets: FinSet
-import ...BasicSets.FinFunctions: FinFunction, FinDomFunction
-import ...SetCats.VarFunctions: VarFunction
+import ...BasicSets: SetOb, TypeSet, SetFunction, FinSet, FinFunction, 
+                     FinDomFunction
+import ...SetCats: VarFunction
 
 """ Create `SetOb` for object or attribute type of attributed C-set.
 
@@ -70,16 +70,6 @@ FinDomFunction(c::Column{Int,Union{AttrVar,T}}, dom, codom) where {T} =
   )
 
 
-# """ Create `VarSet` for attribute type of attributed C-set."""
-# function VarSet(X::ACSet, type::Symbol)
-#   S = acset_schema(X)
-#   if type ∈ ob(S) #honestly should probably be an error
-#     return VarSet{Union{}}(nparts(X,type))
-#   else 
-#     return VarSet{attrtype_type(X,type)}(nparts(X,type))
-#   end
-# end
-
 function VarFunction(X::ACSet, f::Symbol)
   S = acset_schema(X)
   if f ∈ attrs(S; just_names=true)
@@ -127,6 +117,7 @@ FinFunction(X::DynamicACSet, name::Symbol)  =
   runtime(set_function,X, acset_schema(X), name)
 
 
+# WHY DOES THIS EXIST?
 """ Create `FinDomFunction` for morphism or attribute of attributed C-set.
 
 Indices are included whenever they exist. Unlike the `FinFunction` constructor,
@@ -137,14 +128,31 @@ the codomain of the result is always of type `TypeSet`.
 
 @ct_enable function fin_dom_function(X::SimpleACSet, @ct(S), @ct(name))
   @ct_ctrl if name ∈ objects(S)
-    n = nparts(X, @ct name)
-    FinDomFunction(1:n, FinSet(Int))
-  elseif name ∈ homs(S; just_names=true) || name ∈ attrs(S; just_names=true)
+    # n = nparts(X, @ct name)
+    # FinDomFunction(1:n, FinSet(n)) # changed from TypeSet
+  elseif name ∈ attrs(S; just_names=true) # name ∈ homs(S; just_names=true) || WHY
     FinDomFunction(X.subparts[@ct name], FinSet(X, @ct(dom(S, name))),
                    SetOb(TypeSet(X, @ct(codom(S, name)))))
   else
     @ct throw(ArgumentError("$(repr(name)) not in $(objects(S)), $(homs(S)), or $(attrs(S))"))
   end
+end
+
+
+""" C-set → named tuple of sets.
+"""
+function sets(X::ACSet; S=nothing, Ts=nothing, all::Bool=false,var::Bool=false)
+  S = isnothing(S) ? acset_schema(X) : S
+  Ts = isnothing(Ts) ? datatypes(X) : Ts
+  res = NamedTuple(c => SetOb(X,c) for c in objects(S))
+  if all 
+    return merge(res, NamedTuple(c => SetOb(X,c) for c in attrtypes(S)))
+  elseif var 
+    return merge(res, NamedTuple(c => VarSet{attrtype_instantiation(S,Ts,c)}(
+      nparts(X,c)) for c in attrtypes(S)))
+  else 
+    return res
+  end 
 end
 
 end # module

@@ -1,8 +1,7 @@
 module TestACSetsGATsInterop
 using Test
 
-using GATlab, Catlab.CategoricalAlgebra
-using Catlab.Graphs: SchGraph, SchWeightedGraph, SchSymmetricGraph
+using GATlab, Catlab, ACSets
 
 @present SchDendrogram(FreeSchema) begin
   X::Ob
@@ -54,4 +53,4 @@ for schema in [SchGraph, SchWeightedGraph, SchSymmetricGraph]
 end
 
 
-end
+end # module

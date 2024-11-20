@@ -363,20 +363,5 @@ function pack_components(fs::NamedTuple{names}, doms, codoms;
   end
 end
 
-""" C-set → named tuple of sets.
-"""
-function sets(X::ACSet; S=nothing, Ts=nothing, all::Bool=false,var::Bool=false)
-  S = isnothing(S) ? acset_schema(X) : S
-  Ts = isnothing(Ts) ? datatypes(X) : Ts
-  res = NamedTuple(c => SetOb(X,c) for c in objects(S))
-  if all 
-    return merge(res, NamedTuple(c => SetOb(X,c) for c in attrtypes(S)))
-  elseif var 
-    return merge(res, NamedTuple(c => VarSet{attrtype_instantiation(S,Ts,c)}(
-      nparts(X,c)) for c in attrtypes(S)))
-  else 
-    return res
-  end 
-end
 
 end # module

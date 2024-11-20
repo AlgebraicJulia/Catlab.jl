@@ -7,19 +7,17 @@ using StructEquality
 using GATlab
 import GATlab: getvalue
 
-using ...BasicSets.Sets, ...BasicSets.SetFunctions, ...BasicSets.FinSets, ...BasicSets.FinFunctions
-using ...BasicSets.Sets: SetImpl
 import ....Theories: dom, codom 
-import ...BasicSets.Sets: left, right
-using ...BasicSets.SetFunctions: ThSetFunction, ConstEither
-import ...BasicSets.FinSets: force
-import ...BasicSets.FinFunctions: preimage, is_monic, is_epic
+using ...BasicSets
+using ...BasicSets.Sets: SetImpl
+using ...BasicSets.SetFunctions: ThSetFunction, SetFunctionImpl
+import ...BasicSets: left, right, force, preimage, is_monic, is_epic
 
 
 # VarFunctions
 ##############
 
-""" Theory of a category with hetromorphisms """
+""" Theory of a category with heteromorphisms """
 @theory ThHeteroCat <: ThCategory begin
   @op (⇸) := Het
   Het(dom::Ob, codom::Ob)::TYPE
@@ -67,9 +65,27 @@ plus_T_dom(f::FinDomFunction, T::Type) =
 
 # VarFunctions 
 #-------------
-abstract type AbsVarFunction{T} end
+abstract type AbsVarFunction{T} <: SetFunctionImpl end
 
-# Skip indexing for the time being
+@instance ThSetFunction{Any, AbsSet, SetFunction} [model::AbsVarFunction{T}
+                                                  ] where {T} begin
+
+  dom()::AbsSet = dom(model)
+
+  codom()::AbsSet = codom(model)
+
+  app(i::Any)::Any = model(i)
+
+  function postcompose(f::SetFunction)::SetFunction
+    fv = getvalue(f)
+    fv isa VarFunction{T} || error("Cannot compose $fv")
+    SetFunction(compose(model, fv))
+  end
+
+end
+
+
+# Skip indexing for the time being (we could have IndexedVarFunction struct, etc.)
 preimage(f::AbsVarFunction, v) = [x for x in dom(f) if f(x) == v]
 
 function is_monic(f::AbsVarFunction)
@@ -209,10 +225,10 @@ end
     either_cod_inv(codom(getvalue(f)), T)
   end
 
-  id(s::FinSet)::FinDomFunction = id[FinC()](s)
+  id(s::FinSet)::FinDomFunction = id[FinCatC()](s)
 
   compose(f::FinDomFunction, g::FinDomFunction)::FinDomFunction = 
-    compose[FinC()](f, g)
+    compose[FinCatC()](f, g)
   
   compose(f::AbsVarFunction{T},g::FinDomFunction; context) =
     CompositeVarFunctionL(f, g)

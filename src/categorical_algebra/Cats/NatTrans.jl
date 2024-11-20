@@ -1,6 +1,6 @@
 module NatTrans 
 
-export co, Cat2, component, dom_ob, codom_ob
+export co, Cat2, component, dom_ob, codom_ob, is_natural
 
 using StructEquality
 using Reexport

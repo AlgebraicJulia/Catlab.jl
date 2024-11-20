@@ -13,9 +13,11 @@ export ACSetHomomorphismAlgorithm, BacktrackingSearch, HomomorphismQuery,
        subobject_graph, partial_overlaps, maximum_common_subobject,
        compile_hom_search
    
-using ....Theories, ..CSets, ...BasicSets.FinSets, ..FreeDiagrams, ..Subobjects
+using ....Theories
+using ...BasicSets, ...Cats
+using ..ACSetTransformations, ..CSets #, ..FreeDiagrams, ..Subobjects
 using ....Graphs.BasicGraphs
-using ..CSets: map_components
+using ..ACSetTransformations: map_components, coerce_components
 using ACSets.DenseACSets: attrtype_type, delete_subobj!
 
 using Random, StructEquality
@@ -277,8 +279,11 @@ function backtracking_search(f, X::ACSet, Y::ACSet;
   # Injections between finite sets of the same size are bijections, so reduce to that case.
   monic = unique([iso..., monic...])
 
-  if error_failures 
-    uns = naturality_failures(X,Y,initial,type_components)
+  if error_failures
+    initial_comps = coerce_components(S, initial, X, Y)
+    @show initial_comps
+    uns = naturality_failures(X,Y,initial_comps) # TODO removed `type_components`
+    @show collect(uns)
     all(isempty,[uns[a] for a in keys(uns)]) ||
       error(sprint(show_naturality_failures, uns))
   end

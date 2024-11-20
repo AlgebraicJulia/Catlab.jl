@@ -24,12 +24,11 @@ import .....Theories: dom, codom, id, compose, ⋅, ∘
 using .....Graphs
 import .....Graphs: Graph, NamedGraph, src, tgt
 
-
+using ..Categories: CatImpl, ThCategoryExplicitSets, Cat, obtype
 import ..Categories: ob_set, hom_set
-using ..Categories: CatImpl, ThCategoryExplicitSets
 
 using ....BasicSets: FinSet, AbsSet, SetOb
-using ...Paths: Path
+import ...Paths: Path
 
 # Theory of Finite Categories
 #############################
@@ -90,9 +89,9 @@ getvalue(f::FinCat) = f.impl
 
 id(f::FinCat, x) = ThFinCat.id[getvalue(f)](x)
 
-dom(f::FinCat, x)::Cat = ThFinCat.dom[getvalue(f)](x)
+dom(f::FinCat, x) = ThFinCat.dom[getvalue(f)](x)
 
-codom(f::FinCat, x)::Cat = ThFinCat.codom[getvalue(f)](x)
+codom(f::FinCat, x) = ThFinCat.codom[getvalue(f)](x)
 
 src(f::FinCat, x) = ThFinCat.src[getvalue(f)](x)
 
@@ -123,6 +122,16 @@ ob_generators(f::FinCat)::FinSet = ob_set(f)
 hom_generators(f::FinCat)::FinSet = gen_set(f)
 
 gentype(f::FinCat) = eltype(hom_generators(f))
+
+""" 
+Create path from a vector of generators. If no s/t provided, then the list 
+must not be empty 
+"""
+function Path(f::FinCat, gs::AbstractVector, s=nothing, t=nothing)
+  s = isnothing(s) ? src(f, first(gs)) : s
+  t = isnothing(t) ? tgt(f, last(gs)) : t
+  Path(gs, s, t)
+end
 
 """ Is the category discrete?
 
@@ -197,13 +206,13 @@ end
 #################
 
 include("FinCatImpls/PathCats.jl")
-include("FinCatImpls/PreorderCat.jl")
+include("FinCatImpls/PreorderCats.jl")
 include("FinCatImpls/OpFinCat.jl")
 include("FinCatImpls/FinCatGraphs.jl")
 include("FinCatImpls/FinCatPres.jl")
 
 @reexport using .PathCats
-@reexport using .PreorderCat
+@reexport using .PreorderCats
 @reexport using .OpFinCat
 @reexport using .FinCatGraphs
 @reexport using .FinCatPres

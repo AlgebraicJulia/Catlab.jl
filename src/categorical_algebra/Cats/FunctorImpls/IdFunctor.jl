@@ -16,6 +16,8 @@ import ..Functors: Functor
   IdentityFunctor(c::Cat) = new{obtype(c), homtype(c)}(c)
 end
 
+GATlab.getvalue(i::IdentityFunctor) = i.dom
+
 function Base.show(io::IO, F::IdentityFunctor)
   print(io, "id(")
   #show_domains(io, F, codomain=false) #TODO
@@ -23,9 +25,9 @@ function Base.show(io::IO, F::IdentityFunctor)
 end
 
 @instance ThFunctor{O,O,H,H,Cat} [model::IdentityFunctor{O,H}] where {O,H} begin 
-  dom() = model.dom
+  dom() = getvalue(model)
 
-  codom() = model.dom
+  codom() = getvalue(model)
 
   ob_map(x::O)::O = x
 

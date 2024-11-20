@@ -592,11 +592,11 @@ macro cocartesian_monoidal_instance(Ob, Hom, M)
   esc(quote
     using GATlab.Syntax.TheoryInterface: WithModel
 
-    import Catlab.Theories: ThCocartesianCategory, oplus, ⊕, mzero, swap,
-      plus, zero, copair, coproj1, coproj2
+    import Catlab.Theories: ThCocartesianCategory, oplus, ⊕, →, mzero, swap,
+      plus, zero, copair, coproj1, coproj2, Ob, Hom
 
     @instance ThCocartesianCategory{$Ob, $Hom} [model::$M] begin
-      @import dom, codom, compose, ⋅, id, mzero, copair
+      @import Ob, Hom, dom, codom, compose, ⋅, →, id, mzero, copair
 
       oplus(A::$Ob, B::$Ob) = ob(coproduct([A, B], $M()))
 

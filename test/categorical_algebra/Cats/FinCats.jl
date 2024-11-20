@@ -12,7 +12,7 @@ po2 = PreorderFinCat([(1,2),(2,3)]) |> FinCat
 
 
 F = FinDomFunctor(Dict(:a=>1,:b=>2),
-  Dict(x=>x for x in hom_generators(po1)), po1, po2)
+  Dict(x=>x for x in hom_generators(po1)), po1, po2; homtype=:hom)
 
 @test id(Cat(po1), :a) == (1=>1)
 @test hom_map(F, 1=>1) == (1=>1)

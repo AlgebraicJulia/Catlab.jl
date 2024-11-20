@@ -30,16 +30,19 @@ end
   include("SetCats/FinCLimits.jl")
 end
 
-# @testset "CSets" begin
-#   include("CSetCats/ACSetsGATsInterop.jl")
-#   include("CSetCats/CSets.jl")
+@testset "CSets" begin
+  
+  include("CSetCats/ACSetSetInterop.jl")
+  include("CSetCats/ACSetsGATsInterop.jl")
+  include("CSetCats/ACSetTransformations.jl")
+  include("CSetCats/CSets.jl")
 #   include("CSetCats/HomSearch.jl")
 #   include("CSetCats/CatElements.jl")
 #   include("CSetCats/Chase.jl")
 #   include("CSetCats/FunctorialDataMigrations.jl")
 #   include("CSetCats/StructuredCospans.jl")
 #   include("CSetCats/SliceCategories.jl")
-# end
+end
 
 
 end
