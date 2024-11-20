@@ -170,6 +170,9 @@ function parse_relation_diagram(head::Expr, body::Expr)
   body = Base.remove_linenums!(body)
   for expr in body.args
     name, port_names, vars = parse_relation_call(expr)
+    # DEBUG
+    print("name $name, port names: $port_names, and vars: $vars \n")
+    # DEBUG
     isnothing(all_vars) || vars ⊆ all_vars ||
       error("One of variables $vars is not declared in context $all_vars")
     box = add_box!(d, var_types(vars), name=name)
