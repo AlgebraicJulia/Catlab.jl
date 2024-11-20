@@ -174,7 +174,7 @@ function construct(::Type{RelationDiagram}, ex::UWDExpr)
   end
 
   # Create wiring diagram and add outer ports and junctions
-  uwd = RelationDiagram(var_types(ex.outer_ports))
+  uwd = RelationDiagram(var_types(ex.outer_ports)) #TO DO: Implmement "port_names=outer_port_names"
   if isnothing(ex.context)
     new_vars = unique(ex.outer_ports)
     add_junctions!(uwd, var_types(new_vars), variable=varname.(new_vars))
@@ -184,37 +184,18 @@ function construct(::Type{RelationDiagram}, ex::UWDExpr)
   set_junction!(uwd, ports(uwd, outer=true),
                 only.(incident(uwd, varname.(ex.outer_ports), :variable)), outer=true)
 
+  # Add box to diagram for each relation call.
+  for s in ex.statements 
+    box = add_box!(uwd, var_types(s.variables), name=s.relation)
+    # TO DO: Implement Port names subparts
+    if isnothing(ex.context)
+      new_vars = setdiff(unique(varname.(s.variables)), uwd[:variable])
+      add_junctions!(uwd, var_types(new_vars), variable=varname.(new_vars))
+    end
+    set_junction!(uwd, ports(uwd, box), only.(incident(uwd, varname.(s.variables), :variable)))
+  end
 
-  # uwd = RelationDiagram(map(varname, ex.context))
-
-  # add_parts!(uwd, :Junction, length(ex.context), variable=varname.(ex.context), junction_type=vartype.(ex.context))
-  # junctions = uwd[:, :variable]
-  
-  # junction(name) = only(incident(uwd, :varname, name))
-  # for var in ex.outer_ports
-  #   try k = junction(varname(a))
-  #     op_id = add_part!(uwd, :OuterPorts, outer_junction=k)
-  #   catch
-  #     k = add_part!(uwd, :Junction, variable=varname(a), junction_type=vartype(a))    
-  #     op_id = add_part!(uwd, :OuterPorts, outer_junction=k)
-  #   end
-  # end
-  
-  # # then for each statement we add a box, and its ports
-  # for s in ex.statements
-  #   b = add_part!(uwd, :Box, name=s.relation)
-  #   for a in s.variables
-  #     # if a junction is missing, we have to add it. This is for implicit variables that weren't in the context
-  #     try k = junction(varname(a))
-  #       # every port connects to the junction with the same variable name
-  #       add_part!(uwd, :Port, box=b, port_type=vartype(a), junction=junction(varname(a)))
-  #     catch
-  #       k = add_part!(uwd, :Junction, variable=varname(a), junction_type=vartype(a))    
-  #       add_part!(uwd, :Port, box=b, port_type=vartype(a), junction=junction(varname(a)))
-  #     end
-  #   end
-  # end
-  # return uwd
+  return uwd
 end
 
 end
