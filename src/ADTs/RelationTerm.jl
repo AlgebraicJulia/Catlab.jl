@@ -144,14 +144,21 @@ function show(io::IO, s::UWDTerm)
 end
 
 function show(io::IO, c::Vector{Var}; wrap=true)
+  # Handling vars:
+  show_var(v::Var) = @match v begin
+    Untyped(v) => print(io, v)
+    Typed(v, T) => print(io, "$v:$T")
+    Kwarg(n, v) => begin 
+      print(io, "$n=")
+      show_var(v)
+    end
+  end
+
   if wrap
     print(io, "{")
   end
   map(enumerate(c)) do (i,s)
-    @match s begin
-      Untyped(v) => print(io, v)
-      Typed(v, T) => print(io, "$v:$T")
-    end
+    show_var(s)
     if i != length(c)
       print(io, ", ")
     end
