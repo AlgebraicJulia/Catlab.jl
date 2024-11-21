@@ -96,7 +96,6 @@ end
 
 end
 
-# TODO: Add PortNames to RelationTerm
 # TODO: Update Show function in RelationTerm to work with new outer ports
 # TODO: add outer ports to parser
 # TODO; relation macro should emit a RelationTerm instead of using the PEG Parser.
