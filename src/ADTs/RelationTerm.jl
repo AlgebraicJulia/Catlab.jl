@@ -6,7 +6,7 @@ in text format and a constructor to create an ACSet Representation.
 """
 module RelationTerm
 
-export Var, Typed, Untyped, Statement, UWDExpr, UWDTerm, context
+export Var, Typed, Untyped, Kwarg, Statement, UWDExpr, UWDTerm, context
 
 using MLStyle
 using StructTypes
@@ -20,6 +20,7 @@ import Base: show
 @data Var <: AbstractTerm begin
  Untyped(var::Symbol)
  Typed(var::Symbol, type::Symbol)
+ Kwarg(name::Symbol, var::Var)
 end
 
 @doc """   Var
@@ -30,15 +31,16 @@ Subtypes include:
 
 1. Untyped(var::Symbol)
 1. Typed(var::Symbol, type::Symbol)
+1. Kwarg(name::Symbol, var::Var)
 
-which are used for representing typed or untyped variables.
+which are used for representing typed or untyped variables as well as assignment vars.
 """
 
 Var
 
 StructTypes.StructType(::Type{Var}) = StructTypes.AbstractType()
 StructTypes.subtypekey(::Type{Var}) = :_type
-StructTypes.subtypes(::Type{Var}) = (Untyped=Untyped, Typed=Typed)
+StructTypes.subtypes(::Type{Var}) = (Untyped=Untyped, Typed=Typed, Kwarg=Kwarg)
 
 @data UWDTerm <: AbstractTerm begin
  Statement(relation::Symbol, variables::Vector{Var})
@@ -86,6 +88,8 @@ UWDTerm
 
 Base.:(==)(s::Statement, t::Statement) = s.relation == t.relation && s.variables == t.variables
 Base.:(==)(s::Untyped, t::Untyped) = s.var == t.var
+Base.:(==)(s::Typed, t::Typed) = s.var == t.var && s.type == t.type
+Base.:(==)(s::Kwarg, t::Kwarg) = s.name == t.name && s.var == t.var
 
 StructTypes.StructType(::Type{UWDTerm}) = StructTypes.AbstractType()
 StructTypes.subtypekey(::Type{UWDTerm}) = :_type
@@ -94,21 +98,18 @@ StructTypes.subtypes(::Type{UWDTerm}) = (Statement=Statement, UWDExpr=UWDExpr)
 varname(v::Var) = @match v begin
   Untyped(v) => v
   Typed(v, t) => v
+  Kwarg(n, v) => varname(v)
 end
 
 vartype(v::Var) = @match v begin
   Typed(v, t) => t
-  Untyped(v) => :untyped # Maybe want to output nothing stored if it is untyped
+  Untyped(v) => :untyped
+  Kwarg(n, v) => vartype(v)
 end
 
-context(t::UWDTerm) = @match t begin
-  Statement(R, xs) => xs
-  UWDExpr(outer_ports, context, statements) => context
-end
-
-outer_ports(t::UWDTerm) = @match t begin
-  UWDExpr(outer_ports, context, statements) => outer_ports
-  _ => nothing # Not sure if this is the ideal way.
+portname(v::Var) = @match v begin
+  Kwarg(n, v) => n
+  _ => nothing
 end
 
 """    show(io::IO, s::UWDTerm)
@@ -173,8 +174,17 @@ function construct(::Type{RelationDiagram}, ex::UWDExpr)
     vars -> getindex.(Ref(var_type_map), varname.(vars)) # Returns list of types in typed Case
   end
 
+  #Dealing with Port names
+  port_names(vars::Vector{Var}) = begin
+    names = portname.(vars)
+    results = @match names begin
+      GuardBy(xs -> all(xs .== nothing)) => nothing
+      xs => xs
+    end
+  end
+
   # Create wiring diagram and add outer ports and junctions
-  uwd = RelationDiagram(var_types(ex.outer_ports)) #TO DO: Implmement "port_names=outer_port_names"
+  uwd = RelationDiagram(var_types(ex.outer_ports), port_names=port_names(ex.outer_ports))
   if isnothing(ex.context)
     new_vars = unique(ex.outer_ports)
     add_junctions!(uwd, var_types(new_vars), variable=varname.(new_vars))
@@ -187,7 +197,10 @@ function construct(::Type{RelationDiagram}, ex::UWDExpr)
   # Add box to diagram for each relation call.
   for s in ex.statements 
     box = add_box!(uwd, var_types(s.variables), name=s.relation)
-    # TO DO: Implement Port names subparts
+    namedPorts = port_names(s.variables)
+    if !isnothing(namedPorts)
+      set_subpart!(uwd, ports(uwd, box), :port_name, namedPorts)
+    end
     if isnothing(ex.context)
       new_vars = setdiff(unique(varname.(s.variables)), uwd[:variable])
       add_junctions!(uwd, var_types(new_vars), variable=varname.(new_vars))
