@@ -4,6 +4,7 @@ using Test
 
 using Catlab.CategoricalAlgebra.CSets
 using Catlab.WiringDiagrams.UndirectedWiringDiagrams
+using Catlab.ADTs.RelationTerm
 using Catlab.Programs.RelationalPrograms
 
 # Relation macro
