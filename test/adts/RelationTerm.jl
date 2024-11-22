@@ -158,9 +158,9 @@ end
 
   d = RelationDiagram(2)
   add_box!(d, 2, name=:R); add_box!(d, 2, name=:S)
-  add_junctions!(d, 3, variable=[:x,:y,:z])
-  set_junction!(d, [1,2,2,3]) #Understanding: Port 1 connects to 1, port 2 to 2, port 3 to 2, port 4 to 3
-  set_junction!(d, [1,3], outer=true)
+  add_junctions!(d, 3, variable=[:x,:z,:y])
+  set_junction!(d, [1,3,3,2]) #Understanding: Port 1 connects to 1, port 2 to 2, port 3 to 2, port 4 to 3
+  set_junction!(d, [1,2], outer=true)
   
   @test uwd_result == d
 
