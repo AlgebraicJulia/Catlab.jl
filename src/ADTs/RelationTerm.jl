@@ -193,7 +193,7 @@ function construct(::Type{RelationDiagram}, ex::UWDExpr)
 
   # Create wiring diagram and add outer ports and junctions
   uwd = RelationDiagram(var_types(ex.outer_ports), port_names=port_names(ex.outer_ports))
-  if isnothing(ex.context)
+  if isempty(ex.context)
     new_vars = unique(ex.outer_ports)
     add_junctions!(uwd, var_types(new_vars), variable=varname.(new_vars))
   else
@@ -209,9 +209,9 @@ function construct(::Type{RelationDiagram}, ex::UWDExpr)
     if !isnothing(namedPorts)
       set_subpart!(uwd, ports(uwd, box), :port_name, namedPorts)
     end
-    if isnothing(ex.context)
+    if isempty(ex.context)
       new_vars = setdiff(unique(varname.(s.variables)), uwd[:variable])
-      add_junctions!(uwd, var_types(new_vars), variable=varname.(new_vars))
+      add_junctions!(uwd, var_types(new_vars), variable=new_vars)
     end
     set_junction!(uwd, ports(uwd, box), only.(incident(uwd, varname.(s.variables), :variable)))
   end
