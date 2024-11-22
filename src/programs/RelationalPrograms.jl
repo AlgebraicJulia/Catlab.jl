@@ -11,6 +11,7 @@ using MLStyle: @match
 using GATlab
 using ...CategoricalAlgebra.CSets
 using ...WiringDiagrams.UndirectedWiringDiagrams
+using ...ADTs.RelationTerm
 
 # Data types
 ############
@@ -140,49 +141,76 @@ function parse_relation_diagram(expr::Expr)
 end
 
 function parse_relation_diagram(head::Expr, body::Expr)
+  # Generate dict for storing all vars
+  var_dict = Dict{Symbol, Var}()
+
+  # Look Up Function for Vars
+  lookup_var(var) = begin
+    if haskey(var_dict, var)
+      var_dict[var]
+    else
+      Untyped(var)
+    end
+  end
+
   # Parse variables and their types from context.
   outer_expr, all_vars, all_types = @match head begin
     Expr(:where, expr, context) => (expr, parse_relation_context(context)...)
     _ => (head, nothing, nothing)
   end
-  var_types = if isnothing(all_types)    # Untyped case
-    vars -> length(vars)
-  else
-    var_type_map = Dict(zip(all_vars, all_types)) 
-    vars -> getindex.(Ref(var_type_map), vars)
+
+  # Generate Context Array and Var Dict.
+  context = isnothing(all_vars) ? [] : map(all_vars) do var
+    v = @match var begin
+      Symbol => Untyped(var)
+      (var, type) => Typed(var, type)
+    end
+    var_dict[var] = v
+    v # Return v
   end
 
-  # Create wiring diagram and add outer ports and junctions.
+  # Parse outer ports
   _, outer_port_names, outer_vars = parse_relation_call(outer_expr)
   isnothing(all_vars) || outer_vars ⊆ all_vars ||
     error("One of variables $outer_vars is not declared in context $all_vars")
-  d = RelationDiagram(var_types(outer_vars), port_names=outer_port_names)
-  if isnothing(all_vars)
-    new_vars = unique(outer_vars)
-    add_junctions!(d, var_types(new_vars), variable=new_vars)
+  
+  # Generate Outer Ports Array
+  outer_ports = isnothing(outer_vars) ? [] : if isnothing(outer_port_names)
+    map(outer_vars) do var
+      lookup_var(var)
+    end
   else
-    add_junctions!(d, var_types(all_vars), variable=all_vars)
+    map(outer_port_names, outer_vars) do name, var
+      Kwarg(name, lookup_var(var))
+    end
   end
-  set_junction!(d, ports(d, outer=true),
-                only.(incident(d, outer_vars, :variable)), outer=true)
 
-  # Add box to diagram for each relation call.
+  # Generate statements for each relation call.
   body = Base.remove_linenums!(body)
-  for expr in body.args
+  statements = map(body.args) do expr
     name, port_names, vars = parse_relation_call(expr)
     isnothing(all_vars) || vars ⊆ all_vars ||
       error("One of variables $vars is not declared in context $all_vars")
-    box = add_box!(d, var_types(vars), name=name)
-    if !isnothing(port_names)
-      set_subpart!(d, ports(d, box), :port_name, port_names)
+    
+    # Generate Ports Array
+    ports = if isnothing(port_names)
+      map(vars) do var
+        lookup_var(var)
+      end
+    else
+      map(port_names, vars) do name, var
+        Kwarg(name, lookup_var(var))
+      end
     end
-    if isnothing(all_vars)
-      new_vars = setdiff(unique(vars), d[:variable])
-      add_junctions!(d, var_types(new_vars), variable=new_vars)
-    end
-    set_junction!(d, ports(d, box), only.(incident(d, vars, :variable)))
+
+    Statement(name, ports)
   end
-  return d
+
+  # Generate UWDExpr
+  uwd = UWDExpr(outer_ports, context, statements)
+
+  # Return constructed Relation Diagram
+  return RelationTerm.construct(RelationDiagram, uwd)
 end
 
 function parse_relation_context(context)

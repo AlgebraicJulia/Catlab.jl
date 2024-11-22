@@ -146,8 +146,3 @@ end
 end
 
 end
-
-# TODO: Add outer ports to parser
-# TODO: Relation macro should emit a RelationTerm instead of using the PEG Parser.
-# TODO: Refactor the lexer out of the parser and make those reusable.
-# TODO: Maybe Update Show function in RelationTerm to show outer ports?
