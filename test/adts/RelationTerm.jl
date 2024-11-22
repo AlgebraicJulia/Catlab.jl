@@ -143,6 +143,27 @@ end
   set_subpart!(d, :port_name, [:src, :tgt, :src, :tgt])
   @test uwd_result == d
 
+  # Inferred case
+  # parse = @relation (x,z) -> (R(x,y); S(y,z))
+
+  v1 = Untyped(:x)
+  v2 = Untyped(:y)
+  v3 = Untyped(:z)
+  c = []
+  op = [v1, v3]
+  s = [Statement(:R, [v1, v2]), Statement(:S, [v2, v3])]
+  u = UWDExpr(op, c, s)
+
+  uwd_result = RelationTerm.construct(RelationDiagram, u)
+
+  d = RelationDiagram(2)
+  add_box!(d, 2, name=:R); add_box!(d, 2, name=:S)
+  add_junctions!(d, 3, variable=[:x,:y,:z])
+  set_junction!(d, [1,2,2,3]) #Understanding: Port 1 connects to 1, port 2 to 2, port 3 to 2, port 4 to 3
+  set_junction!(d, [1,3], outer=true)
+
+  @test uwd_result == d
+
 end
 
 end

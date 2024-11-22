@@ -209,6 +209,9 @@ function parse_relation_diagram(head::Expr, body::Expr)
   # Generate UWDExpr
   uwd = UWDExpr(outer_ports, context, statements)
 
+  # DEBUG: Print UWDExpr
+  println(uwd)
+
   # Return constructed Relation Diagram
   return RelationTerm.construct(RelationDiagram, uwd)
 end
