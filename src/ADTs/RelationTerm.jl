@@ -274,8 +274,21 @@ function construct(::Type{RelationDiagram}, ex::UWDExpr)
     end
   end
 
+  # Inferring outer port names
+  outer_port_names = if isempty(ex.outer_ports)
+    if isnothing(port_names(ex.statements[1].variables))
+      # No port names can be inferred
+      nothing
+    else
+      # Port names need to be inferred
+      []
+    end
+  else
+    port_names(ex.outer_ports)
+  end
+
   # Create wiring diagram and add outer ports and junctions
-  uwd = RelationDiagram(var_types(ex.outer_ports), port_names=port_names(ex.outer_ports))
+  uwd = RelationDiagram(var_types(ex.outer_ports), port_names=outer_port_names)
   if isempty(ex.context)
     new_vars = unique(ex.outer_ports)
     add_junctions!(uwd, var_types(new_vars), variable=varname.(new_vars))

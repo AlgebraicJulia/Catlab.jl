@@ -143,7 +143,7 @@ end
   set_subpart!(d, :port_name, [:src, :tgt, :src, :tgt])
   @test uwd_result == d
 
-  # Inferred case
+  # Inferred Context case
   # parse = @relation (x,z) -> (R(x,y); S(y,z))
 
   v1 = Untyped(:x)
@@ -163,6 +163,35 @@ end
   set_junction!(d, [1,2], outer=true)
   
   @test uwd_result == d
+
+  # Infered Outer Ports with named ports
+  # parse = @relation ((;) where (v,)) -> E(src=v, tgt=v)
+  v1 = Untyped(:v)
+  c = [v1]
+  op = []
+  s = [Statement(:E, [Kwarg(:src, v1), Kwarg(:tgt, v1)])]
+  u = UWDExpr(op, c, s)
+
+  uwd_result = RelationTerm.construct(RelationDiagram, u)
+  @test subpart(uwd_result, :port_name) == [:src, :tgt]
+
+  # Inferred Outer Ports with no names
+  #   sird_uwd = @relation () where (S::Pop, I::Pop, R::Pop, D::Pop) begin
+  #   infect(S,I,I,I) # inf
+  #   disease(I,R) # recover
+  #   disease(I,D) # die
+  #   end
+  v1 = Typed(:S, :Pop)
+  v2 = Typed(:I, :Pop)
+  v3 = Typed(:R, :Pop)
+  v4 = Typed(:D, :Pop)
+  c = [v1, v2, v3, v4]
+  op = []
+  s = [Statement(:infect, [v1, v2, v2, v2]), Statement(:disease, [v2, v3]), Statement(:disease, [v2, v4])]
+  u = UWDExpr(op, c, s)
+
+  uwd_result = RelationTerm.construct(RelationDiagram, u)
+  @test all(==(:Pop), subpart(uwd_result, :port_type))
 
 end
 

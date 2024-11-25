@@ -96,9 +96,9 @@ function parse_relation_diagram(head::Expr, body::Expr)
   _, outer_port_names, outer_vars = parse_relation_call(outer_expr)
   isnothing(all_vars) || outer_vars ⊆ all_vars ||
     error("One of variables $outer_vars is not declared in context $all_vars")
-  
+
   # Generate Outer Ports Array
-  outer_ports = isnothing(outer_vars) ? [] : if isnothing(outer_port_names)
+  outer_ports = isempty(outer_vars) ? [] : if isnothing(outer_port_names)
     map(outer_vars) do var
       lookup_var(var)
     end
@@ -107,6 +107,7 @@ function parse_relation_diagram(head::Expr, body::Expr)
       Kwarg(name, lookup_var(var))
     end
   end
+
 
   # Generate statements for each relation call.
   body = Base.remove_linenums!(body)
