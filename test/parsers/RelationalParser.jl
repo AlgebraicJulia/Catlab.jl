@@ -25,7 +25,7 @@ end
   @test args("tgt=x,src=y")[1] == [Kwarg(:tgt, Untyped(:x)), Kwarg(:src, Untyped(:y))]
 end
 
-@testset "Judgements" begin
+@testset "Judgement" begin
   @test judgement("a:A,")[1] == Typed(:a, :A)
   @test judgement("ab:AB,")[1] == Typed(:ab, :AB)
 
@@ -33,10 +33,20 @@ end
   @test finjudgement("ab:AB")[1] == Typed(:ab, :AB)
 end
 
+@testset "judgements" begin
+  @test judgements("a:A, b:B, c:C")[1] == [Typed(:a, :A), Typed(:b, :B), Typed(:c, :C)]
+end
+
+@testset "Outer Ports" begin
+  @test outerPorts("(A)")[1] == [Untyped(:A)]
+  @test outerPorts("(A,B)")[1] == [Untyped(:A), Untyped(:B)]
+  @test outerPorts("(src=A, tgt=B)")[1] == [Kwarg(:src, Untyped(:A)), Kwarg(:tgt, Untyped(:B))]
+end
+
 @testset "Contexts" begin
-  @test RelationalParser.context("{a:A,b:B}")[1] == [Typed(:a, :A), Typed(:b, :B)]
-  @test RelationalParser.context("{a:A,  b:B}")[1] == [Typed(:a, :A), Typed(:b, :B)]
-  @test RelationalParser.context("{ a:A,  b:B }")[1] == [Typed(:a, :A), Typed(:b, :B)]
+  @test RelationalParser.context("(a:A,b:B)")[1] == [Typed(:a, :A), Typed(:b, :B)]
+  @test RelationalParser.context("(a:A,  b:B)")[1] == [Typed(:a, :A), Typed(:b, :B)]
+  @test RelationalParser.context("( a:A,  b:B )")[1] == [Typed(:a, :A), Typed(:b, :B)]
 end
 
 @testset "Statements" begin

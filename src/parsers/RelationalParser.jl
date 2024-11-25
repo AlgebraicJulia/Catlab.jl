@@ -17,10 +17,10 @@ using Reexport
 export @relation_str
 
 # export the lexing rules
-export ws, eq, lparen, rparen, comma, EOL, colon, elname, obname, args, arg
+export ws, eq, lparen, rparen, comma, EOL, colon, ident
 
 # export the UWD rules
-export finjudgement, judgement, context, statement, body, uwd, line
+export judgements, judgement, args, arg, outerPorts, context, statement, body, uwd, line
 
 # ## Create some rules 
 # These basic rules are for *lexing*, they define character classes that will help us
@@ -34,8 +34,7 @@ export finjudgement, judgement, context, statement, body, uwd, line
 @rule comma = r","p
 @rule EOL = "\n" , r";"
 @rule colon = r":"p
-@rule elname = r"[^:{}→\n;=,\(\)\s]+"
-@rule obname = r"[^:{}→\n;=,\(\)\s]+"
+@rule ident = r"[^:{}→\n;=,\(\)\s]+"
 
 
 # Now we get to the syntax structures specific to our DSL.
@@ -44,24 +43,24 @@ export finjudgement, judgement, context, statement, body, uwd, line
 # We use the prefix `fin` for final.
 
 @rule judgements = (judgement & ws & comma)[*] & judgement |> v -> collect(v)
-@rule judgement = elname & colon & obname |> Typed
+@rule judgement = ident & colon & ident |> Typed
 
 # A context is a list of judgements between brackets. When a rule ends with `|> f`
 # it means to call `f` on the result of the parser inside the recursion.
 # We are using these functions to get more structured output as we pop the function call stack.
 # we don't want to end up with an `Array{Any}` that is deeply nested as the return value of our parse.
 
-@rule outerPorts = lparen & ws & arg[*] & finarg & ws & rparen |> v->v[2]
-@rule context = lparen & ws & judgement[*] & finjudgement & ws & rparen |> buildcontext
+@rule outerPorts = lparen & ws & args & ws & rparen |> v->v[3]
+@rule context = lparen & ws & judgements & ws & rparen |> v->v[3]
 
 # Our statements are of the form `R(a,b,c)`. A name(list of names).
-@rule statement = elname & lparen & ws & arg[*] & finarg & ws & rparen |> Statement
+@rule statement = ident & lparen & ws & args & ws & rparen |> Statement
 
 # We have a list of arguments separated by commas.
 # An argument is a port that may or may not hold a name.
 @rule args = (arg & ws & comma)[*] & arg |> v -> collect(v)
-@rule arg = elname & eq & elname |> v -> Kwarg(Symbol(v[1]), Untyped(Symbol(v[3]))),
-  elname |> v -> Untyped(Symbol(v))
+@rule arg = ident & eq & ident |> v -> Kwarg(Symbol(v[1]), Untyped(Symbol(v[3]))),
+  ident |> v -> Untyped(Symbol(v))
 
 # A line is statement, with some whitespace ended by a EOL character.
 # The body of our relational program is a list of lines between braces.
@@ -82,11 +81,6 @@ end
 
 RelationTerm.Typed(j::Vector{Any}) = begin
   Typed(Symbol(j[1]), Symbol(j[3]))
-end
-
-buildcontext(v::Vector{Any}) = begin
-  push!(v[2], v[3])
-  return v[2]
 end
 
 RelationTerm.Statement(v::Vector{Any}) = begin
