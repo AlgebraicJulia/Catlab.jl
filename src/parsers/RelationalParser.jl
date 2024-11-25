@@ -17,7 +17,7 @@ using Reexport
 export @relation_str
 
 # export the lexing rules
-export ws, eq, lparen, rparen, comma, EOL, colon, elname, obname
+export ws, eq, lparen, rparen, comma, EOL, colon, elname, obname, args, arg
 
 # export the UWD rules
 export finjudgement, judgement, context, statement, body, uwd, line
@@ -43,32 +43,42 @@ export finjudgement, judgement, context, statement, body, uwd, line
 # It would be nice to have a better way to do this, but basically anything that can occur in a list has two rules associated with it.
 # We use the prefix `fin` for final.
 
-@rule judgement = elname & colon & obname & comma |> Typed
-@rule finjudgement = elname & colon & obname |> Typed
+@rule judgements = (judgement & ws & comma)[*] & judgement |> v -> collect(v)
+@rule judgement = elname & colon & obname |> Typed
 
 # A context is a list of judgements between brackets. When a rule ends with `|> f`
 # it means to call `f` on the result of the parser inside the recursion.
 # We are using these functions to get more structured output as we pop the function call stack.
 # we don't want to end up with an `Array{Any}` that is deeply nested as the return value of our parse.
 
-@rule context = r"{"p & judgement[*] & finjudgement & ws & r"}"p |> buildcontext
+@rule outerPorts = lparen & ws & arg[*] & finarg & ws & rparen |> v->v[2]
+@rule context = lparen & ws & judgement[*] & finjudgement & ws & rparen |> buildcontext
 
 # Our statements are of the form `R(a,b,c)`. A name(list of names).
 @rule statement = elname & lparen & ws & arg[*] & finarg & ws & rparen |> Statement
-@rule arg = elname & comma
-@rule finarg = elname
+
+# We have a list of arguments separated by commas.
+# An argument is a port that may or may not hold a name.
+@rule args = (arg & ws & comma)[*] & arg |> v -> collect(v)
+@rule arg = elname & eq & elname |> v -> Kwarg(Symbol(v[1]), Untyped(Symbol(v[3]))),
+  elname |> v -> Untyped(Symbol(v))
 
 # A line is statement, with some whitespace ended by a EOL character.
 # The body of our relational program is a list of lines between braces.
-
 @rule line = ws & statement & r"[^\S\r\n]*" & EOL |> v->v[2]
 @rule body = r"{\s*"p & line[*] & r"\n?}"p |> v->v[2]
 
 # The UWD is a body and then a context for it separated by the word "where".
 
-@rule uwd = body & ws & "where" & ws & context |> v -> buildUWDExpr(v)
+@rule uwd = outerPorts & ws & "where" & ws & context & body |> v -> buildUWDExpr(v)
 
 # Some of our rules construct higher level structures for the results. Those methods are defined here:
+
+# Collects and flattens arguments into a single list
+collect(v::Vector{Any}) = begin
+  output = (first.(v[1]))
+  push!(output, last(v))
+end
 
 RelationTerm.Typed(j::Vector{Any}) = begin
   Typed(Symbol(j[1]), Symbol(j[3]))
@@ -101,9 +111,6 @@ buildUWDExpr(v::Vector{Any}) = begin
       end
     end
   end
-
-  # Total Complexity: O(n) where m = n + constant intersections.
-  # O(m) + O(n) = O(n + constant) + O(n) = O(n) + O(n) = O(n)
 
   # Construct Expression
   UWDExpr(outer_ports, v[1])

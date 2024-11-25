@@ -1,6 +1,7 @@
 # __precompile__(false) #REMOVE
 # ## Testing our parser
 module ParserTests
+
 using Test
 using Catlab.ADTs.RelationTerm
 using Catlab.Programs.RelationalPrograms
@@ -12,6 +13,16 @@ using Catlab.Parsers.RelationalParser
   @test lparen("(")[1] == "("
   @test rparen(")")[1] == ")"
   @test elname("R(a)")[1] == "R"
+end
+
+@testset "Arg" begin
+  @test arg("x")[1] == Untyped(:x)
+  @test arg("tgt=x")[1] == Kwarg(:tgt, Untyped(:x))
+end
+
+@testset "Args" begin
+  @test args("x,y,z")[1] == [Untyped(:x), Untyped(:y), Untyped(:z)]
+  @test args("tgt=x,src=y")[1] == [Kwarg(:tgt, Untyped(:x)), Kwarg(:src, Untyped(:y))]
 end
 
 @testset "Judgements" begin
