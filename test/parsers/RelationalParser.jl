@@ -58,6 +58,7 @@ end
   @test statement("S(u)")[1].relation == Statement(:S, [Untyped(:u)]).relation
   @test statement("S(u)")[1].variables == Statement(:S, Var[Untyped(:u)]).variables
   @test statement("S(  a,    b  )")[1] == Statement(:S, [Untyped(:a),Untyped(:b)])
+  @test statement("R(src=a, tgt=b)")[1] == Statement(:R, [Kwarg(:src, Untyped(:a)), Kwarg(:tgt, Untyped(:b))])
 end
 
 @testset "Body" begin

@@ -54,7 +54,7 @@ export judgements, judgement, args, arg, outerPorts, context, statement, body, u
 @rule context = lparen & ws & judgements & ws & rparen |> v->v[3]
 
 # Our statements are of the form `R(a,b,c)`. A name(list of names).
-@rule statement = ident & lparen & ws & args & ws & rparen |> Statement
+@rule statement = ident & lparen & ws & args & ws & rparen |> v -> Statement(Symbol(v[1]), v[4])
 
 # We have a list of arguments separated by commas.
 # An argument is a port that may or may not hold a name.
@@ -81,12 +81,6 @@ end
 
 RelationTerm.Typed(j::Vector{Any}) = begin
   Typed(Symbol(j[1]), Symbol(j[3]))
-end
-
-RelationTerm.Statement(v::Vector{Any}) = begin
-  args = (Untyped∘Symbol∘first).(v[4])
-  push!(args, Untyped(Symbol(v[5])))
-  Statement(Symbol(v[1]), args)
 end
 
 buildUWDExpr(v::Vector{Any}) = begin
