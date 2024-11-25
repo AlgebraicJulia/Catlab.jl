@@ -28,7 +28,7 @@ using ACSets.ACSetInterface
   u = UWDExpr(op, c, s) 
 
   @test sprint(show, u) ==
-   "{ R(x, y)\n  S(y, z) } where {x, y, z}"
+   "{x, z} where {x, y, z}\n{ R(x, y)\n  S(y, z) }"
 
   # Typed Case
   # parsed = @relation (x,y,z) where (x::X, y::Y, z::Z, w::W) begin
@@ -47,7 +47,7 @@ using ACSets.ACSetInterface
   u = UWDExpr(op, c, s)
 
   @test sprint(show, u) ==
-  "{ R(x:X, w:W)\n  S(y:Y, w:W)\n  T(z:Z, w:W) } where {x:X, y:Y, z:Z, w:W}"
+  "{x:X, y:Y, z:Z} where {x:X, y:Y, z:Z, w:W}\n{ R(x:X, w:W)\n  S(y:Y, w:W)\n  T(z:Z, w:W) }"
 
   # Named Port Case
   # parsed = @relation (start=u, stop=w) where (u, v, w) begin
@@ -63,7 +63,7 @@ using ACSets.ACSetInterface
   u = UWDExpr(op, c, s)
 
   @test sprint(show, u) ==
-  "{ E(src=u, tgt=v)\n  E(src=v, tgt=w) } where {u, v, w}"
+  "{start=u, stop=w} where {u, v, w}\n{ E(src=u, tgt=v)\n  E(src=v, tgt=w) }"
 
 end
 

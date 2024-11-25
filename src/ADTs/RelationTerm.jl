@@ -120,7 +120,10 @@ function show(io::IO, s::UWDTerm)
     @match s begin
       Statement(r, v) => begin print(io, "$r("); show(io, v, wrap=false); print(io, ")") end
       UWDExpr(op, c, body) => begin
-        print(io, op, " ->\n") # Incoporate Better + Add Test, Using for Debugging for now
+        show(io, op) # Incoporate Better + Add Test, Using for Debugging for now
+        print(io, " where ")
+        show(io, c)
+        print(io, "\n")
         map(enumerate(body)) do (i,s)
           if i == 1
             print(io, "{ ")
@@ -136,8 +139,6 @@ function show(io::IO, s::UWDTerm)
             print(io, "\n")
           end
         end
-        print(io, " where ")
-        show(io, c)
       end
     end
   end
