@@ -43,7 +43,8 @@ export judgements, judgement, args, arg, outerPorts, context, statement, body, u
 # We use the prefix `fin` for final.
 
 @rule judgements = (judgement & ws & comma)[*] & judgement |> v -> collect(v)
-@rule judgement = ident & colon & ident |> Typed
+@rule judgement = ident & colon & ident |> v -> Typed(Symbol(v[1]), Symbol(v[3])),
+      ident |> v -> Untyped(Symbol(v))
 
 # A context is a list of judgements between brackets. When a rule ends with `|> f`
 # it means to call `f` on the result of the parser inside the recursion.
@@ -69,7 +70,7 @@ export judgements, judgement, args, arg, outerPorts, context, statement, body, u
 
 # The UWD is a body and then a context for it separated by the word "where".
 
-@rule uwd = outerPorts & ws & "where" & ws & context & body |> v -> buildUWDExpr(v)
+@rule uwd = outerPorts & ws & "where" & ws & context & ws & body |> v -> buildUWDExpr(v)
 
 # Some of our rules construct higher level structures for the results. Those methods are defined here:
 
@@ -79,19 +80,25 @@ collect(v::Vector{Any}) = begin
   push!(output, last(v))
 end
 
-RelationTerm.Typed(j::Vector{Any}) = begin
-  Typed(Symbol(j[1]), Symbol(j[3]))
-end
-
 buildUWDExpr(v::Vector{Any}) = begin
-  # Extract Outerports from context:
-  outer_ports = [first(v[5]), last(v[5])]
-
-  # Build a dictionary from our list for cheaper lookups O(n) for n judgements
+  # Build a dictionary from our context for typing
   context_dict = Dict(judgement.var => judgement for judgement in v[5])
 
-  # Perform Type Checking for Statements O(m) for m statement args
-  for s in v[1]
+  # Perform Type Checking for Outer Ports
+  for op in v[1]
+    if op isa Kwarg
+      if haskey(context_dict, op.var)
+        op.var = context_dict[op.var]  # Overwrite the Untyped var with Typed
+      end
+    else # Regular Var Case
+      if haskey(context_dict, op)
+        op = context_dict[op]  # Overwrite the Untyped var with Typed    
+      end
+    end
+  end
+
+  # Perform Type Checking for Statements O(n) for n statement args
+  for s in v[6]
     for i in 1:length(s.variables)
       var = s.variables[i]
       if haskey(context_dict, var.var)
@@ -101,7 +108,7 @@ buildUWDExpr(v::Vector{Any}) = begin
   end
 
   # Construct Expression
-  UWDExpr(outer_ports, v[1])
+  UWDExpr(v[1], v[5], v[6])
 end
 
 #  macro that parses and constructs UWD diagram from relationalProgram syntax.

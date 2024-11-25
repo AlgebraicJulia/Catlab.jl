@@ -29,12 +29,12 @@ end
   @test judgement("a:A,")[1] == Typed(:a, :A)
   @test judgement("ab:AB,")[1] == Typed(:ab, :AB)
 
-  @test finjudgement("a:A")[1] == Typed(:a, :A)
-  @test finjudgement("ab:AB")[1] == Typed(:ab, :AB)
+  @test judgement("a")[1] == Untyped(:a)
 end
 
 @testset "judgements" begin
   @test judgements("a:A, b:B, c:C")[1] == [Typed(:a, :A), Typed(:b, :B), Typed(:c, :C)]
+  @test judgements("a, b, c")[1] == [Untyped(:a), Untyped(:b), Untyped(:c)]
 end
 
 @testset "Outer Ports" begin
@@ -47,6 +47,7 @@ end
   @test RelationalParser.context("(a:A,b:B)")[1] == [Typed(:a, :A), Typed(:b, :B)]
   @test RelationalParser.context("(a:A,  b:B)")[1] == [Typed(:a, :A), Typed(:b, :B)]
   @test RelationalParser.context("( a:A,  b:B )")[1] == [Typed(:a, :A), Typed(:b, :B)]
+  @test RelationalParser.context("(x,y)")[1] == [Untyped(:x), Untyped(:y)]
 end
 
 @testset "Statements" begin
@@ -83,7 +84,7 @@ end
 
 # Our final test shows that we can parse what we expect to be able to parse:
 @testset "UWD" begin
-  @test uwd("""{R(a,b); S(b,c);} where {a:A,b:B,c:C}""")[1].context == [Typed(:a, :A), Typed(:c,:C)]
+  @test uwd("""(x,z) where (x,y,z) {R(x,y); S(y,z);}""")[1].context == [Untyped(:x), Untyped(:y), Untyped(:z)]
   @test uwd("""{R(a,b); S(b,c);}
    where {a:A,b:B,c:C}""")[1].statements == [Statement(:R, [Typed(:a, :A), Typed(:b, :B)]),
     Statement(:S, [Typed(:b, :B), Typed(:c, :C)])]
