@@ -6,6 +6,7 @@ export @relation, parse_relation_diagram
 using MLStyle: @match
 
 using ...ADTs.RelationTerm
+using ...WiringDiagrams.RelationDiagrams
 
 
 """ Construct an undirected wiring diagram using relation notation.

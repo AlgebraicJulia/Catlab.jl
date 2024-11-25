@@ -4,6 +4,7 @@ using Test
 
 using Catlab.CategoricalAlgebra.CSets
 using Catlab.WiringDiagrams.UndirectedWiringDiagrams
+using Catlab.WiringDiagrams.RelationDiagrams
 using Catlab.ADTs.RelationTerm
 using Catlab.Programs.RelationalPrograms
 
@@ -171,10 +172,10 @@ parsed = @relation ((src=v) where (v, w)) -> E(src=v, tgt=w)
 @test parsed[:outer_port_name] == [:src]
 
 # Special case: closed diagram.
-d1 = @relation ((;) where (v,)) -> E(src=v, tgt=v)
+d1 = @relation (() where (v,)) -> E(src=v, tgt=v)
 @test subpart(d1, :port_name) == [:src, :tgt]
 
-d2 = @relation (;) -> E(src=v, tgt=v)
+d2 = @relation () -> E(src=v, tgt=v)
 @test d1 == d2
 
 # Typed, named ports

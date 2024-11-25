@@ -8,6 +8,7 @@ module RelationTermTests
 using Test
 using Catlab.ADTs.RelationTerm
 using Catlab.WiringDiagrams.UndirectedWiringDiagrams
+using Catlab.WiringDiagrams.RelationDiagrams
 using Catlab.Programs.RelationalPrograms
 using ACSets.ACSetInterface
 
