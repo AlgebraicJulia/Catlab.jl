@@ -42,7 +42,7 @@ export judgements, judgement, args, arg, outerPorts, context, statement, body, u
 # It would be nice to have a better way to do this, but basically anything that can occur in a list has two rules associated with it.
 # We use the prefix `fin` for final.
 
-@rule judgements = (judgement & ws & comma)[*] & judgement |> v -> collect(v)
+@rule judgements = (judgement & (ws & comma & ws & judgement)[*])[:?] |> v -> collect(v)
 @rule judgement = ident & colon & ident |> v -> Typed(Symbol(v[1]), Symbol(v[3])),
       ident |> v -> Untyped(Symbol(v))
 
@@ -59,7 +59,7 @@ export judgements, judgement, args, arg, outerPorts, context, statement, body, u
 
 # We have a list of arguments separated by commas.
 # An argument is a port that may or may not hold a name.
-@rule args = (arg & ws & comma)[*] & arg |> v -> collect(v)
+@rule args = (arg & (ws & comma & ws & arg)[*])[:?]  |> v -> collect(v)
 @rule arg = ident & eq & ident |> v -> Kwarg(Symbol(v[1]), Untyped(Symbol(v[3]))),
   ident |> v -> Untyped(Symbol(v))
 
@@ -76,8 +76,13 @@ export judgements, judgement, args, arg, outerPorts, context, statement, body, u
 
 # Collects and flattens arguments into a single list
 collect(v::Vector{Any}) = begin
-  output = (first.(v[1]))
-  push!(output, last(v))
+  if isempty(v)
+    return []
+  else
+    args = v[1]
+    output = (last.(args[2]))
+    pushfirst!(output, first(args))
+  end
 end
 
 buildUWDExpr(v::Vector{Any}) = begin
@@ -96,9 +101,13 @@ buildUWDExpr(v::Vector{Any}) = begin
       end
     end
   end
+  
+  # DEBUG
+  println("Outer Ports: ", v[1])
+  println("Context: ", v[5])
 
   # Perform Type Checking for Statements O(n) for n statement args
-  for s in v[6]
+  for s in v[7]
     for i in 1:length(s.variables)
       var = s.variables[i]
       if haskey(context_dict, var.var)
@@ -107,8 +116,11 @@ buildUWDExpr(v::Vector{Any}) = begin
     end
   end
 
+  # DEBUG
+  println("Body: ", v[7])
+
   # Construct Expression
-  UWDExpr(v[1], v[5], v[6])
+  UWDExpr(v[1], v[5], v[7])
 end
 
 #  macro that parses and constructs UWD diagram from relationalProgram syntax.

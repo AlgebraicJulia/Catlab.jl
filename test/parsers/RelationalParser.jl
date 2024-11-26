@@ -12,7 +12,7 @@ using Catlab.Parsers.RelationalParser
 @testset "Parens" begin
   @test lparen("(")[1] == "("
   @test rparen(")")[1] == ")"
-  @test elname("R(a)")[1] == "R"
+  @test ident("R(a)")[1] == "R"
 end
 
 @testset "Arg" begin
@@ -23,6 +23,7 @@ end
 @testset "Args" begin
   @test args("x,y,z")[1] == [Untyped(:x), Untyped(:y), Untyped(:z)]
   @test args("tgt=x,src=y")[1] == [Kwarg(:tgt, Untyped(:x)), Kwarg(:src, Untyped(:y))]
+  @test args("")[1] == []
 end
 
 @testset "Judgement" begin
@@ -35,12 +36,17 @@ end
 @testset "judgements" begin
   @test judgements("a:A, b:B, c:C")[1] == [Typed(:a, :A), Typed(:b, :B), Typed(:c, :C)]
   @test judgements("a, b, c")[1] == [Untyped(:a), Untyped(:b), Untyped(:c)]
+  @test judgements("")[1] == []
 end
+
+# DEBUG
+PEG.setdebug!(false)
 
 @testset "Outer Ports" begin
   @test outerPorts("(A)")[1] == [Untyped(:A)]
   @test outerPorts("(A,B)")[1] == [Untyped(:A), Untyped(:B)]
   @test outerPorts("(src=A, tgt=B)")[1] == [Kwarg(:src, Untyped(:A)), Kwarg(:tgt, Untyped(:B))]
+  @test outerPorts("()")[1] == []
 end
 
 @testset "Contexts" begin
@@ -48,6 +54,7 @@ end
   @test RelationalParser.context("(a:A,  b:B)")[1] == [Typed(:a, :A), Typed(:b, :B)]
   @test RelationalParser.context("( a:A,  b:B )")[1] == [Typed(:a, :A), Typed(:b, :B)]
   @test RelationalParser.context("(x,y)")[1] == [Untyped(:x), Untyped(:y)]
+  @test RelationalParser.context("()")[1] == []
 end
 
 @testset "Statements" begin
@@ -85,10 +92,10 @@ end
 # Our final test shows that we can parse what we expect to be able to parse:
 @testset "UWD" begin
   @test uwd("""(x,z) where (x,y,z) {R(x,y); S(y,z);}""")[1].context == [Untyped(:x), Untyped(:y), Untyped(:z)]
-  @test uwd("""{R(a,b); S(b,c);}
-   where {a:A,b:B,c:C}""")[1].statements == [Statement(:R, [Typed(:a, :A), Typed(:b, :B)]),
-    Statement(:S, [Typed(:b, :B), Typed(:c, :C)])]
-  @test uwd("""{R(a,b); S(b,c);} where {a:A,b:B,c:C}""")[1] isa RelationTerm.UWDExpr
+  @test uwd("""(x,z) where (x,y,z)
+    {R(x,y); S(y,z);}""")[1].statements == [Statement(:R, [Untyped(:x), Untyped(:y)]),
+    Statement(:S, [Untyped(:y), Untyped(:z)])]
+  @test uwd("""(x,z) where (x,y,z) {R(x,y); S(y,z);}""")[1] isa RelationTerm.UWDExpr
 end
 
 # Test Error Handling:
@@ -108,13 +115,13 @@ end
 
 @testset "judgement_handling" begin
   @test parse_fails_at(judgement, "a:") == 3
-  @test parse_fails_at(judgement, "a") == 2
+  @test parse_fails_at(judgement, ":a") == 1
 end
 
 @testset "context_handling" begin
-  @test parse_fails_at(RelationalParser.context, "{a:A,b:B") == 9
-  @test parse_fails_at(RelationalParser.context, "{a:A,b:B,") == 10
-  @test parse_fails_at(RelationalParser.context, "{a:A,b:B,}") == 10
+  @test parse_fails_at(RelationalParser.context, "(a:A,b:B") == 9
+  @test parse_fails_at(RelationalParser.context, "(a:A,b:B,") == 10
+  @test parse_fails_at(RelationalParser.context, "(a:A,b:B,)") == 10
 end
 
 @testset "statement_handling" begin
@@ -137,7 +144,7 @@ end
 @testset "End-To-End" begin
 
   #Test "{R(x,y); S(y,z);}" where {x:X,y:Y,z:Z}
-  parsed_result = relation"{R(x,y); S(y,z);} where {x:X,y:Y,z:Z}"
+  parsed_result = relation"() where (x:X,y:Y,z:Z) {R(x,y); S(y,z);}"
   
   v1 = Typed(:x, :X)
   v2 = Typed(:y, :Y)
