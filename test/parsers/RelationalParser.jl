@@ -4,8 +4,8 @@ module ParserTests
 
 using Test
 using Catlab.ADTs.RelationTerm
-using Catlab.Programs.RelationalPrograms
 using Catlab.Parsers.RelationalParser
+using Catlab.WiringDiagrams.RelationDiagrams
 
 
 # Now we write some unit tests. This is how I wrote this code, by writing the tests from the bottom up.
@@ -149,38 +149,35 @@ end
   v1 = Typed(:x, :X)
   v2 = Typed(:y, :Y)
   v3 = Typed(:z, :Z)
-  c = [v1, v3]
+  op = []
+  c = [v1, v2, v3]
   s = [Statement(:R, [v1,v2]),
     Statement(:S, [v2,v3])]
-  u = UWDExpr(c, s)
+  u = UWDExpr(op, c, s)
   uwd_result = RelationTerm.construct(RelationDiagram, u)
   
   @test parsed_result == uwd_result
 
-  # Test R(x, y); S(y, z); T(z, y, u) where {x:X, y:Y, z:Z, u:U}
-  # Interesting Note: Context variables in this case are use to 
-  # type variables and assign outer ports. 
-  # While @relation may include u:U, we see it should be untyped so we leave it out
-  # X and Z are the outer ports so they occur at the first and last indices of the context
-  # Depending on design decisions, we may want to explicitly include the outer ports outside 
-  # the context like @relation
+  # Test error handling
   
   parsed_result = relation"""
+  (x, z) where (x:X, y:Y, z:Z)
   {
     R(x, y);
     S(y, z);
     T(z, y, u);
-  } where {x:X, y:Y, z:Z}"""
+  }"""
 
   v1 = Typed(:x, :X)
   v2 = Typed(:y, :Y)
   v3 = Typed(:z, :Z)
   v4 = Untyped(:u)
-  c = [v1, v3]
+  op = [v1, v3]
+  c = [v1, v2, v3]
   s = [Statement(:R, [v1,v2]),
     Statement(:S, [v2,v3]),
     Statement(:T, [v3,v2, v4])]
-  u = UWDExpr(c, s)
+  u = UWDExpr(op, c, s)
   uwd_result = RelationTerm.construct(RelationDiagram, u)
 
   @test parsed_result == uwd_result

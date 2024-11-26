@@ -7,7 +7,8 @@ module RelationalParser
 
 using MLStyle
 using ...ADTs.RelationTerm
-using ...Programs.RelationalPrograms
+using Catlab.WiringDiagrams.UndirectedWiringDiagrams
+using Catlab.WiringDiagrams.RelationDiagrams
 using Base.Iterators
 using Reexport
 
@@ -114,11 +115,15 @@ buildUWDExpr(v::Vector{Any}) = begin
         s.variables[i] = context_dict[var.var]  # Overwrite the Untyped var with Typed
       end
     end
+    # Confirm Relation Vars are in Context
+    isnothing(v[5]) || s.variables ⊆ v[5] ||
+      error("One of variables $(s.variables) is not declared in context $(v[5])")
   end
 
-  # DEBUG
-  println("Body: ", v[7])
-
+  # Confirm Outer Vars are in Context
+  isnothing(v[5]) || v[1] ⊆ v[5] ||
+    error("One of variables $(v[1]) is not declared in context $(v[5])")
+  
   # Construct Expression
   UWDExpr(v[1], v[5], v[7])
 end
