@@ -18,7 +18,7 @@ using Reexport
 export @relation_str
 
 # export the lexing rules
-export ws, eq, lparen, rparen, comma, EOL, colon, ident
+export ws, eq, lparen, rparen, comma, EOL, colon, ident, expr, exp_args
 
 # export the UWD rules
 export judgements, judgement, args, arg, outerPorts, context, statement, body, uwd, line
@@ -44,8 +44,13 @@ export judgements, judgement, args, arg, outerPorts, context, statement, body, u
 # We use the prefix `fin` for final.
 
 @rule judgements = (judgement & (ws & comma & ws & judgement)[*])[:?] |> v -> collect(v)
-@rule judgement = ident & colon & ident |> v -> buildTyped(v),
+@rule judgement = ident & colon & expr |> v -> Typed(Symbol(v[1]), v[3]),
       ident |> v -> Untyped(Symbol(v))
+
+# Types might be expressions. In this case we need more robust parsing to handle complex expressions.
+@rule expr = ident & lparen & ws & expr_args & ws & rparen |> v -> Expr(Symbol(v[1]), v[4]...),
+  ident |> v -> Meta.parse(v)
+@rule expr_args = (expr & (ws & comma & ws & expr)[*])[:?] |> v -> collect(v)
 
 # A context is a list of judgements between brackets. When a rule ends with `|> f`
 # it means to call `f` on the result of the parser inside the recursion.
@@ -74,23 +79,6 @@ export judgements, judgement, args, arg, outerPorts, context, statement, body, u
 @rule uwd = outerPorts & ws & "where" & ws & context & ws & body |> v -> buildUWDExpr(v)
 
 # Some of our rules construct higher level structures for the results. Those methods are defined here:
-
-# Properly builds Typed Var:
-buildTyped(v::Vector{Any}) = begin
-  int_parse = tryparse(Int, v[3])
-
-  if int_parse !== nothing
-    return Typed(Symbol(v[1]), int_parse)
-  else
-    try
-      var = Meta.parse(input)
-      return Typed(Symbol(v[1]), var)
-    catch
-      return Typed(Symbol(v[1]), Symbol(v[3]))
-    end
-  end
-end
-
 
 # Collects and flattens arguments into a single list
 collect(v::Vector{Any}) = begin
@@ -149,7 +137,7 @@ buildUWDExpr(v::Vector{Any}) = begin
       end
     end    
   end
-  
+
   # Construct Expression
   UWDExpr(outer_ports, v[5], v[7])
 end

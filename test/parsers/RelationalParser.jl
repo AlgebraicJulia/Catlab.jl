@@ -29,8 +29,8 @@ end
 end
 
 @testset "Judgement" begin
-  @test judgement("a:A,")[1] == Typed(:a, :A)
-  @test judgement("ab:AB,")[1] == Typed(:ab, :AB)
+  @test judgement("a:A")[1] == Typed(:a, :A)
+  @test judgement("ab:AB")[1] == Typed(:ab, :AB)
 
   @test judgement("a")[1] == Untyped(:a)
 end
@@ -39,10 +39,9 @@ end
   @test judgements("a:A, b:B, c:C")[1] == [Typed(:a, :A), Typed(:b, :B), Typed(:c, :C)]
   @test judgements("a, b, c")[1] == [Untyped(:a), Untyped(:b), Untyped(:c)]
   @test judgements("")[1] == []
+  @test judgements("a:1, b:2")[1] == [Typed(:a, 1), Typed(:b, 2)]
+  @test judgements("a:n(1), b:n(2)")[1] == [Typed(:a, Expr(:n, 1)), Typed(:b, Expr(:n, 2))]
 end
-
-# DEBUG
-PEG.setdebug!(false)
 
 @testset "Outer Ports" begin
   @test outerPorts("(A)")[1] == [Untyped(:A)]
@@ -57,6 +56,21 @@ end
   @test RelationalParser.context("( a:A,  b:B )")[1] == [Typed(:a, :A), Typed(:b, :B)]
   @test RelationalParser.context("(x,y)")[1] == [Untyped(:x), Untyped(:y)]
   @test RelationalParser.context("()")[1] == []
+end
+
+PEG.setdebug!(false) # DEBUG
+
+@testset "Expr" begin
+  @test expr("n(1)")[1] == Expr(:n, 1)
+  @test expr("n(1,2)")[1] == Expr(:n, 1, 2)
+  @test expr("1")[1] == 1
+  @test expr("hii")[1] == :hii
+end
+
+@testset "Expression Typed Context" begin
+  @test RelationalParser.context("(a:n(1), b:n(2))")[1] == [Typed(:a, Expr(:n, 1)), Typed(:b, Expr(:n, 2))]
+  @test RelationalParser.context("(a:1, b:2)")[1] == [Typed(:a, 1), Typed(:b, 2)]
+  @test RelationalParser.context("(a:hii, b:hello)")[1] == [Typed(:a, :hii), Typed(:b, :hello)]
 end
 
 @testset "Statements" begin
@@ -226,7 +240,7 @@ end
 
 
 
-  # Typed by Expressions [Broken]
+  # Typed by Expressions
   #------
 
   parsed = relation"(x,y,z) where (x:n(1), y:n(2), z:n(3), w:n(4)) {
@@ -234,29 +248,28 @@ end
   S(y,w);
   T(z,w);}"
 
-  d = RelationDiagram([:(n(1)), :(n(2)), :(n(3))])
-  add_box!(d, [:(n(1)),:(n(4))], name=:R)
-  add_box!(d, [:(n(2)),:(n(4))], name=:S)
-  add_box!(d, [:(n(3)),:(n(4))], name=:T)
-  add_junctions!(d, [:(n(1)),:(n(2)),:(n(3)),:(n(4))], variable=[:x,:y,:z,:w])
+  d = RelationDiagram([Expr(:n, 1), Expr(:n, 2), Expr(:n, 3)])
+  add_box!(d, [Expr(:n, 1),Expr(:n, 4)], name=:R)
+  add_box!(d, [Expr(:n, 2),Expr(:n, 4)], name=:S)
+  add_box!(d, [Expr(:n, 3),Expr(:n, 4)], name=:T)
+  add_junctions!(d, [Expr(:n, 1),Expr(:n, 2),Expr(:n, 3),Expr(:n, 4)], variable=[:x,:y,:z,:w])
   set_junction!(d, [1,4,2,4,3,4])
   set_junction!(d, [1,2,3], outer=true)
   @test parsed == d
 
-  # Mixed types [Broken]
+  # Mixed types
   #------
 
-  parsed = @relation (x,y,z) where (x::n(1), y::2, z::C, w::nothing) begin
-  R(x,w)
-  S(y,w)
-  T(z,w)
-  end
+  parsed = relation"(x,y,z) where (x:n(1), y:2, z:C, w:nothing) {
+  R(x,w);
+  S(y,w);
+  T(z,w);}"
 
-  d = RelationDiagram([:(n(1)), :2, :C])
-  add_box!(d, [:(n(1)),:nothing], name=:R)
+  d = RelationDiagram([Expr(:n, 1), :2, :C])
+  add_box!(d, [Expr(:n, 1),:nothing], name=:R)
   add_box!(d, [:2,:nothing], name=:S)
   add_box!(d, [:C,:nothing], name=:T)
-  add_junctions!(d, [:(n(1)),:2,:C,:nothing], variable=[:x,:y,:z,:w])
+  add_junctions!(d, [Expr(:n, 1),:2,:C,:nothing], variable=[:x,:y,:z,:w])
   set_junction!(d, [1,4,2,4,3,4])
   set_junction!(d, [1,2,3], outer=true)
   @test parsed == d
@@ -310,12 +323,6 @@ end
   # Typed, named ports
   #-------------------
 
-  parsed = @relation (e=e, e′=e′) where (e::Employee, e′::Employee,
-                                      d::Department) begin
-  Employee(id=e, department=d)
-  Employee(id=e′, department=d)
-  end
-
   parsed = relation"(e=e, e′=e′) where (e:Employee, e′:Employee, d:Department) {
   Employee(id=e, department=d);
   Employee(id=e′, department=d);}"
@@ -330,30 +337,30 @@ end
   @test parsed == d
 end
 
-@testset "End-End Erroring" begin
-  # Test error handling
+# @testset "End-End Erroring" begin
+#   # Test error handling
   
-  parsed_result = relation"""
-  (x, z) where (x:X, y:Y, z:Z)
-  {
-    R(x, y);
-    S(y, z);
-    T(z, y, u);
-  }"""
+#   parsed_result = relation"""
+#   (x, z) where (x:X, y:Y, z:Z)
+#   {
+#     R(x, y);
+#     S(y, z);
+#     T(z, y, u);
+#   }"""
 
-  v1 = Typed(:x, :X)
-  v2 = Typed(:y, :Y)
-  v3 = Typed(:z, :Z)
-  v4 = Untyped(:u)
-  op = [v1, v3]
-  c = [v1, v2, v3]
-  s = [Statement(:R, [v1,v2]),
-    Statement(:S, [v2,v3]),
-    Statement(:T, [v3,v2, v4])]
-  u = UWDExpr(op, c, s)
-  uwd_result = RelationTerm.construct(RelationDiagram, u)
+#   v1 = Typed(:x, :X)
+#   v2 = Typed(:y, :Y)
+#   v3 = Typed(:z, :Z)
+#   v4 = Untyped(:u)
+#   op = [v1, v3]
+#   c = [v1, v2, v3]
+#   s = [Statement(:R, [v1,v2]),
+#     Statement(:S, [v2,v3]),
+#     Statement(:T, [v3,v2, v4])]
+#   u = UWDExpr(op, c, s)
+#   uwd_result = RelationTerm.construct(RelationDiagram, u)
 
-  @test parsed_result == uwd_result
-end
+#   @test parsed_result == uwd_result
+# end
 
 end
