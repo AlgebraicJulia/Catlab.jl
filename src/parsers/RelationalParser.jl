@@ -44,7 +44,7 @@ export judgements, judgement, args, arg, outerPorts, context, statement, body, u
 # We use the prefix `fin` for final.
 
 @rule judgements = (judgement & (ws & comma & ws & judgement)[*])[:?] |> v -> collect(v)
-@rule judgement = ident & colon & ident |> v -> Typed(Symbol(v[1]), Symbol(v[3])),
+@rule judgement = ident & colon & ident |> v -> buildTyped(v),
       ident |> v -> Untyped(Symbol(v))
 
 # A context is a list of judgements between brackets. When a rule ends with `|> f`
@@ -75,6 +75,23 @@ export judgements, judgement, args, arg, outerPorts, context, statement, body, u
 
 # Some of our rules construct higher level structures for the results. Those methods are defined here:
 
+# Properly builds Typed Var:
+buildTyped(v::Vector{Any}) = begin
+  int_parse = tryparse(Int, v[3])
+
+  if int_parse !== nothing
+    return Typed(Symbol(v[1]), int_parse)
+  else
+    try
+      var = Meta.parse(input)
+      return Typed(Symbol(v[1]), var)
+    catch
+      return Typed(Symbol(v[1]), Symbol(v[3]))
+    end
+  end
+end
+
+
 # Collects and flattens arguments into a single list
 collect(v::Vector{Any}) = begin
   if isempty(v)
@@ -89,43 +106,52 @@ end
 buildUWDExpr(v::Vector{Any}) = begin
   # Build a dictionary from our context for typing
   context_dict = Dict(judgement.var => judgement for judgement in v[5])
-
+  
   # Perform Type Checking for Outer Ports
-  for op in v[1]
-    if op isa Kwarg
-      if haskey(context_dict, op.var)
-        op.var = context_dict[op.var]  # Overwrite the Untyped var with Typed
+  outer_ports = Vector{Var}(v[1])
+
+  for i in eachindex(outer_ports)
+    if outer_ports[i] isa Kwarg
+      if haskey(context_dict, outer_ports[i].var.var)
+        outer_ports[i] = Kwarg(outer_ports[i].name, context_dict[outer_ports[i].var.var])  # Overwrite the Untyped var with Typed
+      else
+        isempty(v[5]) ||
+        error("Variable $(outer_ports[i].name) is not declared in context $(v[5])")
       end
     else # Regular Var Case
-      if haskey(context_dict, op)
-        op = context_dict[op]  # Overwrite the Untyped var with Typed    
+      if haskey(context_dict, outer_ports[i].var)
+        outer_ports[i] = context_dict[outer_ports[i].var]  # Overwrite the Untyped var with Typed 
+      else
+        isempty(v[5]) ||
+        error("Variable $(outer_ports[i]) is not declared in context $(v[5])")
       end
     end
   end
-  
-  # DEBUG
-  println("Outer Ports: ", v[1])
-  println("Context: ", v[5])
 
   # Perform Type Checking for Statements O(n) for n statement args
   for s in v[7]
     for i in 1:length(s.variables)
       var = s.variables[i]
-      if haskey(context_dict, var.var)
-        s.variables[i] = context_dict[var.var]  # Overwrite the Untyped var with Typed
+      if var isa Kwarg
+        if haskey(context_dict, var.var.var)
+          s.variables[i] = Kwarg(var.name, context_dict[var.var.var])  # Overwrite the Untyped var with Typed
+        else
+          isempty(v[5]) ||
+          error("Variable $(var.name) is not declared in context $(v[5])")
+        end 
+      else # Regular Var Case
+        if haskey(context_dict, var.var)
+          s.variables[i] = context_dict[var.var]  # Overwrite the Untyped var with Typed
+        else
+          isempty(v[5]) ||
+          error("Variable $(var) is not declared in context $(v[5])")
+        end
       end
-    end
-    # Confirm Relation Vars are in Context
-    isnothing(v[5]) || s.variables ⊆ v[5] ||
-      error("One of variables $(s.variables) is not declared in context $(v[5])")
+    end    
   end
-
-  # Confirm Outer Vars are in Context
-  isnothing(v[5]) || v[1] ⊆ v[5] ||
-    error("One of variables $(v[1]) is not declared in context $(v[5])")
   
   # Construct Expression
-  UWDExpr(v[1], v[5], v[7])
+  UWDExpr(outer_ports, v[5], v[7])
 end
 
 #  macro that parses and constructs UWD diagram from relationalProgram syntax.
