@@ -1,6 +1,6 @@
 module FinCatGraphs
 
-export FinCatGraph, FreeCatGraph, FinCatGraphEq
+export FinCatGraph, FreeCatGraph, FinCatGraphEq, get_ob, get_hom, get_ob_set, get_hom_set
 
 using StructEquality
 
@@ -8,7 +8,7 @@ using GATlab
 import GATlab: equations, getvalue
 
 using ......Graphs: HasGraph, NamedGraph, src, tgt, nv, ne
-using .....BasicSets: FinSet
+using ......BasicSets: FinSet
 using ....Paths: Path, coerce_path
 using ..PathCats: PathCatImpl, ThPathCat
 import ..FinCats: FinCat
@@ -20,6 +20,10 @@ type of the underlying graph (we dispatch on whether or not this is a
 `NamedGraph` or not).
 """
 abstract type FinCatGraph{G,V,E} <: PathCatImpl{V,E} end
+
+get_ob(g::FinCatGraph, v) = get_ob(getvalue(g), v)
+
+get_hom(g::FinCatGraph, v) = get_hom(getvalue(g), v)
 
 # Free category on graph
 #########################
@@ -133,6 +137,7 @@ end
 
 # Common interface for NamedGraphs and other graphs
 #--------------------------------------------------
+
 get_ob(g::NamedGraph, v) = g[v, :vname]
 
 get_ob(::HasGraph, v) = v 

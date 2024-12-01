@@ -6,7 +6,7 @@ using ACSets, CompTime
 using ACSets.Columns
 using ACSets.DenseACSets: datatypes
 
-import ...BasicSets: SetOb, TypeSet, SetFunction, FinSet, FinFunction, 
+import ....BasicSets: SetOb, TypeSet, SetFunction, FinSet, FinFunction, 
                      FinDomFunction
 import ...SetCats: VarFunction
 
@@ -40,7 +40,8 @@ end
 @inline TypeSet(::StructACSet{S,Ts}, type::Symbol) where {S,Ts} =
   type_set(Val{S}, Val{Ts}, Val{type})
 
-TypeSet(X::DynamicACSet, type::Symbol) = runtime(type_set, X.schema, X.type_assignment,type)
+TypeSet(X::DynamicACSet, type::Symbol) = 
+  runtime(type_set, X.schema, X.type_assignment,type)
 
 @ct_enable function type_set(@ct(S), @ct(Ts), @ct(type))
   @ct begin
@@ -136,23 +137,6 @@ the codomain of the result is always of type `TypeSet`.
   else
     @ct throw(ArgumentError("$(repr(name)) not in $(objects(S)), $(homs(S)), or $(attrs(S))"))
   end
-end
-
-
-""" C-set → named tuple of sets.
-"""
-function sets(X::ACSet; S=nothing, Ts=nothing, all::Bool=false,var::Bool=false)
-  S = isnothing(S) ? acset_schema(X) : S
-  Ts = isnothing(Ts) ? datatypes(X) : Ts
-  res = NamedTuple(c => SetOb(X,c) for c in objects(S))
-  if all 
-    return merge(res, NamedTuple(c => SetOb(X,c) for c in attrtypes(S)))
-  elseif var 
-    return merge(res, NamedTuple(c => VarSet{attrtype_instantiation(S,Ts,c)}(
-      nparts(X,c)) for c in attrtypes(S)))
-  else 
-    return res
-  end 
 end
 
 end # module

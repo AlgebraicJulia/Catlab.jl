@@ -8,12 +8,6 @@ using Test
   include("Misc/FinRelations.jl")
 end
 
-@testset "BasicSets" begin 
-  include("BasicSets/Sets.jl")
-  include("BasicSets/SetFunctions.jl")
-  include("BasicSets/FinSets.jl")
-  include("BasicSets/FinFunctions.jl")
-end
 
 @testset "Categories" begin
   include("Cats/Categories.jl")
@@ -32,7 +26,7 @@ end
 
 @testset "CSets" begin
   
-  include("CSetCats/ACSetSetInterop.jl")
+  # include("CSetCats/ACSetSetInterop.jl") # DISCONTINUED
   include("CSetCats/ACSetsGATsInterop.jl")
   include("CSetCats/ACSetTransformations.jl")
   include("CSetCats/CSets.jl")

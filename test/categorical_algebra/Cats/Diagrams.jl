@@ -15,7 +15,7 @@ C = FinCat(@acset Graph begin
   src = [1,2]
   tgt = [3,3]
 end)
-D = FinDomFunctor([:E,:E,:V], [:tgt,:src], C, FinCat(SchSGraph))
+D = FinDomFunctor([:E,:E,:V], [:tgt,:src], C, FinCat(SchSGraph); homtype=:generator)
 d = Diagram{id}(D)
 @test shape(d) == C
 @test ob_map(d, 3) == SchSGraph[:V]

@@ -8,11 +8,11 @@ module TestLimits
 using Test, Catlab
 
 A, B, C = Ob(FreeCategory, :A, :B, :C)
-const M = FreeCategory.Meta.M()
+const M = Category(TypeCat(FreeCategory.Meta.M()))
 
 # Limits
 ########
-DD(x) = DiscreteDiagram(x, M)
+DD(x) = DiscreteDiagram(x)
 # Limit data structure.
 f, g = Hom(:f, C, A), Hom(:g, C, B)
 dia = DD([A,B])

@@ -7,23 +7,28 @@ using StructEquality
 using GATlab, ACSets
 import GATlab: getvalue
 import ACSets: ACSet
+using ACSets.DenseACSets: attrtype_type
 
-using ...Categories: Category, FinCat, Cat, obtype, homtype, 
-                     ob_generators, hom_generators, gentype
-using ..FinFunctors: FinDomFunctorImpl, ThFinDomFunctor
-import ..FinFunctors: FinDomFunctor
-
+using .....BasicSets: SetOb, SetFunction
+using ....Cats: Category, FinCat, Cat, obtype, homtype, TypeCat,
+               ob_generators, hom_generators, gentype
+using ....Cats.FinFunctors: FinDomFunctorImpl, ThFinDomFunctor
+import ....Cats: getcategory, FinDomFunctor
+using ..CSets: ACSetCategory, get_ob, get_hom
+using ..CatsOfACSet: CatOfACSet
+using ..CodomsOfACSet: CodomOfACSet
 
 """ Wrapper type to interpret attributed C-set as a functor.
 """
 @struct_hash_equal struct ACSetFunctor{ACS<:ACSet, Ob, Hom
-    } <: FinDomFunctorImpl{GATExpr{:generator}, Ob, GATExpr{:generator}, 
-                           Hom, GATExpr} 
+    } <: FinDomFunctorImpl{GATExpr{:generator}, Ob, GATExpr, 
+                           Hom, GATExpr{:generator}} 
                       # DomOb, CodOb, DomHom, DomGen, Cod 
   acset::ACS
-  cod::Cat
-  function ACSetFunctor(x::T, c::Cat) where {T<:ACSet}
-    new{T, obtype(c), homtype(c)}(x, c)
+  cod::ACSetCategory
+  function ACSetFunctor(x::T, c::ACSetCategory) where {T<:ACSet}
+    new{T, Union{obtype(c), attrtype_type(c)},
+           Union{homtype(c), attrtype(c)}}(x, c)
   end
 end
 
@@ -31,11 +36,12 @@ end
 ###########
 getvalue(f::ACSetFunctor) = f.acset
 
+getcategory(f::ACSetFunctor) = f.cod
+
 ACSet(X::ACSetFunctor) = X.acset # synonym for getvalue
 
 # Other methods
 ###############
-
 
 """ Inverse to constructing an ACSetFunctor """
 function (::Type{ACS})(F::T) where {ACS <: ACSet, T<:ACSetFunctor}
@@ -84,16 +90,28 @@ end
 
   dom() = FinCat(Presentation(getvalue(model)))
 
-  codom() = model.cod
+  codom() = Category(TypeCat(CodomOfACSet(model.cod)))
 
-  ob_map(x::GATExpr{:generator})::Ob = Ob(getvalue(model), x)
+  ob_map(x::GATExpr{:generator})::Ob = 
+    get_ob(model.cod, getvalue(model), nameof(x))  
+  #SetOb(getvalue(model), x, getcategory(model))
 
-  gen_map(f::GATExpr{:generator})::Hom = Hom(getvalue(model), f)
+  gen_map(f::GATExpr{:generator})::Hom = 
+    get_hom(model.cod, getvalue(model), nameof(f), 
+            ThFinDomFunctor.ob_map[model](dom(f)), 
+            ThFinDomFunctor.ob_map[model](codom(f))) 
+            #SetFunction(getvalue(model), f, getcategory(model))
 end
 
 # Constructors
 ###############
 
-FinDomFunctor(acs::ACSet, C=CatC()) = FinDomFunctor(ACSetFunctor(acs, C))
+FinDomFunctor(acs::ACSet, C::Category) = FinDomFunctor(acs, getvalue(C))
+
+FinDomFunctor(acs::ACSet, C::TypeCat) = FinDomFunctor(acs, getvalue(C))
+
+FinDomFunctor(acs::ACSet, C::CatOfACSet) = FinDomFunctor(acs, getvalue(C))
+
+FinDomFunctor(acs::ACSet, C::ACSetCategory) = FinDomFunctor(ACSetFunctor(acs, C))
 
 end #module

@@ -7,7 +7,7 @@ using StructEquality
 using GATlab 
 import GATlab: getvalue, op, equations
 
-using .....BasicSets: FinSet
+using ......BasicSets: FinSet
 using ....Paths: Path
 using ....Categories: obtype, homtype, ob_set, hom_set
 using ...FinCats: FinCatImpl, ThFinCat, gentype, gen_set, src, tgt

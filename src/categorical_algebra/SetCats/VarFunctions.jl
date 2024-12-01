@@ -8,10 +8,10 @@ using GATlab
 import GATlab: getvalue
 
 import ....Theories: dom, codom 
-using ...BasicSets
-using ...BasicSets.Sets: SetImpl
-using ...BasicSets.SetFunctions: ThSetFunction, SetFunctionImpl
-import ...BasicSets: left, right, force, preimage, is_monic, is_epic
+using ....BasicSets
+using ....BasicSets.Sets: SetImpl
+using ....BasicSets.SetFunctions: ThSetFunction, SetFunctionImpl
+import ....BasicSets: left, right, force, preimage, is_monic, is_epic
 
 
 # VarFunctions
@@ -41,7 +41,7 @@ end
 #----------
 
 """ Turn some set X into X + T """
-either_cod(X::AbsSet, T::Type) = SetOb(EitherSet(X, SetOb(AttrVal{T})))
+either_cod(X::AbsSet, T::Type) = SetOb(UnionSet(X, SetOb(AttrVal{T})))
 
 
 """
@@ -50,10 +50,10 @@ otherwise `nothing`.
 """
 either_cod_inv(s::AbsSet, T::Type) = either_cod_inv(getvalue(s), T)
 
-function either_cod_inv(cod::EitherSet, T::Type)::Union{Nothing, FinSet}
+function either_cod_inv(cod::UnionSet, T::Type)::Union{Nothing, FinSet}
   L, R = getvalue.([left(cod), right(cod)])
   R == TypeSet(AttrVal{T}) || return nothing
-  L isa EitherSet && return either_cod_inv(L, T) # nested
+  L isa UnionSet && return either_cod_inv(L, T) # nested
   FinSet(L)
 end
 
@@ -126,7 +126,7 @@ force(s::VarFunction{T}) where T = VarFunction{T}(force(getvalue(s)))
 VarFunction{T}(args...) where T = VarFunction{T}(FinDomFunction(args...))
 
 function VarFunction{T}(v::AbstractVector, cod::AbsSet) where T 
-  cod = SetOb(EitherSet(cod, SetOb(AttrVal{T})))
+  cod = SetOb(UnionSet(cod, SetOb(AttrVal{T})))
   VarFunction{T}(FinDomFunction(FinFunctionVector(v, cod)))
 end
 

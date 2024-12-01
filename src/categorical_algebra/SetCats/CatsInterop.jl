@@ -4,7 +4,7 @@ export U_CatSet
 using ...Cats.Categories: Cat, ob_set, codom
 using ...Cats.FinCats: FinCat
 
-using ...BasicSets: SetOb, FinDomFunction
+using ....BasicSets: SetOb, FinDomFunction
 using ...Cats.FinFunctors: FinDomFunctor, collect_ob
 
 """ Forgetful functor Cat → Set.

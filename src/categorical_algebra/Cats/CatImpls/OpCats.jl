@@ -6,7 +6,7 @@ using StructEquality
 using GATlab
 import GATlab: op, getvalue
 
-using ....BasicSets: AbsSet
+using .....BasicSets: AbsSet
 using ..Categories: CatImpl, ThCategoryExplicitSets, Category, ob_set, hom_set,
                     dom, codom
 

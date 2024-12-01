@@ -52,17 +52,4 @@ h_ = ACSetTransformation(G, I; V=[1,1], E=[1])
 @test !is_monic(h_)
 @test !is_epic(h_)
 
-# Category of C-sets.
-#--------------------
-
-@test dom(α) === g
-@test codom(α) === h
-γ = compose(α,β)
-@test γ isa ACSetTransformation
-@test γ == ACSetTransformation((V=compose[SetC()](α[:V],β[:V]), 
-                                E=compose[SetC()](α[:E],β[:E])), g, h)
-@test id[CSetCat()](g) isa ACSetTransformation
-@test force(compose(id(g), α)) == α
-@test force(compose(α, id(h))) == α
-
 end # module

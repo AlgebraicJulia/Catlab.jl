@@ -2,8 +2,8 @@ module FreeDiagrams
 
 export Diagram, EmptyDiagram,SingletonDiagram, ObjectPair, DiscreteDiagram, 
        ComposablePair, ComposableMorphisms, cocone_objects,
-       Multispan, Multicospan, ParallelPair, diagram_type, cone_objects, 
-       ParallelMorphisms, BipartiteFreeDiagram, apex, legs, feet, Span, Cospan, 
+       Multispan, Multicospan, ParallelPair, cone_objects, 
+       ParallelMorphisms, BipartiteFreeDiagram, apex, legs, feet, Span, Cospan, getcategory,
        FreeDiagram, ob₁, ob₂, AbsBipartiteFreeDiagram, specialize
 
 using StructEquality
@@ -11,80 +11,69 @@ using StaticArrays: StaticVector, SVector
 
 using GATlab, ACSets
 import ACSets: objects
+
 import ....Theories: ob, dom, codom, hom
-import ...BasicSets.Sets: left, right
+using ....BasicSets: FinSet
+import ....BasicSets.Sets: left, right
 using ....Graphs
 import ....Graphs: add_vertices!, add_vertices₁!, add_vertices₂!, nv, ne, nv₁, nv₂, 
-                  vertices, vertices₁, vertices₂, edges, src, tgt, rem_vertices₂!,
-                  add_vertex!, add_vertex₁!, add_vertex₂!, add_edge!, add_edges!,
-                  inneighbors, rem_edges!
-                  
+  vertices, vertices₁, vertices₂, edges, src, tgt, rem_vertices₂!,
+  add_vertex!, add_vertex₁!, add_vertex₂!, add_edge!, add_edges!,
+  inneighbors, rem_edges!
+
+using ..Categories: Category
+import ..Categories: obtype, homtype, FreeCatGraph, get_ob, get_hom, get_ob_set, get_hom_set
+
 """
-(Informal) interface a DiagramImpl must satisfy:
+Some collection of objects and morphisms (which could be interpreted as living 
+in some category, though subtypes of this needn't specify which category). 
 
-(co)cone_objects()
-objects()
+Some diagrams can be interpreted as (co)limit diagrams. These ought implement a
+(co)cone_objects method.
 """
-abstract type DiagramImpl{Ob,Hom} end
+abstract type DiagramImpl end
 
-# @theory ThFreeDiagram begin 
-#   Ob::TYPE
-#   Hom::TYPE
-#   Any′::TYPE
-#   objects()::Any′
-#   cone_objects()::Any′
-#   cocone_objects()::Any′
-# end
-
-diagram_type(::DiagramImpl{Ob,Hom}) where {Ob,Hom} = Tuple{Ob,Hom}
-
-@struct_hash_equal struct Diagram{Ob, Hom}
-  impl::DiagramImpl{<:Ob,<:Hom}
-  cat::Model{Tuple{Ob,Hom}}
-  function Diagram(i::DiagramImpl{<:Ob,<:Hom}, c::Model{Tuple{Ob,Hom}}) where {Ob, Hom} 
-    implements(c, ThCategory) || error("Bad model")
-    new{Ob,Hom}(i, c)
-  end
+"""
+A diagram in a category 
+"""
+@struct_hash_equal struct Diagram
+  impl::DiagramImpl
+  cat::Category
 end 
 
 GATlab.getvalue(d::Diagram) = d.impl
 
 getcategory(d::Diagram) = d.cat
 
+obtype(d::Diagram) = obtype(category(d))
+
+homtype(d::Diagram) = homtype(category(d))
+
 cone_objects(d::Diagram) = cone_objects(getvalue(d))
 
 cocone_objects(d::Diagram) = cocone_objects(getvalue(d))
 
-diagram_type(::Diagram{Ob,Hom}) where {Ob,Hom} = Tuple{Ob,Hom}
-
 """ Default diagram, given just a model of `ThCategory` """
-Diagram(m::Model{Tuple{Ob,Hom}}) where {Ob, Hom} = Diagram(EmptyDiagram{Ob}(Hom), m)
-
+Diagram(m::Category) = Diagram(EmptyDiagram{obtype(m)}(), m)
 
 # Discrete
 ##########
 
 """ Discrete diagram: a diagram with no non-identity morphisms.
 """
-@struct_hash_equal struct DiscreteDiagram{Ob,Hom,Obs<:AbstractVector{Ob}
-                                         } <: DiagramImpl{Ob,Hom}
+@struct_hash_equal struct DiscreteDiagram{Ob,Obs<:AbstractVector{Ob}
+                                         } <: DiagramImpl
   objects::Obs
 end
 
-DiscreteDiagram{Ob,Hom}(o::Obs) where {Ob,Hom,Obs<:AbstractVector{Ob}} = 
-  DiscreteDiagram{Ob,Hom,Obs}(o)
+DiscreteDiagram{Ob}(o::Obs) where {Ob,Obs<:AbstractVector{Ob}} = 
+  DiscreteDiagram{Ob,Obs}(o)
 
-DiscreteDiagram(o::Obs, Hom::Type=Any) where {Ob, Obs<:AbstractVector{Ob}} = 
-  DiscreteDiagram{Ob,Hom,Obs}(o)
+cone_objects(d::DiscreteDiagram) = d.objects
 
-DiscreteDiagram(x::Obs, ::M) where {Ob, Hom, O<:Ob, M<:Model{Tuple{Ob,Hom}}, Obs<:AbstractVector{O}} = 
-  DiscreteDiagram{O, Hom, Obs}(x)
+cocone_objects(d::DiscreteDiagram) = d.objects
 
-cone_objects(d::DiscreteDiagram{Ob,Hom}) where {Ob, Hom} = d.objects
-
-cocone_objects(d::DiscreteDiagram{Ob,Hom}) where {Ob, Hom} = d.objects
-
-objects(d::DiscreteDiagram{Ob,Hom}) where {Ob, Hom} = d.objects
+objects(d::DiscreteDiagram) = d.objects
 
 Base.length(m::DiscreteDiagram) = length(m.objects) 
 
@@ -98,28 +87,29 @@ Base.firstindex(d::DiscreteDiagram) = firstindex(d.objects)
 
 Base.lastindex(d::DiscreteDiagram) = lastindex(d.objects)
 
+obtype(::DiscreteDiagram{Ob}) where Ob = Ob
+
 # Special subtypes
 #-----------------
 
-const EmptyDiagram{Ob,Hom} = DiscreteDiagram{Ob,Hom,<:StaticVector{0,Ob}}
+const EmptyDiagram{Ob} = DiscreteDiagram{Ob,<:StaticVector{0,Ob}}
 
-EmptyDiagram{Ob}(Hom::Type=Any) where Ob = DiscreteDiagram(SVector{0,Ob}(), Hom)
+EmptyDiagram{Ob}() where Ob = DiscreteDiagram(SVector{0,Ob}())
 
-const SingletonDiagram{Ob,Hom} = DiscreteDiagram{Ob,Hom,<:StaticVector{1,Ob}}
+const SingletonDiagram{Ob} = DiscreteDiagram{Ob,<:StaticVector{1,Ob}}
 
-SingletonDiagram(ob, Hom::Type=Any) = DiscreteDiagram(SVector(ob), Hom)
+SingletonDiagram(ob) = DiscreteDiagram(SVector(ob))
 
-const ObjectPair{Ob,Hom} = DiscreteDiagram{Ob,Hom,<:StaticVector{2,Ob}}
+const ObjectPair{Ob} = DiscreteDiagram{Ob,<:StaticVector{2,Ob}}
 
-ObjectPair(first, second, Hom::Type=Any) =
-  DiscreteDiagram(SVector(first, second), Hom)
+ObjectPair(first, second) = DiscreteDiagram(SVector(first, second))
 
 # Co)spans
 ##################
 
 # Generic code to both (multi)(co)spans 
 #--------------------------------------
-abstract type Multi_Co_Span{Ob, Hom} <: DiagramImpl{Ob,Hom} end
+abstract type Multi_Co_Span <: DiagramImpl end
 
 apex(m::Multi_Co_Span) = m.apex
 
@@ -130,7 +120,7 @@ Base.iterate(m::Multi_Co_Span, x...) = iterate(legs(m), x...)
 # Generic code to both spans and cospans 
 #---------------------------------------
 
-abstract type SpanCospan{Ob, Hom} <: Multi_Co_Span{Ob, Hom} end
+abstract type SpanCospan <: Multi_Co_Span end
 
 legs(m::SpanCospan) = [left(m), right(m)]
 
@@ -143,7 +133,7 @@ objects(s::Multi_Co_Span) = [apex(s), feet(s)...]
 # Spans 
 #-----------
 
-@struct_hash_equal struct Span{Ob, Hom} <: SpanCospan{Ob, Hom}
+@struct_hash_equal struct Span{Ob, Hom} <: SpanCospan
   apex::Ob
   left::Hom
   right::Hom
@@ -153,18 +143,22 @@ objects(s::Multi_Co_Span) = [apex(s), feet(s)...]
   end
 end
 
-Span(f::Hom, g::Hom) where Hom = Span{typeof(dom(f)),Hom}(f, g)
+obtype(::Span{Ob}) where Ob = Ob
 
-Span{M}(f,g) where {Ob, Hom, M<:Model{Tuple{Ob,Hom}}} = Span{Ob, Hom}(f,g)
+homtype(::Span{<:Any,Hom}) where Hom = Hom
+
+
+Span(f::Hom, g::Hom) where Hom = Span{typeof(dom(f)),Hom}(f, g)
 
 feet(m::Span) = codom.(legs(m))
 
+""" We naturally take colimits of spans, but not limits """
 cocone_objects(span::Span) = feet(span)
 
 # Cospans
 #--------
 
-@struct_hash_equal struct Cospan{Ob, Hom} <: SpanCospan{Ob, Hom}
+@struct_hash_equal struct Cospan{Ob, Hom} <: SpanCospan
   apex::Ob
   left::Hom
   right::Hom
@@ -174,12 +168,16 @@ cocone_objects(span::Span) = feet(span)
   end
 end
 
-Cospan(f::Hom, g::Hom) where Hom = Cospan{typeof(dom(f)),Hom}(f, g)
 
-Cospan{M}(f,g) where {Ob, Hom, M<:Model{Tuple{Ob,Hom}}} = Cospan{Ob, Hom}(f, g)
+obtype(::Cospan{Ob}) where Ob = Ob
+
+homtype(::Cospan{<:Any,Hom}) where Hom = Hom
+
+Cospan(f::Hom, g::Hom) where Hom = Cospan{typeof(dom(f)),Hom}(f, g)
 
 feet(m::Cospan) = dom.(legs(m))
 
+""" We naturally take limits of cospans, but not colimits """
 cone_objects(cospan::Cospan) = feet(cospan)
 
 # Multi(co)spans
@@ -188,7 +186,7 @@ cone_objects(cospan::Cospan) = feet(cospan)
 # Generic code to both multispans and multicospans 
 #-------------------------------------------------
 
-abstract type MultiSpanCospan{Ob, Hom} <: Multi_Co_Span{Ob, Hom} end
+abstract type MultiSpanCospan <: Multi_Co_Span end
 
 legs(m::MultiSpanCospan) = m.legs
 
@@ -205,18 +203,26 @@ end
 # Multispans 
 #-----------
 
-@struct_hash_equal struct Multispan{Ob, Hom} <: MultiSpanCospan{Ob, Hom}
+@struct_hash_equal struct Multispan{Ob, Hom} <: MultiSpanCospan
   apex::Ob
   legs::AbstractVector{Hom}
   function Multispan{Ob, Hom}(apex,legs) where {Ob,Hom}
-    allequal([dom.(legs)..., apex]) || error("Bad span")
+    all([dom(l)==apex for l in legs]) || error("Bad span")
     new{Ob,Hom}(apex, legs)
   end
 end
 
+
+obtype(::Multispan{Ob}) where Ob = Ob
+
+homtype(::Multispan{Any,Hom}) where Hom = Hom
+
 """ infer types """
 Multispan(apex::Ob,legs::AbstractVector{Hom}) where {Ob,Hom} = 
   Multispan{Ob,Hom}(apex, legs)
+
+""" Construct from just a list, assuming it's nonempty """
+Multispan(legs::AbstractVector) = Multispan(dom(first(legs)), legs)
 
 """ Cast a span to a Multispan """
 Multispan(s::Span{Ob,Hom}) where {Ob, Hom} = Multispan{Ob,Hom}(apex(s), legs(s))
@@ -224,9 +230,6 @@ Multispan(s::Span{Ob,Hom}) where {Ob, Hom} = Multispan{Ob,Hom}(apex(s), legs(s))
 """ Empty span """
 Multispan{Ob, Hom}(a::Ob) where {Ob, Hom} = Multispan{Ob, Hom}(a, Hom[])
 
-""" Type parameters from model """
-Multispan{M}(x...) where {Ob, Hom, M<:Model{Tuple{Ob,Hom}}} = 
-  Multispan{Ob,Hom}(x...)
 
 function Multispan{Ob, Hom}(hs::AbstractVector{<:Hom}) where {Ob, Hom} 
   isempty(hs) && error("Multispan needs an apex")   
@@ -241,18 +244,25 @@ cocone_objects(span::Multispan) = feet(span)
 # Multicospans 
 #-------------
 
-@struct_hash_equal struct Multicospan{Ob, Hom} <: MultiSpanCospan{Ob, Hom}
+@struct_hash_equal struct Multicospan{Ob, Hom} <: MultiSpanCospan
   apex::Ob
   legs::AbstractVector{Hom}
   function Multicospan{Ob, Hom}(apex,legs) where {Ob,Hom}
-    allequal([codom.(legs)..., apex]) || error("Bad cospan $([codom.(legs)..., apex])")
+    all([codom(l)==apex for l in legs]) || error("Bad cospan")
     new{Ob,Hom}(apex, legs)
   end
 end
 
+obtype(::Multicospan{Ob}) where Ob = Ob
+
+homtype(::Multicospan{Any,Hom}) where Hom = Hom
+
 """ infer types """
 Multicospan(apex::Ob,legs::AbstractVector{Hom}) where {Ob,Hom} = 
   Multicospan{Ob,Hom}(apex, legs)
+
+""" Construct from just a list, assuming it's nonempty """
+Multicospan(legs::AbstractVector) = Multicospan(codom(first(legs)), legs)
 
 
 """ Cast a cospan to a Multicospan """
@@ -261,10 +271,6 @@ Multicospan(s::Cospan{Ob,Hom}) where {Ob, Hom} =
 
 """ Empty cospan """
 Multicospan{Ob, Hom}(a::Ob) where {Ob, Hom}= Multicospan{Ob, Hom}(a, Hom[])
-
-""" Type parameters from model """
-Multicospan{M}(x...) where {Ob, Hom, M<:Model{Tuple{Ob,Hom}}} = 
-  Multicospan{Ob,Hom}(x...)
 
 function Multicospan{Ob, Hom}(hs::AbstractVector{<:Hom}) where {Ob, Hom} 
   isempty(hs) && error("Multicospan needs an apex")   
@@ -280,7 +286,7 @@ cone_objects(cospan::Multicospan) = feet(cospan)
 ####################
 
 @struct_hash_equal struct ParallelMorphisms{Ob, Hom, Homs<:AbstractVector{Hom}
-                                            } <: DiagramImpl{Ob,Hom}
+                                            } <: DiagramImpl
   dom::Ob
   codom::Ob
   homs::Homs
@@ -308,6 +314,10 @@ hom(comp::ParallelMorphisms) = comp.homs
 
 objects(p::ParallelMorphisms) = [dom(p), codom(p)]
 
+cone_objects(para::ParallelMorphisms) = SVector(dom(para))
+
+cocone_objects(para::ParallelMorphisms) = SVector(codom(para))
+
 function ParallelMorphisms(xs::Hs) where {H, Hs<:AbstractVector{H}}
   isempty(xs) && error("Parallel morphisms must be nonempty")
   allequal(dom.(xs)) || error("Parallel morphism must share domain")
@@ -333,7 +343,7 @@ in the underlying graph of the category.
 For the common special case of two morphisms, see [`ComposablePair`](@ref).
 """
 @struct_hash_equal struct ComposableMorphisms{Ob,Hom,Homs<:AbstractVector{Hom}
-                                             } <: DiagramImpl{Ob,Hom}
+                                             } <: DiagramImpl
   homs::Homs
 end
 
@@ -392,7 +402,7 @@ end
 
 # Diagrams of flexible shape
 ############################
-abstract type ACSetWrapper{Ob,Hom} <: DiagramImpl{Ob,Hom} end
+abstract type ACSetWrapper{Ob,Hom} <: DiagramImpl end
 
 GATlab.getvalue(b::ACSetWrapper) = b.val
 
@@ -502,6 +512,10 @@ BipartiteFreeDiagram{Ob,Hom}() where {Ob,Hom} =
 
 cocone_indices(d::BasicBipartiteFreeDiagram) = parts(getvalue(d), :V₂)  
 
+Base.map(b::BasicBipartiteFreeDiagram, args...; kw...) = 
+  BasicBipartiteFreeDiagram(map(getvalue(b), args...; kw...))
+
+
 """ A free diagram that has been converted to a bipartite free diagram.
 """
 @struct_hash_equal struct FreeDiagramAsBipartite{Ob, Hom} <: AbsBipartiteFreeDiagram{Ob,Hom}
@@ -512,6 +526,9 @@ FreeDiagramAsBipartite{Ob, Hom}() where {Ob, Hom} =
   FreeDiagramAsBipartite{Ob, Hom}(_FreeDiagramAsBipartite{Ob,Hom}())
 
 cocone_indices(d::FreeDiagramAsBipartite) = getvalue(d)[:orig_vert₂]
+
+Base.map(b::FreeDiagramAsBipartite, args...; kw...) = 
+  FreeDiagramAsBipartite(map(getvalue(b), args...; kw...))
 
 # Cast other diagram types to bipartite free diagrams 
 #----------------------------------------------------
@@ -545,16 +562,7 @@ BipartiteFreeDiagram(span::Span) = BipartiteFreeDiagram(Multispan(span))
 
 BipartiteFreeDiagram(cospan::Cospan) = BipartiteFreeDiagram(Multicospan(cospan))
 
-BipartiteFreeDiagram{Ob,Hom}(span::Span) where {Ob, Hom} = 
-  BipartiteFreeDiagram{Ob,Hom}(Multispan(span))
-
-BipartiteFreeDiagram{Ob,Hom}(cospan::Cospan) where {Ob, Hom} = 
-  BipartiteFreeDiagram{Ob,Hom}(Multicospan(cospan))
-
-BipartiteFreeDiagram(span::MultiSpanCospan{Ob,Hom}) where {Ob,Hom} = 
-  BipartiteFreeDiagram{Ob,Hom}(span)
-
-function BipartiteFreeDiagram{Ob,Hom}(span::Multispan{Ob,Hom}) where {Ob,Hom}
+function BipartiteFreeDiagram(span::Multispan{Ob,Hom}) where {Ob,Hom}
   d = BipartiteFreeDiagram{Ob,Hom}()
   v₀ = add_vertex₁!(d, ob₁=apex(span))
   vs = add_vertices₂!(d, length(span), ob₂=feet(span))
@@ -562,7 +570,7 @@ function BipartiteFreeDiagram{Ob,Hom}(span::Multispan{Ob,Hom}) where {Ob,Hom}
   return d
 end
 
-function BipartiteFreeDiagram{Ob,Hom}(cospan::Multicospan{Ob,Hom}) where {Ob,Hom}
+function BipartiteFreeDiagram(cospan::Multicospan{Ob,Hom}) where {Ob,Hom}
   d = BipartiteFreeDiagram{Ob,Hom}()
   v₀ = add_vertex₂!(d, ob₂=apex(cospan))
   vs = add_vertices₁!(d, length(cospan), ob₁=feet(cospan))
@@ -584,9 +592,9 @@ function specialize(d::AbsBipartiteFreeDiagram{Ob,Hom}) where {Ob,Hom}
   N = sum(nv(d))
   N == 0 && return EmptyDiagram{Ob}(Hom)
   if ne(d) == 0 
-    N == 1 && return SingletonDiagram(only(objects(d)), Hom)
-    N == 2 && return ObjectPair(objects(d)..., Hom)
-    return DiscreteDiagram([ob₁(d); ob₂(d)], Hom)
+    N == 1 && return SingletonDiagram(only(objects(d)))
+    N == 2 && return ObjectPair(objects(d)...)
+    return DiscreteDiagram([ob₁(d); ob₂(d)])
   end
   eqd = allequal(dom.(hom(d)))
   eqc = allequal(codom.(hom(d)))
@@ -640,7 +648,6 @@ function FreeDiagram{Ob,Hom}(obs::AbstractVector,
   length(homs) > 0 && add_edges!(d, getindex.(homs,2), getindex.(homs,3), hom=first.(homs))
   return d
 end
-
 
 function FreeDiagram{Ob,Hom}(discrete::DiscreteDiagram) where {Ob,Hom}
   d = FreeDiagram{Ob,Hom}()
@@ -708,13 +715,23 @@ function FreeDiagram(comp::ComposableMorphisms{Ob,Hom}) where {Ob,Hom}
 end
   
 
-FreeDiagram(diagram::Multi_Co_Span{Ob,Hom}) where {Ob,Hom} =
-  FreeDiagram{Ob,Hom}(diagram)
+FreeDiagram(diagram::Multi_Co_Span) =
+  FreeDiagram{obtype(diagram),homtype(diagram)}(diagram)
 
 FreeDiagram(diagram::BipartiteFreeDiagram{Ob,Hom}) where {Ob,Hom} =
   FreeDiagram{Ob,Hom}(diagram)
 
 FreeDiagram(f::FreeDiagram) = f
+
+# FreeCatGraph interface 
+# TODO POSSIBLY DELETE ALL THIS
+FreeCatGraph(n::FreeDiagram) =  FreeCatGraph(getvalue(n))
+
+# get_ob(g::_FreeDiagram, x) = g[x, :ob]
+# get_hom(g::_FreeDiagram, x) = g[x, :hom] 
+# get_ob_set(g::_FreeDiagram) = FinSet(Set(g[:ob]))
+# get_hom_set(g::_FreeDiagram) = FinSet(Set(g[:hom]))
+
 
 """ Convert a free diagram to a bipartite free diagram.
 

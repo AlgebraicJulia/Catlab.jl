@@ -60,7 +60,7 @@ FinFunction(f::AbstractDict) = FinFunction(f, FinSet(Set(values(f))))
 FinFunction(f::AbstractDict, cod::FinSet) = 
   FinFunction(FinFunctionDict(f, cod))
 
-FinDomFunction(f::AbstractDict, cod::SetOb) = 
+FinDomFunction(f::AbstractDict, cod::AbsSet) = 
   FinDomFunction(FinFunctionDict(f, cod))
 
 end # module

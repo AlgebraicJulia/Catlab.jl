@@ -7,7 +7,8 @@ using StructEquality
 using GATlab
 import GATlab: getvalue
 
-using ...Categories: Category, FinCat, Cat, obtype, homtype, FinCatGraph, Path,
+using ...Paths: Path
+using ...Categories: Category, FinCat, Cat, obtype, homtype, FinCatGraph, 
                      ob_generators, hom_generators, gentype, PathCat, TypeCat,
                      compose
 using ..FinFunctors: FinDomFunctorImpl, ThFinDomFunctor, mapvals

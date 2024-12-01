@@ -10,9 +10,9 @@ and only if the graph is DAG, which is a fairly special condition. This usage of
 finitely presented are equivalent.
 """
 module FinCats
-export FinCat, FinCatGraph, PreorderFinCat, Path, ob_generator, hom_generator,
+export FinCat, ob_generator, hom_generator,
   ob_generator_name, hom_generator_name, ob_generators, hom_generators,
-  equations, is_discrete, is_free, graph, edges, src, tgt, presentation, gentype, decompose
+  equations, is_discrete, is_free, edges, src, tgt, gentype, decompose
 
 using StructEquality
 using Reexport
@@ -23,12 +23,13 @@ import GATlab: equations, getvalue
 import .....Theories: dom, codom, id, compose, ⋅, ∘
 using .....Graphs
 import .....Graphs: Graph, NamedGraph, src, tgt
+using .....BasicSets: FinSet, AbsSet, SetOb
+
+import ...Paths: Path
 
 using ..Categories: CatImpl, ThCategoryExplicitSets, Cat, obtype
 import ..Categories: ob_set, hom_set
 
-using ....BasicSets: FinSet, AbsSet, SetOb
-import ...Paths: Path
 
 # Theory of Finite Categories
 #############################
@@ -105,9 +106,8 @@ ob_set(f::FinCat) = ThFinCat.ob_set[getvalue(f)]()
 
 gen_set(f::FinCat) = ThFinCat.gen_set[getvalue(f)]()
 
-function hom_set(f::FinCat)
-  T = supertype(typeof(getvalue(f))) # Model{Tuple{Ob,Hom,Gen}}
-  SetOb(T.parameters[1].parameters[2])
+function hom_set(::FinCat{Ob,Hom}) where {Ob,Hom}
+  SetOb(Hom)
 end
 
 # Other methods

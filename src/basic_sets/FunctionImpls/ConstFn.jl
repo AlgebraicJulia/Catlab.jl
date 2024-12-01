@@ -47,9 +47,4 @@ getvalue(c::ConstantFunction) = c.value
 
 end
 
-# Default `SetFunction` constructor 
-###################################
-
-SetFunction(value, dom::AbsSet) = SetFunction(ConstantFunction(value, dom))
-
 end # module

@@ -63,10 +63,12 @@ Base.show(io::IO, s::SetOb) = show(io, getvalue(s))
 #################
 
 include("SetImpls/TypeSet.jl")
-include("SetImpls/EitherSet.jl")
+include("SetImpls/UnionSet.jl")
+include("SetImpls/EitherSets.jl")
 include("SetImpls/PredSet.jl")
 
 @reexport using .TypeSets
+@reexport using .UnionSets
 @reexport using .EitherSets
 @reexport using .PredSets
 

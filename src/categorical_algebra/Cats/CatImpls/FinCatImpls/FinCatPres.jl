@@ -10,7 +10,7 @@ import GATlab: equations, getvalue
 using ......Theories: ThSchema, ThPointedSetSchema, AttrTypeExpr, FreeSchema
 import ......Theories: id, compose, dom, codom
                       
-using .....BasicSets: FinSet
+using ......BasicSets: FinSet
 using ....Paths: Path
 using ..FinCats: FinCatImpl, ThFinCat
 import ..FinCats: FinCat
@@ -70,8 +70,17 @@ presentation(C::FinCatPresentation) = C.presentation # synonym for getvalue
 
   compose(f::Path{GATExpr{:generator}, GATExpr})::GATExpr = compose(getvalue(model), collect(f)...)
 
-  decompose(f::GATExpr) = f.args # TODO
-
+  function decompose(f::GATExpr) 
+    args = if f isa GATExpr{:generator}
+      [f]
+    elseif f isa GATExpr{:id}
+      GATExpr{:generator}[]
+    elseif f isa GATExpr{:compose}
+      f.args
+    end
+    Path(args, dom(f), codom(f)) 
+  end
+  
   function ob_set()::FinSet
     P = getvalue(model)
     haskey(P.generators, :AttrType) || return FinSet(generators(P, :Ob))

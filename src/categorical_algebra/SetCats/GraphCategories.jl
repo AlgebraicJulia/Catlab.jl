@@ -5,9 +5,7 @@ module GraphCategories
 using DataStructures
 
 using ACSets
-using ...BasicSets.FinSets, ...Cats.Limits
-using ...BasicSets.SetFunctions: SetC
-using ...BasicSets.FinFunctions: FinFunction
+using ....BasicSets, ...Cats.Limits
 using ....Graphs.BasicGraphs
 import ....Graphs.GraphAlgorithms: connected_component_projection,
   connected_component_projection_bfs

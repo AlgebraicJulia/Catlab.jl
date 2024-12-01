@@ -64,7 +64,7 @@ l = FinFunction([1,2,1,3],4,5,index=true)
 @test isempty(preimage(f, 4))
 
 g = FinFunction(5:-1:1, 5)
-@test force_compose(f,g) == FinFunction([5,4,5,3], 5; index=true)
+@test force_compose(f,g) == FinFunction([5,4,5,3], 5)
 
 # Pretty-print.
 @test sshow(FinFunction(rot3, FinSet(3), FinSet(3))) ==

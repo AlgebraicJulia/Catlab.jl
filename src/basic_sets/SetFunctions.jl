@@ -11,6 +11,7 @@ import AlgebraicInterfaces: dom, codom
 import ACSets.Columns: preimage
 
 using ..Sets
+using ..FinSets: FinSetInt, FinSet
 
 # Theory of SetFunctions
 ########################
@@ -99,11 +100,13 @@ postcompose(f::SetFunction, g::SetFunction) =
 #--------------
 
 """
-Evaluation of a CompositeFunction. This is where `postcompose` gets used.
+Simplification of `SetFunction`. This is where `postcompose` gets used.
 """
 function force(s::SetFunction)::SetFunction
-  i = getvalue(s) 
+  i = getvalue(s)
   i isa CompositeFunction || return s 
+
+  # Recursively simplify the components
   f, g = force.([first(i), last(i)]) 
   
   # Optimization: we want to precompose w/ `f` rather than postcompose w/ `g`

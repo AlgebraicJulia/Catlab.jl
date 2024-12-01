@@ -14,14 +14,13 @@ include("CatImpls/CatofCat.jl") # Categories
 
 include("FreeDiagrams.jl") # FinCats
 
+include("FinFunctors.jl") # Categories, FreeDiagrams
+
 include("CommutativeDiagrams.jl")
 
-include("Limits.jl") # FreeDiagrams
+include("limits_colimits/LimitsColimits.jl") # FreeDiagrams, FinFunctors
 
 include("Subobjects.jl") # Limits
-
-
-include("FinFunctors.jl") # Categories, FreeDiagrams
 
 include("CatImpls/FinCatCat.jl") # FinFunctors
 
@@ -37,9 +36,9 @@ include("CatImpls/FinCatCat.jl") # FinFunctors
 @reexport using .CatOfCat
 @reexport using .FreeDiagrams
 @reexport using .CommutativeDiagrams
-@reexport using .Limits
-@reexport using .Subobjects
 @reexport using .FinFunctors
+@reexport using .LimitsColimits
+@reexport using .Subobjects
 @reexport using .FinCatCat
 
 # @reexport using .Diagrams

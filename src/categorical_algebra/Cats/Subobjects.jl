@@ -17,10 +17,9 @@ using StaticArrays: SVector
 
 using GATlab
 import ....Theories: ob, hom, meet, ∧, join, ∨, top, ⊤, bottom, ⊥
-using ....Theories, ..Limits
-using ..Limits: legs
-
-const M{Ob,Hom} = Model{Tuple{Ob,Hom}}
+using ....Theories, ..LimitsColimits
+using ..FreeDiagrams: legs
+using ..Categories: Category
 
 # Theories
 ##########
@@ -113,26 +112,22 @@ struct SubOpWithLimits <: SubOpAlgorithm end
 
 """ Meet (intersection) of subobjects.
 """
-function meet(A::Subobject{O}, B::Subobject{O}, m::M{Ob,Hom}, 
-              ::SubOpWithLimits) where {Ob,Hom,O<:Ob}
+function meet(A::Subobject, B::Subobject, m::Category, ::SubOpWithLimits) 
   meet(SVector(A,B), m, SubOpWithLimits())
 end
-function meet(As::AbstractVector{<:Subobject{O}}, m::M{Ob,Hom}, 
-              ::SubOpWithLimits) where {Ob,Hom,O<:Ob}
+function meet(As::AbstractVector{<:Subobject}, m::Category, ::SubOpWithLimits)
   fs = map(hom, As)
   lim = legs(pullback(fs, m))
-  Subobject(compose[m](first(lim), first(fs))) # Arbitrarily use first leg.
+  Subobject(compose(m, first(lim), first(fs))) # Arbitrarily use first leg.
 end
 
 """ Join (union) of subobjects.
 """
-function join(A::Subobject{O}, B::Subobject{O}, m::M{Ob,Hom}, 
-              ::SubOpWithLimits) where {Ob,Hom,O<:Ob}
+function join(A::Subobject, B::Subobject, m::Category, ::SubOpWithLimits)
   join(SVector(A,B), m, SubOpWithLimits())
 end
 
-function join(As::AbstractVector{<:Subobject{O}},  m::M{Ob,Hom}, 
-              ::SubOpWithLimits) where {Ob,Hom,O<:Ob}
+function join(As::AbstractVector{<:Subobject},  m::Category, ::SubOpWithLimits)
   fs = map(hom, As)
   lim = pullback(fs, m)
   colim = pushout(legs(lim)..., m)
@@ -141,12 +136,10 @@ end
 
 """ Top (full) subobject.
 """
-top(X::O, m::M{Ob,Hom}, ::SubOpWithLimits) where {Ob, Hom, O<:Ob} = 
-  Subobject(id[m](X))
+top(X, m::Category, ::SubOpWithLimits) = Subobject(id(m,X))
 
 """ Bottom (empty) subobject.
 """
-bottom(X::O, m::M{Ob,Hom}, ::SubOpWithLimits) where {Ob, Hom, O<:Ob} = 
-  Subobject(create(initial(m), X))
+bottom(X, m::Category, ::SubOpWithLimits) = Subobject(create(initial(m), X))
 
-end
+end # module

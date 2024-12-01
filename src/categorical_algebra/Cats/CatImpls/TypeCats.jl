@@ -4,8 +4,9 @@ export TypeCat
 using StructEquality
 
 using GATlab
+import GATlab: getvalue
 
-using ....BasicSets: SetOb, AbsSet
+using .....BasicSets: SetOb, AbsSet
 using ..Categories: CatImpl, ThCategoryExplicitSets
 
 """

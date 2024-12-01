@@ -1,12 +1,17 @@
 using MLStyle
 using GATlab.Syntax: Ident, GAT, AlgSort
 using GATlab.Util: Expr0
+using GATlab.Syntax.TheoryInterface: WithModel
 using GATlab.Models.SymbolicModels: symbolic_structs, internal_accessors,
   internal_constructors, symbolic_instance_methods
 using GATlab.Models.ModelInterface: args_from_sorts, generate_instance,
   parse_model_param
 
 const iflatten = Iterators.flatten
+
+
+GATlab.getvalue(m::WithModel) = m.model
+
 """
 Create an @instance for a model `M` whose methods are determined by type 
 dispatch, e.g.:

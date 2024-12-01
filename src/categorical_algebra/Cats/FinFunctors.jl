@@ -9,11 +9,12 @@ using GATlab, ACSets
 
 import ....Theories: dom, codom
 using ....Graphs
+import ....BasicSets: force
 using ..Categories
 using ..Functors: FunctorImpl, ThFunctor, Functor
 import ..Functors: ob_map, hom_map, show_type_constructor
 import ..FreeDiagrams: FreeDiagram
-import ...BasicSets: force
+using ..Paths: Path
 
 
 # Dict utilities
@@ -116,11 +117,13 @@ struct FinDomFunctor{DO,CO,DH,CH,DG} <: FunctorImpl{DO,CO,DH,CH}
   function FinDomFunctor(i::FinDomFunctorImpl{DO,CO,DH,CH,DG}) where {DO,CO,DH,CH,DG}
     # check types
     D, C = ThFinDomFunctor.dom[i](), ThFinDomFunctor.codom[i]()
-    obtype(D) == DO || error("Bad dom ob type")
-    homtype(D) == DH || error("Bad dom hom type")
-    gentype(D) == DG || error("Bad dom hom type")
-    obtype(C) == CO || error("Bad dom ob type")
-    homtype(C) == CH || error("Bad dom hom type")
+    D isa FinCat || error("Bad dom FinCat $(typeof(D))")
+    C isa Category || error("Bad codom Cat $C")
+    obtype(D) == DO || error("Bad dom ob type $(obtype(D)) ≠ $DO")
+    homtype(D) == DH || error("Bad dom hom type: $(homtype(D)) ≠ $DH")
+    gentype(D) == DG || error("Bad dom gen type: $(gentype(D)) ≠ $DG")
+    CO <: obtype(C) || error("Bad cod ob type: $(obtype(C)) ⊅ $CO")
+    CH <: homtype(C) || error("Bad cod hom type: $(homtype(C)) ⊅ $CH")
     new{DO,CO,DH,CH,DG}(i)
   end 
 end
@@ -143,7 +146,7 @@ gen_map(f::FinDomFunctor, x) = ThFinDomFunctor.gen_map[getvalue(f)](x)
 
 """ Apply a FinDomFunctor to a path of generators """
 function path_map(F::FinDomFunctor, path::Path)
-  C, D = dom(F), codom(F)
+  D = codom(F)
   init = id(D, ob_map(F, src(path)))
   mapreduce(e -> gen_map(F, e), (gs...) -> compose(D, gs...), edges(path); init)
 end
@@ -216,14 +219,14 @@ end
 include("FunctorImpls/FinFunctorImpls/IdFinFunctor.jl")
 include("FunctorImpls/FinFunctorImpls/OpFinFunctor.jl")
 include("FunctorImpls/FinFunctorImpls/FinDomMap.jl")
-include("FunctorImpls/FinFunctorImpls/ACSetFunctors.jl")
 include("FunctorImpls/FinFunctorImpls/CompFinFunctor.jl")
+include("FunctorImpls/FinFunctorImpls/FreeDiagramFunctors.jl")
 
 @reexport using .IdFinFunctor
 @reexport using .OpFinFunctor
 @reexport using .FinDomMap
-@reexport using .ACSetFunctors
 @reexport using .CompFinFunctor
+@reexport using .FreeDiagramFunctors
 
 
 
@@ -240,41 +243,15 @@ function force(F::FinDomFunctor, Obtype::Type=Any, Homtype::Type=Any)
     C, codom(F))
 end
 
-function FreeDiagram(F::FinDomFunctor)
-  C, D = dom(F), codom(F)
-  diagram = FreeDiagram{obtype(D),homtype(D)}()
-  ob_dict = Dict(map(ob_generators(C)) do x 
-    x => add_vertex!(diagram; ob=ob_map(F, x))
-  end)
-  for h in hom_generators(C)
-    add_edge!(diagram, ob_dict[dom(C,h)], ob_dict[codom(C,h)], hom=hom_map(F,h))
-  end
-  diagram 
+""" Obtain a FreeDiagram from a FinDomFunctor """
+function FreeDiagram(f::FinDomFunctor)
+  obs = collect_ob(f)
+  obdict = Dict(o => i for (i, o) in enumerate(obs))
+  D = codom(f)
+  homs = [(h, obdict[dom(D,h)], obdict[codom(D,h)]) for h in collect_hom(f)]
+  FreeDiagram{obtype(D),homtype(D)}(obs, homs)
 end
 
-# """ Wrapper type to interpret `FreeDiagram` as a `FinDomFunctor`.
-# """
-# @struct_hash_equal struct FreeDiagramFunctor{Ob,Hom,Codom} <:
-#     FinDomFunctor{FreeCatGraph{AbstractFreeDiagram{<:Any,Tuple{Ob,Hom}}},Codom}
-#   diagram::FreeDiagram{Ob,Hom}
-#   codom::Codom
-# end
-
-# FinDomFunctor(diagram::FreeDiagram, codom::Cat) =
-#   FreeDiagramFunctor(diagram, codom)
-
-# FinDomFunctor(diagram::FreeDiagram{Ob,Hom}) where {Ob,Hom} =
-#   FreeDiagramFunctor(diagram, TypeCat(Ob, Hom))
-
-# dom(F::FreeDiagramFunctor) = FreeCatGraph(getvalue(F.diagram))
-
-# Categories.do_ob_map(F::FreeDiagramFunctor, x) = ob(F.diagram, x)
-
-# Categories.do_hom_map(F::FreeDiagramFunctor, f) = hom(F.diagram, f)
-
-# collect_ob(F::FreeDiagramFunctor) = ob(F.diagram)
-
-# collect_hom(F::FreeDiagramFunctor) = hom(F.diagram)
 
 
 """

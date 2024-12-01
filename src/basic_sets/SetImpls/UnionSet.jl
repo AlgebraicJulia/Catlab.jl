@@ -1,17 +1,16 @@
 
-module EitherSets
+module UnionSets
 
-export EitherSet, left, right
+export UnionSet, left, right
 
 using StructEquality
 
 using GATlab
 
 using ..Sets: SetImpl, ThSet′, AbsSet
-import ..Sets: SetOb
 
 """ Union type """
-@struct_hash_equal struct EitherSet <: SetImpl
+@struct_hash_equal struct UnionSet <: SetImpl
   left::AbsSet
   right::AbsSet
 end
@@ -19,24 +18,19 @@ end
 # Accessors
 ###########
 
-left(e::EitherSet) = e.left
+left(e::UnionSet) = e.left
 
-right(e::EitherSet) = e.right
+right(e::UnionSet) = e.right
 
 # ThSet implementation
 ######################
 
-@instance ThSet′{Bool, Any} [model::EitherSet] begin
+@instance ThSet′{Bool, Any} [model::UnionSet] begin
 
   in′(i::Any)::Bool = i ∈ left(model) || i ∈ right(model)
 
   eltype′()::Any = Union{eltype(left(model)), eltype(right(model))}
 
 end
-
-# Default constructor for convenience
-#####################################
-
-SetOb(x::AbsSet, y::AbsSet) = SetOb(EitherSetImpl(x, y))
 
 end # module

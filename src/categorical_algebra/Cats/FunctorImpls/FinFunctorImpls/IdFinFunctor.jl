@@ -5,6 +5,7 @@ export IdentityFinDomFunctor
 using StructEquality
 using GATlab
 
+using ...Paths: Path
 using ..FinFunctors: FinDomFunctorImpl, ThFinDomFunctor
 using ...Categories: Cat, FinCat, obtype, homtype, gentype
 import ..FinFunctors: FinDomFunctor

@@ -13,7 +13,7 @@ instances are supported through the wrapper type [`TypeCat`](@ref). Finitely
 presented categories are provided by another module, [`FinCats`](@ref).
 """
 module Categories
-export Category, Cat, dom, codom, compose, id, obtype, homtype
+export Category, Cat, dom, codom, compose, id, obtype, homtype, ob_set, hom_set
 
 using StructEquality
 using Reexport
@@ -22,7 +22,7 @@ using GATlab
 import GATlab: getvalue
 
 import ....Theories: dom, codom, compose, id 
-using ...BasicSets.Sets: AbsSet
+using ....BasicSets: AbsSet
 
 # Theory of Categories with explicit sets
 #########################################
@@ -89,7 +89,6 @@ coerce_set(T::Type, ::Nothing) = SetOb(T)
 
 coerce_set(T::Type, s::AbsSet) = eltype(s) == T ? s : error("Bad eltype $s ≠ $T")
 
-
 Base.show(io::IO, m::Cat) = Base.show(io, getvalue(m))
 
 obtype(c)::Type = eltype(ob_set(c))
@@ -101,10 +100,12 @@ homtype(c)::Type = eltype(hom_set(c))
 
 include("CatImpls/TypeCats.jl")
 include("CatImpls/OpCats.jl")
+include("CatImpls/TrivialCats.jl")
 include("CatImpls/FinCats.jl")
 
 @reexport using .TypeCats
 @reexport using .OpCats
+@reexport using .TrivialCats
 @reexport using .FinCats
 
 

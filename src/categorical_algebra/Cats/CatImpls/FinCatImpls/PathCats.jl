@@ -8,7 +8,7 @@ using GATlab
 import GATlab: getvalue, equations
 
 import ......Graphs: src, tgt
-using .....BasicSets: FinSet
+using ......BasicSets: FinSet
 using ....Paths: Path
 using ..FinCats: FinCatImpl, ThFinCat
 import ..FinCats: FinCat, dom, codom

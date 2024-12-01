@@ -7,7 +7,7 @@ using StructEquality
 using GATlab 
 
 using ......Graphs
-using .....BasicSets: FinSet
+using ......BasicSets: FinSet
 using ....Paths: Path
 using ...FinCats: FinCatImpl, ThFinCat
 import ...FinCats: FinCat

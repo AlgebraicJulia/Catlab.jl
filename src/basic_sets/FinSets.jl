@@ -8,7 +8,7 @@ import GATlab: getvalue
 using StructEquality
 using Reexport
 
-using ..Sets, ..SetFunctions
+using ..Sets
 using ..Sets: ThSet′, SetImpl
 import ..Sets: SetOb, left, right
 
@@ -19,7 +19,7 @@ import ....Theories: Ob
 
 """
 Any finite set must satisfy the interface of `ThSet′` in addition to providing 
-Julia's interator interface and having a integer cardinality, i.e. `length`.
+Julia's iterator interface and having a integer cardinality, i.e. `length`.
 """
 @theory ThFinSet <: ThSet′ begin
   Int′::TYPE
@@ -63,7 +63,6 @@ Base.length(f::FinSet) = ThFinSet.length′[getvalue(f)]()
 Base.iterate(f::FinSet, args...) = 
   ThFinSet.iterate′[getvalue(f)](args...)
 
-
 # Other methods 
 #--------------
 
@@ -81,16 +80,17 @@ Base.show(io::IO, mime::MIME"text/html", set::FinSet) =
 #################
 
 include("FinSetImpls/FinSetInt.jl")
+include("FinSetImpls/SingletonSets.jl")
 include("FinSetImpls/EitherFinSet.jl")
 include("FinSetImpls/TabularSet.jl")
 include("FinSetImpls/FinSetHash.jl")
 include("FinSetImpls/FinSetVect.jl")
 
 @reexport using .FSetInt
+@reexport using .SingletonSets
 @reexport using .EitherFSet
 @reexport using .TabSet
 @reexport using .FSetHash
 @reexport using .FSetVect
-
 
 end # module

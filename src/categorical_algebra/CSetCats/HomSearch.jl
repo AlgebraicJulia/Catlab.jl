@@ -14,7 +14,7 @@ export ACSetHomomorphismAlgorithm, BacktrackingSearch, HomomorphismQuery,
        compile_hom_search
    
 using ....Theories
-using ...BasicSets, ...Cats
+using ....BasicSets, ...Cats
 using ..ACSetTransformations, ..CSets #, ..FreeDiagrams, ..Subobjects
 using ....Graphs.BasicGraphs
 using ..ACSetTransformations: map_components, coerce_components
@@ -281,9 +281,7 @@ function backtracking_search(f, X::ACSet, Y::ACSet;
 
   if error_failures
     initial_comps = coerce_components(S, initial, X, Y)
-    @show initial_comps
     uns = naturality_failures(X,Y,initial_comps) # TODO removed `type_components`
-    @show collect(uns)
     all(isempty,[uns[a] for a in keys(uns)]) ||
       error(sprint(show_naturality_failures, uns))
   end

@@ -39,16 +39,16 @@ end
 # Constants.
 #------------
 
-c = SetFunction("foo", SetOb(Int))
+c = SetFunction(ConstantFunction("foo", SetOb(Int)))
 @test getvalue(c) isa ConstantFunction
 @test dom(c) == SetOb(Int)
 @test codom(c) == SetOb(String)
 @test c(1) == "foo"
 
-c = SetFunction(5, SetOb(Int))
+c = SetFunction(ConstantFunction(5, SetOb(Int)))
 
 @withmodel SetC() (compose) begin 
-  @test force(compose(c, f)) == SetFunction(f(5), SetOb(Int))
+  @test force(compose(c, f)) == SetFunction(ConstantFunction(f(5), SetOb(Int)))
   @test force(compose(f, c)) == c
   @test force(compose(c, c)) == c
 end

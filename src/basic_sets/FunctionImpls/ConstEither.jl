@@ -7,13 +7,13 @@ using StructEquality
 using GATlab
 import GATlab: getvalue
 
-using ...Sets: AbsSet, EitherSet, left, right
+using ...Sets: AbsSet, UnionSet, left, right
 using ..SetFunctions: SetFunctionImpl, ThSetFunction, dom, codom
 import ..SetFunctions: SetFunction
 
 """
 A map out A + C -> B + C, where we interpret C as constant. Because these use 
-EitherSets rather than disjoint sets, any overlap between A and C gets treated 
+UnionSets rather than disjoint sets, any overlap between A and C gets treated 
 as constant.
 """
 @struct_hash_equal struct ConstEither <: SetFunctionImpl
@@ -22,9 +22,9 @@ as constant.
   codom::AbsSet
   function ConstEither(f, d, c)
     ed, ec = getvalue(d), getvalue(c)
-    ed isa EitherSet && left(ed) == dom(f) || error("f domain mismatch")
-    ec isa EitherSet && left(ec) == codom(f) || error("f codomain mismatch")
-    right(ec) == right(ed) || error("EitherSet right sets don't match")
+    ed isa UnionSet && left(ed) == dom(f) || error("f domain mismatch")
+    ec isa UnionSet && left(ec) == codom(f) || error("f codomain mismatch")
+    right(ec) == right(ed) || error("UnionSet right sets don't match")
     new(f, d, c)
   end
 end

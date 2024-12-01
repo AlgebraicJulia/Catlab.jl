@@ -24,17 +24,17 @@ and [`ACSetLoose`](@ref).
 module ACSetTransformations 
 
 export ACSetTransformation, StructACSetTransformation, 
-       DynamicACSetTransformation, components, naturality_failures,
-       show_naturality_failures, is_cartesian, in_bounds, 
-       is_natural # import from elsewhere, later
+       DynamicACSetTransformation, components,
+      is_cartesian, in_bounds
 
 using StructEquality
 
 using ACSets, CompTime
+using ACSets.DenseACSets: attrtype_type
 
-using ...BasicSets, ...SetCats
+using ....BasicSets, ...SetCats
 import ....Theories: dom, codom
-import ...BasicSets: force, is_monic, is_epic, preimage
+import ....BasicSets: force, is_monic, is_epic, preimage
 
 
 """ Transformation between attributed C-sets.
@@ -50,6 +50,9 @@ abstract type ACSetTransformation end
 
 components(α::ACSetTransformation) = α.components
 
+dom(α::ACSetTransformation) = α.dom 
+codom(α::ACSetTransformation) = α.codom 
+
 """
 ACSetTransformation where schema is known at compile time, which can be used for 
 performance optimizations.
@@ -61,11 +64,11 @@ performance optimizations.
   dom::Dom
   codom::Codom  
 
-  function StructACSetTransformation{S}(components, X::Dom, Y::Codom) where
-      {S, Dom <: StructACSet{S}, Codom <: StructACSet{S}}
-    components = coerce_components(S,components,X,Y)
-    new{S,typeof(components),Dom,Codom}(components, X, Y)
-  end
+  # function StructACSetTransformation{S}(components, X::Dom, Y::Codom) where
+  #     {S, Dom <: StructACSet{S}, Codom <: StructACSet{S}}
+  #   # components = coerce_components(S,components,X,Y)
+  #   new{S,typeof(components),Dom,Codom}(components, X, Y)
+  # end
 end
 
 """
@@ -76,11 +79,11 @@ ACSeTransformation where schema not known at compile time.
   dom::ACSet
   codom::ACSet
 
-  function DynamicACSetTransformation(components, X, Y) 
-    S = acset_schema(X)
-    components = coerce_components(S,components,X,Y)
-    new(components, X, Y)
-  end
+  # function DynamicACSetTransformation(components, X, Y) 
+  #   S = acset_schema(X)
+  #   # components = coerce_components(S,components,X,Y)
+  #   new(components, X, Y)
+  # end
 end
 
 # Other methods
@@ -117,42 +120,27 @@ force(α::ACSetTransformation) = map_components(force, α)
 ####################
 
 """Move components as first argument"""
-ACSetTransformation(X::ACSet, Y::ACSet; components...) =
-  ACSetTransformation((; components...), X, Y)
+ACSetTransformation(X::ACSet, Y::ACSet; cat=nothing, components...) =
+  ACSetTransformation((; components...), X, Y, cat)
       
-ACSetTransformation(components, X::StructACSet{S}, Y::StructACSet{S}) where {S} = 
-  _ACSetTransformation(Val{S},components,X,Y,Val{true})
+# ACSetTransformation(components, X::StructACSet{S}, Y::StructACSet{S}) where {S} = 
+#   _ACSetTransformation(Val{S},components,X,Y,Val{true})
 
-ACSetTransformation(components, X::DynamicACSet, Y::DynamicACSet) = 
-  runtime(_ACSetTransformation, X.schema, components, X,Y,false)
+# ACSetTransformation(components, X::DynamicACSet, Y::DynamicACSet) = 
+#   runtime(_ACSetTransformation, X.schema, components, X,Y,false)
 
-@ct_enable function _ACSetTransformation(@ct(S), components, X,Y,@ct(is_struct))
-  ocomps = NamedTuple(filter(∈(objects(S))∘first, pairs(components)))
-  acomps = NamedTuple(filter(∈(attrtypes(S))∘first, pairs(components)))
-  length(ocomps) + length(acomps) == length(components) ||
-    error("Not all names in $(keys(components)) are objects or attribute types")
-  T = is_struct ? StructACSetTransformation{S} : DynamicACSetTransformation
-  return T(merge(ocomps,acomps), X, Y)
+function _ACSetTransformation(components, X::StructACSet{S}, Y::StructACSet{S}
+                             ) where S
+  return StructACSetTransformation(NamedTuple(components), X, Y)
 end
 
-function LooseACSetTransformation(components, type_components, X::ACSet, Y::ACSet)
-  comps = Dict{Symbol,Any}(pairs(components))                     
-  for (k,v) in collect(pairs(type_components))
-    !haskey(components, k) || isempty(components[k]) || error("$k given as component and type_component")
-    nx, ny = [nparts(x,k) for x in [X,Y]]
-    nx == 0 || error("Cannot specify $k via a function with $nx vars present")
-    T, T′ = [attrtype_type(x, k) for x in [X,Y]]
-    if isnothing(v)
-      T′ == Nothing || error("No component $k :: $T -> $T′")
-      setfun = SetFunction(_->nothing, TypeSet(T),TypeSet(T′))
-    else 
-      setfun = v isa SetFunction ? v : SetFunction(v,TypeSet(T),TypeSet(T′))
-    end 
-    comps[k] = LooseVarFunction{T,T′}([],setfun,FinSet(ny))
-  end  
-  ACSetTransformation(comps, X, Y)
-end 
-
+function _ACSetTransformation(components, X::ACSet, Y::ACSet)
+  all(collect(keys(components))) do x 
+    x ∈ objects(S) ∪ attrtypes(S) || error(
+      "Not all names in $x are objects or attribute types")
+  end    
+  return StructACSetTransformation{S}(NamedTuple(components), X, Y)
+end
 
 # Component coercion
 #####################
@@ -171,32 +159,19 @@ function coerce_components(S, components, X::ACSet{<:PT}, Y) where PT
   end)
   acomps = NamedTuple(map(attrtypes(S)) do c
     c => coerce_attrvar_component(c, get(components, c, 1:0), 
-          TypeSet(X, c), TypeSet(Y, c), nparts(X,c), nparts(Y,c); kw[c]...)
+          TypeSet(attrtype_type(X, c)), TypeSet(attrtype_type(Y, c)), 
+          nparts(X,c), nparts(Y,c); kw[c]...)
   end)
   return merge(ocomps, acomps)
 end 
-  
-# Enforces that function has a valid domain (but not necessarily codomain)
-function coerce_component(ob::Symbol, f::FinFunction,
-                          dom_size::Int, codom_size::Int; kw...)
-  if haskey(kw, :dom_parts)
-    !any(i -> f(i) == 0, kw[:dom_parts]) # check domain of mark as deleted
-  else                         
-    length(dom(f)) == dom_size # check domain of dense parts
-  end || error("Domain error in component $ob")
-  return f 
-end
+
 
 coerce_component(ob::Symbol, f::T, dom_size::Int, codom_size::Int; kw...) where {T<:Integer} =
   error("Scalar component for $ob not allowed; " *
   "this is probably from a scalar component in an ACSetTransformation, please use a vector")
 
-coerce_component(x::Symbol, f::T, dom_size::Int, codom_size::Int; kw...) where {T<:AbstractVector{<:Integer}}= begin 
-  @show x 
-  @show f 
-  @show dom_size 
-  FinFunction(f, dom_size, codom_size; kw...)
-end
+coerce_component(x::Symbol, f::T, dom_size::Int, codom_size::Int; kw...
+                ) where {T<:AbstractVector{<:Integer}} = FinFunction(f, dom_size, codom_size; kw...)
 
 """ Coerce VarFunction to a SetFunction """
 function coerce_attrvar_component(ob::Symbol, f::VarFunction,::TypeSet{T}, ::TypeSet{T},
@@ -235,80 +210,6 @@ end
 # end
 # coerce_type_component(type::Symbol, f, dom_type::Type, codom_type::Type) =
 #   SetFunction(f, TypeSet(dom_type), TypeSet(codom_type))
-
-# Naturality
-############
-"""
-Check naturality condition for a purported ACSetTransformation, α: X→Y. 
-For each hom in the schema, e.g. h: m → n, the following square must commute:
-
-```text
-     αₘ
-  Xₘ --> Yₘ
-Xₕ ↓  ✓  ↓ Yₕ
-  Xₙ --> Yₙ
-     αₙ
-```
-
-You're allowed to run this on a named tuple partly specifying an ACSetTransformation,
-though at this time the domain and codomain must be fully specified ACSets.
-"""
-function is_natural(α::ACSetTransformation)
-  is_natural(dom(α), codom(α), α.components)
-end
-
-is_natural(dom, codom, comps...) =
-  all(isempty, last.(collect(naturality_failures(dom, codom, comps...))))
-
-"""
-Returns a dictionary whose keys are contained in the names in `arrows(S)`
-and whose value at `:f`, for an arrow `(f,c,d)`, is a lazy iterator
-over the elements of X(c) on which α's naturality square
-for f does not commute. Components should be a NamedTuple or Dictionary
-with keys contained in the names of S's morphisms and values vectors or dicts
-defining partial functions from X(c) to Y(c).
-"""
-function naturality_failures(X, Y, comps)
-  S = acset_schema(X)
-  α(o::Symbol, i) = comps[o](i)
-  ks = keys(comps)
-  arrs = filter(((f,c,d),) -> c ∈ ks && d ∈ ks, arrows(S))
-  ps = Iterators.map(arrs) do (f,c,d)
-    Pair(f,
-    Iterators.map(i->(i, Y[α(c, i), f], α(d, X[i, f])),
-      Iterators.filter(parts(X, c)) do i
-        Y[α(c,i), f] != α(d,X[i, f])
-      end))
-  end
-  Dict(ps)
-end
-
-naturality_failures(α::ACSetTransformation) =
-  naturality_failures(dom(α), codom(α), α.components)
-
-""" Pretty-print failures of transformation to be natural.
-
-See also: [`naturality_failures`](@ref).
-"""
-function show_naturality_failures(io::IO, d::AbstractDict)
-  println(io, """
-    Failures of naturality: a tuple (x,y,y′) on line labelled by f:c→d below
-    means that, if the given transformation is α: X → Y, f's naturality square
-    fails to commute at x ∈ X(c), with Y(f)(α_c(x))=y and α_d(X(f)(x))=y′.
-    """)
-  for (f, failures) in pairs(d)
-    isempty(failures) && continue
-    print(io, "$f: ")
-    join(io, failures, ", ")
-    println(io)
-  end
-end
-
-show_naturality_failures(io::IO, α::ACSetTransformation) =
-  show_naturality_failures(io, naturality_failures(α))
-
-show_naturality_failures(α::ACSetTransformation) =
-  show_naturality_failures(stdout, α)
 
 
 # Mark as deleted

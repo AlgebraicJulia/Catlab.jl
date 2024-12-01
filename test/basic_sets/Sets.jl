@@ -15,11 +15,11 @@ strings = SetOb(String)
 @test :a ∈ SetOb(Symbol)
 @test :a ∉ SetOb(Int)
 
-# EitherSets
+# UnionSets
 ############
 
-@test :a ∈ SetOb(EitherSet(SetOb(Int), SetOb(Symbol)))
-@test :a ∈ SetOb(EitherSet(SetOb(Symbol), SetOb(Symbol)))
+@test :a ∈ SetOb(UnionSet(SetOb(Int), SetOb(Symbol)))
+@test :a ∈ SetOb(UnionSet(SetOb(Symbol), SetOb(Symbol)))
 
 # Predicated sets
 #################
