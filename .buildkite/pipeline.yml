@@ -1,24 +1,7 @@
-env:
-  JULIA_VERSION: "1.10.2"
-  GATAS_HOME: "~/.gatas/buildkite/agents/$BUILDKITE_AGENT_NAME"
-
 steps:
 
-  - label: ":hammer: Build Project"
-    env:
-      JULIA_DEPOT_PATH: "$GATAS_HOME"
-    command: 
-      - "module load julia"
-      - "julia --project=docs --color=yes -e 'using Pkg; Pkg.update(); Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate(); Pkg.precompile()'"
-         
-  - wait 
-
-  - label: ":scroll: Build docs and run tests"
-    env:
-      JULIA_DEPOT_PATH: "$GATAS_HOME"
-      JULIA_PROJECT: "docs/"
-    command:
-      - "srun --cpus-per-task=16 --mem=64G --time=1:00:00 --output=.buildkite/log_%j.log --unbuffered .buildkite/jobscript.sh"
+  - label: ":arrow_down: Load AlgebraicJulia pipeline"
+    command: |
+      curl -s https://raw.githubusercontent.com/AlgebraicJulia/.github/main/buildkite/pipeline.yml | buildkite-agent pipeline upload
 
   - wait
-
