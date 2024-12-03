@@ -17,8 +17,8 @@ include("parsers/Parsers.jl")
 @reexport using .CategoricalAlgebra
 @reexport using .WiringDiagrams
 @reexport using .Graphics
-@reexport using .Programs
 @reexport using .ADTs
+@reexport using .Programs
 @reexport using .Parsers
 
 end

@@ -3,6 +3,7 @@ module ParserTests
 
 using Test
 using Catlab.ADTs.RelationTerm
+using Catlab.Parsers.ParserCore
 using Catlab.Parsers.RelationalParser
 using Catlab.WiringDiagrams.UndirectedWiringDiagrams
 using Catlab.WiringDiagrams.RelationDiagrams

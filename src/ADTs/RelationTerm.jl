@@ -5,7 +5,6 @@ in text format and a constructor to create an ACSet Representation.
 
 """
 module RelationTerm
-
 export Var, Typed, Untyped, Kwarg, Statement, UWDExpr, UWDTerm, context
 
 using MLStyle
@@ -16,11 +15,6 @@ using ...WiringDiagrams.UndirectedWiringDiagrams
 using ...WiringDiagrams.RelationDiagrams
 import Base: show
 
-@data Var <: AbstractTerm begin
- Untyped(var::Symbol)
- Typed(var::Symbol, type::Union{Symbol, Int, Expr})
- Kwarg(name::Symbol, var::Var)
-end
 
 @doc """   Var
 
@@ -29,22 +23,23 @@ Variables of a UWD. Types are the domain types, ScalarField, VectorField, Dual1F
 Subtypes include:
 
 1. Untyped(var::Symbol)
-1. Typed(var::Symbol, type::Symbol)
+1. Typed(var::Symbol, type::Union{Symbol, Int, Expr})
 1. Kwarg(name::Symbol, var::Var)
 
-which are used for representing typed or untyped variables as well as assignment vars.
+which are used for representing typed or untyped variables as well as keyword-based vars.
 """
+Var 
 
-Var
+@data Var <: AbstractTerm begin
+ Untyped(var::Symbol)
+ Typed(var::Symbol, type::Union{Symbol, Int, Expr})
+ Kwarg(name::Symbol, var::Var)
+end
 
 StructTypes.StructType(::Type{Var}) = StructTypes.AbstractType()
 StructTypes.subtypekey(::Type{Var}) = :_type
 StructTypes.subtypes(::Type{Var}) = (Untyped=Untyped, Typed=Typed, Kwarg=Kwarg)
 
-@data UWDTerm <: AbstractTerm begin
- Statement(relation::Symbol, variables::Vector{Var})
- UWDExpr(outer_ports::Vector{Var}, context::Vector{Var}, statements::Vector{Statement})
-end
 
 @doc """    UWDTerm
 
@@ -74,7 +69,7 @@ Use the following SyntacticModels UWDTerm:
 v1 = Typed(:x, :X)
 v2 = Typed(:y, :Y)
 v3 = Typed(:z, :Z)
-v4 = Untyped(:u)
+v4 = Typed(:u, :U)
 c = [v1, v2, v3, v4]
 op = [v1, v3]
 s = [Statement(:R, [v1,v2]),
@@ -84,6 +79,11 @@ u = UWDExpr(op, c, s)
 ```
 """
 UWDTerm
+
+@data UWDTerm <: AbstractTerm begin
+ Statement(relation::Symbol, variables::Vector{Var})
+ UWDExpr(outer_ports::Vector{Var}, context::Vector{Var}, statements::Vector{Statement})
+end
 
 Base.:(==)(s::Statement, t::Statement) = s.relation == t.relation && s.variables == t.variables
 Base.:(==)(s::Untyped, t::Untyped) = s.var == t.var
@@ -111,6 +111,7 @@ portname(v::Var) = @match v begin
   _ => nothing
 end
 
+
 """    show(io::IO, s::UWDTerm)
 
 generates a human readable string of the `UWDTerm` (or any sub-term).
@@ -120,7 +121,7 @@ function show(io::IO, s::UWDTerm)
     @match s begin
       Statement(r, v) => begin print(io, "$r("); show(io, v, wrap=false); print(io, ")") end
       UWDExpr(op, c, body) => begin
-        show(io, op) # Incoporate Better + Add Test, Using for Debugging for now
+        show(io, op)
         print(io, " where ")
         show(io, c)
         print(io, "\n")
@@ -169,9 +170,10 @@ function show(io::IO, c::Vector{Var}; wrap=true)
   end
 end
 
+
 """    construct(::Type{RelationDiagram}, ex::UWDExpr)
 
-Builds a RelationDiagram from a UWDExpr like the `@relation` macro does for Julia Exprs.
+Builds a RelationDiagram from a UWDExpr.
 """
 function construct(::Type{RelationDiagram}, ex::UWDExpr)
   # Dealing with Types in Junctions
@@ -194,7 +196,7 @@ function construct(::Type{RelationDiagram}, ex::UWDExpr)
   # Inferring outer port names
   outer_port_names = if isempty(ex.outer_ports)
     if isnothing(port_names(ex.statements[1].variables))
-      # No port names can be inferred
+      # If port names exist, they will exist in the first statement 
       nothing
     else
       # Port names need to be inferred

@@ -1,5 +1,3 @@
-""" Contains ADT reprsentations of core CatLab structures.
-"""
 module ADTs 
 
 using Reexport
