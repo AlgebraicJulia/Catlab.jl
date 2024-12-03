@@ -1,21 +1,15 @@
-module ParserTests
+module TestRelationalParser
 
 using Test
+
 using Catlab.ADTs.RelationTerm
-using Catlab.Parsers.ParserCore
 using Catlab.Parsers.RelationalParser
 using Catlab.WiringDiagrams.UndirectedWiringDiagrams
 using Catlab.WiringDiagrams.RelationDiagrams
 using Catlab.CategoricalAlgebra.CSets
- 
 
-
-# Now we write some unit tests. This is how I wrote this code, by writing the tests from the bottom up.
-@testset "Parens" begin
-  @test lparen("(")[1] == "("
-  @test rparen(")")[1] == ")"
-  @test ident("R(a)")[1] == "R"
-end
+# RelationalParser Rule Tests
+#############################
 
 @testset "Arg" begin
   @test arg("x")[1] == Untyped(:x)
@@ -31,11 +25,10 @@ end
 @testset "Judgement" begin
   @test judgement("a:A")[1] == Typed(:a, :A)
   @test judgement("ab:AB")[1] == Typed(:ab, :AB)
-
   @test judgement("a")[1] == Untyped(:a)
 end
 
-@testset "judgements" begin
+@testset "Judgements" begin
   @test judgements("a:A, b:B, c:C")[1] == [Typed(:a, :A), Typed(:b, :B), Typed(:c, :C)]
   @test judgements("a, b, c")[1] == [Untyped(:a), Untyped(:b), Untyped(:c)]
   @test judgements("")[1] == []
@@ -56,21 +49,8 @@ end
   @test RelationalParser.context("( a:A,  b:B )")[1] == [Typed(:a, :A), Typed(:b, :B)]
   @test RelationalParser.context("(x,y)")[1] == [Untyped(:x), Untyped(:y)]
   @test RelationalParser.context("()")[1] == []
-end
-
-PEG.setdebug!(false) # DEBUG
-
-@testset "Expr" begin
-  @test expr("n(1)")[1] == Expr(:n, 1)
-  @test expr("n(1,2)")[1] == Expr(:n, 1, 2)
-  @test expr("1")[1] == 1
-  @test expr("hii")[1] == :hii
-end
-
-@testset "Expression Typed Context" begin
   @test RelationalParser.context("(a:n(1), b:n(2))")[1] == [Typed(:a, Expr(:n, 1)), Typed(:b, Expr(:n, 2))]
   @test RelationalParser.context("(a:1, b:2)")[1] == [Typed(:a, 1), Typed(:b, 2)]
-  @test RelationalParser.context("(a:hii, b:hello)")[1] == [Typed(:a, :hii), Typed(:b, :hello)]
 end
 
 @testset "Statements" begin
@@ -114,7 +94,8 @@ end
   @test uwd("""(x,z) where (x,y,z) {R(x,y); S(y,z);}""")[1] isa RelationTerm.UWDExpr
 end
 
-# Test Error Handling:
+# Test Error Handling
+#####################
 
 #Taken from "PEG.jl/blob/master/test/misc.jl" to test parsing exception handling
 function parse_fails_at(rule, input)
@@ -129,18 +110,18 @@ function parse_fails_at(rule, input)
   end
 end
 
-@testset "judgement_handling" begin
+@testset "Judgement_handling" begin
   @test parse_fails_at(judgement, "a:") == 3
   @test parse_fails_at(judgement, ":a") == 1
 end
 
-@testset "context_handling" begin
+@testset "Context_handling" begin
   @test parse_fails_at(RelationalParser.context, "(a:A,b:B") == 9
   @test parse_fails_at(RelationalParser.context, "(a:A,b:B,") == 10
   @test parse_fails_at(RelationalParser.context, "(a:A,b:B,)") == 10
 end
 
-@testset "statement_handling" begin
+@testset "Statement_handling" begin
   @test parse_fails_at(statement, "R(a,b") == 6
   @test parse_fails_at(statement, "R(a,b,") == 7
   @test parse_fails_at(statement, "R(a,b,)") == 7
@@ -157,9 +138,9 @@ end
 end
 
 # End-To-End Test Cases illustrating full on use of string macro
-@testset "End-To-End" begin
+################################################################
 
-  #Test "{R(x,y); S(y,z);}" where {x:X,y:Y,z:Z}
+@testset "End-To-End" begin
   parsed_result = relation"() where (x:X,y:Y,z:Z) {R(x,y); S(y,z);}"
   
   v1 = Typed(:x, :X)
@@ -174,6 +155,7 @@ end
   
   @test parsed_result == uwd_result
 
+
   # Untyped
   #--------
 
@@ -182,7 +164,7 @@ end
   d = RelationDiagram(2)
   add_box!(d, 2, name=:R); add_box!(d, 2, name=:S)
   add_junctions!(d, 3, variable=[:x,:y,:z])
-  set_junction!(d, [1,2,2,3]) #Understanding: Port 1 connects to 1, port 2 to 2, port 3 to 2, port 4 to 3
+  set_junction!(d, [1,2,2,3])
   set_junction!(d, [1,3], outer=true)
   @test parsed == d
 
@@ -210,7 +192,7 @@ end
   parsed = relation"(x,y,z) where (x:X, y:Y, z:Z, w:W) {
   R(x,w);
   S(y,w);
-  T(z,w);}" #Only allows for ; or \n but not ;\n
+  T(z,w);}" # Only allows for ; or \n but not ;\n
   d = RelationDiagram([:X,:Y,:Z])
   add_box!(d, [:X,:W], name=:R)
   add_box!(d, [:Y,:W], name=:S)
@@ -239,7 +221,6 @@ end
   @test parsed == d
 
 
-
   # Typed by Expressions
   #------
 
@@ -256,6 +237,7 @@ end
   set_junction!(d, [1,4,2,4,3,4])
   set_junction!(d, [1,2,3], outer=true)
   @test parsed == d
+
 
   # Mixed types
   #------
@@ -274,16 +256,13 @@ end
   set_junction!(d, [1,2,3], outer=true)
   @test parsed == d
 
-
-
-
-
   # Special case: closed diagram.
   parsed = relation"() where (S:Pop, I:Pop, R:Pop, D:Pop) {
   infect(S,I,I,I)
   disease(I,R)
   disease(I,D);}"
   @test all(==(:Pop), subpart(parsed, :port_type))
+
 
   # Untyped, named ports
   #---------------------
@@ -320,6 +299,7 @@ end
   d2 = relation"() where () {E(src=v, tgt=v);}"
   @test d1 == d2
 
+
   # Typed, named ports
   #-------------------
 
@@ -336,31 +316,5 @@ end
   set_subpart!(d, :port_name, [:id, :department, :id, :department])
   @test parsed == d
 end
-
-# @testset "End-End Erroring" begin
-#   # Test error handling
-  
-#   parsed_result = relation"""
-#   (x, z) where (x:X, y:Y, z:Z)
-#   {
-#     R(x, y);
-#     S(y, z);
-#     T(z, y, u);
-#   }"""
-
-#   v1 = Typed(:x, :X)
-#   v2 = Typed(:y, :Y)
-#   v3 = Typed(:z, :Z)
-#   v4 = Untyped(:u)
-#   op = [v1, v3]
-#   c = [v1, v2, v3]
-#   s = [Statement(:R, [v1,v2]),
-#     Statement(:S, [v2,v3]),
-#     Statement(:T, [v3,v2, v4])]
-#   u = UWDExpr(op, c, s)
-#   uwd_result = RelationTerm.construct(RelationDiagram, u)
-
-#   @test parsed_result == uwd_result
-# end
 
 end

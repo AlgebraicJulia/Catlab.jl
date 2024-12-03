@@ -5,7 +5,6 @@ using Test
 using Catlab.CategoricalAlgebra.CSets
 using Catlab.WiringDiagrams.UndirectedWiringDiagrams
 using Catlab.WiringDiagrams.RelationDiagrams
-using Catlab.ADTs.RelationTerm
 using Catlab.Programs.RelationalPrograms
 
 # Relation macro
@@ -22,7 +21,7 @@ end
 d = RelationDiagram(2)
 add_box!(d, 2, name=:R); add_box!(d, 2, name=:S)
 add_junctions!(d, 3, variable=[:x,:y,:z])
-set_junction!(d, [1,2,2,3]) #Understanding: Port 1 connects to 1, port 2 to 2, port 3 to 2, port 4 to 3
+set_junction!(d, [1,2,2,3])
 set_junction!(d, [1,3], outer=true)
 @test parsed == d
 
