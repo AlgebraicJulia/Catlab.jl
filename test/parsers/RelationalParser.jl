@@ -1,4 +1,3 @@
-### Testing our parser
 module ParserTests
 
 using Test

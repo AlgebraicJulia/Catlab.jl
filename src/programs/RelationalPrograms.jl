@@ -58,15 +58,15 @@ function parse_relation_diagram(expr::Expr)
 end
 
 function parse_relation_diagram(head::Expr, body::Expr)
-  # Generate dict for storing all vars
+  # Generate dict for looking up vars
   var_dict = Dict{Symbol, Var}()
 
   # Look Up Function for Vars
   lookup_var(var) = begin
     if haskey(var_dict, var)
-      var_dict[var]
+      var_dict[var] # Returns var from context
     else
-      Untyped(var)
+      Untyped(var) # Infers untyped var if non-existant in context
     end
   end
 
@@ -79,17 +79,21 @@ function parse_relation_diagram(head::Expr, body::Expr)
   # Generate Context Array and Var Dict.
   context = if isnothing(all_vars)
     []
-  elseif isnothing(all_types)
+  elseif isnothing(all_types) # Untyped Case
     map(all_vars) do var
       v = Untyped(var)
+      # Store var in dict for lookup
       var_dict[var] = v
-      v # Return v
+      # Return var
+      v
     end
-  else
+  else # Typed Case
     map(all_vars, all_types) do var, type
       v = Typed(var, type)
+      # Store var in dict for lookup
       var_dict[var] = v
-      v # Return v
+      # Return var
+      v
     end
   end
 
@@ -99,16 +103,15 @@ function parse_relation_diagram(head::Expr, body::Expr)
     error("One of variables $outer_vars is not declared in context $all_vars")
 
   # Generate Outer Ports Array
-  outer_ports = isempty(outer_vars) ? [] : if isnothing(outer_port_names)
+  outer_ports = isempty(outer_vars) ? [] : if isnothing(outer_port_names) # Unnamed Case
     map(outer_vars) do var
       lookup_var(var)
     end
-  else
+  else # Named Case
     map(outer_port_names, outer_vars) do name, var
       Kwarg(name, lookup_var(var))
     end
   end
-
 
   # Generate statements for each relation call.
   body = Base.remove_linenums!(body)
@@ -118,11 +121,11 @@ function parse_relation_diagram(head::Expr, body::Expr)
       error("One of variables $vars is not declared in context $all_vars")
     
     # Generate Ports Array
-    ports = if isnothing(port_names)
+    ports = if isnothing(port_names) # Unnamed Case
       map(vars) do var
         lookup_var(var)
       end
-    else
+    else # Named Case
       map(port_names, vars) do name, var
         Kwarg(name, lookup_var(var))
       end
@@ -163,7 +166,6 @@ function parse_relation_context(context)
   end
 
 end
-
 
 function parse_relation_call(call)
   @match call begin

@@ -2,7 +2,6 @@
 
 This module defines the `RelationDiagram` type, which represents a relation UWD.
 """
-
 module RelationDiagrams
 
 export RelationDiagram, UntypedRelationDiagram, TypedRelationDiagram,
@@ -16,18 +15,18 @@ using ..UndirectedWiringDiagrams
 # Data types
 ############
 
-""" Abstract type for UWDs created by [`@relation`](@ref) macro.
+""" Abstract type for UWDs.
 """
 @abstract_acset_type RelationDiagram <: AbstractUWD
 @abstract_acset_type _UntypedRelationDiagram <: RelationDiagram
 @abstract_acset_type _TypedRelationDiagram <: RelationDiagram
 
-""" Untyped UWD created by [`@relation`](@ref) macro.
+""" Untyped UWD.
 """
 const UntypedRelationDiagram{Name,VarName} =
   _UntypedRelationDiagram{S, Tuple{Name,VarName}} where S
 
-""" Typed UWD created by [`@relation`](@ref) macro.
+""" Typed UWD.
 """
 const TypedRelationDiagram{T,Name,VarName} =
   _TypedRelationDiagram{S, Tuple{T,Name,VarName}} where S

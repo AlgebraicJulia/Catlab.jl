@@ -58,7 +58,7 @@ export judgements, judgement, args, arg, outerPorts, context, statement, body, u
 # Semantic Analysis
 ####################
 
-buildUWDExpr(v::Vector{Any}) = begin
+function buildUWDExpr(v::Vector{Any})
   # Build a dictionary from our context for easy lookup when type checking.
   context_dict = Dict(judgement.var => judgement for judgement in v[5])
   
