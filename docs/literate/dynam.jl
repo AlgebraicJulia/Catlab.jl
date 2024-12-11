@@ -199,6 +199,11 @@ EquilibriumProjection(f::FinFunction) = begin
     return c
   end
 
+  # f: n -> m
+  # v: R^m->TR^m
+
+  # want:
+  # u: R^n -> TR^n
   (v::DynamElt) -> begin
     u(y) = begin
       s̄ = nlsolve(s->π₂*v(st(s,y)),zeros(size(i₂,2))).zero
