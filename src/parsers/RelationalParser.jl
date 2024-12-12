@@ -22,9 +22,48 @@ export @relation_str
 export judgements, judgement, args, arg, outerPorts, context, statement, body, uwd, line
 
 
-# UWD Parsing Expression Grammar
-################################
+""" UWD Parsing Expression Grammar
 
+This PEG.jl parsing expression grammar is used to parse a string representation of a UWD into an ADT representation.
+For example, the following string representation of a UWD:
+
+```julia
+parsed_result = relation"() where (x:X,y:Y,z:Z) {R(x,y); S(y,z);}"
+```
+
+is parsed into the following ADT representation:
+
+```julia
+  v1 = Typed(:x, :X)
+  v2 = Typed(:y, :Y)
+  v3 = Typed(:z, :Z)
+  op = []
+  c = [v1, v2, v3]
+  s = [Statement(:R, [v1,v2]),
+    Statement(:S, [v2,v3])]
+  u = UWDExpr(op, c, s)
+```
+
+This ADT representation is then constructed into an ACSet representation.
+
+The mechanics of the UWD are the same as seen in the documentation of '@relation'. More specifically:
+
+The context in the `where` clause defines the set of junctions in
+the diagram and variable sharing defines the wiring of ports to junctions. If
+the parameters in the `where` clause are omitted, the set of junctions is inferred from the
+variables used in the string macro call.
+
+The ports and junctions of the diagram may be typed or untyped, and the ports
+may be named or unnamed. Thus, four possible types of undirected wiring diagrams
+may be returned, with the type determined by the form of relation header:
+
+1. Untyped, unnamed: `relation"(x,z) where (x,y,z) ...`
+2. Typed, unnamed: `relation"(x,z) where (x:X, y:Y, z:Z) ...`
+3. Untyped, named: `relation"(out1=x, out2=z) where (x,y,z) ...`
+4. Typed, named: `relation"(out=1, out2=z) where (x:X, y:Y, z:Z) ...`
+
+All four types of diagram are subtypes of [`RelationDiagram`](@ref).
+"""
 # A UWD consists of a list of outer ports, a context, and a body.
 @rule uwd = outerPorts & ws & "where" & ws & context & ws & body |> v -> buildUWDExpr(v)
 
@@ -58,6 +97,12 @@ export judgements, judgement, args, arg, outerPorts, context, statement, body, u
 # Semantic Analysis
 ####################
 
+""" Build UWD Expression
+
+This function takes a parsed UWD expression and traverses the variables in the outer ports as well as the statements, ensuring that the types of the
+variables are consistent with the types defined in the context. If a variable is not found in the context, an error is thrown, unless context was empty (inferred context).
+The function then constructs a UWDExpr object with the outer ports, context, and statements.
+"""
 function buildUWDExpr(v::Vector{Any})
   # Build a dictionary from our context for easy lookup when type checking.
   context_dict = Dict(judgement.var => judgement for judgement in v[5])
@@ -109,7 +154,11 @@ function buildUWDExpr(v::Vector{Any})
   UWDExpr(outer_ports, v[5], v[7])
 end
 
-# Macro that parses and constructs UWD diagram from relationalProgram syntax.
+""" Relation String Macro
+
+This macro parses a string representation of a UWD into an ACSet representation. It operates by parsing a string input into an UWDExpr object.
+Then it constructs a RelationDiagram object from the UWDExpr object.
+"""
 macro relation_str(x::String) begin
   uwd_exp = parse_whole(uwd, x) end
   return RelationTerm.construct(RelationDiagram, parse_whole(uwd, x))

@@ -59,7 +59,7 @@ end
 
 """ Collect
 
-This function collects and flattens arguments of format "(arg & (ws & comma & ws & arg)[*])[:?]" only.
+This function collects and flattens arguments of the PEG.jl rule format "(arg & (ws & comma & ws & arg)[*])[:?]" only.
 It supports lists such as "()" and "(a)" and "(a,b,c)"
 """
 function collect(v::Vector{Any})
