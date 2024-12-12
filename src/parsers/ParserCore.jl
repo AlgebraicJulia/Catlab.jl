@@ -44,7 +44,10 @@ export parse_identifier, collect
 # Syntactical Helper Functions
 ##############################
 
-# Parses ident as a symbol or integer
+""" Parse Identifier
+
+This function parses an identifier into a symbol or integer. If the identifier is a number, it will be parsed as an integer, otherwise it will be parsed as a symbol.
+"""
 function parse_identifier(v)
   v_parsed = tryparse(Int, v)
   if isnothing(v_parsed)
@@ -54,8 +57,11 @@ function parse_identifier(v)
   end
 end
 
-# Collects/Flattens arguments of format "(arg & (ws & comma & ws & arg)[*])[:?]" Only
-# Supports Lists such as "()" and "(a)" and "(a,b,c)"
+""" Collect
+
+This function collects and flattens arguments of format "(arg & (ws & comma & ws & arg)[*])[:?]" only.
+It supports lists such as "()" and "(a)" and "(a,b,c)"
+"""
 function collect(v::Vector{Any})
   if isempty(v)
     return []
