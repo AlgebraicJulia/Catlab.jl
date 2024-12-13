@@ -102,7 +102,7 @@ using PEG
 # Let us illusutrate this with a simple example: parsing a language that contains a singular function call.
 
 @rule functionCall = identifier & r"\(" & arguments & r"\)"
-@rule arguments = (identifier & r"\s*" & r","p)* & identifier
+@rule arguments = (identifier & r"\s*" & r","p)[*] & identifier
 @rule identifier = r"[a-zA-Z_][a-zA-Z0-9_]*"
 
 # We can read the above grammar left to right and top to bottom.
