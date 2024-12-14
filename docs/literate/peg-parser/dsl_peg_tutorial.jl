@@ -80,7 +80,7 @@ using PEG
 # For those who want to get ahead on developing domain specific languages now, `RelationalParser` has core constructs one may copy into their own parsing expression grammar.
 # Let us illustrate some core PEG rules from `RelationalParser` that offer reusability.
 
-# ### Core PEG Rules
+# #### Core PEG Rules
 # `@rule args = (arg & (ws & comma & ws & arg)[*])[:?]  |> v -> collect(v)`
 
 # The above rule defines a list of arguments separated by commas.
