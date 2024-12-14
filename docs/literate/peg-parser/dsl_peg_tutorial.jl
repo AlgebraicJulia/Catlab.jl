@@ -1,6 +1,6 @@
 # # Domain Specific Parsing Expression Grammars
-# The purpose of this documentation is to provide a high level tutorial on utilizing parsing
-# expression grammars for domain specific language developement within Catlab.
+# The purpose of this documentation is to provide a high-level tutorial on utilizing parsing
+# expression grammars for domain-specific language development within Catlab.
 # This tutorial will provide a brief overview of the PEG.jl library and how it is used.
 # Additionally, this tutorial will demonstrate a use case of PEG.jl in the context of
 # parsing a simple language for defining undirected wiring diagrams.
@@ -17,10 +17,10 @@ using PEG
 @rule simpleGrammar = "hello"
 # If we were to parse a string that contained `"hello"` using `parse_whole(simpleGrammar, "hello")`, we would get a successful parse.
 
-# Ideally, we want to parse a more complex langage than just the world "Hello".
+# Ideally, we want to parse a more complex language than just the word "Hello".
 # We can utilize the `@rule` macro to create multiple rules nested within each other.
 # See how this mimics a recursive descent parser?
-# Let us illusutrate this with a simple example: parsing a language that contains a singular function call.
+# Let us illustrate this with a simple example: parsing a language that contains a singular function call.
 @rule functionCall = identifier & r"\(" & arguments & r"\)"
 @rule arguments = (identifier & r"\s*" & r","p)[*] & identifier
 @rule identifier = r"[a-zA-Z_][a-zA-Z0-9_]*"
