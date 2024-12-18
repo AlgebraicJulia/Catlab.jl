@@ -85,6 +85,7 @@ makedocs(
     ],
     "Developer Docs" => Any[
       "devdocs/style.md",
+      "generated/peg-parser/dsl_peg_tutorial.md",
     ],
   ]
 )

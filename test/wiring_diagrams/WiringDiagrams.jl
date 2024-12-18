@@ -6,6 +6,10 @@ using Test
   include("Undirected.jl")
 end
 
+@testset "Relational" begin
+  include("RelationDiagrams.jl")
+end
+
 @testset "Monoidal" begin
   include("MonoidalDirected.jl")
   include("MonoidalUndirected.jl")
