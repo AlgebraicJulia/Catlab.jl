@@ -11,6 +11,7 @@ include("graphics/Graphics.jl")
 include("adts/ADTs.jl")
 include("programs/Programs.jl")
 include("parsers/Parsers.jl")
+include("sheaves/Sheaves.jl")
 
 @reexport using .Theories
 @reexport using .Graphs
@@ -20,5 +21,6 @@ include("parsers/Parsers.jl")
 @reexport using .ADTs
 @reexport using .Programs
 @reexport using .Parsers
+@reexport using .Sheaves
 
 end

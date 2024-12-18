@@ -31,3 +31,7 @@ end
 @testset "Parsers" begin
   include("parsers/Parsers.jl")
 end
+
+@testset "Sheaves" begin
+  include("sheaves/sheaves.jl")
+end
