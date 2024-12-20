@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Domain Specific Parsing Expression Grammars · Catlab.jl</title><meta name="title" content="Domain Specific Parsing Expression Grammars · Catlab.jl"/><meta property="og:title" content="Domain Specific Parsing Expression Grammars · Catlab.jl"/><meta property="twitter:title" content="Domain Specific Parsing Expression Grammars · Catlab.jl"/><meta name="description" content="Documentation for Catlab.jl."/><meta property="og:description" content="Documentation for Catlab.jl."/><meta property="twitter:description" content="Documentation for Catlab.jl."/><script data-outdated-warner src="../../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../search_index.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../assets/themeswap.js"></script><script src="../../../assets/analytics.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../../"><img src="../../../assets/logo.svg" alt="Catlab.jl logo"/></a><div class="docs-package-name"><span class="docs-autofit"><a href="../../../">Catlab.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../../">Catlab.jl</a></li><li><span class="tocitem">Vignettes</span><ul><li><input class="collapse-toggle" id="menuitem-2-1" type="checkbox"/><label class="tocitem" for="menuitem-2-1"><span class="docs-label">Seven Sketches in Compositionality</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../sketches/partitions/">Partitions</a></li><li><a class="tocitem" href="../../sketches/preorders/">Preorders</a></li><li><a class="tocitem" href="../../sketches/meets/">Meets in Preorders</a></li><li><a class="tocitem" href="../../sketches/smc/">Symmetric Monoidal Categories</a></li><li><a class="tocitem" href="../../sketches/cat_elements/">The Category of Elements</a></li><li><a class="tocitem" href="../../sketches/sheaves/">Basic Sheaf Constructions</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-2" type="checkbox"/><label class="tocitem" for="menuitem-2-2"><span class="docs-label">Graphs</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../graphs/graphs/">The Category of Graphs</a></li><li><a class="tocitem" href="../../graphs/graphs_label/">Labeled Graphs</a></li><li><a class="tocitem" href="../../graphs/subgraphs/">Algebra of subgraphs</a></li></ul></li><li><span class="tocitem">Categorical Algebra</span></li><li><input class="collapse-toggle" id="menuitem-2-4" type="checkbox"/><label class="tocitem" for="menuitem-2-4"><span class="docs-label">Wiring Diagrams</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../wiring_diagrams/wiring_diagram_basics/">Basics of wiring diagrams</a></li><li><a class="tocitem" href="../../wiring_diagrams/diagrams_and_expressions/">Wiring diagrams and syntactic expressions</a></li><li><a class="tocitem" href="../../wiring_diagrams/wd_cset/">Wiring Diagrams as Attributed C-Sets</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-5" type="checkbox"/><label class="tocitem" for="menuitem-2-5"><span class="docs-label">Graphics</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../graphics/graphviz_graphs/">Drawing graphs in Graphviz</a></li><li><a class="tocitem" href="../../graphics/graphviz_wiring_diagrams/">Drawing wiring diagrams in Graphviz</a></li><li><a class="tocitem" href="../../graphics/composejl_wiring_diagrams/">Drawing wiring diagrams in Compose.jl</a></li><li><a class="tocitem" href="../../graphics/tikz_wiring_diagrams/">Drawing wiring diagrams in TikZ</a></li><li><a class="tocitem" href="../../graphics/layouts_vs_drawings/">Layouts versus drawings of wiring diagrams</a></li></ul></li></ul></li><li><span class="tocitem">Modules</span><ul><li><a class="tocitem" href="../../../apis/theories/">Standard library of theories</a></li><li><a class="tocitem" href="../../../apis/categorical_algebra/">Categorical algebra</a></li><li><a class="tocitem" href="../../../apis/graphs/">Graphs</a></li><li><a class="tocitem" href="../../../apis/wiring_diagrams/">Wiring diagrams</a></li><li><a class="tocitem" href="../../../apis/graphics/">Graphics</a></li><li><a class="tocitem" href="../../../apis/programs/">Programs</a></li><li><a class="tocitem" href="../../../apis/sheaves/">Sheaves</a></li></ul></li><li><span class="tocitem">Developer Docs</span><ul><li><a class="tocitem" href="../../../devdocs/style/">Style Guide for AlgebraicJulia</a></li><li class="is-active"><a class="tocitem" href>Domain Specific Parsing Expression Grammars</a><ul class="internal"><li><a class="tocitem" href="#Developing-a-Parsing-Expression-Grammar-for-Catlab"><span>Developing a Parsing Expression Grammar for Catlab</span></a></li><li><a class="tocitem" href="#Parsing-a-Simple-Language-for-Defining-Undirected-Wiring-Diagrams"><span>Parsing a Simple Language for Defining Undirected Wiring Diagrams</span></a></li></ul></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Developer Docs</a></li><li class="is-active"><a href>Domain Specific Parsing Expression Grammars</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Domain Specific Parsing Expression Grammars</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/Catlab.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/Catlab.jl/blob/main/docs/literate/peg-parser/dsl_peg_tutorial.jl" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Domain-Specific-Parsing-Expression-Grammars"><a class="docs-heading-anchor" href="#Domain-Specific-Parsing-Expression-Grammars">Domain Specific Parsing Expression Grammars</a><a id="Domain-Specific-Parsing-Expression-Grammars-1"></a><a class="docs-heading-anchor-permalink" href="#Domain-Specific-Parsing-Expression-Grammars" title="Permalink"></a></h1><p>The purpose of this documentation is to provide a high-level tutorial on utilizing parsing expression grammars for domain-specific language development within Catlab. This tutorial will provide a brief overview of the PEG.jl library and how it is used. Additionally, this tutorial will demonstrate a use case of PEG.jl in the context of parsing a simple language for defining undirected wiring diagrams.</p><h2 id="Developing-a-Parsing-Expression-Grammar-for-Catlab"><a class="docs-heading-anchor" href="#Developing-a-Parsing-Expression-Grammar-for-Catlab">Developing a Parsing Expression Grammar for Catlab</a><a id="Developing-a-Parsing-Expression-Grammar-for-Catlab-1"></a><a class="docs-heading-anchor-permalink" href="#Developing-a-Parsing-Expression-Grammar-for-Catlab" title="Permalink"></a></h2><h3 id="PEG.jl"><a class="docs-heading-anchor" href="#PEG.jl">PEG.jl</a><a id="PEG.jl-1"></a><a class="docs-heading-anchor-permalink" href="#PEG.jl" title="Permalink"></a></h3><p>PEG.jl is a parsing expression grammar library for Julia. It allows us to define a grammar via a macro <code>@rule</code>. This allows us to define a formal set of rules for parsing a language. Let us look at a brief example of how this looks.</p><p>First, we import the necessary modules.</p><pre><code class="language-julia hljs">using PEG</code></pre><p>Next, we define a simple grammar for parsing a language that contains a single word.</p><pre><code class="language-julia hljs">@rule simpleGrammar = &quot;hello&quot;</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">simpleGrammar (generic function with 2 methods)</code></pre><p>If we were to parse a string that contained <code>&quot;hello&quot;</code> using <code>parse_whole(simpleGrammar, &quot;hello&quot;)</code>, we would get a successful parse.</p><p>Ideally, we want to parse a more complex language than just the word &quot;Hello&quot;. We can utilize the <code>@rule</code> macro to create multiple rules nested within each other. See how this mimics a recursive descent parser? Let us illustrate this with a simple example: parsing a language that contains a singular function call.</p><pre><code class="language-julia hljs">@rule functionCall = identifier &amp; r&quot;\(&quot; &amp; arguments &amp; r&quot;\)&quot;
+@rule arguments = (identifier &amp; r&quot;\s*&quot; &amp; r&quot;,&quot;p)[*] &amp; identifier
+@rule identifier = r&quot;[a-zA-Z_][a-zA-Z0-9_]*&quot;</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">identifier (generic function with 2 methods)</code></pre><p>We can read the above grammar left to right and top to bottom.</p><ul><li>We have a function call that expects an identifier followed by an open parenthesis, a list of arguments, and a closing parenthesis.</li><li>The arguments are a list of identifiers separated by commas with optional whitespaces.</li><li>An identifier is a string that starts with a letter or underscore and is followed by letters, numbers, or underscores.</li></ul><p>We can also define transformations for our rules that allow us to modify how our parse tree is generated.</p><p>Additionally, we can make changes to elements in our parse tree to better suit our needs. This is illustrated below.</p><pre><code class="language-julia hljs">@rule transformationRule = identifier &amp; r&quot;\(&quot; &amp; arguments &amp; r&quot;\)&quot; |&gt; v -&gt; v[1]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">transformationRule (generic function with 2 methods)</code></pre><p>The above rule will only return the identifier from the function call. This is done by using the <code>|&gt;</code> operator to apply a transformation to the parse tree. The transformation is a lambda function that takes the parse tree as input and returns the desired output. We could make a tree more complex by calling functions within our lambda that express semantic analysis. For more PEG.jl specific syntax, please refer to the <a href="https://github.com/wdebeaum/PEG.jl">PEG.jl documentation</a></p><h3 id="Motivation-For-Developing-a-PEG-for-Catlab"><a class="docs-heading-anchor" href="#Motivation-For-Developing-a-PEG-for-Catlab">Motivation For Developing a PEG for Catlab</a><a id="Motivation-For-Developing-a-PEG-for-Catlab-1"></a><a class="docs-heading-anchor-permalink" href="#Motivation-For-Developing-a-PEG-for-Catlab" title="Permalink"></a></h3><p>The motivation behind developing a parsing expression grammar to support domain specifc languages within Catlab lies in two core reasons:</p><ul><li>To discontinue dependency on Julia metaprogramming for defining domain specific languages.<ul><li>Metaprogramming restricts developers to Julia syntax. This can be limiting when we want DSL features that contradict Julia syntax.</li></ul></li><li>To provide a simpler way to develop and maintain domain specific languages.<ul><li>PEG.jl provides a more readable and maintainable way to define a grammar.<ul><li>This allows for easier debugging and development of domain specific languages.</li></ul></li><li>Reusability of exportable grammar rules means less reinventing the wheel.<ul><li>Less reinventing the wheel means less time spent on development.</li></ul></li></ul></li></ul><h3 id="Developing-a-PEG-for-Catlab"><a class="docs-heading-anchor" href="#Developing-a-PEG-for-Catlab">Developing a PEG for Catlab</a><a id="Developing-a-PEG-for-Catlab-1"></a><a class="docs-heading-anchor-permalink" href="#Developing-a-PEG-for-Catlab" title="Permalink"></a></h3><p>Core components for developing a domain specific language in Catlab exist in the <code>Catlab.Parsers</code> module. <code>Catlab.Parsers.ParserCore</code> provides the core functionality for developing a PEG.</p><p>Currently <code>ParserCore</code> supports lexical rules as follows:</p><pre><code class="language-julia hljs">@rule ws = r&quot;\s*&quot;
+@rule eq = r&quot;=&quot;p
+@rule lparen = r&quot;\(&quot;
+@rule rparen = r&quot;\)&quot;
+@rule comma = r&quot;,&quot;p
+@rule EOL = &quot;\n&quot; , r&quot;;&quot;
+@rule colon = r&quot;:&quot;p
+@rule ident = r&quot;[^:{}→\n;=,\(\)\s]+&quot;</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">ident (generic function with 2 methods)</code></pre><p>The above rules allow us to break our string input into tokens. The above rules can be imported into your parsing expression grammar via: <code>using Catlab.Parsers.ParserCore</code>.</p><p><code>ParserCore</code> also provides basic syntax for defining a PEG. For instance, the <code>expr</code> rule will parse a Julia expression.</p><p><code>ParserCore</code> also provides functions that can be called within transformations:</p><ul><li><code>parse_identifier</code>: Called to properly construct an <code>ident</code> into a symbol or integer.</li><li><code>collect</code>: Called to collect a list of elements into a flattened list.</li></ul><p>In the future, <code>ParserCore</code> will contain more general rules for parsing domain specific languages. More specific rules are defined in their respective modules within <code>Catlab.Parsers</code>. While <code>ParserCore</code> is a work in progress, <code>Catlab.Parsers.RelationalParser</code> holds important domain specifc language constructs which we can reuse. This module contains the parsing expression grammar for building undirected wiring diagrams. For those who want to get ahead on developing domain specific languages now, <code>RelationalParser</code> has core constructs one may copy into their own parsing expression grammar. Let us illustrate some core PEG rules from <code>RelationalParser</code> that offer reusability.</p><h4 id="Core-PEG-Rules"><a class="docs-heading-anchor" href="#Core-PEG-Rules">Core PEG Rules</a><a id="Core-PEG-Rules-1"></a><a class="docs-heading-anchor-permalink" href="#Core-PEG-Rules" title="Permalink"></a></h4><p><code>@rule args = (arg &amp; (ws &amp; comma &amp; ws &amp; arg)[*])[:?]  |&gt; v -&gt; collect(v)</code></p><p>The above rule defines a list of arguments separated by commas.</p><ul><li>It requires lexical rules for whitespace and commas.</li><li>It uses the <code>collect</code> function to flatten the list of arguments.</li><li>You will need to define your <code>arg</code> rule specific to your language.</li></ul><p><code>@rule line = ws &amp; statement &amp; r&quot;[^\S\r\n]*&quot; &amp; EOL |&gt; v-&gt;v[2]</code></p><p>The above rule defines a line of code with an undefined statement rule. The statement rule will depend on what your language allows. For instance, this might be a function call.</p><p><code>@rule body = r&quot;{\s*&quot;p &amp; line[*] &amp; r&quot;\n?}&quot;p |&gt; v-&gt;v[2]</code></p><p>The above rule defines a body of code enclosed in braces.</p><p>These are the core syntactical constructs that are likely to remain the same across domain specific languages. By reusing these rules, you can save time and effort in developing your own parsing expression grammar.</p><h2 id="Parsing-a-Simple-Language-for-Defining-Undirected-Wiring-Diagrams"><a class="docs-heading-anchor" href="#Parsing-a-Simple-Language-for-Defining-Undirected-Wiring-Diagrams">Parsing a Simple Language for Defining Undirected Wiring Diagrams</a><a id="Parsing-a-Simple-Language-for-Defining-Undirected-Wiring-Diagrams-1"></a><a class="docs-heading-anchor-permalink" href="#Parsing-a-Simple-Language-for-Defining-Undirected-Wiring-Diagrams" title="Permalink"></a></h2><p>Now, let&#39;s look at a use case of developing a domain specific language for defining undirected wiring diagrams. First, lets import the necessary modules for this tutorial. GraphViz will need to be installed to output the diagrams.</p><pre><code class="language-julia hljs">using Catlab.Parsers, Catlab.WiringDiagrams, Catlab.Graphics</code></pre><h3 id="Basic-Language-syntax"><a class="docs-heading-anchor" href="#Basic-Language-syntax">Basic Language syntax</a><a id="Basic-Language-syntax-1"></a><a class="docs-heading-anchor-permalink" href="#Basic-Language-syntax" title="Permalink"></a></h3><p>Our language supports the following syntax:</p><ul><li>We are expected to call our language using the <code>relation</code> string macro.</li><li>The first unit in our syntax is the definition of outer ports: <code>(x, z)</code>.</li><li>The second unit is the <code>where</code> clause: <code>where (x,y,z)</code>.</li><li>The third unit is the relations that make up the diagram: <code>{R(x,y); S(y,z);}</code>.</li></ul><p>Let us look at a few examples of how this language can be used.</p><h3 id="Untyped-Undirected-Wiring-Diagram"><a class="docs-heading-anchor" href="#Untyped-Undirected-Wiring-Diagram">Untyped Undirected Wiring Diagram</a><a id="Untyped-Undirected-Wiring-Diagram-1"></a><a class="docs-heading-anchor-permalink" href="#Untyped-Undirected-Wiring-Diagram" title="Permalink"></a></h3><p>In this example, we will parse a simple language for defining an untyped undirected wiring diagram.</p><pre><code class="language-julia hljs">unTypedDiagram = relation&quot;(x,z) where (x,y,z) {R(x,y); S(y,z);}&quot;
+to_graphviz(unTypedDiagram, box_labels=:name)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="57pt" height="220pt"
+ viewBox="0.00 0.00 57.00 219.74" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 215.74)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-215.74 53,-215.74 53,4 -4,4"/>
+<!-- n1 -->
+<g id="box1" class="node">
+<title>n1</title>
+<ellipse fill="none" stroke="black" cx="31" cy="-71.29" rx="18" ry="18"/>
+<text text-anchor="middle" x="31" y="-67.59" font-family="Serif" font-size="14.00">R</text>
+</g>
+<!-- n5 -->
+<!-- junction -->
+<g id="junction1" class="node">
+<title>n5</title>
+<ellipse fill="black" stroke="black" cx="39.23" cy="-36.16" rx="2.5" ry="2.5"/>
+</g>
+<!-- n1&%2345;&%2345;n5 -->
+<g id="edge1" class="edge">
+<title>n1&%2345;&%2345;n5</title>
+<path fill="none" stroke="black" d="M35.11,-53.73C36.46,-47.96 37.81,-42.2 38.58,-38.92"/>
+</g>
+<!-- n6 -->
+<!-- junction -->
+<g id="junction2" class="node">
+<title>n6</title>
+<ellipse fill="black" stroke="black" cx="29.17" cy="-107.36" rx="2.5" ry="2.5"/>
+</g>
+<!-- n1&%2345;&%2345;n6 -->
+<g id="edge3" class="edge">
+<title>n1&%2345;&%2345;n6</title>
+<path fill="none" stroke="black" d="M30.08,-89.33C29.78,-95.24 29.48,-101.16 29.31,-104.53"/>
+</g>
+<!-- n2 -->
+<g id="box2" class="node">
+<title>n2</title>
+<ellipse fill="none" stroke="black" cx="24.41" cy="-143.16" rx="18" ry="18"/>
+<text text-anchor="middle" x="24.41" y="-139.46" font-family="Serif" font-size="14.00">S</text>
+</g>
+<!-- n2&%2345;&%2345;n6 -->
+<g id="edge4" class="edge">
+<title>n2&%2345;&%2345;n6</title>
+<path fill="none" stroke="black" d="M26.79,-125.26C27.57,-119.39 28.35,-113.51 28.8,-110.17"/>
+</g>
+<!-- n7 -->
+<!-- junction -->
+<g id="junction3" class="node">
+<title>n7</title>
+<ellipse fill="black" stroke="black" cx="13.69" cy="-177.66" rx="2.5" ry="2.5"/>
+</g>
+<!-- n2&%2345;&%2345;n7 -->
+<g id="edge5" class="edge">
+<title>n2&%2345;&%2345;n7</title>
+<path fill="none" stroke="black" d="M19.05,-160.41C17.29,-166.07 15.53,-171.73 14.53,-174.95"/>
+</g>
+<!-- n3 -->
+<!-- n3&%2345;&%2345;n5 -->
+<g id="edge2" class="edge">
+<title>n3&%2345;&%2345;n5</title>
+<path fill="none" stroke="black" d="M44.19,-1.38C43.55,-5.84 40.67,-26.01 39.62,-33.42"/>
+</g>
+<!-- n4 -->
+<!-- n4&%2345;&%2345;n7 -->
+<g id="edge6" class="edge">
+<title>n4&%2345;&%2345;n7</title>
+<path fill="none" stroke="black" d="M0.83,-210.41C2.48,-206.21 9.94,-187.21 12.68,-180.24"/>
+</g>
+</g>
+</svg>
+'/><h3 id="Typed-Undirected-Wiring-Diagram"><a class="docs-heading-anchor" href="#Typed-Undirected-Wiring-Diagram">Typed Undirected Wiring Diagram</a><a id="Typed-Undirected-Wiring-Diagram-1"></a><a class="docs-heading-anchor-permalink" href="#Typed-Undirected-Wiring-Diagram" title="Permalink"></a></h3><p>Now, let us look at a typed example</p><pre><code class="language-julia hljs">TypedDiagram = relation&quot;(x,y,z) where (x:X, y:Y, z:Z, w:W) {
+  R(x,w);
+  S(y,w);
+  T(z,w);}&quot;
+to_graphviz(TypedDiagram, box_labels=:name)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="205pt" height="197pt"
+ viewBox="0.00 0.00 205.07 197.09" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 193.09)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-193.09 201.07,-193.09 201.07,4 -4,4"/>
+<!-- n1 -->
+<g id="box1" class="node">
+<title>n1</title>
+<ellipse fill="none" stroke="black" cx="56.97" cy="-49.19" rx="18" ry="18"/>
+<text text-anchor="middle" x="56.97" y="-45.49" font-family="Serif" font-size="14.00">R</text>
+</g>
+<!-- n7 -->
+<!-- junction -->
+<g id="junction1" class="node">
+<title>n7</title>
+<ellipse fill="black" stroke="black" cx="29" cy="-23.81" rx="2.5" ry="2.5"/>
+</g>
+<!-- n1&%2345;&%2345;n7 -->
+<g id="edge1" class="edge">
+<title>n1&%2345;&%2345;n7</title>
+<path fill="none" stroke="black" d="M43.64,-37.09C38.69,-32.6 33.63,-28 30.95,-25.57"/>
+</g>
+<!-- n10 -->
+<!-- junction -->
+<g id="junction4" class="node">
+<title>n10</title>
+<ellipse fill="black" stroke="black" cx="87.06" cy="-76.06" rx="2.5" ry="2.5"/>
+</g>
+<!-- n1&%2345;&%2345;n10 -->
+<g id="edge7" class="edge">
+<title>n1&%2345;&%2345;n10</title>
+<path fill="none" stroke="black" d="M70.61,-61.37C76.08,-66.26 81.81,-71.37 84.85,-74.08"/>
+</g>
+<!-- n2 -->
+<g id="box2" class="node">
+<title>n2</title>
+<ellipse fill="none" stroke="black" cx="125.37" cy="-63.43" rx="18" ry="18"/>
+<text text-anchor="middle" x="125.37" y="-59.73" font-family="Serif" font-size="14.00">S</text>
+</g>
+<!-- n8 -->
+<!-- junction -->
+<g id="junction2" class="node">
+<title>n8</title>
+<ellipse fill="black" stroke="black" cx="161.15" cy="-51.32" rx="2.5" ry="2.5"/>
+</g>
+<!-- n2&%2345;&%2345;n8 -->
+<g id="edge3" class="edge">
+<title>n2&%2345;&%2345;n8</title>
+<path fill="none" stroke="black" d="M142.42,-57.66C148.76,-55.52 155.23,-53.32 158.66,-52.16"/>
+</g>
+<!-- n2&%2345;&%2345;n10 -->
+<g id="edge8" class="edge">
+<title>n2&%2345;&%2345;n10</title>
+<path fill="none" stroke="black" d="M108.01,-69.15C100.88,-71.5 93.42,-73.96 89.62,-75.22"/>
+</g>
+<!-- n3 -->
+<g id="box3" class="node">
+<title>n3</title>
+<ellipse fill="none" stroke="black" cx="78.84" cy="-115.56" rx="18" ry="18"/>
+<text text-anchor="middle" x="78.84" y="-111.86" font-family="Serif" font-size="14.00">T</text>
+</g>
+<!-- n9 -->
+<!-- junction -->
+<g id="junction3" class="node">
+<title>n9</title>
+<ellipse fill="black" stroke="black" cx="71.14" cy="-152.54" rx="2.5" ry="2.5"/>
+</g>
+<!-- n3&%2345;&%2345;n9 -->
+<g id="edge5" class="edge">
+<title>n3&%2345;&%2345;n9</title>
+<path fill="none" stroke="black" d="M75.08,-133.62C73.74,-140.07 72.38,-146.59 71.66,-150.04"/>
+</g>
+<!-- n3&%2345;&%2345;n10 -->
+<g id="edge9" class="edge">
+<title>n3&%2345;&%2345;n10</title>
+<path fill="none" stroke="black" d="M82.57,-97.66C84.1,-90.31 85.7,-82.62 86.51,-78.7"/>
+</g>
+<!-- n4 -->
+<!-- n4&%2345;&%2345;n7 -->
+<g id="edge2" class="edge">
+<title>n4&%2345;&%2345;n7</title>
+<path fill="none" stroke="black" d="M1.2,-1.08C4.77,-3.99 20.89,-17.17 26.81,-22.02"/>
+</g>
+<!-- n5 -->
+<!-- n5&%2345;&%2345;n8 -->
+<g id="edge4" class="edge">
+<title>n5&%2345;&%2345;n8</title>
+<path fill="none" stroke="black" d="M195.69,-41.52C191.26,-42.78 171.23,-48.46 163.87,-50.55"/>
+</g>
+<!-- n6 -->
+<!-- n6&%2345;&%2345;n9 -->
+<g id="edge6" class="edge">
+<title>n6&%2345;&%2345;n9</title>
+<path fill="none" stroke="black" d="M63.86,-187.7C64.8,-183.18 69.02,-162.79 70.57,-155.31"/>
+</g>
+</g>
+</svg>
+'/><p>Furthermore, we can generate more complex diagrams with different types. This domain specific language supports symbol types, integer types, expression types, as well as mixed types. The above typed diagram illustrated the use of symbol types.</p><p>The syntax for integer types is as follows: <code>x:1</code></p><p>The syntax for expression types is as follows: <code>x:n(1)</code></p><p>The syntax for mixed types is as follows: <code>x:X, y:1, z:n(1), w:W</code></p><h3 id="Named-Ports"><a class="docs-heading-anchor" href="#Named-Ports">Named Ports</a><a id="Named-Ports-1"></a><a class="docs-heading-anchor-permalink" href="#Named-Ports" title="Permalink"></a></h3><p>Undirected Wiring Diagrams may also contain named ports. This motivates our language to support such a feature. Below is an example of a diagram with named ports.</p><pre><code class="language-julia hljs">employeeDirectory = relation&quot;(e=e, e′=e′) where (e:Employee, e′:Employee, d:Department) {
+    Employee(id=e, department=d);
+    Employee(id=e′, department=d);}&quot;</code></pre><div class="c-set">
+<span class="c-set-summary">Catlab.WiringDiagrams.RelationDiagrams.TypedNamedRelationDiagram{Symbol, Symbol, Symbol} {Box:2, Port:4, OuterPort:2, Junction:3, Type:0, Name:0, VarName:0}</span>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Box</th>
+      <th style = "text-align: right;">name</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">Employee</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">Employee</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Port</th>
+      <th style = "text-align: right;">box</th>
+      <th style = "text-align: right;">junction</th>
+      <th style = "text-align: right;">port_type</th>
+      <th style = "text-align: right;">port_name</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">Employee</td>
+      <td style = "text-align: right;">id</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">Department</td>
+      <td style = "text-align: right;">department</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">Employee</td>
+      <td style = "text-align: right;">id</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">Department</td>
+      <td style = "text-align: right;">department</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">OuterPort</th>
+      <th style = "text-align: right;">outer_junction</th>
+      <th style = "text-align: right;">outer_port_type</th>
+      <th style = "text-align: right;">outer_port_name</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">Employee</td>
+      <td style = "text-align: right;">e</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">Employee</td>
+      <td style = "text-align: right;">e′</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Junction</th>
+      <th style = "text-align: right;">junction_type</th>
+      <th style = "text-align: right;">variable</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">Employee</td>
+      <td style = "text-align: right;">e</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">Employee</td>
+      <td style = "text-align: right;">e′</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">Department</td>
+      <td style = "text-align: right;">d</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+<h3 id="Infered-Context"><a class="docs-heading-anchor" href="#Infered-Context">Infered Context</a><a id="Infered-Context-1"></a><a class="docs-heading-anchor-permalink" href="#Infered-Context" title="Permalink"></a></h3><p>Our language also supports a context of variables for a undirected wiring diagram. If the parameters in the <code>where</code> clause are omitted, we can infer these.</p><p>Below is an example of a diagram with inferred context.</p><pre><code class="language-julia hljs">inferredCase = relation&quot;(x,y,z) where () {R(x,y); S(y,z);}&quot;</code></pre><div class="c-set">
+<span class="c-set-summary">Catlab.WiringDiagrams.RelationDiagrams.UntypedUnnamedRelationDiagram{Symbol, Symbol} {Box:2, Port:4, OuterPort:3, Junction:3, Name:0, VarName:0}</span>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Box</th>
+      <th style = "text-align: right;">name</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">R</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">S</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Port</th>
+      <th style = "text-align: right;">box</th>
+      <th style = "text-align: right;">junction</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">3</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">OuterPort</th>
+      <th style = "text-align: right;">outer_junction</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">3</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Junction</th>
+      <th style = "text-align: right;">variable</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">x</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">y</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">z</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+<h3 id="Closed-Diagram"><a class="docs-heading-anchor" href="#Closed-Diagram">Closed Diagram</a><a id="Closed-Diagram-1"></a><a class="docs-heading-anchor-permalink" href="#Closed-Diagram" title="Permalink"></a></h3><p>Lastly, in the case we want a closed diagram, we simply omit the outer ports in the diagram. This is illustrated below.</p><pre><code class="language-julia hljs">parsed = relation&quot;() where (S:Pop, I:Pop, R:Pop, D:Pop) {
+  infect(S,I,I,I)
+  disease(I,R)
+  disease(I,D);}&quot;</code></pre><div class="c-set">
+<span class="c-set-summary">Catlab.WiringDiagrams.RelationDiagrams.TypedUnnamedRelationDiagram{Symbol, Symbol, Symbol} {Box:3, Port:8, OuterPort:0, Junction:4, Type:0, Name:0, VarName:0}</span>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Box</th>
+      <th style = "text-align: right;">name</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">infect</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">disease</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">disease</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Port</th>
+      <th style = "text-align: right;">box</th>
+      <th style = "text-align: right;">junction</th>
+      <th style = "text-align: right;">port_type</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">Pop</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">Pop</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">Pop</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">Pop</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">5</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">Pop</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">6</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">Pop</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">7</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">Pop</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">8</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">Pop</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Junction</th>
+      <th style = "text-align: right;">junction_type</th>
+      <th style = "text-align: right;">variable</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">Pop</td>
+      <td style = "text-align: right;">S</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">Pop</td>
+      <td style = "text-align: right;">I</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">Pop</td>
+      <td style = "text-align: right;">R</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">Pop</td>
+      <td style = "text-align: right;">D</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+</article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../../devdocs/style/">« Style Guide for AlgebraicJulia</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.8.0 on <span class="colophon-date" title="Friday 20 December 2024 05:19">Friday 20 December 2024</span>. Using Julia version 1.11.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

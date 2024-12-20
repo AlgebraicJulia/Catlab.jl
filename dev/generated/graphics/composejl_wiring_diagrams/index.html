@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Drawing wiring diagrams in Compose.jl · Catlab.jl</title><meta name="title" content="Drawing wiring diagrams in Compose.jl · Catlab.jl"/><meta property="og:title" content="Drawing wiring diagrams in Compose.jl · Catlab.jl"/><meta property="twitter:title" content="Drawing wiring diagrams in Compose.jl · Catlab.jl"/><meta name="description" content="Documentation for Catlab.jl."/><meta property="og:description" content="Documentation for Catlab.jl."/><meta property="twitter:description" content="Documentation for Catlab.jl."/><script data-outdated-warner src="../../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../search_index.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../assets/themeswap.js"></script><script src="../../../assets/analytics.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../../"><img src="../../../assets/logo.svg" alt="Catlab.jl logo"/></a><div class="docs-package-name"><span class="docs-autofit"><a href="../../../">Catlab.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../../">Catlab.jl</a></li><li><span class="tocitem">Vignettes</span><ul><li><input class="collapse-toggle" id="menuitem-2-1" type="checkbox"/><label class="tocitem" for="menuitem-2-1"><span class="docs-label">Seven Sketches in Compositionality</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../sketches/partitions/">Partitions</a></li><li><a class="tocitem" href="../../sketches/preorders/">Preorders</a></li><li><a class="tocitem" href="../../sketches/meets/">Meets in Preorders</a></li><li><a class="tocitem" href="../../sketches/smc/">Symmetric Monoidal Categories</a></li><li><a class="tocitem" href="../../sketches/cat_elements/">The Category of Elements</a></li><li><a class="tocitem" href="../../sketches/sheaves/">Basic Sheaf Constructions</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-2" type="checkbox"/><label class="tocitem" for="menuitem-2-2"><span class="docs-label">Graphs</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../graphs/graphs/">The Category of Graphs</a></li><li><a class="tocitem" href="../../graphs/graphs_label/">Labeled Graphs</a></li><li><a class="tocitem" href="../../graphs/subgraphs/">Algebra of subgraphs</a></li></ul></li><li><span class="tocitem">Categorical Algebra</span></li><li><input class="collapse-toggle" id="menuitem-2-4" type="checkbox"/><label class="tocitem" for="menuitem-2-4"><span class="docs-label">Wiring Diagrams</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../wiring_diagrams/wiring_diagram_basics/">Basics of wiring diagrams</a></li><li><a class="tocitem" href="../../wiring_diagrams/diagrams_and_expressions/">Wiring diagrams and syntactic expressions</a></li><li><a class="tocitem" href="../../wiring_diagrams/wd_cset/">Wiring Diagrams as Attributed C-Sets</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-5" type="checkbox" checked/><label class="tocitem" for="menuitem-2-5"><span class="docs-label">Graphics</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../graphviz_graphs/">Drawing graphs in Graphviz</a></li><li><a class="tocitem" href="../graphviz_wiring_diagrams/">Drawing wiring diagrams in Graphviz</a></li><li class="is-active"><a class="tocitem" href>Drawing wiring diagrams in Compose.jl</a><ul class="internal"><li><a class="tocitem" href="#Examples"><span>Examples</span></a></li><li><a class="tocitem" href="#Custom-styles"><span>Custom styles</span></a></li><li><a class="tocitem" href="#Output-formats"><span>Output formats</span></a></li></ul></li><li><a class="tocitem" href="../tikz_wiring_diagrams/">Drawing wiring diagrams in TikZ</a></li><li><a class="tocitem" href="../layouts_vs_drawings/">Layouts versus drawings of wiring diagrams</a></li></ul></li></ul></li><li><span class="tocitem">Modules</span><ul><li><a class="tocitem" href="../../../apis/theories/">Standard library of theories</a></li><li><a class="tocitem" href="../../../apis/categorical_algebra/">Categorical algebra</a></li><li><a class="tocitem" href="../../../apis/graphs/">Graphs</a></li><li><a class="tocitem" href="../../../apis/wiring_diagrams/">Wiring diagrams</a></li><li><a class="tocitem" href="../../../apis/graphics/">Graphics</a></li><li><a class="tocitem" href="../../../apis/programs/">Programs</a></li><li><a class="tocitem" href="../../../apis/sheaves/">Sheaves</a></li></ul></li><li><span class="tocitem">Developer Docs</span><ul><li><a class="tocitem" href="../../../devdocs/style/">Style Guide for AlgebraicJulia</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Vignettes</a></li><li><a class="is-disabled">Graphics</a></li><li class="is-active"><a href>Drawing wiring diagrams in Compose.jl</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Drawing wiring diagrams in Compose.jl</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/Catlab.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/Catlab.jl/blob/main/docs/literate/graphics/composejl_wiring_diagrams.jl" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Drawing-wiring-diagrams-in-Compose.jl"><a class="docs-heading-anchor" href="#Drawing-wiring-diagrams-in-Compose.jl">Drawing wiring diagrams in Compose.jl</a><a id="Drawing-wiring-diagrams-in-Compose.jl-1"></a><a class="docs-heading-anchor-permalink" href="#Drawing-wiring-diagrams-in-Compose.jl" title="Permalink"></a></h1><p><a href="https://nbviewer.jupyter.org/github/AlgebraicJulia/Catlab.jl/blob/gh-pages/dev/generated/graphics/composejl_wiring_diagrams.ipynb"><img src="https://img.shields.io/badge/show-nbviewer-579ACA.svg" alt/></a></p><p>Catlab can draw wiring diagrams using the Julia package <a href="https://github.com/GiovineItalia/Compose.jl">Compose.jl</a>.</p><p>For best results, it is recommended to load the packages <a href="https://github.com/JuliaOpt/Convex.jl">Convex.j</a> and <a href="https://github.com/JuliaOpt/SCS.jl">SCS.jl</a>. When available they are used to optimize the layout of the outer ports.</p><pre><code class="language-julia hljs">using Catlab.WiringDiagrams, Catlab.Graphics
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Drawing wiring diagrams in Compose.jl · Catlab.jl</title><meta name="title" content="Drawing wiring diagrams in Compose.jl · Catlab.jl"/><meta property="og:title" content="Drawing wiring diagrams in Compose.jl · Catlab.jl"/><meta property="twitter:title" content="Drawing wiring diagrams in Compose.jl · Catlab.jl"/><meta name="description" content="Documentation for Catlab.jl."/><meta property="og:description" content="Documentation for Catlab.jl."/><meta property="twitter:description" content="Documentation for Catlab.jl."/><script data-outdated-warner src="../../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../search_index.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../assets/themeswap.js"></script><script src="../../../assets/analytics.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../../"><img src="../../../assets/logo.svg" alt="Catlab.jl logo"/></a><div class="docs-package-name"><span class="docs-autofit"><a href="../../../">Catlab.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../../">Catlab.jl</a></li><li><span class="tocitem">Vignettes</span><ul><li><input class="collapse-toggle" id="menuitem-2-1" type="checkbox"/><label class="tocitem" for="menuitem-2-1"><span class="docs-label">Seven Sketches in Compositionality</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../sketches/partitions/">Partitions</a></li><li><a class="tocitem" href="../../sketches/preorders/">Preorders</a></li><li><a class="tocitem" href="../../sketches/meets/">Meets in Preorders</a></li><li><a class="tocitem" href="../../sketches/smc/">Symmetric Monoidal Categories</a></li><li><a class="tocitem" href="../../sketches/cat_elements/">The Category of Elements</a></li><li><a class="tocitem" href="../../sketches/sheaves/">Basic Sheaf Constructions</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-2" type="checkbox"/><label class="tocitem" for="menuitem-2-2"><span class="docs-label">Graphs</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../graphs/graphs/">The Category of Graphs</a></li><li><a class="tocitem" href="../../graphs/graphs_label/">Labeled Graphs</a></li><li><a class="tocitem" href="../../graphs/subgraphs/">Algebra of subgraphs</a></li></ul></li><li><span class="tocitem">Categorical Algebra</span></li><li><input class="collapse-toggle" id="menuitem-2-4" type="checkbox"/><label class="tocitem" for="menuitem-2-4"><span class="docs-label">Wiring Diagrams</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../wiring_diagrams/wiring_diagram_basics/">Basics of wiring diagrams</a></li><li><a class="tocitem" href="../../wiring_diagrams/diagrams_and_expressions/">Wiring diagrams and syntactic expressions</a></li><li><a class="tocitem" href="../../wiring_diagrams/wd_cset/">Wiring Diagrams as Attributed C-Sets</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-5" type="checkbox" checked/><label class="tocitem" for="menuitem-2-5"><span class="docs-label">Graphics</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../graphviz_graphs/">Drawing graphs in Graphviz</a></li><li><a class="tocitem" href="../graphviz_wiring_diagrams/">Drawing wiring diagrams in Graphviz</a></li><li class="is-active"><a class="tocitem" href>Drawing wiring diagrams in Compose.jl</a><ul class="internal"><li><a class="tocitem" href="#Examples"><span>Examples</span></a></li><li><a class="tocitem" href="#Custom-styles"><span>Custom styles</span></a></li><li><a class="tocitem" href="#Output-formats"><span>Output formats</span></a></li></ul></li><li><a class="tocitem" href="../tikz_wiring_diagrams/">Drawing wiring diagrams in TikZ</a></li><li><a class="tocitem" href="../layouts_vs_drawings/">Layouts versus drawings of wiring diagrams</a></li></ul></li></ul></li><li><span class="tocitem">Modules</span><ul><li><a class="tocitem" href="../../../apis/theories/">Standard library of theories</a></li><li><a class="tocitem" href="../../../apis/categorical_algebra/">Categorical algebra</a></li><li><a class="tocitem" href="../../../apis/graphs/">Graphs</a></li><li><a class="tocitem" href="../../../apis/wiring_diagrams/">Wiring diagrams</a></li><li><a class="tocitem" href="../../../apis/graphics/">Graphics</a></li><li><a class="tocitem" href="../../../apis/programs/">Programs</a></li><li><a class="tocitem" href="../../../apis/sheaves/">Sheaves</a></li></ul></li><li><span class="tocitem">Developer Docs</span><ul><li><a class="tocitem" href="../../../devdocs/style/">Style Guide for AlgebraicJulia</a></li><li><a class="tocitem" href="../../peg-parser/dsl_peg_tutorial/">Domain Specific Parsing Expression Grammars</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Vignettes</a></li><li><a class="is-disabled">Graphics</a></li><li class="is-active"><a href>Drawing wiring diagrams in Compose.jl</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Drawing wiring diagrams in Compose.jl</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/Catlab.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/Catlab.jl/blob/main/docs/literate/graphics/composejl_wiring_diagrams.jl" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Drawing-wiring-diagrams-in-Compose.jl"><a class="docs-heading-anchor" href="#Drawing-wiring-diagrams-in-Compose.jl">Drawing wiring diagrams in Compose.jl</a><a id="Drawing-wiring-diagrams-in-Compose.jl-1"></a><a class="docs-heading-anchor-permalink" href="#Drawing-wiring-diagrams-in-Compose.jl" title="Permalink"></a></h1><p><a href="https://nbviewer.jupyter.org/github/AlgebraicJulia/Catlab.jl/blob/gh-pages/dev/generated/graphics/composejl_wiring_diagrams.ipynb"><img src="https://img.shields.io/badge/show-nbviewer-579ACA.svg" alt/></a></p><p>Catlab can draw wiring diagrams using the Julia package <a href="https://github.com/GiovineItalia/Compose.jl">Compose.jl</a>.</p><p>For best results, it is recommended to load the packages <a href="https://github.com/JuliaOpt/Convex.jl">Convex.j</a> and <a href="https://github.com/JuliaOpt/SCS.jl">SCS.jl</a>. When available they are used to optimize the layout of the outer ports.</p><pre><code class="language-julia hljs">using Catlab.WiringDiagrams, Catlab.Graphics
 
 import Convex, SCS</code></pre><h2 id="Examples"><a class="docs-heading-anchor" href="#Examples">Examples</a><a id="Examples-1"></a><a class="docs-heading-anchor-permalink" href="#Examples" title="Permalink"></a></h2><h3 id="Symmetric-monoidal-category"><a class="docs-heading-anchor" href="#Symmetric-monoidal-category">Symmetric monoidal category</a><a id="Symmetric-monoidal-category-1"></a><a class="docs-heading-anchor-permalink" href="#Symmetric-monoidal-category" title="Permalink"></a></h3><pre><code class="language-julia hljs">using Catlab.Theories
 
@@ -19,18 +19,18 @@ f, g = Hom(:f, A, B), Hom(:g, B, A);</code></pre><p>To start, here are a few ver
     <path d="M0,0 L15,3.5 L0,7 z" stroke="context-stroke" fill="context-stroke"/>
   </marker>
 </defs>
-<g stroke="%23000000" id="img-b1b9487d-1">
+<g stroke="%23000000" id="img-55e03189-1">
   <g transform="translate(20,8)">
     <path fill="none" d="M-4,0 C0,0 0,0 4,0" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-b1b9487d-2">
+<g stroke="%23000000" id="img-55e03189-2">
   <g transform="translate(4,8)">
     <path fill="none" d="M-4,0 C0,0 0,0 4,0" class="primitive"/>
   </g>
 </g>
-<g fill="%23000000" fill-opacity="0.000" stroke="%23000000" id="img-b1b9487d-3">
-  <g stroke="%23000000" stroke-opacity="0.000" id="img-b1b9487d-4">
+<g fill="%23000000" fill-opacity="0.000" stroke="%23000000" id="img-55e03189-3">
+  <g stroke="%23000000" stroke-opacity="0.000" id="img-55e03189-4">
     <g transform="translate(15,11)">
       <path d="M0,0 L1,0 A1,1 0 0 1 0,1L0,0" class="primitive"/>
     </g>
@@ -75,7 +75,7 @@ f, g = Hom(:f, A, B), Hom(:g, B, A);</code></pre><p>To start, here are a few ver
     <path fill="none" d="M0,-3 L0,3 " class="primitive"/>
   </g>
 </g>
-<g fill="%23000000" id="img-b1b9487d-5">
+<g fill="%23000000" id="img-55e03189-5">
   <g transform="translate(12,8)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">f</text>
@@ -98,23 +98,23 @@ f, g = Hom(:f, A, B), Hom(:g, B, A);</code></pre><p>To start, here are a few ver
     <path d="M0,0 L15,3.5 L0,7 z" stroke="context-stroke" fill="context-stroke"/>
   </marker>
 </defs>
-<g stroke="%23000000" id="img-5ec1325c-1">
+<g stroke="%23000000" id="img-884c31f0-1">
   <g transform="translate(36,8)">
     <path fill="none" d="M-4,0 C0,0 0,0 4,0" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-5ec1325c-2">
+<g stroke="%23000000" id="img-884c31f0-2">
   <g transform="translate(20,8)">
     <path fill="none" d="M-4,0 C0,0 0,0 4,0" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-5ec1325c-3">
+<g stroke="%23000000" id="img-884c31f0-3">
   <g transform="translate(4,8)">
     <path fill="none" d="M-4,0 C0,0 0,0 4,0" class="primitive"/>
   </g>
 </g>
-<g fill="%23000000" fill-opacity="0.000" stroke="%23000000" id="img-5ec1325c-4">
-  <g stroke="%23000000" stroke-opacity="0.000" id="img-5ec1325c-5">
+<g fill="%23000000" fill-opacity="0.000" stroke="%23000000" id="img-884c31f0-4">
+  <g stroke="%23000000" stroke-opacity="0.000" id="img-884c31f0-5">
     <g transform="translate(31,11)">
       <path d="M0,0 L1,0 A1,1 0 0 1 0,1L0,0" class="primitive"/>
     </g>
@@ -159,15 +159,15 @@ f, g = Hom(:f, A, B), Hom(:g, B, A);</code></pre><p>To start, here are a few ver
     <path fill="none" d="M0,-3 L0,3 " class="primitive"/>
   </g>
 </g>
-<g fill="%23000000" id="img-5ec1325c-6">
+<g fill="%23000000" id="img-884c31f0-6">
   <g transform="translate(28,8)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">g</text>
     </g>
   </g>
 </g>
-<g fill="%23000000" fill-opacity="0.000" stroke="%23000000" id="img-5ec1325c-7">
-  <g stroke="%23000000" stroke-opacity="0.000" id="img-5ec1325c-8">
+<g fill="%23000000" fill-opacity="0.000" stroke="%23000000" id="img-884c31f0-7">
+  <g stroke="%23000000" stroke-opacity="0.000" id="img-884c31f0-8">
     <g transform="translate(15,11)">
       <path d="M0,0 L1,0 A1,1 0 0 1 0,1L0,0" class="primitive"/>
     </g>
@@ -212,7 +212,7 @@ f, g = Hom(:f, A, B), Hom(:g, B, A);</code></pre><p>To start, here are a few ver
     <path fill="none" d="M0,-3 L0,3 " class="primitive"/>
   </g>
 </g>
-<g fill="%23000000" id="img-5ec1325c-9">
+<g fill="%23000000" id="img-884c31f0-9">
   <g transform="translate(12,8)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">f</text>
@@ -235,28 +235,28 @@ f, g = Hom(:f, A, B), Hom(:g, B, A);</code></pre><p>To start, here are a few ver
     <path d="M0,0 L15,3.5 L0,7 z" stroke="context-stroke" fill="context-stroke"/>
   </marker>
 </defs>
-<g stroke="%23000000" id="img-9c399e2d-1">
+<g stroke="%23000000" id="img-002ee389-1">
   <g transform="translate(20,20)">
     <path fill="none" d="M-4,-0 C0,-0 0,0 4,0" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-9c399e2d-2">
+<g stroke="%23000000" id="img-002ee389-2">
   <g transform="translate(20,8)">
     <path fill="none" d="M-4,0 C0,0 0,-0 4,-0" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-9c399e2d-3">
+<g stroke="%23000000" id="img-002ee389-3">
   <g transform="translate(4,20)">
     <path fill="none" d="M-4,0 C0,0 0,-0 4,-0" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-9c399e2d-4">
+<g stroke="%23000000" id="img-002ee389-4">
   <g transform="translate(4,8)">
     <path fill="none" d="M-4,-0 C0,-0 0,0 4,0" class="primitive"/>
   </g>
 </g>
-<g fill="%23000000" fill-opacity="0.000" stroke="%23000000" id="img-9c399e2d-5">
-  <g stroke="%23000000" stroke-opacity="0.000" id="img-9c399e2d-6">
+<g fill="%23000000" fill-opacity="0.000" stroke="%23000000" id="img-002ee389-5">
+  <g stroke="%23000000" stroke-opacity="0.000" id="img-002ee389-6">
     <g transform="translate(15,23)">
       <path d="M0,0 L1,0 A1,1 0 0 1 0,1L0,0" class="primitive"/>
     </g>
@@ -301,15 +301,15 @@ f, g = Hom(:f, A, B), Hom(:g, B, A);</code></pre><p>To start, here are a few ver
     <path fill="none" d="M0,-3 L0,3 " class="primitive"/>
   </g>
 </g>
-<g fill="%23000000" id="img-9c399e2d-7">
+<g fill="%23000000" id="img-002ee389-7">
   <g transform="translate(12,20)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">g</text>
     </g>
   </g>
 </g>
-<g fill="%23000000" fill-opacity="0.000" stroke="%23000000" id="img-9c399e2d-8">
-  <g stroke="%23000000" stroke-opacity="0.000" id="img-9c399e2d-9">
+<g fill="%23000000" fill-opacity="0.000" stroke="%23000000" id="img-002ee389-8">
+  <g stroke="%23000000" stroke-opacity="0.000" id="img-002ee389-9">
     <g transform="translate(15,11)">
       <path d="M0,0 L1,0 A1,1 0 0 1 0,1L0,0" class="primitive"/>
     </g>
@@ -354,7 +354,7 @@ f, g = Hom(:f, A, B), Hom(:g, B, A);</code></pre><p>To start, here are a few ver
     <path fill="none" d="M0,-3 L0,3 " class="primitive"/>
   </g>
 </g>
-<g fill="%23000000" id="img-9c399e2d-10">
+<g fill="%23000000" id="img-002ee389-10">
   <g transform="translate(12,8)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">f</text>
@@ -366,7 +366,7 @@ f, g = Hom(:f, A, B), Hom(:g, B, A);</code></pre><p>To start, here are a few ver
 m, n = Hom(:m, B⊗A, A⊗B), Hom(:n, D⊗C, C⊗D)
 q = Hom(:l, A⊗B⊗C⊗D, D⊗C⊗B⊗A)
 
-to_composejl((f⊗g⊗h⊗k)⋅(m⊗n)⋅q⋅(n⊗m)⋅(h⊗k⊗f⊗g))</code></pre><img src="ea03d18f.svg" alt="Example block output"/><p>Identities and braidings appear as wires.</p><pre><code class="language-julia hljs">to_composejl(id(A))</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8"?>
+to_composejl((f⊗g⊗h⊗k)⋅(m⊗n)⋅q⋅(n⊗m)⋅(h⊗k⊗f⊗g))</code></pre><img src="f356bea6.svg" alt="Example block output"/><p>Identities and braidings appear as wires.</p><pre><code class="language-julia hljs">to_composejl(id(A))</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg"
      xmlns:xlink="http://www.w3.org/1999/xlink"
      version="1.2"
@@ -381,7 +381,7 @@ to_composejl((f⊗g⊗h⊗k)⋅(m⊗n)⋅q⋅(n⊗m)⋅(h⊗k⊗f⊗g))</code></
     <path d="M0,0 L15,3.5 L0,7 z" stroke="context-stroke" fill="context-stroke"/>
   </marker>
 </defs>
-<g stroke="%23000000" id="img-8092e24a-1">
+<g stroke="%23000000" id="img-d3bb627a-1">
   <g transform="translate(12,8)">
     <path fill="none" d="M-4,0 C0,0 0,0 4,0" class="primitive"/>
   </g>
@@ -405,7 +405,7 @@ to_composejl((f⊗g⊗h⊗k)⋅(m⊗n)⋅q⋅(n⊗m)⋅(h⊗k⊗f⊗g))</code></
     <path d="M0,0 L15,3.5 L0,7 z" stroke="context-stroke" fill="context-stroke"/>
   </marker>
 </defs>
-<g stroke="%23000000" id="img-2a425df4-1">
+<g stroke="%23000000" id="img-04b7072e-1">
   <g transform="translate(11.87,10.13)">
     <path fill="none" d="M-3.87,3.87 C-0.38,0.37 0.13,-2.12 4.13,-2.12" class="primitive"/>
   </g>
@@ -413,7 +413,7 @@ to_composejl((f⊗g⊗h⊗k)⋅(m⊗n)⋅q⋅(n⊗m)⋅(h⊗k⊗f⊗g))</code></
     <path fill="none" d="M-4.13,2.12 C-0.13,2.12 0.38,-0.37 3.87,-3.87" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-2a425df4-2">
+<g stroke="%23000000" id="img-04b7072e-2">
   <g transform="translate(11.87,17.87)">
     <path fill="none" d="M-3.87,-3.87 C-0.38,-0.37 0.13,2.12 4.13,2.12" class="primitive"/>
   </g>
@@ -437,7 +437,7 @@ to_composejl((f⊗g⊗h⊗k)⋅(m⊗n)⋅q⋅(n⊗m)⋅(h⊗k⊗f⊗g))</code></
     <path d="M0,0 L15,3.5 L0,7 z" stroke="context-stroke" fill="context-stroke"/>
   </marker>
 </defs>
-<g stroke="%23000000" id="img-cd30385e-1">
+<g stroke="%23000000" id="img-20cfe94d-1">
   <g transform="translate(35.87,17.87)">
     <path fill="none" d="M-3.87,-3.87 C-0.38,-0.37 0.13,2.12 4.13,2.12" class="primitive"/>
   </g>
@@ -445,7 +445,7 @@ to_composejl((f⊗g⊗h⊗k)⋅(m⊗n)⋅q⋅(n⊗m)⋅(h⊗k⊗f⊗g))</code></
     <path fill="none" d="M-4.12,-2.12 C-0.12,-2.12 0.38,0.38 3.88,3.88" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-cd30385e-2">
+<g stroke="%23000000" id="img-20cfe94d-2">
   <g transform="translate(35.87,10.13)">
     <path fill="none" d="M-3.87,3.87 C-0.38,0.37 0.13,-2.12 4.13,-2.12" class="primitive"/>
   </g>
@@ -453,7 +453,7 @@ to_composejl((f⊗g⊗h⊗k)⋅(m⊗n)⋅q⋅(n⊗m)⋅(h⊗k⊗f⊗g))</code></
     <path fill="none" d="M-4.12,2.12 C-0.12,2.12 0.38,-0.38 3.88,-3.88" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-cd30385e-3">
+<g stroke="%23000000" id="img-20cfe94d-3">
   <g transform="translate(11.88,17.88)">
     <path fill="none" d="M-3.88,-3.88 C-0.38,-0.38 0.12,2.12 4.12,2.12" class="primitive"/>
   </g>
@@ -461,7 +461,7 @@ to_composejl((f⊗g⊗h⊗k)⋅(m⊗n)⋅q⋅(n⊗m)⋅(h⊗k⊗f⊗g))</code></
     <path fill="none" d="M-4.13,-2.12 C-0.13,-2.12 0.38,0.37 3.87,3.87" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-cd30385e-4">
+<g stroke="%23000000" id="img-20cfe94d-4">
   <g transform="translate(11.88,10.12)">
     <path fill="none" d="M-3.88,3.88 C-0.38,0.38 0.12,-2.12 4.12,-2.12" class="primitive"/>
   </g>
@@ -469,8 +469,8 @@ to_composejl((f⊗g⊗h⊗k)⋅(m⊗n)⋅q⋅(n⊗m)⋅(h⊗k⊗f⊗g))</code></
     <path fill="none" d="M-4.13,2.12 C-0.13,2.12 0.38,-0.37 3.87,-3.87" class="primitive"/>
   </g>
 </g>
-<g fill="%23000000" fill-opacity="0.000" stroke="%23000000" id="img-cd30385e-5">
-  <g stroke="%23000000" stroke-opacity="0.000" id="img-cd30385e-6">
+<g fill="%23000000" fill-opacity="0.000" stroke="%23000000" id="img-20cfe94d-5">
+  <g stroke="%23000000" stroke-opacity="0.000" id="img-20cfe94d-6">
     <g transform="translate(23,23)">
       <path d="M0,0 L1,0 A1,1 0 0 1 0,1L0,0" class="primitive"/>
     </g>
@@ -515,15 +515,15 @@ to_composejl((f⊗g⊗h⊗k)⋅(m⊗n)⋅q⋅(n⊗m)⋅(h⊗k⊗f⊗g))</code></
     <path fill="none" d="M0,-3 L0,3 " class="primitive"/>
   </g>
 </g>
-<g fill="%23000000" id="img-cd30385e-7">
+<g fill="%23000000" id="img-20cfe94d-7">
   <g transform="translate(20,20)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">f</text>
     </g>
   </g>
 </g>
-<g fill="%23000000" fill-opacity="0.000" stroke="%23000000" id="img-cd30385e-8">
-  <g stroke="%23000000" stroke-opacity="0.000" id="img-cd30385e-9">
+<g fill="%23000000" fill-opacity="0.000" stroke="%23000000" id="img-20cfe94d-8">
+  <g stroke="%23000000" stroke-opacity="0.000" id="img-20cfe94d-9">
     <g transform="translate(23,11)">
       <path d="M0,0 L1,0 A1,1 0 0 1 0,1L0,0" class="primitive"/>
     </g>
@@ -568,7 +568,7 @@ to_composejl((f⊗g⊗h⊗k)⋅(m⊗n)⋅q⋅(n⊗m)⋅(h⊗k⊗f⊗g))</code></
     <path fill="none" d="M0,-3 L0,3 " class="primitive"/>
   </g>
 </g>
-<g fill="%23000000" id="img-cd30385e-10">
+<g fill="%23000000" id="img-20cfe94d-10">
   <g transform="translate(20,8)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">g</text>
@@ -593,7 +593,7 @@ to_composejl(σ)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1
     <path d="M0,0 L15,3.5 L0,7 z" stroke="context-stroke" fill="context-stroke"/>
   </marker>
 </defs>
-<g stroke="%23000000" id="img-2682fd7c-1">
+<g stroke="%23000000" id="img-e281f93a-1">
   <g transform="translate(28,32)">
     <path fill="none" d="M-4,-0 C0,-0 0,0 4,0" class="primitive"/>
   </g>
@@ -607,7 +607,7 @@ to_composejl(σ)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1
     <path fill="none" d="M-4.12,-2.13 C-0.12,-2.13 0.37,0.38 3.88,3.88" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-2682fd7c-2">
+<g stroke="%23000000" id="img-e281f93a-2">
   <g transform="translate(27.88,10.12)">
     <path fill="none" d="M-3.88,3.88 C-0.37,0.38 0.12,-2.13 4.12,-2.13" class="primitive"/>
   </g>
@@ -621,7 +621,7 @@ to_composejl(σ)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1
     <path fill="none" d="M-4,0 C0,0 0,-0 4,-0" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-2682fd7c-3">
+<g stroke="%23000000" id="img-e281f93a-3">
   <g transform="translate(27.88,17.88)">
     <path fill="none" d="M-3.88,-3.88 C-0.37,-0.38 0.12,2.13 4.12,2.13" class="primitive"/>
   </g>
@@ -651,17 +651,17 @@ to_composejl(σ)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1
     <path d="M0,0 L15,3.5 L0,7 z" stroke="context-stroke" fill="context-stroke"/>
   </marker>
 </defs>
-<g stroke="%23000000" id="img-b12edf4d-1">
+<g stroke="%23000000" id="img-ff096ab5-1">
   <g transform="translate(16,20)">
     <path fill="none" d="M-16,-12 C0,-12 0,12 16,12" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-b12edf4d-2">
+<g stroke="%23000000" id="img-ff096ab5-2">
   <g transform="translate(16,20)">
     <path fill="none" d="M-16,12 C0,12 0,-12 16,-12" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-b12edf4d-3">
+<g stroke="%23000000" id="img-ff096ab5-3">
   <g transform="translate(16,20)">
     <path fill="none" d="M-16,0 C0,0 0,0 16,0" class="primitive"/>
   </g>
@@ -685,22 +685,22 @@ to_composejl(mcopy(A))</code></pre><img src='data:image/svg+xml;utf-8,<?xml vers
     <path d="M0,0 L15,3.5 L0,7 z" stroke="context-stroke" fill="context-stroke"/>
   </marker>
 </defs>
-<g stroke="%23000000" id="img-35ed5d81-1">
+<g stroke="%23000000" id="img-8d09a5af-1">
   <g transform="translate(13.98,17.86)">
     <path fill="none" d="M-4.11,-3.36 C0.13,-0.91 -0.04,2.14 4.02,2.14" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-35ed5d81-2">
+<g stroke="%23000000" id="img-8d09a5af-2">
   <g transform="translate(13.98,10.14)">
     <path fill="none" d="M-4.11,3.36 C0.13,0.91 -0.04,-2.14 4.02,-2.14" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-35ed5d81-3">
+<g stroke="%23000000" id="img-8d09a5af-3">
   <g transform="translate(4,14)">
     <path fill="none" d="M-4,0 C0,0 0,0 4,0" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-35ed5d81-4">
+<g stroke="%23000000" id="img-8d09a5af-4">
   <g transform="translate(9,14)">
     <circle cx="0" cy="0" r="1" class="primitive"/>
   </g>
@@ -721,12 +721,12 @@ to_composejl(mcopy(A))</code></pre><img src='data:image/svg+xml;utf-8,<?xml vers
     <path d="M0,0 L15,3.5 L0,7 z" stroke="context-stroke" fill="context-stroke"/>
   </marker>
 </defs>
-<g stroke="%23000000" id="img-a9af7990-1">
+<g stroke="%23000000" id="img-a45aa0c6-1">
   <g transform="translate(4,8)">
     <path fill="none" d="M-4,0 C0,0 0,-0 4,0" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-a9af7990-2">
+<g stroke="%23000000" id="img-a45aa0c6-2">
   <g transform="translate(9,8)">
     <circle cx="0" cy="0" r="1" class="primitive"/>
   </g>
@@ -747,43 +747,43 @@ to_composejl(mcopy(A))</code></pre><img src='data:image/svg+xml;utf-8,<?xml vers
     <path d="M0,0 L15,3.5 L0,7 z" stroke="context-stroke" fill="context-stroke"/>
   </marker>
 </defs>
-<g stroke="%23000000" id="img-ec7c803a-1">
+<g stroke="%23000000" id="img-1d9aaeb4-1">
   <g transform="translate(40,14)">
     <path fill="none" d="M-4,0 C0,0 0,0 4,0" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-ec7c803a-2">
+<g stroke="%23000000" id="img-1d9aaeb4-2">
   <g transform="translate(13.98,10.14)">
     <path fill="none" d="M-4.11,3.36 C0.13,0.91 -0.04,-2.14 4.02,-2.14" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-ec7c803a-3">
+<g stroke="%23000000" id="img-1d9aaeb4-3">
   <g transform="translate(13.98,17.86)">
     <path fill="none" d="M-4.11,-3.36 C0.13,-0.91 -0.04,2.14 4.02,2.14" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-ec7c803a-4">
+<g stroke="%23000000" id="img-1d9aaeb4-4">
   <g transform="translate(30.02,10.14)">
     <path fill="none" d="M-4.02,-2.14 C0.04,-2.14 -0.13,0.91 4.11,3.36" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-ec7c803a-5">
+<g stroke="%23000000" id="img-1d9aaeb4-5">
   <g transform="translate(30.02,17.86)">
     <path fill="none" d="M-4.02,2.14 C0.04,2.14 -0.13,-0.91 4.11,-3.36" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-ec7c803a-6">
+<g stroke="%23000000" id="img-1d9aaeb4-6">
   <g transform="translate(4,14)">
     <path fill="none" d="M-4,0 C0,0 0,0 4,0" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-ec7c803a-7">
+<g stroke="%23000000" id="img-1d9aaeb4-7">
   <g transform="translate(35,14)">
     <circle cx="0" cy="0" r="1" class="primitive"/>
   </g>
 </g>
-<g fill="%23000000" fill-opacity="0.000" stroke="%23000000" id="img-ec7c803a-8">
-  <g stroke="%23000000" stroke-opacity="0.000" id="img-ec7c803a-9">
+<g fill="%23000000" fill-opacity="0.000" stroke="%23000000" id="img-1d9aaeb4-8">
+  <g stroke="%23000000" stroke-opacity="0.000" id="img-1d9aaeb4-9">
     <g transform="translate(25,23)">
       <path d="M0,0 L1,0 A1,1 0 0 1 0,1L0,0" class="primitive"/>
     </g>
@@ -828,15 +828,15 @@ to_composejl(mcopy(A))</code></pre><img src='data:image/svg+xml;utf-8,<?xml vers
     <path fill="none" d="M0,-3 L0,3 " class="primitive"/>
   </g>
 </g>
-<g fill="%23000000" id="img-ec7c803a-10">
+<g fill="%23000000" id="img-1d9aaeb4-10">
   <g transform="translate(22,20)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">f</text>
     </g>
   </g>
 </g>
-<g fill="%23000000" fill-opacity="0.000" stroke="%23000000" id="img-ec7c803a-11">
-  <g stroke="%23000000" stroke-opacity="0.000" id="img-ec7c803a-12">
+<g fill="%23000000" fill-opacity="0.000" stroke="%23000000" id="img-1d9aaeb4-11">
+  <g stroke="%23000000" stroke-opacity="0.000" id="img-1d9aaeb4-12">
     <g transform="translate(25,11)">
       <path d="M0,0 L1,0 A1,1 0 0 1 0,1L0,0" class="primitive"/>
     </g>
@@ -881,14 +881,14 @@ to_composejl(mcopy(A))</code></pre><img src='data:image/svg+xml;utf-8,<?xml vers
     <path fill="none" d="M0,-3 L0,3 " class="primitive"/>
   </g>
 </g>
-<g fill="%23000000" id="img-ec7c803a-13">
+<g fill="%23000000" id="img-1d9aaeb4-13">
   <g transform="translate(22,8)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">f</text>
     </g>
   </g>
 </g>
-<g stroke="%23000000" id="img-ec7c803a-14">
+<g stroke="%23000000" id="img-1d9aaeb4-14">
   <g transform="translate(9,14)">
     <circle cx="0" cy="0" r="1" class="primitive"/>
   </g>
@@ -909,42 +909,42 @@ to_composejl(mcopy(A))</code></pre><img src='data:image/svg+xml;utf-8,<?xml vers
     <path d="M0,0 L15,3.5 L0,7 z" stroke="context-stroke" fill="context-stroke"/>
   </marker>
 </defs>
-<g stroke="%23000000" id="img-3fe3bfb9-1">
+<g stroke="%23000000" id="img-2452cacc-1">
   <g transform="translate(24.67,18.38)">
     <path fill="none" d="M-10.17,-8.51 C-4.49,1.33 7.33,-0.44 7.33,7.62" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-3fe3bfb9-2">
+<g stroke="%23000000" id="img-2452cacc-2">
   <g transform="translate(27.33,18.38)">
     <path fill="none" d="M10.17,-8.51 C4.49,1.33 -7.33,-0.44 -7.33,7.62" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-3fe3bfb9-3">
+<g stroke="%23000000" id="img-2452cacc-3">
   <g transform="translate(9.7,17.73)">
     <path fill="none" d="M3.8,-7.86 C-0.39,-0.62 -1.7,0.21 -1.7,8.27" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-3fe3bfb9-4">
+<g stroke="%23000000" id="img-2452cacc-4">
   <g transform="translate(42.3,17.73)">
     <path fill="none" d="M-3.8,-7.86 C0.39,-0.62 1.7,0.21 1.7,8.27" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-3fe3bfb9-5">
+<g stroke="%23000000" id="img-2452cacc-5">
   <g transform="translate(38,4)">
     <path fill="none" d="M0,-4 C0,0 -0,0 -0,4" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-3fe3bfb9-6">
+<g stroke="%23000000" id="img-2452cacc-6">
   <g transform="translate(14,4)">
     <path fill="none" d="M-0,-4 C-0,0 0,0 0,4" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-3fe3bfb9-7">
+<g stroke="%23000000" id="img-2452cacc-7">
   <g transform="translate(38,9)">
     <circle cx="0" cy="0" r="1" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-3fe3bfb9-8">
+<g stroke="%23000000" id="img-2452cacc-8">
   <g transform="translate(14,9)">
     <circle cx="0" cy="0" r="1" class="primitive"/>
   </g>
@@ -965,62 +965,62 @@ to_composejl(mcopy(A))</code></pre><img src='data:image/svg+xml;utf-8,<?xml vers
     <path d="M0,0 L15,3.5 L0,7 z" stroke="context-stroke" fill="context-stroke"/>
   </marker>
 </defs>
-<g stroke="%23000000" id="img-839617f4-1">
+<g stroke="%23000000" id="img-db00f39e-1">
   <g transform="translate(27.33,18.38)">
     <path fill="none" d="M10.17,-8.51 C4.49,1.33 -7.33,-0.44 -7.33,7.62" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-839617f4-2">
+<g stroke="%23000000" id="img-db00f39e-2">
   <g transform="translate(66.29,17.73)">
     <path fill="none" d="M-3.79,-7.86 C0.39,-0.62 1.7,0.21 1.7,8.27" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-839617f4-3">
+<g stroke="%23000000" id="img-db00f39e-3">
   <g transform="translate(31.05,19.03)">
     <path fill="none" d="M-16.55,-9.16 C-9.36,3.28 12.95,-1.09 12.95,6.97" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-839617f4-4">
+<g stroke="%23000000" id="img-db00f39e-4">
   <g transform="translate(48.67,18.38)">
     <path fill="none" d="M-10.17,-8.51 C-4.49,1.33 7.33,-0.44 7.33,7.62" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-839617f4-5">
+<g stroke="%23000000" id="img-db00f39e-5">
   <g transform="translate(9.71,17.73)">
     <path fill="none" d="M3.79,-7.86 C-0.39,-0.62 -1.7,0.21 -1.7,8.27" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-839617f4-6">
+<g stroke="%23000000" id="img-db00f39e-6">
   <g transform="translate(44.95,19.03)">
     <path fill="none" d="M16.55,-9.16 C9.36,3.28 -12.95,-1.09 -12.95,6.97" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-839617f4-7">
+<g stroke="%23000000" id="img-db00f39e-7">
   <g transform="translate(62,4)">
     <path fill="none" d="M0,-4 C0,0 -0,0 -0,4" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-839617f4-8">
+<g stroke="%23000000" id="img-db00f39e-8">
   <g transform="translate(38,4)">
     <path fill="none" d="M-0,-4 C-0,0 0,0 0,4" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-839617f4-9">
+<g stroke="%23000000" id="img-db00f39e-9">
   <g transform="translate(14,4)">
     <path fill="none" d="M-0,-4 C-0,0 0,0 0,4" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-839617f4-10">
+<g stroke="%23000000" id="img-db00f39e-10">
   <g transform="translate(62,9)">
     <circle cx="0" cy="0" r="1" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-839617f4-11">
+<g stroke="%23000000" id="img-db00f39e-11">
   <g transform="translate(38,9)">
     <circle cx="0" cy="0" r="1" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-839617f4-12">
+<g stroke="%23000000" id="img-db00f39e-12">
   <g transform="translate(14,9)">
     <circle cx="0" cy="0" r="1" class="primitive"/>
   </g>
@@ -1043,12 +1043,12 @@ to_composejl(dunit(A))</code></pre><img src='data:image/svg+xml;utf-8,<?xml vers
     <path d="M0,0 L15,3.5 L0,7 z" stroke="context-stroke" fill="context-stroke"/>
   </marker>
 </defs>
-<g stroke="%23000000" id="img-058200de-1">
+<g stroke="%23000000" id="img-83f9d6a4-1">
   <g transform="translate(11,17.75)">
     <path fill="none" d="M-3,-3.75 C-3,-0.75 1,2.25 5,2.25" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-058200de-2">
+<g stroke="%23000000" id="img-83f9d6a4-2">
   <g transform="translate(11,10.25)">
     <path fill="none" d="M-3,3.75 C-3,0.75 1,-2.25 5,-2.25" class="primitive"/>
   </g>
@@ -1069,12 +1069,12 @@ to_composejl(dunit(A))</code></pre><img src='data:image/svg+xml;utf-8,<?xml vers
     <path d="M0,0 L15,3.5 L0,7 z" stroke="context-stroke" fill="context-stroke"/>
   </marker>
 </defs>
-<g stroke="%23000000" id="img-5ae744b0-1">
+<g stroke="%23000000" id="img-1ca9af9c-1">
   <g transform="translate(5,17.75)">
     <path fill="none" d="M-5,2.25 C-1,2.25 3,-0.75 3,-3.75" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-5ae744b0-2">
+<g stroke="%23000000" id="img-1ca9af9c-2">
   <g transform="translate(5,10.25)">
     <path fill="none" d="M-5,-2.25 C-1,-2.25 3,0.75 3,3.75" class="primitive"/>
   </g>
@@ -1098,7 +1098,7 @@ to_composejl((dunit(A) ⊗ id(B)) ⋅ (id(A) ⊗ f ⊗ id(B)) ⋅ (id(A) ⊗ dco
     <path d="M0,0 L15,3.5 L0,7 z" stroke="context-stroke" fill="context-stroke"/>
   </marker>
 </defs>
-<g stroke="%23000000" id="img-873ed62a-1">
+<g stroke="%23000000" id="img-6d387ec1-1">
   <g transform="translate(36,8)">
     <path fill="none" d="M-4,0 C0,0 0,-0 4,-0" class="primitive"/>
   </g>
@@ -1109,17 +1109,17 @@ to_composejl((dunit(A) ⊗ id(B)) ⋅ (id(A) ⊗ f ⊗ id(B)) ⋅ (id(A) ⊗ dco
     <path fill="none" d="M-4.5,3.75 C-4.5,0.75 1.5,-2.25 7.5,-2.25" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-873ed62a-2">
+<g stroke="%23000000" id="img-6d387ec1-2">
   <g transform="translate(29,22.25)">
     <path fill="none" d="M-5,-2.25 C-1,-2.25 3,0.75 3,3.75" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-873ed62a-3">
+<g stroke="%23000000" id="img-6d387ec1-3">
   <g transform="translate(11,17.75)">
     <path fill="none" d="M-3,-3.75 C-3,-0.75 1,2.25 5,2.25" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-873ed62a-4">
+<g stroke="%23000000" id="img-6d387ec1-4">
   <g transform="translate(27.5,29.75)">
     <path fill="none" d="M-7.5,2.25 C-1.5,2.25 4.5,-0.75 4.5,-3.75" class="primitive"/>
   </g>
@@ -1130,8 +1130,8 @@ to_composejl((dunit(A) ⊗ id(B)) ⋅ (id(A) ⊗ f ⊗ id(B)) ⋅ (id(A) ⊗ dco
     <path fill="none" d="M-4,0 C0,0 0,-0 4,-0" class="primitive"/>
   </g>
 </g>
-<g fill="%23000000" fill-opacity="0.000" stroke="%23000000" id="img-873ed62a-5">
-  <g stroke="%23000000" stroke-opacity="0.000" id="img-873ed62a-6">
+<g fill="%23000000" fill-opacity="0.000" stroke="%23000000" id="img-6d387ec1-5">
+  <g stroke="%23000000" stroke-opacity="0.000" id="img-6d387ec1-6">
     <g transform="translate(23,23)">
       <path d="M0,0 L1,0 A1,1 0 0 1 0,1L0,0" class="primitive"/>
     </g>
@@ -1176,7 +1176,7 @@ to_composejl((dunit(A) ⊗ id(B)) ⋅ (id(A) ⊗ f ⊗ id(B)) ⋅ (id(A) ⊗ dco
     <path fill="none" d="M0,-3 L0,3 " class="primitive"/>
   </g>
 </g>
-<g fill="%23000000" id="img-873ed62a-7">
+<g fill="%23000000" id="img-6d387ec1-7">
   <g transform="translate(20,20)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">f</text>
@@ -1201,37 +1201,37 @@ to_composejl(plus(X) ⋅ mcopy(X))</code></pre><img src='data:image/svg+xml;utf-
     <path d="M0,0 L15,3.5 L0,7 z" stroke="context-stroke" fill="context-stroke"/>
   </marker>
 </defs>
-<g stroke="%23000000" id="img-4eff3e54-1">
+<g stroke="%23000000" id="img-d9cbbe0d-1">
   <g transform="translate(23.98,17.86)">
     <path fill="none" d="M-4.11,-3.36 C0.13,-0.91 -0.04,2.14 4.02,2.14" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-4eff3e54-2">
+<g stroke="%23000000" id="img-d9cbbe0d-2">
   <g transform="translate(23.98,10.14)">
     <path fill="none" d="M-4.11,3.36 C0.13,0.91 -0.04,-2.14 4.02,-2.14" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-4eff3e54-3">
+<g stroke="%23000000" id="img-d9cbbe0d-3">
   <g transform="translate(14,14)">
     <path fill="none" d="M-4,0 C0,0 0,0 4,0" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-4eff3e54-4">
+<g stroke="%23000000" id="img-d9cbbe0d-4">
   <g transform="translate(4.02,17.86)">
     <path fill="none" d="M-4.02,2.14 C0.04,2.14 -0.13,-0.91 4.11,-3.36" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-4eff3e54-5">
+<g stroke="%23000000" id="img-d9cbbe0d-5">
   <g transform="translate(4.02,10.14)">
     <path fill="none" d="M-4.02,-2.14 C0.04,-2.14 -0.13,0.91 4.11,3.36" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-4eff3e54-6">
+<g stroke="%23000000" id="img-d9cbbe0d-6">
   <g transform="translate(19,14)">
     <circle cx="0" cy="0" r="1" class="primitive"/>
   </g>
 </g>
-<g fill="%23000000" fill-opacity="0.000" stroke="%23000000" id="img-4eff3e54-7">
+<g fill="%23000000" fill-opacity="0.000" stroke="%23000000" id="img-d9cbbe0d-7">
   <g transform="translate(9,14)">
     <circle cx="0" cy="0" r="1" class="primitive"/>
   </g>
@@ -1252,27 +1252,27 @@ to_composejl(plus(X) ⋅ mcopy(X))</code></pre><img src='data:image/svg+xml;utf-
     <path d="M0,0 L15,3.5 L0,7 z" stroke="context-stroke" fill="context-stroke"/>
   </marker>
 </defs>
-<g stroke="%23000000" id="img-4d311dd9-1">
+<g stroke="%23000000" id="img-4c3ccb8f-1">
   <g transform="translate(32,38)">
     <path fill="none" d="M-4,-0 C0,-0 0,0 4,0" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-4d311dd9-2">
+<g stroke="%23000000" id="img-4c3ccb8f-2">
   <g transform="translate(32,14)">
     <path fill="none" d="M-4,0 C0,0 0,-0 4,-0" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-4d311dd9-3">
+<g stroke="%23000000" id="img-4c3ccb8f-3">
   <g transform="translate(18,26)">
     <path fill="none" d="M-8.13,11.5 C2.95,5.1 -2.95,-5.1 8.13,-11.5" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-4d311dd9-4">
+<g stroke="%23000000" id="img-4c3ccb8f-4">
   <g transform="translate(18,26)">
     <path fill="none" d="M-8.13,-11.5 C2.95,-5.1 -2.95,5.1 8.13,11.5" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-4d311dd9-5">
+<g stroke="%23000000" id="img-4c3ccb8f-5">
   <g transform="translate(22.02,10.14)">
     <path fill="none" d="M-4.02,-2.14 C0.04,-2.14 -0.13,0.91 4.11,3.36" class="primitive"/>
   </g>
@@ -1280,7 +1280,7 @@ to_composejl(plus(X) ⋅ mcopy(X))</code></pre><img src='data:image/svg+xml;utf-
     <path fill="none" d="M-4.11,3.36 C0.13,0.91 -0.04,-2.14 4.02,-2.14" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-4d311dd9-6">
+<g stroke="%23000000" id="img-4c3ccb8f-6">
   <g transform="translate(22.02,41.86)">
     <path fill="none" d="M-4.02,2.14 C0.04,2.14 -0.13,-0.91 4.11,-3.36" class="primitive"/>
   </g>
@@ -1288,32 +1288,32 @@ to_composejl(plus(X) ⋅ mcopy(X))</code></pre><img src='data:image/svg+xml;utf-
     <path fill="none" d="M-4.11,-3.36 C0.13,-0.91 -0.04,2.14 4.02,2.14" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-4d311dd9-7">
+<g stroke="%23000000" id="img-4c3ccb8f-7">
   <g transform="translate(4,38)">
     <path fill="none" d="M-4,0 C0,0 0,-0 4,-0" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-4d311dd9-8">
+<g stroke="%23000000" id="img-4c3ccb8f-8">
   <g transform="translate(4,14)">
     <path fill="none" d="M-4,-0 C0,-0 0,0 4,0" class="primitive"/>
   </g>
 </g>
-<g fill="%23000000" fill-opacity="0.000" stroke="%23000000" id="img-4d311dd9-9">
+<g fill="%23000000" fill-opacity="0.000" stroke="%23000000" id="img-4c3ccb8f-9">
   <g transform="translate(27,38)">
     <circle cx="0" cy="0" r="1" class="primitive"/>
   </g>
 </g>
-<g fill="%23000000" fill-opacity="0.000" stroke="%23000000" id="img-4d311dd9-10">
+<g fill="%23000000" fill-opacity="0.000" stroke="%23000000" id="img-4c3ccb8f-10">
   <g transform="translate(27,14)">
     <circle cx="0" cy="0" r="1" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-4d311dd9-11">
+<g stroke="%23000000" id="img-4c3ccb8f-11">
   <g transform="translate(9,38)">
     <circle cx="0" cy="0" r="1" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-4d311dd9-12">
+<g stroke="%23000000" id="img-4c3ccb8f-12">
   <g transform="translate(9,14)">
     <circle cx="0" cy="0" r="1" class="primitive"/>
   </g>
@@ -1341,23 +1341,23 @@ to_composejl(f⋅g, props=Dict(
     <path d="M0,0 L15,3.5 L0,7 z" stroke="context-stroke" fill="context-stroke"/>
   </marker>
 </defs>
-<g stroke="%23000000" id="img-1b37936b-1">
+<g stroke="%23000000" id="img-95955107-1">
   <g transform="translate(36,8)">
     <path fill="none" d="M-4,0 C0,0 0,0 4,0" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-1b37936b-2">
+<g stroke="%23000000" id="img-95955107-2">
   <g transform="translate(20,8)">
     <path fill="none" d="M-4,0 C0,0 0,0 4,0" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-1b37936b-3">
+<g stroke="%23000000" id="img-95955107-3">
   <g transform="translate(4,8)">
     <path fill="none" d="M-4,0 C0,0 0,0 4,0" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" fill="%23E6E6FA" id="img-1b37936b-4">
-  <g stroke="%23000000" stroke-opacity="0.000" id="img-1b37936b-5">
+<g stroke="%23000000" fill="%23E6E6FA" id="img-95955107-4">
+  <g stroke="%23000000" stroke-opacity="0.000" id="img-95955107-5">
     <g transform="translate(31,11)">
       <path d="M0,0 L1,0 A1,1 0 0 1 0,1L0,0" class="primitive"/>
     </g>
@@ -1402,15 +1402,15 @@ to_composejl(f⋅g, props=Dict(
     <path fill="none" d="M0,-3 L0,3 " class="primitive"/>
   </g>
 </g>
-<g fill="%23000000" id="img-1b37936b-6">
+<g fill="%23000000" id="img-95955107-6">
   <g transform="translate(28,8)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">g</text>
     </g>
   </g>
 </g>
-<g stroke="%23000000" fill="%23E6E6FA" id="img-1b37936b-7">
-  <g stroke="%23000000" stroke-opacity="0.000" id="img-1b37936b-8">
+<g stroke="%23000000" fill="%23E6E6FA" id="img-95955107-7">
+  <g stroke="%23000000" stroke-opacity="0.000" id="img-95955107-8">
     <g transform="translate(15,11)">
       <path d="M0,0 L1,0 A1,1 0 0 1 0,1L0,0" class="primitive"/>
     </g>
@@ -1455,7 +1455,7 @@ to_composejl(f⋅g, props=Dict(
     <path fill="none" d="M0,-3 L0,3 " class="primitive"/>
   </g>
 </g>
-<g fill="%23000000" id="img-1b37936b-9">
+<g fill="%23000000" id="img-95955107-9">
   <g transform="translate(12,8)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">f</text>
@@ -1483,37 +1483,37 @@ to_composejl(plus(X) ⋅ mcopy(X), props=Dict(
     <path d="M0,0 L15,3.5 L0,7 z" stroke="context-stroke" fill="context-stroke"/>
   </marker>
 </defs>
-<g stroke="%23000000" id="img-774d060b-1">
+<g stroke="%23000000" id="img-e493b58e-1">
   <g transform="translate(23.98,17.86)">
     <path fill="none" d="M-4.11,-3.36 C0.13,-0.91 -0.04,2.14 4.02,2.14" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-774d060b-2">
+<g stroke="%23000000" id="img-e493b58e-2">
   <g transform="translate(23.98,10.14)">
     <path fill="none" d="M-4.11,3.36 C0.13,0.91 -0.04,-2.14 4.02,-2.14" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-774d060b-3">
+<g stroke="%23000000" id="img-e493b58e-3">
   <g transform="translate(14,14)">
     <path fill="none" d="M-4,0 C0,0 0,0 4,0" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-774d060b-4">
+<g stroke="%23000000" id="img-e493b58e-4">
   <g transform="translate(4.02,17.86)">
     <path fill="none" d="M-4.02,2.14 C0.04,2.14 -0.13,-0.91 4.11,-3.36" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-774d060b-5">
+<g stroke="%23000000" id="img-e493b58e-5">
   <g transform="translate(4.02,10.14)">
     <path fill="none" d="M-4.02,-2.14 C0.04,-2.14 -0.13,0.91 4.11,3.36" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" fill="%23FF0000" id="img-774d060b-6">
+<g stroke="%23000000" fill="%23FF0000" id="img-e493b58e-6">
   <g transform="translate(19,14)">
     <circle cx="0" cy="0" r="1" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" fill="%230000FF" id="img-774d060b-7">
+<g stroke="%23000000" fill="%230000FF" id="img-e493b58e-7">
   <g transform="translate(9,14)">
     <circle cx="0" cy="0" r="1" class="primitive"/>
   </g>
@@ -1536,28 +1536,28 @@ to_composejl(plus(X) ⋅ mcopy(X), props=Dict(
     <path d="M0,0 L15,3.5 L0,7 z" stroke="context-stroke" fill="context-stroke"/>
   </marker>
 </defs>
-<g fill="%23D3D3D3" id="img-fb78f4f5-1">
+<g fill="%23D3D3D3" id="img-707356fa-1">
   <g transform="translate(20,8)">
     <path d="M-20,-8 L20,-8 20,8 -20,8  z" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-fb78f4f5-2">
+<g stroke="%23000000" id="img-707356fa-2">
   <g transform="translate(36,8)">
     <path fill="none" d="M-4,0 C0,0 0,0 4,0" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-fb78f4f5-3">
+<g stroke="%23000000" id="img-707356fa-3">
   <g transform="translate(20,8)">
     <path fill="none" d="M-4,0 C0,0 0,0 4,0" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-fb78f4f5-4">
+<g stroke="%23000000" id="img-707356fa-4">
   <g transform="translate(4,8)">
     <path fill="none" d="M-4,0 C0,0 0,0 4,0" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" fill="%23FFFFFF" id="img-fb78f4f5-5">
-  <g stroke="%23000000" stroke-opacity="0.000" id="img-fb78f4f5-6">
+<g stroke="%23000000" fill="%23FFFFFF" id="img-707356fa-5">
+  <g stroke="%23000000" stroke-opacity="0.000" id="img-707356fa-6">
     <g transform="translate(31,11)">
       <path d="M0,0 L1,0 A1,1 0 0 1 0,1L0,0" class="primitive"/>
     </g>
@@ -1602,15 +1602,15 @@ to_composejl(plus(X) ⋅ mcopy(X), props=Dict(
     <path fill="none" d="M0,-3 L0,3 " class="primitive"/>
   </g>
 </g>
-<g fill="%23000000" id="img-fb78f4f5-7">
+<g fill="%23000000" id="img-707356fa-7">
   <g transform="translate(28,8)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">g</text>
     </g>
   </g>
 </g>
-<g stroke="%23000000" fill="%23FFFFFF" id="img-fb78f4f5-8">
-  <g stroke="%23000000" stroke-opacity="0.000" id="img-fb78f4f5-9">
+<g stroke="%23000000" fill="%23FFFFFF" id="img-707356fa-8">
+  <g stroke="%23000000" stroke-opacity="0.000" id="img-707356fa-9">
     <g transform="translate(15,11)">
       <path d="M0,0 L1,0 A1,1 0 0 1 0,1L0,0" class="primitive"/>
     </g>
@@ -1655,7 +1655,7 @@ to_composejl(plus(X) ⋅ mcopy(X), props=Dict(
     <path fill="none" d="M0,-3 L0,3 " class="primitive"/>
   </g>
 </g>
-<g fill="%23000000" id="img-fb78f4f5-10">
+<g fill="%23000000" id="img-707356fa-10">
   <g transform="translate(12,8)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">f</text>
@@ -1678,39 +1678,39 @@ to_composejl(plus(X) ⋅ mcopy(X), props=Dict(
     <path d="M0,0 L15,3.5 L0,7 z" stroke="context-stroke" fill="context-stroke"/>
   </marker>
 </defs>
-<g stroke="%23000000" id="img-7c450dfb-1">
+<g stroke="%23000000" id="img-206fa093-1">
   <g transform="translate(36,8)">
     <path fill="none" d="M-4,0 C0,0 0,0 4,0" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-7c450dfb-2">
+<g stroke="%23000000" id="img-206fa093-2">
   <g transform="translate(20,8)">
     <path fill="none" d="M-4,0 C0,0 0,-0 4,-0" class="primitive"/>
   </g>
 </g>
-<g stroke="%23000000" id="img-7c450dfb-3">
+<g stroke="%23000000" id="img-206fa093-3">
   <g transform="translate(4,8)">
     <path fill="none" d="M-4,0 C0,0 0,-0 4,-0" class="primitive"/>
   </g>
 </g>
-<g fill="%23000000" fill-opacity="0.000" stroke="%23000000" id="img-7c450dfb-4">
+<g fill="%23000000" fill-opacity="0.000" stroke="%23000000" id="img-206fa093-4">
   <g transform="translate(28,8)">
     <circle cx="0" cy="0" r="4" class="primitive"/>
   </g>
 </g>
-<g fill="%23000000" id="img-7c450dfb-5">
+<g fill="%23000000" id="img-206fa093-5">
   <g transform="translate(28,8)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">g</text>
     </g>
   </g>
 </g>
-<g fill="%23000000" fill-opacity="0.000" stroke="%23000000" id="img-7c450dfb-6">
+<g fill="%23000000" fill-opacity="0.000" stroke="%23000000" id="img-206fa093-6">
   <g transform="translate(12,8)">
     <circle cx="0" cy="0" r="4" class="primitive"/>
   </g>
 </g>
-<g fill="%23000000" id="img-7c450dfb-7">
+<g fill="%23000000" id="img-206fa093-7">
   <g transform="translate(12,8)">
     <g class="primitive">
       <text text-anchor="middle" dy="0.35em">f</text>
@@ -1751,4 +1751,4 @@ println(pgf)</code></pre><pre class="documenter-example-output"><code class="noh
 \begin{scope}
 \draw (12,8) node [text=mycolor000000,rotate around={-0: (0,0)},inner sep=0.0]{\fontsize{12mm}{14.4mm}\selectfont $\text{f}$};
 \end{scope}
-\end{tikzpicture}</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../graphviz_wiring_diagrams/">« Drawing wiring diagrams in Graphviz</a><a class="docs-footer-nextpage" href="../tikz_wiring_diagrams/">Drawing wiring diagrams in TikZ »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.8.0 on <span class="colophon-date" title="Monday 2 December 2024 19:39">Monday 2 December 2024</span>. Using Julia version 1.11.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+\end{tikzpicture}</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../graphviz_wiring_diagrams/">« Drawing wiring diagrams in Graphviz</a><a class="docs-footer-nextpage" href="../tikz_wiring_diagrams/">Drawing wiring diagrams in TikZ »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.8.0 on <span class="colophon-date" title="Friday 20 December 2024 05:19">Friday 20 December 2024</span>. Using Julia version 1.11.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
