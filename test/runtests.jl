@@ -21,7 +21,7 @@ end
 end
 
 @testset "ADTs" begin
-  include("adts/ADTs.jl")
+  include("ADTs/ADTs.jl")
 end
 
 @testset "Programs" begin
