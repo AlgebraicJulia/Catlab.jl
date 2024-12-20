@@ -1,95 +1,13 @@
 """ Parse relation expressions in Julia syntax into undirected wiring diagrams.
 """
 module RelationalPrograms
-export RelationDiagram, UntypedRelationDiagram, TypedRelationDiagram,
-  SchRelationDiagram, SchTypedRelationDiagram,
-  SchNamedRelationDiagram, SchTypedNamedRelationDiagram,
-  @relation, parse_relation_diagram
+export @relation, parse_relation_diagram
 
 using MLStyle: @match
 
-using GATlab
-using ...CategoricalAlgebra.CSets
-using ...WiringDiagrams.UndirectedWiringDiagrams
+using ...ADTs.RelationTerm
+using ...WiringDiagrams.RelationDiagrams
 
-# Data types
-############
-
-""" Abstract type for UWDs created by [`@relation`](@ref) macro.
-"""
-@abstract_acset_type RelationDiagram <: AbstractUWD
-@abstract_acset_type _UntypedRelationDiagram <: RelationDiagram
-@abstract_acset_type _TypedRelationDiagram <: RelationDiagram
-
-""" Untyped UWD created by [`@relation`](@ref) macro.
-"""
-const UntypedRelationDiagram{Name,VarName} =
-  _UntypedRelationDiagram{S, Tuple{Name,VarName}} where S
-
-""" Typed UWD created by [`@relation`](@ref) macro.
-"""
-const TypedRelationDiagram{T,Name,VarName} =
-  _TypedRelationDiagram{S, Tuple{T,Name,VarName}} where S
-
-@present SchRelationDiagram <: SchUWD begin
-  (Name, VarName)::AttrType
-  name::Attr(Box, Name)
-  variable::Attr(Junction, VarName)
-end
-
-@present SchTypedRelationDiagram <: SchTypedUWD begin
-  (Name, VarName)::AttrType
-  name::Attr(Box, Name)
-  variable::Attr(Junction, VarName)
-end
-
-@acset_type UntypedUnnamedRelationDiagram(SchRelationDiagram,
-  index=[:box, :junction, :outer_junction], unique_index=[:variable]) <: _UntypedRelationDiagram
-@acset_type TypedUnnamedRelationDiagram(SchTypedRelationDiagram,
-  index=[:box, :junction, :outer_junction], unique_index=[:variable]) <: _TypedRelationDiagram
-
-@present SchNamedRelationDiagram <: SchRelationDiagram begin
-  port_name::Attr(Port, Name)
-  outer_port_name::Attr(OuterPort, Name)
-end
-
-@present SchTypedNamedRelationDiagram <: SchTypedRelationDiagram begin
-  port_name::Attr(Port, Name)
-  outer_port_name::Attr(OuterPort, Name)
-end
-
-@acset_type UntypedNamedRelationDiagram(SchNamedRelationDiagram,
-  index=[:box, :junction, :outer_junction], unique_index=[:variable]) <: _UntypedRelationDiagram
-@acset_type TypedNamedRelationDiagram(SchTypedNamedRelationDiagram,
-  index=[:box, :junction, :outer_junction], unique_index=[:variable]) <: _TypedRelationDiagram
-
-function UntypedRelationDiagram{Name,VarName}(
-    nports::Int; port_names=nothing) where {Name,VarName}
-  if isnothing(port_names)
-    return UntypedUnnamedRelationDiagram{Name,VarName}(nports)
-  end
-  d = UntypedNamedRelationDiagram{Name,VarName}(nports)
-  set_subpart!(d, :outer_port_name, port_names)
-  return d
-end
-
-function TypedRelationDiagram{T,Name,VarName}(
-    ports::AbstractVector; port_names=nothing) where {T,Name,VarName}
-  if isnothing(port_names)
-    return TypedUnnamedRelationDiagram{T,Name,VarName}(ports)
-  end
-  d = TypedNamedRelationDiagram{T,Name,VarName}(ports)
-  set_subpart!(d, :outer_port_name, port_names)
-  return d
-end
-
-RelationDiagram(nports::Int; kw...) =
-  UntypedRelationDiagram{Symbol,Symbol}(nports; kw...)
-RelationDiagram(ports::AbstractVector{T}; kw...) where T =
-  TypedRelationDiagram{T,Symbol,Symbol}(ports; kw...)
-
-# Relation macro
-################
 
 """ Construct an undirected wiring diagram using relation notation.
 
@@ -140,49 +58,87 @@ function parse_relation_diagram(expr::Expr)
 end
 
 function parse_relation_diagram(head::Expr, body::Expr)
+  # Generate dict for looking up vars
+  var_dict = Dict{Symbol, Var}()
+
+  # Look Up Function for Vars
+  lookup_var(var) = begin
+    if haskey(var_dict, var)
+      var_dict[var] # Returns var from context
+    else
+      Untyped(var) # Infers untyped var if non-existant in context
+    end
+  end
+
   # Parse variables and their types from context.
   outer_expr, all_vars, all_types = @match head begin
     Expr(:where, expr, context) => (expr, parse_relation_context(context)...)
     _ => (head, nothing, nothing)
   end
-  var_types = if isnothing(all_types)    # Untyped case
-    vars -> length(vars)
-  else
-    var_type_map = Dict(zip(all_vars, all_types)) 
-    vars -> getindex.(Ref(var_type_map), vars)
+
+  # Generate Context Array and Var Dict.
+  context = if isnothing(all_vars)
+    []
+  elseif isnothing(all_types) # Untyped Case
+    map(all_vars) do var
+      v = Untyped(var)
+      # Store var in dict for lookup
+      var_dict[var] = v
+      # Return var
+      v
+    end
+  else # Typed Case
+    map(all_vars, all_types) do var, type
+      v = Typed(var, type)
+      # Store var in dict for lookup
+      var_dict[var] = v
+      # Return var
+      v
+    end
   end
 
-  # Create wiring diagram and add outer ports and junctions.
+  # Parse outer ports
   _, outer_port_names, outer_vars = parse_relation_call(outer_expr)
   isnothing(all_vars) || outer_vars ⊆ all_vars ||
     error("One of variables $outer_vars is not declared in context $all_vars")
-  d = RelationDiagram(var_types(outer_vars), port_names=outer_port_names)
-  if isnothing(all_vars)
-    new_vars = unique(outer_vars)
-    add_junctions!(d, var_types(new_vars), variable=new_vars)
-  else
-    add_junctions!(d, var_types(all_vars), variable=all_vars)
-  end
-  set_junction!(d, ports(d, outer=true),
-                only.(incident(d, outer_vars, :variable)), outer=true)
 
-  # Add box to diagram for each relation call.
+  # Generate Outer Ports Array
+  outer_ports = isempty(outer_vars) ? [] : if isnothing(outer_port_names) # Unnamed Case
+    map(outer_vars) do var
+      lookup_var(var)
+    end
+  else # Named Case
+    map(outer_port_names, outer_vars) do name, var
+      Kwarg(name, lookup_var(var))
+    end
+  end
+
+  # Generate statements for each relation call.
   body = Base.remove_linenums!(body)
-  for expr in body.args
+  statements = map(body.args) do expr
     name, port_names, vars = parse_relation_call(expr)
     isnothing(all_vars) || vars ⊆ all_vars ||
       error("One of variables $vars is not declared in context $all_vars")
-    box = add_box!(d, var_types(vars), name=name)
-    if !isnothing(port_names)
-      set_subpart!(d, ports(d, box), :port_name, port_names)
+    
+    # Generate Ports Array
+    ports = if isnothing(port_names) # Unnamed Case
+      map(vars) do var
+        lookup_var(var)
+      end
+    else # Named Case
+      map(port_names, vars) do name, var
+        Kwarg(name, lookup_var(var))
+      end
     end
-    if isnothing(all_vars)
-      new_vars = setdiff(unique(vars), d[:variable])
-      add_junctions!(d, var_types(new_vars), variable=new_vars)
-    end
-    set_junction!(d, ports(d, box), only.(incident(d, vars, :variable)))
+
+    Statement(name, ports)
   end
-  return d
+
+  # Generate UWDExpr
+  uwd = UWDExpr(outer_ports, context, statements)
+
+  # Return constructed Relation Diagram
+  return RelationTerm.construct(RelationDiagram, uwd)
 end
 
 function parse_relation_context(context)
@@ -210,7 +166,6 @@ function parse_relation_context(context)
   end
 
 end
-
 
 function parse_relation_call(call)
   @match call begin

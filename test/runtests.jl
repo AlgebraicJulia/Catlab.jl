@@ -20,8 +20,16 @@ end
   include("graphics/Graphics.jl")
 end
 
+@testset "ADTs" begin
+  include("adts/ADTs.jl")
+end
+
 @testset "Programs" begin
   include("programs/Programs.jl")
+end
+
+@testset "Parsers" begin
+  include("parsers/Parsers.jl")
 end
 
 @testset "Sheaves" begin
