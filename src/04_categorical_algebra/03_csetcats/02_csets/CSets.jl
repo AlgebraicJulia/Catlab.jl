@@ -1,0 +1,237 @@
+export ACSetCategory, sets, naturality_failures, is_natural, 
+       show_naturality_failures, get_ob, get_hom, get_op, get_attrtype, get_attr, pre, post,
+      ThACSetCategory, entity_cat, attr_cat, prof_cat
+
+using Base.Iterators: flatten
+using Reexport
+using StructEquality
+
+@reexport using ACSets
+import ACSets: TypeLevelBasicSchema, acset_schema, attrtype, constructor
+import ACSets.DenseACSets: attrtype_type
+
+@reexport using ....ACSetsGATsInterop
+
+using GATlab
+
+using ....Theories, ....BasicSets
+import ....Theories: id, compose
+import ....BasicSets: SetOb, SetFunction, force
+
+using ...Cats
+import ...Cats: FinDomFunctor, obtype, homtype, obtype, homtype, get_ob, get_hom
+using ..ACSetTransformations
+using ..ACSetTransformations: _ACSetTransformation
+import ..ACSetTransformations: ACSetTransformation
+
+
+
+# Upstream to ACSets.jl
+#######################
+
+""" Convert a Schema to a Type-level schema """
+TypeLevelBasicSchema(s::BasicSchema{Name}) where {Name} = 
+  TypeLevelBasicSchema{Name, Tuple{s.obs...}, Tuple{s.homs...}, 
+                       Tuple{s.attrtypes...}, Tuple{s.attrs...}, Tuple{s.eqs...}}
+
+TypeLevelBasicSchema(s::Type{<:TypeLevelBasicSchema}) = s
+
+"""A naive theory of heteromorphisms which involves three types: 
+domain morphisms, codomain morphisms, and hetromorphisms, which can be 
+pre/postcomposed.
+"""
+@theory ThHeteroMorphism begin 
+  Dom::TYPE; Cod::TYPE; Het::TYPE
+  pre(a::Dom, h::Het)::Het
+  post(h::Het, b::Cod)::Het
+end
+
+"""
+A theory for systematically taking instances of ACSets and producing a diagram 
+in a category (in particular: a category which is the collage of a profunctor).
+
+This requires plugging in 
+"""
+@theory ThACSetCategory begin 
+  EntityCat::TYPE; AttrCat::TYPE; ProfCat::TYPE
+  Ob::TYPE;Hom::TYPE; AttrType::TYPE; Op::TYPE; Attr::TYPE
+  Sym::TYPE; ACS::TYPE; ACSHom::TYPE;
+  entity_cat()::EntityCat
+  attr_cat()::AttrCat
+  prof_cat()::ProfCat
+  constructor()::ACS
+  coerce(f::ACSHom)::ACSHom
+  get_ob(x::ACS, o::Sym)::Ob
+  get_hom(x::ACS, h::Sym)::Hom
+  get_attrtype(x::ACS, a::Sym)::AttrType
+  get_op(x::ACS, a::Sym)::Op
+  get_attr(x::ACS, h::Sym)::Attr
+end
+
+ThACSetCategory.Meta.@typed_wrapper ACSetCategory′
+
+const ACSetCategory{EC,AC,PC,O,H,AT,OP,A} = 
+  ACSetCategory′{EC,AC,PC,O,H,AT,OP,A,Symbol,ACSet,ACSetTransformation}
+
+# get_hom(i::ACSetCategory, x::ACSet, s::Symbol) = 
+#   get_hom(i, x, s, get_ob(i, x, dom(S, s)), get_ob(i, x, codom(S, s)))
+# get_attr(i::ACSetCategory{S}, x::ACSet, s::Symbol) = 
+#   get_attr(i, x, s, get_ob(i, x, dom(S, s)), get_attrtype(i, x, codom(S, s)))
+
+
+# Other methods
+###############
+
+acset_schema(a::ACSetCategory) = acset_schema(constructor(a))
+  
+SetOb(x::ACSet, a::GATExpr{:generator}, c::ACSetCategory) = SetOb(x, nameof(a), c)
+
+function SetOb(x::ACSet, a::Symbol, c::ACSetCategory{S}) where S 
+  a ∈ ob(S) && return get_ob(c, x, a)
+  a ∈ attrtypes(S) && return get_attr(c, x, a)
+  error("$a not found in schema $S")
+end
+
+""" C-set → named tuple of sets.
+"""
+sets(X::ACSet, C::ACSetCategory) = 
+  NamedTuple(c => get_ob(C, X, c) for c in types(acset_schema(C)))
+
+FinDomFunctor(acs::ACSet) = FinDomFunctor(acs, ACSetCategory(acs))
+
+
+
+
+
+
+""" 
+Sensible defaults for interpreting an ACSetTransformation as living in a particular kind of ACSet category 
+"""
+function infer_acset_cat(comps, X::ACSet, Y::ACSet)::ACSetCategory
+  S = acset_schema(X)
+  cat = if isempty(attrtypes(S))
+    CSetCat
+  elseif hasvar(X) || hasvar(Y) 
+    VarACSetCat
+  else 
+    ACSetCat
+  end
+  return ACSetCategory(cat(X))
+end
+
+infer_acset_cat(f::ACSetTransformation) = 
+  infer_acset_cat(components(f), dom(f), codom(f))
+
+function hasvar(X::ACSet,x) 
+  s = acset_schema(X)
+  (x∈ attrs(acset_schema(X),just_names=true) && hasvar(X,codom(s,x))) || 
+  x∈attrtypes(acset_schema(X)) && nparts(X,x)>0
+end
+hasvar(X::ACSet) = any(o->hasvar(X,o), attrtypes(acset_schema(X)))
+  
+function ACSetTransformation(comps, dom::ACSet, codom::ACSet, 
+                             cat::Union{Nothing,ACSetCategory}=nothing)
+  cat = isnothing(cat) ? infer_acset_cat(comps, dom, codom) : cat
+  return coerce(cat, _ACSetTransformation(comps, dom, codom))
+end
+
+# Naturality
+############
+"""
+Check naturality condition for a purported ACSetTransformation, α: X→Y. 
+For each hom in the schema, e.g. h: m → n, the following square must commute:
+
+```text
+     αₘ
+  Xₘ --> Yₘ
+Xₕ ↓  ✓  ↓ Yₕ
+  Xₙ --> Yₙ
+     αₙ
+```
+
+You're allowed to run this on a named tuple partly specifying an ACSetTransformation,
+though at this time the domain and codomain must be fully specified ACSets.
+"""
+function is_natural(α::ACSetTransformation, C::Union{Nothing,ACSetCategory}=nothing)
+  C = isnothing(C) ? ACSetCategory(ACSetCat(dom(α))) : C
+  fails = naturality_failures(C, dom(α), codom(α), components(α))
+  all(isempty, last.(collect(fails)))
+end
+
+
+
+"""
+Returns a dictionary whose keys are contained in the names in `arrows(S)`
+and whose value at `:f`, for an arrow `(f,c,d)`, is a lazy iterator
+over the elements of X(c) on which α's naturality square
+for f does not commute. Components should be a NamedTuple or Dictionary
+with keys contained in the names of S's morphisms and values vectors or dicts
+defining partial functions from X(c) to Y(c).
+"""
+function naturality_failures(C::ACSetCategory, X::ACSet, Y::ACSet, comps)
+  S = acset_schema(X)
+  α(o::Symbol, i) = comps[o](i)
+  ks = keys(comps)
+
+  hom_arrs = filter(((f,c,d),) -> c ∈ ks && d ∈ ks, homs(S))
+
+  ps = Iterators.map(hom_arrs) do (f, c, d)
+    αY₂ = compose(C, comps[c], get_hom(C, Y, f))
+    X₁α = compose(C, get_hom(C, X, f), comps[d])
+    Pair(f, [(i, αY₂(i), X₁α(i)) for i in parts(X,c) if X₁α(i) != αY₂(i)])
+  end
+
+  attr_arrs = filter(((f,c,d),) -> c ∈ ks && d ∈ ks, attrs(S))  
+
+  ps2 = Iterators.map(attr_arrs) do (f, c, d)
+    X₁α = attr_postcompose(C, get_attr(C, X, f), comps[d])
+    αY₂ = attr_precompose(C, comps[c], get_attr(C, Y, f))
+    Pair(f, [(i, αY₂(i), X₁α(i)) for i in parts(X,c) if X₁α(i) != αY₂(i)])
+  end
+
+  Dict(ps ∪ ps2)
+end
+
+function naturality_failures(α::ACSetTransformation; cat=nothing)
+  cat = isnothing(cat) ? infer_acset_cat(α) : cat
+  naturality_failures(cat, dom(α), codom(α), α.components)
+end
+
+""" Pretty-print failures of transformation to be natural.
+
+See also: [`naturality_failures`](@ref).
+"""
+function show_naturality_failures(io::IO, d::AbstractDict)
+  println(io, """
+    Failures of naturality: a tuple (x,y,y′) on line labelled by f:c→d below
+    means that, if the given transformation is α: X → Y, f's naturality square
+    fails to commute at x ∈ X(c), with Y(f)(α_c(x))=y and α_d(X(f)(x))=y′.
+    """)
+  for (f, failures) in pairs(d)
+    isempty(failures) && continue
+    print(io, "$f: ")
+    join(io, failures, ", ")
+    println(io)
+  end
+end
+
+show_naturality_failures(io::IO, α::ACSetTransformation) =
+  show_naturality_failures(io, naturality_failures(α))
+
+show_naturality_failures(α::ACSetTransformation) =
+  show_naturality_failures(stdout, α)
+
+# UNDO
+# @cartesian_monoidal_instance ACSet{S} ACSetTransformation{S} CSetCat{S} where S
+
+# @cartesian_monoidal_instance ACSet{S} ACSetTransformation{S} ACSetLoose{S}
+
+# @cocartesian_monoidal_instance ACSet ACSetTransformation CSetCat
+
+# @default_model ThCategory{ACSet, ACSetTransformation} [model::CSetCat]
+
+force(C::ACSetCategory, α::ACSetTransformation) = map_components(C, force, α)
+
+map_components(C::ACSetCategory, f, α::ACSetTransformation) =
+  ACSetTransformation(map(f, components(α)), dom(α), codom(α), C)
+

@@ -10,13 +10,6 @@ po2 = PreorderFinCat([(1,2),(2,3)]) |> FinCat
 
 @test hom_generators(po2) isa FinSet
 
-
-F = FinDomFunctor(Dict(:a=>1,:b=>2),
-  Dict(x=>x for x in hom_generators(po1)), po1, po2; homtype=:hom)
-
-@test id(Cat(po1), :a) == (1=>1)
-@test hom_map(F, 1=>1) == (1=>1)
-
 # Categories on graphs
 ######################
 
@@ -26,7 +19,7 @@ C = FinCat(g)
 hom_generators(C)
 
 @test Graph(C) == g
-@test U_CatSet(C) == FinSet(2) # Replaced "Ob"
+@test ob_generators(C) == FinSet(2) # Replaced "Ob"
 @test !is_discrete(C)
 @test is_free(C)
 # @test (hom(C, 1), hom_generator(C, 1)) == (Path(g, 1), 1)
@@ -109,11 +102,5 @@ C = FinCat(SchWeightedGraph)
 @test first.(ob_generators(C)) == [:V, :E, :Weight]
 @test first.(hom_generators(C)) == [:src, :tgt, :weight]
 g = path_graph(WeightedGraph{Float64}, 3, E=(weight=[0.5,1.5],))
-
-#  NOT YET IMPLEMENTED: need to do C-Sets
-# G = FinDomFunctor(g)
-# @test is_functorial(G)
-# @test ob_map(G, :Weight) == TypeSet(Float64)
-# @test hom_map(G, :weight) == FinDomFunction([0.5, 1.5])
 
 end

@@ -4,7 +4,9 @@ using Test, Catlab
 
 # Category of C-sets.
 #####################
-Grph = Category(TypeCat(CatOfACSet(ACSetCategory(CSetCat(Graph())))))
+C = ACSetCategory(CSetCat(Graph()))
+
+Grph = Category(TypeCat(CatOfACSet(C)))
 
 g, h = path_graph(Graph, 4), cycle_graph(Graph, 2)
 

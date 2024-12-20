@@ -1,4 +1,5 @@
 module TestSets
+
 using Test, Catlab
 
 # Sets from Julia types
@@ -32,4 +33,24 @@ evens = PredicatedSet(Int, iseven)  |> SetOb
 @test 2 ∉ odds
 @test 2 ∈ evens
 
-end
+# SumSets
+#########
+s = SetOb(SumSet([SetOb(Bool), SetOb(Symbol)]))
+@test eltype(s) == Union{TaggedElem{Val{1}, Bool}, TaggedElem{Val{2}, Symbol}}
+
+@test TaggedElem(true, 1) ∈ s
+@test TaggedElem(true, 2) ∉ s 
+@test TaggedElem(:x, 2) ∈ s
+@test TaggedElem(:x, 3) ∉ s
+
+# ProdSets
+##########
+s = SetOb(ProdSet([SetOb(Bool), SetOb(Symbol)]))
+@test eltype(s) == Tuple{Bool, Symbol}
+
+@test (true, :x) ∈ s
+@test (true, true) ∉ s
+@test (;) ∉ s
+@test (true,) ∉ s
+
+end # module

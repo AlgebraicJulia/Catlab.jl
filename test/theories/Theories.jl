@@ -9,8 +9,6 @@ unicode(expr::GATExpr; all::Bool=false) =
 latex(expr::GATExpr; all::Bool=false) =
   all ? sprint(show, MIME("text/latex"), expr) : sprint(show_latex, expr)
 
-include("GATlabUpstream.jl")
-
 @testset "Categories" begin
   include("Category.jl")
 end

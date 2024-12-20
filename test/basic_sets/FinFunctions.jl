@@ -16,7 +16,7 @@ k = FinFunction([1,3,4],3,5)
 @test (dom(f), codom(f)) == (FinSet(3), FinSet(5))
 @test force(f) === f
 @test codom(FinFunction([1,3,4], 4)) == FinSet(4)
-@test k == f 
+@test k == f
 
 
 X = FinSet(Set([:w,:x,:y,:z]))
@@ -35,22 +35,22 @@ rot3(x) = (x % 3) + 1
 @test map(f, 1:3) == [1,3,4]
 @test map(k, [:a,:b,:c]) == [:x,:y,:z]
 @test map(FinFunction(rot3, FinSet(3), FinSet(3)), 1:3) == [2,3,1]
-@test map(id[SetC()](FinSet(3)), 1:3) == [1,2,3]
+@test map(SetFunction(FinSet(3)), 1:3) == [1,2,3]
 
 # Composition.
-force_compose(x...) = force(compose[SetC()](x...))
+force_compose(x...) = force(SetFunction(x...))
 @test force_compose(f,g) == FinFunction([1,2,2], 3)
 @test force_compose(g,h) == FinFunction([3,3,1,1,2], 3)
 @test force_compose(k,ℓ) == FinFunction(Dict(:a => 1, :b => 1, :c => 4), FinSet(4))
-@test force_compose(compose[SetC()](f,g),h) == force_compose(f,compose[SetC()](g,h))
-@test force_compose(id[SetC()](dom(f)), f) == f
-@test force_compose(f, id[SetC()](codom(f))) == f
+@test force_compose(force_compose(f,g),h) == force_compose(f,force_compose(g,h))
+@test force_compose(SetFunction(dom(f)), f) == f
+@test force_compose(f, SetFunction(codom(f))) == f
 
 
 # Indexing.
 @test !is_indexed(f)
-@test is_indexed(id[SetC()](FinSet(3)))
-@test preimage(id[SetC()](FinSet(3)), 2) == [2]
+@test is_indexed(SetFunction(FinSet(3)))
+@test preimage(SetFunction(FinSet(3)), 2) == [2]
 
 f = FinFunction([1,2,1,3], 5, index=true)
 l = FinFunction([1,2,1,3],4,5,index=true)
@@ -64,12 +64,12 @@ l = FinFunction([1,2,1,3],4,5,index=true)
 @test isempty(preimage(f, 4))
 
 g = FinFunction(5:-1:1, 5)
-@test force_compose(f,g) == FinFunction([5,4,5,3], 5)
+@test force_compose(f,g) == FinFunction([5,4,5,3], 5; index=true)
 
 # Pretty-print.
 @test sshow(FinFunction(rot3, FinSet(3), FinSet(3))) ==
   "SetFunction(rot3, FinSet(3), FinSet(3))"
-@test sshow(id[SetC()](FinSet(3))) == "id(FinSet(3))"
+@test sshow(SetFunction(FinSet(3))) == "id(FinSet(3))"
 @test sshow(FinFunction([1,3,4], 5)) == "FinFunction($([1,3,4]), FinSet(5))"
 @test sshow(FinFunction([1,3,4], 5, index=true)) ==
   "FinFunction($([1,3,4]), FinSet(5), index=true)"
@@ -145,67 +145,6 @@ if false # Reimplement this later
   @test_throws ErrorException m = FinFunction(badfunc,four,index=true)
   @test_throws BoundsError n = FinFunction(badfunc,four,index=true,known_correct=true) 
 end 
-
-# VarFunctions
-##############
-# Construction
-const AV = AttrVal
-const CV = AttrC{Vector{Int}}()
-f = VarFunction{Vector{Int}}([1,AV([1,2,3])], FinSet(1))
-@test dom[CV](f) == FinSet(2)
-@test codom[CV](f) == FinSet(1)
-
-@test f(AV([1,2])) == AV([1,2])
-@test f(1) == 1
-@test f(2) == AV([1,2,3])
-
-# Composition 
-
-f = VarFunction{Bool}(([2, 1, AV(true)]),FinSet(3))
-g = FinFunction([2,3], 3)
-h = FinFunction([2,2,1], 3)
-force_compose(x,y) = force(compose[AttrC{Bool}()](x,y))
-
-ff = force_compose(f, f)
-ff(3)
-collect(ff)
-@test force_compose(f, f) |> collect == [1,2, AV(true)]
-
-@test collect(force_compose(g, f)) == [1,AV(true)]
-@test collect(force_compose(f,h)) == [2, 2, AV(true)]
-
-@test force(f) == f
-@test f.(3:-1:1) == [AV(true), 1, 2]
-@test length(f) == 3
-@test preimage(f, AV(false)) == []
-@test preimage(f, AV(true)) == [3]
-@test preimage(f, 2) == [1]
-
-# TODO loose var functions ... maybe? 
-# f1 = LooseVarFunction{Bool,Int}(
-#   [AttrVar(2),AttrVar(1), 3],
-#   SetFunction(x->x ? 10 : 20,TypeSet(Bool),TypeSet(Int)), 
-#   FinSet(3))
-# f2 = LooseVarFunction{Int,String}(
-#   ["a",AttrVar(1), AttrVar(2)],
-#   SetFunction(string,TypeSet(Int),TypeSet(String)), 
-#   FinSet(2))
-# f12 = f1 ⋅ f2 
-# @test f12.([false,true]) == ["20","10"]
-# @test collect(f1 ⋅ f2) == [AttrVar(1),"a", "3"]
-
-
-# Monos and epis
-f = VarFunction{Bool}([2,1], FinSet(2))
-@test is_monic(f) && is_epic(f)
-f = VarFunction{Bool}([2,1],FinSet(3))
-@test is_monic(f) && !is_epic(f)
-f = VarFunction{Bool}([1,1],FinSet(1))
-@test !is_monic(f) && is_epic(f)
-f = VarFunction{Bool}([1,1,AV(true)],FinSet(2))
-@test !(is_monic(f) || is_epic(f))
-f = VarFunction{Bool}([1,2,AV(true)],FinSet(2))
-@test !is_monic(f) && is_epic(f)
 
 
 end # module

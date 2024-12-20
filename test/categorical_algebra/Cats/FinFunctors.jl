@@ -2,6 +2,28 @@ module TestFinFunctors
 
 using Test, Catlab, ACSets
 
+using .ThCategory
+
+# Preorder cats
+###############
+po1 = PreorderFinCat([(:a,:b)]) |> FinCat
+po2 = PreorderFinCat([(1,2),(2,3)]) |> FinCat
+
+F = FinFunctor(Dict(:a=>1,:b=>2),
+  Dict(x=>x for x in hom_generators(po1)), po1, po2; homtype=:hom)
+
+@test id(Cat(po1), :a) == (1=>1)
+
+@test hom_map(F, 1=>1) == (1=>1)
+  
+
+#  NOT YET IMPLEMENTED: need to do C-Sets
+# g = path_graph(WeightedGraph{Float64}, 3, E=(weight=[0.5,1.5],))
+# G = FinDomFunctor(g)
+# @test is_functorial(G)
+# @test ob_map(G, :Weight) == TypeSet(Float64)
+# @test hom_map(G, :weight) == FinDomFunction([0.5, 1.5])
+
 h = Graph(4)
 add_edges!(h, [1,1,2,3], [2,3,4,4])
 D = FinCat(h)
@@ -9,14 +31,13 @@ D = FinCat(h)
 # Functors between free categories.
 
 C = FinCat(parallel_arrows(Graph, 2))
-F = FinDomFunctor((V=[1,4], E=[[1,3], [2,4]]), C, D)
-G = FinDomFunctor((V=[2,1], E=[[1],[2]]), C, C)
+F = FinFunctor((V=[1,4], E=[[1,3], [2,4]]), C, D)
+G = FinFunctor((V=[2,1], E=[[1],[2]]), C, C)
 @test dom(F) == C
-@test codom(F) == Cat(D)
+@test codom(F) == D
 @test is_functorial(F)
 @test !is_functorial(G)
 @test map(collect,functoriality_failures(G)) == ([1,2],[1,2],[])
-@test U_CatSet(F) == FinFunction([1,4], FinSet(4))
 # @test startswith(sprint(show, F), "FinFunctor($([1,4]),")
 @test ob_map(F, 2) == 4
 @test gen_map(F, 1) == Path(h, [1,3])
@@ -24,17 +45,17 @@ G = FinDomFunctor((V=[2,1], E=[[1],[2]]), C, C)
 @test collect_hom(F) == [Path(h, [1,3]), Path(h, [2,4])]
 
 F_op = op(F)
-@test F_op isa FinDomFunctor
+@test F_op isa FinFunctor
 @test getvalue(getvalue(getvalue(F_op))) isa FinDomFunctorMap
 @test dom(F_op) == op(C)
-@test codom(F_op) == op(Cat(D))
+@test codom(F_op) == op(D)
 @test op(F_op) == F
 
 # Composition of functors.
 g, h, k = gs = path_graph.(Graph, [2,3,5])
 C, D, E = FinCat.(gs)
-F = FinDomFunctor([1,3], [[1,2]], C, D)
-G = FinDomFunctor([1,3,5], [[1,2],[3,4]], D, E)
+F = FinFunctor([1,3], [[1,2]], C, D) |> force
+G = FinFunctor([1,3,5], [[1,2],[3,4]], D, E)
 @test is_functorial(G)
 @test hom_map(G, Path(h, [1,2])) == Path(k, [1,2,3,4])
 
@@ -43,14 +64,17 @@ G = FinDomFunctor([1,3,5], [[1,2],[3,4]], D, E)
   @test edges(only(collect_hom(F⋅G))) == [1,2,3,4]
   @test codom(F⋅G) == E
 
-  @test id(C)⋅F == F
-  @test F⋅id(D) == F
+  @test force(id(C)⋅F) == F
+  @test force(F⋅id(D)) == F
 end
+
+# TODO This stuff requires SetCats
+if false # TODO 
 
 # Functors out free categories.
 C = FinCat(parallel_arrows(Graph, 2))
 f, g = FinFunction([1,3], 3), FinFunction([2,3], 3)
-SetCat = Cat(TypeCat(SetC()))
+SetCat = Cat(TypeCat(SetCat()))
 F = FinDomFunctor([FinSet(2), FinSet(3)], [f,g], C, SetCat)
 @test is_functorial(F)
 @test dom(F) == C
@@ -66,7 +90,6 @@ F = FinDomFunctor([FinSet(4), FinSet(2)], [FinFunction([1,1,2,2])], C, SetCat)
 α₀, α₁ = FinFunction([3,4,1,2]), FinFunction([2,1])
 
 
-if false # TODO 
   α = FinTransformation([α₀, α₁], F, F)
   @test is_natural(α)
   @test (α[1], α[2]) == (α₀, α₁)
@@ -111,19 +134,19 @@ end)
 
 gen = (homtype=:generator,)
 # Opposite square corners folded on top of each other
-F1 = FinDomFunctor([1,2,2,3], [1,1,2,3], S, T; gen...)
+F1 = FinFunctor([1,2,2,3], [1,1,2,3], S, T; gen...)
 
 # Both paths in square get mapped onto single length-2 path in equalizer
-F2 = FinDomFunctor([1,2,2,3], [1,1,2,2], S, T; gen...)
+F2 = FinFunctor([1,2,2,3], [1,1,2,2], S, T; gen...)
 
 # Fit equalizer into square, ignoring opposite corner
-F3 = FinDomFunctor([1,2,4], [1,3,3], T, S; gen...)
+F3 = FinFunctor([1,2,4], [1,3,3], T, S; gen...)
 
 # Same as F1, but there is an additional piece of data in codomain, ignored
-F4 = FinDomFunctor([1,2,3], [1,2,3], T, T2; gen...)
+F4 = FinFunctor([1,2,3], [1,2,3], T, T2; gen...)
 
 # Same as F1, but there is an additional piece of data in codomain, ignored
-F5 = FinDomFunctor([1,2,3], [1,2,3], T, T2; gen...)
+F5 = FinFunctor([1,2,3], [1,2,3], T, T2; gen...)
 
 @test all(is_functorial, [F1,F2,F3,F4])
 
@@ -192,8 +215,6 @@ G = FinDomFunctor(g)
 @test is_natural(ϕ)
 @test component(ϕ*F, 1) == hom_map(F, :src)
 @test component(ϕ*α, 1) == hom_map(F, :src) ⋅ α[:V]
-
 end 
-
 
 end # module

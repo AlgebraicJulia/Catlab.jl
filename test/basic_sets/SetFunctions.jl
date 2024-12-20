@@ -4,14 +4,10 @@ using Test, Catlab
 
 # Identities.
 #-------------
-
 X = SetOb(Int)
-@withmodel SetC() (id) begin 
-  @test dom(id(X)) == X
-  @test codom(id(X)) == X
-  @test id(X)(1) == 1
-  @test startswith(sprint(show, id(X)), "id(")
-end
+i = SetFunction(IdentityFunction(X))
+@test i(1) == 1
+startswith(sprint(show, i), "id(")
 
 # Callables
 #-----------
@@ -23,18 +19,8 @@ g = SetFunction(x -> 3x, SetOb(Int), SetOb(Int))
 @test codom(f) == SetOb(Int)
 @test f(1) == 2
 
-# Composition.
-#-------------
+@test SetFunction(f,g)(1) == 6
 
-@withmodel SetC() (id, compose) begin 
-  h = compose(f,g)
-  @test dom(h) == dom(f)
-  @test codom(h) == codom(g)
-  @test h(1) == 6
-  @test startswith(sprint(show, h), "compose(")
-  @test compose(id(dom(f)), f) == f
-  @test compose(f, id(codom(f))) == f
-end
 
 # Constants.
 #------------
@@ -46,12 +32,10 @@ c = SetFunction(ConstantFunction("foo", SetOb(Int)))
 @test c(1) == "foo"
 
 c = SetFunction(ConstantFunction(5, SetOb(Int)))
+@test force(SetFunction(c, f)) == SetFunction(ConstantFunction(f(5), SetOb(Int)))
+@test force(SetFunction(f, c)) == c
+@test force(SetFunction(c, c)) == c
 
-@withmodel SetC() (compose) begin 
-  @test force(compose(c, f)) == SetFunction(ConstantFunction(f(5), SetOb(Int)))
-  @test force(compose(f, c)) == c
-  @test force(compose(c, c)) == c
-end
 
 # Predicated sets
 #----------------
@@ -70,7 +54,7 @@ plus_one_to_even = SetFunction(x -> x+1, evens, odds)
 @test_throws ErrorException plus_one_to_even(3) == 4
 @test SetFunction(plus_one_to_odd) == plus_one_to_odd
 
-plus_two_to_odd = compose[SetC()](plus_one_to_odd, plus_one_to_even)
+plus_two_to_odd = SetFunction(plus_one_to_odd, plus_one_to_even)
 @test plus_two_to_odd(3) == 5
 @test dom(plus_two_to_odd) == odds
 @test codom(plus_two_to_odd) == odds

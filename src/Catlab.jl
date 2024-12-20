@@ -2,11 +2,11 @@ module Catlab
 
 using Reexport
 
-include("theories/Theories.jl")
-include("ACSetsGATsInterop.jl")
-include("graphs/Graphs.jl")
-include("basic_sets/BasicSets.jl")
-include("categorical_algebra/CategoricalAlgebra.jl")
+include("01_theories/module.jl")
+include("ACSetsGATsInterop.jl") # depends on Theories but is not a theory
+include("02_graphs/Graphs.jl")
+include("03_basic_sets/module.jl")
+include("04_categorical_algebra/module.jl")
 # include("wiring_diagrams/WiringDiagrams.jl")
 # include("graphics/Graphics.jl")
 # include("programs/Programs.jl")
@@ -19,4 +19,4 @@ include("categorical_algebra/CategoricalAlgebra.jl")
 # @reexport using .Graphics
 # @reexport using .Programs
 
-end
+end # module

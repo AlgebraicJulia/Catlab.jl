@@ -4,29 +4,35 @@ using Test, Catlab, GATlab
 using .ThCategory
 
 const C = Category(TypeCat(SetC()))
+const IC = CatWithInitial(SetC())
+const TC = CatWithTerminal(SetC())
+const PC = CatWithProducts(SetC())
+
+# const CC = CatWithCoproducts(SetC())
+# const CMC = CocartesianMonoidal(TypedCatWithProducts(SetC()))
 
 # Initial/terminal objects
 ###########################
 
-expected = Colimit(Diagram(C), Multicospan(FinSet(), FinFunction[]))
-@test expected == initial(C)
-@test apex(initial(C)) == FinSet()
+# expected = Colimit(Diagram(C), Multicospan(FinSet(), FinFunction[]))
+I = initial(IC)
+@test ob(I) == FinSet(Set{Union{}}())
+@test collect(create(IC, I, FinSet(4)) ) == Int[]
 
-@test create(FinSet(4), C) == FinFunction(Int[], FinSet(4))
 
-expected = Limit(Diagram(C), Multispan(FinSet(1), FinFunction[]))
-@test expected == terminal(C)
-@test apex(terminal(C)) == FinSet(1)
+T = terminal(TC)
+@test apex(T) == FinSet(nothing)
 
-@test delete(FinSet(2), C) |> collect == FinFunction([1,1], 1) |> collect
+@test delete(TC, T, FinSet(2)) |> collect == FinFunction([1,1], 1) |> collect
 
 
 # Products
 #-------------
 xdiag = DiscreteDiagram(FinSet.([2,2]))
 fs = FinFunction.([[1,2,1,2],[1,1,2,2]], 2)
-expected = Limit(Diagram(xdiag, C), Span(fs...))
-@test expected == product(FinSet.([2,2]), C)
+P = product(PC, FinSet.([2,2])...)
+ob(P)
+@test force.(P) == fs
 
 sp = Span(FinFunction.([[1,2,2],[1,2,1]], 2)...)
 @test universal(expected, sp; check=true).impl.val == [1,4,2]

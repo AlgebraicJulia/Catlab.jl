@@ -28,7 +28,7 @@ lim2 = Limit(Diagram(DD([A,B]), M), Span(Hom(:f, C, A),Hom(:g, C, B)))
 d = FreeDiagram{FreeCategory.Ob,FreeCategory.Hom}()
 add_vertex!(d, ob=A)
 specialize(d; colimit=false)
-lim = limit(specialize(d; colimit=false), M, DefaultAlg())
+lim = limit(specialize(d; colimit=false), M)
 @test ob(lim) == A
 
 # Colimits
@@ -44,7 +44,7 @@ colim = Colimit(Diagram(DD([A,B]),M), Cospan(f,g))
 # Specializing to singleton colimit.
 d = FreeDiagram{FreeCategory.Ob,FreeCategory.Hom}()
 add_vertex!(d, ob=A)
-colim = colimit(specialize(d), M, DefaultAlg())
+colim = colimit(specialize(d), M)
 @test ob(colim) == A
 
 # Epi mono.
