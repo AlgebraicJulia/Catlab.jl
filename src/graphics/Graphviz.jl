@@ -7,7 +7,7 @@ References:
 """
 module Graphviz
 export Expression, Statement, Attributes, Graph, Digraph, Subgraph,
-  Node, NodeID, Edge, Label, pprint, run_graphviz
+  Node, NodeID, Edge, Label, pprint, run_graphviz, view_graphviz
 
 using DataStructures: OrderedDict
 using StructEquality
@@ -170,6 +170,20 @@ end
 
 function Base.show(io::IO, ::MIME"image/svg+xml", graph::Graph)
   run_graphviz(io, graph, format="svg")
+end
+
+function view_graphviz(g::Graph; path::String="")
+    filepath = isempty(path) ? "$(tempname()).png" : path
+    open(filepath, "w") do io
+        run_graphviz(io, g, format="png")
+    end
+    if Sys.islinux()
+        run(`xdg-open $filepath`, wait=false)
+    elseif Sys.isapple()
+        run(`open $filepath`, wait=false)
+    elseif Sys.iswindows()
+        run(`start $filepath`, wait=false)
+    end
 end
 
 # Pretty-print
