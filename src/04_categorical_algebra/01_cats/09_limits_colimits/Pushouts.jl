@@ -7,8 +7,7 @@ using GATlab
 using ...Categories: Category
 using ...FreeDiagrams
 
-using ..Colimits: AbsColimit, ComposeCoproductCoequalizer
-using ..Coproducts: CoproductColimit
+using ..Colimits: AbsColimit, ComposeCoproductCoequalizer, ColimitCocone
 # using ..Coequalizers: CoeqColimit
 
 
@@ -16,10 +15,10 @@ using ..Coproducts: CoproductColimit
 
 See also: [`CompositePullback`](@ref).
 """
-struct CompositePushout <: AbsColimit
+struct CompositePushout{Hom} <: AbsColimit
   cocone::Multicospan
-  coprod::CoproductColimit
-  coeq::AbsColimit # CoeqColimit?
+  coprod::ColimitCocone
+  coeq::Hom # CoeqColimit?
 end
 
 function colimit(span::Multispan, m::Category, ::ComposeCoproductCoequalizer)

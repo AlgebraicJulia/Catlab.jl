@@ -36,6 +36,8 @@ Base.one(::Type{BoolRig}) = BoolRig(true)
 Base.float(x::BoolRig) = float(x.value)
 Base.show(io::IO, x::BoolRig) = print(io, x.value)
 
+BoolRig(b::BoolRig) = b
+
 # Category of finite relations
 ##############################
 
@@ -231,14 +233,14 @@ const FinRelMat = FinRelationMatrix
 dom(R::FinRelMat) = FinRel(size(R.rel, 2))
 codom(R::FinRelMat) = FinRel(size(R.rel, 1))
 
-compose(R::FinRelMat, S::FinRelMat) = FinRelMat(compose(R.rel, S.rel))
-otimes(R::FinRelMat, S::FinRelMat) = FinRelMat(otimes(R.rel, S.rel))
-oplus(R::FinRelMat, S::FinRelMat) = FinRelMat(oplus(R.rel, S.rel))
+compose(R::FinRelMat, S::FinRelMat) = FinRelMat(compose[MatC{BoolRig}()](R.rel, S.rel))
+otimes(R::FinRelMat, S::FinRelMat) = FinRelMat(otimes[MatC{BoolRig}()](R.rel, S.rel))
+oplus(R::FinRelMat, S::FinRelMat) = FinRelMat(oplus[MatC{BoolRig}()](R.rel, S.rel))
 dagger(R::FinRelMat) = FinRelMat(transpose(R.rel))
 
 meet(R::FinRelMat, S::FinRelMat) = FinRelMat(R.rel .* S.rel)
 join(R::FinRelMat, S::FinRelMat) = FinRelMat(R.rel .+ S.rel)
-pair(R::FinRelMat, S::FinRelMat) = FinRelMat(pair(R.rel, S.rel))
-copair(R::FinRelMat, S::FinRelMat) = FinRelMat(copair(R.rel, S.rel))
+pair(R::FinRelMat, S::FinRelMat) = FinRelMat(pair[MatC{BoolRig}()](R.rel, S.rel))
+copair(R::FinRelMat, S::FinRelMat) = FinRelMat(copair[MatC{BoolRig}()](R.rel, S.rel))
 
-end
+end # module

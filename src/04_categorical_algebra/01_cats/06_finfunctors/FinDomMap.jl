@@ -31,9 +31,7 @@ import ..FinFunctors: FinDomFunctor, FinFunctor
             path (default): contains AbstractVectors of generators
   """
   function FinDomFunctorMap(o,h,d::FinCat,c::C; homtype=nothing) where {C<:AbsCat}
-    @show homtype
     homtype = isnothing(homtype) ? (c isa FinCat ? :path : :hom) : homtype
-    @show homtype
     h′ = mapvals(f-> coerce_hom(c, f; homtype), h) 
 
     DO, CO = impl_type.([d,c], :Ob)
@@ -45,7 +43,6 @@ import ..FinFunctors: FinDomFunctor, FinFunctor
 
     length(h) == length(hom_generators(d)) ||
       error("Length of morphism map $h does not match domain $d")
-    @show h′
     new{DO, CO, DH, CH, DG, typeof(o), typeof(h′), C}(o, h′, d, c)
   end
 end
@@ -53,8 +50,6 @@ end
 
 """ Interpret a presented hom as a hom in the codomain category """
 function coerce_hom(cod::FinCat, f; homtype=:path)
-  @show f
-  @show homtype
   homtype == :hom && return f 
   homtype == :generator && return compose(cod, Path(cod, [f]))
   homtype == :path && return compose(cod, Path(cod, f))

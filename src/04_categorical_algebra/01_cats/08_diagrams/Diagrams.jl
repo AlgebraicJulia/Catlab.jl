@@ -224,7 +224,6 @@ This is the domain of the underlying functor.
 # # just implement the category struture.
 
 # @instance ThCategory{Diagram,DiagramHom} begin
-#   @import dom, codom, compose, id
 # end
 
 # # Oppositization 2-functor induces isomorphisms of diagram categories:

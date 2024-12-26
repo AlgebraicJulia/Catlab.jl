@@ -4,40 +4,46 @@ export CocartesianMonoidal, oplus, mzero, ⊕
 using GATlab
 
 using .....Theories
+import .....Theories: coproduct
 
 using ...FreeDiagrams: DiscreteDiagram
 
 using ..Coproducts: TypedCatWithCoproducts, CatWithCoproducts, ThCategoryUnbiasedCoproducts
 
-using .ThCategoryUnbiasedCoproducts: coproduct
 import .ThCocartesianCategory: oplus, mzero
 
 ThCocartesianCategory.Meta.@typed_wrapper CocartesianMonoidal
 
-@instance ThCocartesianCategory{Ob, Hom} [model::TypedCatWithCoproducts{Ob,Hom,X1,X2,X3,X4}
-                                         ] where {Ob,Hom,X1,X2,X3,X4} begin
-  @import Ob, Hom, dom, codom, compose, ⋅, →, id, copair
+@instance ThCocartesianCategory{Ob, Hom} [model::TypedCatWithCoproducts{Ob,Hom}
+] where {Ob,Hom} begin
 
-  oplus(A::Ob, B::Ob) = ob(model, coproduct(model, DiscreteDiagram([A, B])))
+  oplus(A::Ob, B::Ob) = ob(model, coproduct(model, A, B))
 
   function oplus(f::Hom, g::Hom)
     𝒞 = model
-    ι1, ι2 = coproduct(𝒞, DiscreteDiagram([codom(f), codom(g)]))
-    clim = coproduct(𝒞, DiscreteDiagram([dom(f), dom(g)]))
+    ι1, ι2 = coproduct(𝒞, codom(f), codom(g))
+    clim = coproduct(𝒞, dom(f), dom(g))
     copair(𝒞, clim, compose(𝒞, f,ι1), compose(𝒞, g,ι2))
   end
 
   function swap(A::Ob, B::Ob)
-    AB = coproduct(model, DiscreteDiagram([A, B]))
-    BA = coproduct(model, DiscreteDiagram([B, A]))
+    AB = coproduct(model, A, B)
+    BA = coproduct(model, B, A)
     copair(model, AB, coproj2(BA), coproj1(BA))
   end
 
   plus(A::Ob) = copair(id(A),id(A), getvalue(model))
-  mzero() = ob(model,initial(model))
+  mzero() = ob(model, initial[getvalue(model)]())
   zero(A::Ob) = create(A, getvalue(model))
-  coproj1(A::Ob, B::Ob) = coproj1(coproduct(model, DiscreteDiagram([A, B])))
-  coproj2(A::Ob, B::Ob) = coproj2(coproduct(model, DiscreteDiagram([A, B])))
+  coproj1(A::Ob, B::Ob) = coproj1(coproduct(model, A, B))
+  coproj2(A::Ob, B::Ob) = coproj2(coproduct(model, A, B))
+
+  copair(A::Hom, B::Hom) = error("TODO")
+
+  id(A::Ob) = id(CatWithCoproducts(getvalue(model)), A)
+
+  compose(A::Hom,B::Hom) = compose(CatWithCoproducts(getvalue(model)), A, B)
+
 end
 
 # oplus(m::WithModel{CocartesianMonoidal{Ob,Hom}}, As::AbstractVector{<:Ob}

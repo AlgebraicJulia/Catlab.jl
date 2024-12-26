@@ -1,6 +1,6 @@
 module VarFunctions 
 
-export VarFunction, AttrVal, AttrC
+export VarFunction, AttrVal, AttrC, get_type, AbsVarFunction
 
 using StructEquality
 
@@ -10,6 +10,8 @@ import GATlab: getvalue
 import ....Theories: dom, codom 
 using ....BasicSets
 import ....BasicSets: left, right, force, preimage, is_monic, is_epic
+
+using ..SetCat
 
 
 # VarFunctions
@@ -58,12 +60,14 @@ end
 either_cod_inv(::Any, ::Type) = nothing
 
 """ Take a FinDomFunction X->Y and make it into a function X+T->Y+T """
-plus_T_dom(f::FinDomFunction, T::Type) =
+plus_T_dom(f::Fin_FinDom, T::Type) =
   SetFunction(ConstEither(f, either_cod(dom(f), T), either_cod(codom(f), T)))
 
 # VarFunctions 
 #-------------
 abstract type AbsVarFunction{T} end
+
+get_type(::AbsVarFunction{T}) where T = T
 
 @instance ThSetFunction{Any, SetFunction, AbsSet, AbsSet} [model::AbsVarFunction{T}
                                                   ] where {T} begin
@@ -145,10 +149,11 @@ left(c::AbsCompositeVarFunction) = c.left
 
 right(c::AbsCompositeVarFunction) = c.right
 
+
 @struct_hash_equal struct CompositeVarFunctionL{T} <: AbsCompositeVarFunction{T}
   left::AbsVarFunction{T}
-  right::FinDomFunction
-  function CompositeVarFunctionL(f::AbsVarFunction{T}, g::FinDomFunction) where T 
+  right::Fin_FinDom
+  function CompositeVarFunctionL(f::AbsVarFunction{T}, g::Fin_FinDom) where T 
     codom(f) == dom(g) || error("Mismatch in composition: $(codom(f)) != $(dom(g))")
     new{T}(f,g)
   end
@@ -165,9 +170,9 @@ function force(s::CompositeVarFunctionL{T})::VarFunction{T} where T
 end
 
 @struct_hash_equal struct CompositeVarFunctionR{T} <: AbsCompositeVarFunction{T}
-  left::FinDomFunction
+  left::Fin_FinDom
   right::AbsVarFunction{T}
-  function CompositeVarFunctionR(f::FinDomFunction, g::AbsVarFunction{T}) where T
+  function CompositeVarFunctionR(f::Fin_FinDom, g::AbsVarFunction{T}) where T
     codom(f) == dom(g) || error("Mismatch in composition: $(codom(f)) != $(dom(g))")
     new{T}(f,g)
   end
@@ -210,26 +215,26 @@ end
 
 @struct_hash_equal struct AttrC{T} end
 
-@instance ThHeteroCat{FinSet, FinDomFunction, AbsVarFunction{T}
+@instance ThHeteroCat{FinSet, Fin_FinDom, AbsVarFunction{T}
                      } [model::AttrC{T}] where T begin
   dom(f::AbsVarFunction{T})::FinSet =
     f isa VarFunction ? dom(getvalue(f)) : dom(left(f))
 
   function codom(f::AbsVarFunction{T})::FinSet 
-    f isa CompositeVarFunctionL && return codom(right) 
+    f isa CompositeVarFunctionL && return codom(right(f)) 
     f isa CompositeVarFunctionR && return either_cod_inv(codom(right(f)), T)
     either_cod_inv(codom(getvalue(f)), T)
   end
 
-  id(s::FinSet)::FinDomFunction = id[FinCatC()](s)
+  id(s::FinSet)::Fin_FinDom = id[FinCatC()](s)
 
-  compose(f::FinDomFunction, g::FinDomFunction)::FinDomFunction = 
+  compose(f::Fin_FinDom, g::Fin_FinDom)::Fin_FinDom = 
     compose[FinCatC()](f, g)
   
-  compose(f::AbsVarFunction{T},g::FinDomFunction; context) =
+  compose(f::AbsVarFunction{T},g::Fin_FinDom; context) =
     CompositeVarFunctionL(f, g)
 
-  compose(f::FinDomFunction, g::AbsVarFunction{T}) = 
+  compose(f::Fin_FinDom, g::AbsVarFunction{T}) = 
     CompositeVarFunctionR(f, g)
 
   compose(f::AbsVarFunction{T}, g::AbsVarFunction{T}) = 

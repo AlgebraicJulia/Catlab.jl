@@ -1,6 +1,6 @@
 module SumSets 
 
-export SumSet, TaggedElem
+export SumSet, TaggedElem, Tagged, untag
 
 using StructEquality, MLStyle
 
@@ -14,7 +14,26 @@ using ..Sets: ThSet′, AbsSet
   TaggedElem(t::T, i::Int) where T = new{Val{i}, T}(t)
 end 
 
-GATlab.getvalue(l::TaggedElem) = l.val 
+GATlab.getvalue(l::TaggedElem) = l.val
+
+tag_I(::Type{TaggedElem{I,T}}) where {I,T} = I 
+tag_T(::Type{TaggedElem{I,T}}) where {I,T} = T
+
+""" Untag at the term level """
+untag(l::TaggedElem{I,T}, i::Int) where {I,T} =
+  Val{i} == I  ? l.val : error("Bad untag of $(l.val)::$T: $I ≠ $i")
+
+""" Untag at the type level """
+untag(::Type{TaggedElem{I,T}}, i::Int) where {I,T} = 
+  Val{i} == I ? T :  error("Bad untag of $T: $I ≠ $i")
+
+""" Untag at the type level """
+function untag(::Type{Union{Xs}}, i::Int) where Xs 
+  Xs.a <: TaggedElem || error("Can't untag a $(Xs.a)")
+  tag_I(Xs.a) == Val{i} && return tag_T(Xs.a)
+  return untag(Xs.b, i) # iterate through list of union types
+end
+
 
 getidx(::T) where {T<:TaggedElem} = only(T.parameters[1].parameters)
 
@@ -53,6 +72,11 @@ Base.length(e::SumSet) = length(getvalue(e))
     Union{[TaggedElem{Val{i}, eltype(s)} for (i, s) in enumerate(model)]...}
 
 end
+
+# Other helpers
+###############
+Tagged(vs::Vector{<:Union{Type,TypeVar}}) = 
+  Union{[TaggedElem{Val{i}, v} for (i,v) in zip(1:length(vs), vs)]...}
 
 
 end # module

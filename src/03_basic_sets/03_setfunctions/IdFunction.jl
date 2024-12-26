@@ -32,7 +32,7 @@ preimage(::IdentityFunction, x) = [x]
 
 function Base.show(io::IO, f::IdentityFunction)
   print(io, "id(")
-  show_domains(io, SetFunction(f), codomain=false)
+  print(io, getvalue(f))
   print(io, ")")
 end
 

@@ -10,6 +10,7 @@ import ....Theories: ob, dom, codom, hom
 using ....BasicSets: FinSet
 import ....BasicSets: left, right
 import ..Categories: obtype, homtype
+import ..Functors: fmap
 
 
 """
@@ -63,6 +64,7 @@ function cocone_objects end
 `fmap` takes an function on objects and a function on homs and replaces the 
 obs and homs of FreeDiagram while preserving the edges and vertices.
 """
-fmap(f::FreeDiagram, o, h) = FreeDiagram(fmap(getvalue(f), o, h))
+fmap(f::FreeDiagram, o, h, O::Type, H::Type) = 
+  FreeDiagram(fmap(getvalue(f), o, h, O, H))
 
 

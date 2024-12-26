@@ -22,19 +22,20 @@ include("06_finfunctors/module.jl") # Categories, FreeDiagrams
 
 # include("NatTrans.jl") # Categories
 
-include("CatOfCat.jl") # Categories
+include("07_cat_of_cat/CatOfCat.jl") # Categories
 @reexport using .CatOfCat
 
-# include("CommutativeDiagrams.jl")
 
-# @reexport using .CommutativeDiagrams
-
-include("Diagrams.jl") # Categories, Limits, FinCats, FinSets
+include("08_diagrams/Diagrams.jl") # Categories, Limits, FinCats, FinSets
 @reexport using .Diagrams
 
-include("limits_colimits/module.jl") # FreeDiagrams, FinFunctors
+include("09_limits_colimits/module.jl") # FreeDiagrams, FinFunctors
 
 @reexport using .LimitsColimits
+
+include("10_commutative_diagrams/CommutativeDiagrams.jl")
+
+@reexport using .CommutativeDiagrams
 
 # include("Subobjects.jl") # Limits
 

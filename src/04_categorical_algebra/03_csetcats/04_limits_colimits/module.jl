@@ -1,14 +1,15 @@
 module LimitsColimits 
 
-using Reexport
+using Reexport 
 
 include("LimitsColimits.jl")
 
+include("Limits.jl")
 
-# include("Limits.jl")
-# @reexport using .Limits
+@reexport using .Limits
 
-# include("Colimits.jl")
-# @reexport using .Colimits
+include("Colimits.jl")
+
+@reexport using .Colimits
 
 end # module

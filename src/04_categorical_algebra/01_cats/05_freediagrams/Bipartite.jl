@@ -16,8 +16,7 @@ using ...FreeDiagrams: ThFreeDiagram, FreeDiagram, obtype, homtype
 import ...FreeDiagrams: fmap, cone_objects, cocone_objects
 
 using ..Discrete: DiscreteDiagram
-using ..Spans: Span, Cospan, Multi_Co_Span, apex, feet, legs
-using ..Multispans: Multispan, Multicospan
+using ..Multispans: Multispan, Multicospan, apex, feet, legs
 using ..ParallelHoms: ParallelMorphisms
 using ..FreeGraphs: FreeGraph
 
@@ -98,9 +97,8 @@ function BipartiteFreeDiagram(discrete::DiscreteDiagram{Ob};
   return d
 end
 
-""" Use the (multi)(co)span's type parameters """
-BipartiteFreeDiagram(sp::Multi_Co_Span{O,H}) where {O,H} = 
-  BipartiteFreeDiagram{O,H}(sp)
+BipartiteFreeDiagram(span::Multispan{O,H}) where {O,H} = 
+  BipartiteFreeDiagram{O,H}(span)
 
 function BipartiteFreeDiagram{Ob,Hom}(span::Multispan{O,H}) where {Ob,Hom, O<:Ob, H<:Hom}
   d = BipartiteFreeDiagram{Ob,Hom}()
@@ -109,6 +107,9 @@ function BipartiteFreeDiagram{Ob,Hom}(span::Multispan{O,H}) where {Ob,Hom, O<:Ob
   add_edges!(d, fill(v₀, length(span)), vs, hom=legs(span))
   return d
 end
+
+BipartiteFreeDiagram(span::Multicospan{O,H}) where {O,H} = 
+  BipartiteFreeDiagram{O,H}(span)
 
 function BipartiteFreeDiagram{Ob,Hom}(cospan::Multicospan) where {Ob,Hom}
   d = BipartiteFreeDiagram{Ob,Hom}()

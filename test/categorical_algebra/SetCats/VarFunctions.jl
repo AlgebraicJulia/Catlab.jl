@@ -61,5 +61,4 @@ f = VarFunction{Bool}([1,1,AV(true)],FinSet(2))
 f = VarFunction{Bool}([1,2,AV(true)],FinSet(2))
 @test !is_monic(f) && is_epic(f)
 
-
 end # module

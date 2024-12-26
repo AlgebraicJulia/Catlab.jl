@@ -14,7 +14,6 @@ using ....Cats: Category, FinCat, Cat, obtype, homtype, TypeCat,
                ob_generators, hom_generators, gentype, ThFinDomFunctor
 import ....Cats: FinDomFunctor
 using ..CSets: ACSetCategory, get_ob, get_hom
-using ..CodomsOfACSet: CodomOfACSet
 
 """ Wrapper type to interpret attributed C-set as a functor.
 """
@@ -89,13 +88,11 @@ end
 
   ob_map(x::GATExpr{:generator})::Ob = 
     get_ob(model.cod, getvalue(model), nameof(x))  
-  #SetOb(getvalue(model), x, getcategory(model))
 
   gen_map(f::GATExpr{:generator})::Hom = 
     get_hom(model.cod, getvalue(model), nameof(f), 
             ThFinDomFunctor.ob_map[model](dom(f)), 
             ThFinDomFunctor.ob_map[model](codom(f))) 
-            #SetFunction(getvalue(model), f, getcategory(model))
 end
 
 # Constructors

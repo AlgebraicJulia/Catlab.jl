@@ -26,58 +26,51 @@ import ..ACSetTransformations: ACSetTransformation
 
 
 
-# Upstream to ACSets.jl
-#######################
-
-""" Convert a Schema to a Type-level schema """
-TypeLevelBasicSchema(s::BasicSchema{Name}) where {Name} = 
-  TypeLevelBasicSchema{Name, Tuple{s.obs...}, Tuple{s.homs...}, 
-                       Tuple{s.attrtypes...}, Tuple{s.attrs...}, Tuple{s.eqs...}}
-
-TypeLevelBasicSchema(s::Type{<:TypeLevelBasicSchema}) = s
-
-"""A naive theory of heteromorphisms which involves three types: 
-domain morphisms, codomain morphisms, and hetromorphisms, which can be 
-pre/postcomposed.
 """
-@theory ThHeteroMorphism begin 
-  Dom::TYPE; Cod::TYPE; Het::TYPE
-  pre(a::Dom, h::Het)::Het
-  post(h::Het, b::Cod)::Het
-end
-
-"""
-A theory for systematically taking instances of ACSets and producing a diagram 
+A theory for systematically taking instances of ACSets and producing a diagram
 in a category (in particular: a category which is the collage of a profunctor).
 
-This requires plugging in 
+In general, because ACSets don't support operations (i.e. the codomain
+"attribute category" is discrete), the `Op` type will usually be trivial.
+
+Although we could be very strict (requiring entity category to be the category
+of sets and functions), we adopt a liberal approach where the entity category
+and attribute category are unspecified, although methods must be provided to
+convert these Obs/AttrTypes into FinSets (likewise for Homs/Attrs into
+FinFunctions) in order to understand diagrams into these categories as giving
+ACSets.
 """
 @theory ThACSetCategory begin 
   EntityCat::TYPE; AttrCat::TYPE; ProfCat::TYPE
   Ob::TYPE;Hom::TYPE; AttrType::TYPE; Op::TYPE; Attr::TYPE
-  Sym::TYPE; ACS::TYPE; ACSHom::TYPE;
+  Sym::TYPE; ACS::TYPE; ACSHom::TYPE; SetType::TYPE; FnType::TYPE
+
+  # Interpreting the data from the ACSet as living in some collage category
   entity_cat()::EntityCat
   attr_cat()::AttrCat
   prof_cat()::ProfCat
-  constructor()::ACS
-  coerce(f::ACSHom)::ACSHom
+  
+  # An empty ACSet (has implementation details e.g. indexing)
+  constructor()::ACS 
+
+  # Interpret user-friendly hom data in an intuitive way
+  coerce(f::ACSHom)::ACSHom 
+
+  # Extracting Ob/Hom data from an ACSet data structure
   get_ob(x::ACS, o::Sym)::Ob
   get_hom(x::ACS, h::Sym)::Hom
   get_attrtype(x::ACS, a::Sym)::AttrType
   get_op(x::ACS, a::Sym)::Op
   get_attr(x::ACS, h::Sym)::Attr
+
+  # Recovering ACSet data (FinSets and FinFunctions) out of Ob/Hom types
+  get_set(x::Ob)::SetType;
+  get_fn(x::Hom)::FnType;
+  get_attr_set(x::AttrType)::SetType;
+  get_attr_fn(x::Attr)::FnType;
 end
 
-ThACSetCategory.Meta.@typed_wrapper ACSetCategory′
-
-const ACSetCategory{EC,AC,PC,O,H,AT,OP,A} = 
-  ACSetCategory′{EC,AC,PC,O,H,AT,OP,A,Symbol,ACSet,ACSetTransformation}
-
-# get_hom(i::ACSetCategory, x::ACSet, s::Symbol) = 
-#   get_hom(i, x, s, get_ob(i, x, dom(S, s)), get_ob(i, x, codom(S, s)))
-# get_attr(i::ACSetCategory{S}, x::ACSet, s::Symbol) = 
-#   get_attr(i, x, s, get_ob(i, x, dom(S, s)), get_attrtype(i, x, codom(S, s)))
-
+ThACSetCategory.Meta.@wrapper ACSetCategory
 
 # Other methods
 ###############
@@ -86,7 +79,8 @@ acset_schema(a::ACSetCategory) = acset_schema(constructor(a))
   
 SetOb(x::ACSet, a::GATExpr{:generator}, c::ACSetCategory) = SetOb(x, nameof(a), c)
 
-function SetOb(x::ACSet, a::Symbol, c::ACSetCategory{S}) where S 
+function SetOb(x::ACSet, a::Symbol, c::ACSetCategory)
+  S = acset_schema(c)
   a ∈ ob(S) && return get_ob(c, x, a)
   a ∈ attrtypes(S) && return get_attr(c, x, a)
   error("$a not found in schema $S")
@@ -158,8 +152,6 @@ function is_natural(α::ACSetTransformation, C::Union{Nothing,ACSetCategory}=not
   all(isempty, last.(collect(fails)))
 end
 
-
-
 """
 Returns a dictionary whose keys are contained in the names in `arrows(S)`
 and whose value at `:f`, for an arrow `(f,c,d)`, is a lazy iterator
@@ -172,12 +164,12 @@ function naturality_failures(C::ACSetCategory, X::ACSet, Y::ACSet, comps)
   S = acset_schema(X)
   α(o::Symbol, i) = comps[o](i)
   ks = keys(comps)
-
+  𝒞, 𝒟 = entity_cat(C), attr_cat(C)
   hom_arrs = filter(((f,c,d),) -> c ∈ ks && d ∈ ks, homs(S))
 
   ps = Iterators.map(hom_arrs) do (f, c, d)
-    αY₂ = compose(C, comps[c], get_hom(C, Y, f))
-    X₁α = compose(C, get_hom(C, X, f), comps[d])
+    αY₂ = compose[𝒞](comps[c], get_hom(C, Y, f))
+    X₁α = compose[𝒞](get_hom(C, X, f), comps[d])
     Pair(f, [(i, αY₂(i), X₁α(i)) for i in parts(X,c) if X₁α(i) != αY₂(i)])
   end
 
@@ -221,17 +213,7 @@ show_naturality_failures(io::IO, α::ACSetTransformation) =
 show_naturality_failures(α::ACSetTransformation) =
   show_naturality_failures(stdout, α)
 
-# UNDO
-# @cartesian_monoidal_instance ACSet{S} ACSetTransformation{S} CSetCat{S} where S
-
-# @cartesian_monoidal_instance ACSet{S} ACSetTransformation{S} ACSetLoose{S}
-
-# @cocartesian_monoidal_instance ACSet ACSetTransformation CSetCat
-
-# @default_model ThCategory{ACSet, ACSetTransformation} [model::CSetCat]
-
 force(C::ACSetCategory, α::ACSetTransformation) = map_components(C, force, α)
 
 map_components(C::ACSetCategory, f, α::ACSetTransformation) =
   ACSetTransformation(map(f, components(α)), dom(α), codom(α), C)
-

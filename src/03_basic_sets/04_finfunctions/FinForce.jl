@@ -7,7 +7,7 @@ using ...SetFunctions: SetFunction, dom, codom
 import ...SetFunctions: force
 
 using ..FinFunctions: FinDomFunction
-using ..FinFnVector: AbsFinFunctionVector
+using ..FinFnVector: AbsFinFunctionVector, is_indexed
 using ..FinFnDict: FinFunctionDict
 
 """ 
@@ -18,7 +18,7 @@ function force(s::SetFunction{Any,SetFunction,FinSet,D})::SetFunction{Any,SetFun
   i = getvalue(s)
   if getvalue(dom(s)) isa FinSetInt
     i isa AbsFinFunctionVector && return s
-    return SetFunction{Any,SetFunction,FinSet,D}(collect(s), codom(s))
+    return SetFunction{Any,SetFunction,FinSet,D}(collect(s), codom(s); index=is_indexed(s))
   else
     i isa FinFunctionDict && return s 
     return SetFunction{Any,SetFunction,FinSet,D}(

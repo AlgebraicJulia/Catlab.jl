@@ -1,7 +1,7 @@
 """ Categories of matrices.
 """
 module Matrices
-export MatrixDom, dom, codom, id, compose, ⋅, ∘,
+export MatC, dom, codom, id, compose, ⋅, ∘,
   otimes, ⊗, munit, braid, oplus, ⊕, mzero, swap,
   mcopy, Δ, delete, ◊, plus, zero, pair, copair, proj1, proj2, coproj1, coproj2
 
@@ -19,92 +19,65 @@ import ....Theories: dom, codom, id, compose, ⋅, ∘,
 # Matrices over a commutative rig
 #################################
 
-""" Domain or codomain of a Julia matrix of a specific type.
+struct MatC{T <: Number} end
 
-Object in the category of matrices of this type.
-"""
-struct MatrixDom{M <: AbstractMatrix}
-  dim::Int
+@instance ThDistributiveSemiadditiveCategory{Int, AbstractMatrix{T}} [model::MatC{T}] where {T} begin
+  Ob(n::Int) = n >= 0 ? n : error("expected nonnegative integer")
+  Hom(A::AbstractMatrix{T}, n::Int, m::Int) =
+    size(A) == (n,m) ? A : error("expected dimensions to be $((n,m))")
+
+  id(n::Int)::AbstractMatrix{T} = T[T(i == j) for i in 1:n, j in 1:n]
+  compose(A::AbstractMatrix{T}, B::AbstractMatrix{T}) = B * A
+
+  dom(A::AbstractMatrix{T})::Int = size(A,2)
+  codom(A::AbstractMatrix{T})::Int = size(A,1)
+
+  oplus(m::Int, n::Int)::Int = m+n
+  otimes(m::Int, n::Int)::Int = m*n
+
+  oplus(A::AbstractMatrix{T}, B::AbstractMatrix{T}) = blockdiag(A, B)
+  otimes(A::AbstractMatrix{T}, B::AbstractMatrix{T}) = kron(A, B)
+
+  mzero()::Int = 0
+  munit()::Int = 1
+
+  swap(m::Int, n::Int) = 
+    [zeros(T, (n,m)) id[model](n); id[model](m) zeros(T, (m,n))]
+
+  braid(m::Int, n::Int) =
+    hcat((kron(id[model](n), unit_vector(T, m, j)) for j in 1:m)...)
+
+  zero(m::Int) = zeros(T, (m, m))
+
+  plus(m::Int)::AbstractMatrix{T} = copair[model](id[model](m), id[model](m))
+  plus(A::AbstractMatrix{T}, B::AbstractMatrix{T}) = A+B
+
+  copair(A::AbstractMatrix{T}, B::AbstractMatrix{T}) = [A B]
+  proj1(m::Int, n::Int) = [id(m) zeros(T, (m,n))]
+  proj2(m::Int, n::Int) = [zeros(T, (n,m)) id(n)]
+  coproj1(m::Int, n::Int) = [id(m); zeros(T, (n,m))]
+  coproj2(m::Int, n::Int) = [zeros(T, (m,n)); id(n)]
+
+  pair(A::AbstractMatrix{T}, B::AbstractMatrix{T}) = [A; B]
+  mcopy(m::Int) = pair[model](id[model](m), id[model](m))
+
 end
 
-+(m::MD, n::MD) where MD <: MatrixDom = MD(m.dim + n.dim)
-*(m::MD, n::MD) where MD <: MatrixDom = MD(m.dim * n.dim)
-zero(::Type{MD}) where MD <: MatrixDom = MD(0)
-one(::Type{MD}) where MD <: MatrixDom = MD(1)
+# Utilities
+###########
 
-""" Biproduct category of Julia matrices of specific type.
-
-The matrices can be dense or sparse, and the element type can be any
-[commutative rig](https://ncatlab.org/nlab/show/rig) (commutative semiring): any
-Julia type implementing `+`, `*`, `zero`, `one` and obeying the axioms. Note
-that commutativity is required only in order to define `braid`.
-
-For a similar design (only for sparse matrices) by the Julia core developers,
-see [SemiringAlgebra.jl](https://github.com/JuliaComputing/SemiringAlgebra.jl)
-and [accompanying short paper](https://doi.org/10.1109/HPEC.2013.6670347).
-"""
-@instance ThDistributiveSemiadditiveCategory{MatrixDom, AbstractMatrix} begin
-  # FIXME: Cannot define type-parameterized instances.
-  #@instance ThAdditiveBiproductCategory{MatrixDom{M}, M} where M <: AbstractMatrix begin
-  @import +, dom, codom, id, mzero, munit, braid
-  
-  compose(A::AbstractMatrix, B::AbstractMatrix) = B*A
-  plus(A::AbstractMatrix, B::AbstractMatrix) = A+B
-  
-  oplus(m::MatrixDom, n::MatrixDom) = m+n
-  oplus(A::AbstractMatrix, B::AbstractMatrix) = blockdiag(A, B)
-  swap(m::MatrixDom, n::MatrixDom) = [zero(n,m) id(n); id(m) zero(m,n)]
-  
-  otimes(m::MatrixDom, n::MatrixDom) = m*n
-  otimes(A::AbstractMatrix, B::AbstractMatrix) = kron(A, B)
-  
-  mcopy(m::MatrixDom) = pair(id(m), id(m))
-  delete(m::MatrixDom) = zero(zero(typeof(m)), m)
-  plus(m::MatrixDom) = copair(id(m), id(m))
-  zero(m::MatrixDom) = zero(m, zero(typeof(m)))
-  
-  pair(A::AbstractMatrix, B::AbstractMatrix) = [A; B]
-  copair(A::AbstractMatrix, B::AbstractMatrix) = [A B]
-  proj1(m::MatrixDom, n::MatrixDom) = [id(m) zero(m,n)]
-  proj2(m::MatrixDom, n::MatrixDom) = [zero(n,m) id(n)]
-  coproj1(m::MatrixDom, n::MatrixDom) = [id(m); zero(n,m)]
-  coproj2(m::MatrixDom, n::MatrixDom) = [zero(m,n); id(n)]
-end
-
-dom(A::M) where M <: AbstractMatrix = MatrixDom{M}(size(A,2))
-codom(A::M) where M <: AbstractMatrix = MatrixDom{M}(size(A,1))
-
-id(m::MatrixDom{M}) where M = M(I, m.dim, m.dim)
-mzero(::Type{MD}) where MD <: MatrixDom = MD(0)
-munit(::Type{MD}) where MD <: MatrixDom = MD(1)
-braid(m::MatrixDom{M}, n::MatrixDom{M}) where M =
-  vec_permutation_matrix(M, m.dim, n.dim)
-zero(m::MatrixDom{M}, n::MatrixDom{M}) where M = zero_matrix(M, m.dim, n.dim)
-
-# Matrix utilities
-##################
-
-# Block diagonal only implemented for sparse matrices.
 blockdiag(A::AbstractMatrix...) = cat(A..., dims=(1,2))
 
-# Dense and sparse matrices have different APIs for creating zero matrices.
-zero_matrix(::Type{Matrix{T}}, dims...) where T = zeros(T, dims...)
-zero_matrix(::Type{SparseMatrixCSC{T}}, dims...) where T = spzeros(T, dims...)
-
-function unit_vector(::Type{M}, n::Int, i::Int) where {T, M <: AbstractMatrix{T}}
-  x = zero_matrix(M, n, 1)
+""" E.g. `unit_vector(Int, 6, 5) == [0 0 0 0 1 0]` Returns a spare matrix"""
+function unit_vector(::Type{T}, n::Int, i::Int) where {T}
+  x = spzeros(T, n, 1)
   x[i,1] = one(T)
   x
 end
 
-""" The "vec-permutation" matrix, aka the "perfect shuffle" permutation matrix.
+zero_matrix(::Type{Matrix{T}}, dims...) where T = zeros(T, dims...)
 
-This formula is (Henderson & Searle, 1981, "The vec-permutation matrix, the vec
-operator and Kronecker products: a review", Equation 18). Many other formulas
-are given there.
-"""
-function vec_permutation_matrix(::Type{M}, m::Int, n::Int) where M <: AbstractMatrix
-  hcat((kron(M(I, n, n), unit_vector(M, m, j)) for j in 1:m)...)
-end
+zero_matrix(::Type{SparseMatrixCSC{T}}, dims...) where T = spzeros(T, dims...)
 
-end
+
+end # module

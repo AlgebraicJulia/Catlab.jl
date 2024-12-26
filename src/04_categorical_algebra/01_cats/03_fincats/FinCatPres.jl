@@ -1,6 +1,6 @@
 """ Symbolic categories """
 module FinCatPres 
-export FinCatPresentation
+export FinCatPresentation, ThFinCat
 
 using StructEquality
 

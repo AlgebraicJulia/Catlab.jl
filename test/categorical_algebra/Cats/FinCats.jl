@@ -16,7 +16,6 @@ po2 = PreorderFinCat([(1,2),(2,3)]) |> FinCat
 # Free categories on graphs
 g = parallel_arrows(Graph, 3)
 C = FinCat(g)
-hom_generators(C)
 
 @test Graph(C) == g
 @test ob_generators(C) == FinSet(2) # Replaced "Ob"
@@ -103,4 +102,4 @@ C = FinCat(SchWeightedGraph)
 @test first.(hom_generators(C)) == [:src, :tgt, :weight]
 g = path_graph(WeightedGraph{Float64}, 3, E=(weight=[0.5,1.5],))
 
-end
+end # module

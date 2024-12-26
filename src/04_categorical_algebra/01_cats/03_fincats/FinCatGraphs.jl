@@ -11,7 +11,7 @@ import GATlab: equations, getvalue
 using ......Graphs: HasGraph, NamedGraph, src, tgt, nv, ne
 using ......BasicSets: FinSet
 using ...Paths: Path, coerce_path
-using ..PathCats: PathCatImpl, ThPathCat
+using ..PathCats: PathCat, PathCatAsFinCat, ThPathCat
 import ..FinCats: FinCat
 
 
@@ -20,7 +20,7 @@ Abstract type for both `FreeCatGraph` and `FinCatGraphEq`, where `G` is the
 type of the underlying graph (we dispatch on whether or not this is a 
 `NamedGraph` or not).
 """
-abstract type FinCatGraph{G,V,E} <: PathCatImpl{V,E} end
+abstract type FinCatGraph{G,V,E} end
 
 get_ob(g::FinCatGraph, v) = get_ob(getvalue(g), v)
 
@@ -152,5 +152,10 @@ get_ob_set(g::HasGraph) = FinSet(nv(g))
 
 get_hom_set(g::NamedGraph) = FinSet(Set(g[:ename]))
 get_hom_set(g::HasGraph) = FinSet(ne(g))
+
+# Alternate constructors
+########################
+
+FinCat(g::FinCatGraph) = FinCat(PathCatAsFinCat(PathCat(g)))
 
 end # module

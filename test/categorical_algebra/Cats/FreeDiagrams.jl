@@ -43,14 +43,14 @@ span = Span(f,g)
 @test (left(span), right(span)) == (f, g)
 
 f = Hom(:f, A, A)
-@test legs(Span{T...}(id(A), f)) == [id(A),f]
+@test legs(Span(id(A), f)) == [id(A),f]
 
 f = Hom(:f, A, B)
-@test_throws ErrorException Span{T...}(f,g)
+@test_throws ErrorException Span(f,g)
 
 # Multispans.
 f, g, h = Hom(:f, C, A), Hom(:g, C, B), Hom(:h, C, A)
-span = Multispan{T...}([f,g,h])
+span = Multispan([f,g,h])
 @test apex(span) == C
 @test legs(span) == [f,g,h]
 @test feet(span) == [A,B,A]
@@ -83,14 +83,14 @@ cospan = Cospan(f,g)
 @test (left(cospan), right(cospan)) == (f, g)
 
 f = Hom(:f, A, A)
-@test legs(Cospan{T...}(f, id(A))) == [f,id(A)]
+@test legs(Cospan(f, id(A))) == [f,id(A)]
 
 f = Hom(:f, A ,B)
-@test_throws ErrorException Cospan{T...}(f,g)
+@test_throws ErrorException Cospan(f,g)
 
 # Multicospans.
 f, g, h = Hom(:f, A, C), Hom(:g, B, C), Hom(:h, A, C)
-cospan = Multicospan{T...}([f,g,h])
+cospan = Multicospan([f,g,h])
 @test apex(cospan) == C
 @test legs(cospan) == [f,g,h]
 @test feet(cospan) == [A,B,A]
@@ -206,4 +206,4 @@ diagram = bd |> FreeDiagram
 # @test FreeDiagram(bd) == FreeDiagram([A,B,C], [(f,1,3),(g,2,3)])
 
 
-end
+end # module

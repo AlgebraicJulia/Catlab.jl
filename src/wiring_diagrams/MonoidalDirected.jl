@@ -78,7 +78,6 @@ different ways, but wiring diagrams always form a symmetric monoidal category in
 the same way.
 """
 @instance ThSymmetricMonoidalCategory{Ports, WiringDiagram} begin
-  @import dom, codom
 
   function id(A::Ports)
     f = WiringDiagram(A, A)

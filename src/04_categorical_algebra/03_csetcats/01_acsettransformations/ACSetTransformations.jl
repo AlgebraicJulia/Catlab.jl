@@ -24,7 +24,7 @@ and [`ACSetLoose`](@ref).
 module ACSetTransformations 
 
 export ACSetTransformation, StructACSetTransformation, 
-       DynamicACSetTransformation, components,
+       DynamicACSetTransformation, components, coerce_component,
       is_cartesian, in_bounds, _ACSetTransformation
 
 using StructEquality
@@ -131,6 +131,7 @@ function _ACSetTransformation(components, X::StructACSet{S}, Y::StructACSet{S}
 end
 
 function _ACSetTransformation(components, X::ACSet, Y::ACSet)
+  S = acset_schema(X)
   all(collect(keys(components))) do x 
     x ∈ objects(S) ∪ attrtypes(S) || error(
       "Not all names in $x are objects or attribute types")

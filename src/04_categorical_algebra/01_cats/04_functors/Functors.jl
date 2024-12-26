@@ -1,4 +1,4 @@
-export Functor, ob_map, hom_map, ThFunctor
+export Functor, ob_map, hom_map, ThFunctor, fmap
 
 using StructEquality
 using GATlab
@@ -66,3 +66,10 @@ function show_domains(io::IO, f; domain::Bool=true, codomain::Bool=true,
     end
   end
 end
+
+fmap(F::Functor, x) = fmap(x, 
+                           y->ob_map(F, y), 
+                           y->hom_map(F, y), 
+                           impl_type(F, :CodomOb), 
+                           impl_type(F, :CodomHom))
+

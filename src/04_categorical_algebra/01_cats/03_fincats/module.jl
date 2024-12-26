@@ -19,6 +19,7 @@ include("OpFinCat.jl")
 include("FinCatGraphs.jl")
 include("FinCatPres.jl")
 include("FinCatsAsCats.jl")
+include("DiscreteFinCats.jl")
 
 @reexport using .PathCats
 @reexport using .PreorderCats
@@ -26,5 +27,6 @@ include("FinCatsAsCats.jl")
 @reexport using .FinCatGraphs
 @reexport using .FinCatPres
 @reexport using .FinCatsAsCats
+@reexport using .DiscreteFinCats
 
 end # module

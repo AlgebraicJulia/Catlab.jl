@@ -8,6 +8,7 @@ using GATlab
 import ACSets: objects
 
 using .....BasicSets: FinSet
+import .....BasicSets: untag
 using ...FreeDiagrams: ThFreeDiagram
 import ...FreeDiagrams: fmap, cone_objects, cocone_objects
 
@@ -51,7 +52,18 @@ Base.lastindex(d::DiscreteDiagram) = lastindex(d.objects)
 end
 
 """ Apply ob map to the objects of a discrete diagram """
-fmap(d::DiscreteDiagram, o, _) = DiscreteDiagram(o.(d))  
+function fmap(d::DiscreteDiagram, o, _, O::Type, H::Type)
+  DiscreteDiagram(map(d.objects) do elem 
+    o(elem)::O 
+  end)
+end
+
+function untag(d::DiscreteDiagram{Ob}, i::Int, ::Int) where Ob
+  Ob′ = untag(Ob,i)
+  DiscreteDiagram(map(d.objects) do elem 
+    untag(elem, i)::Ob′
+  end)
+end
 
 # Special subtypes
 #-----------------

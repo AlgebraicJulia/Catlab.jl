@@ -67,7 +67,6 @@ end
 const C = Category(TypeCat(SetC()))
 
 @instance ThSubobjectLattice{FinSet,SubFinSet} begin
-  @import ob
 
   meet(A::SubFinSet, B::SubFinSet) = 
     meet(A, B, C, SubOpBoolean())

@@ -5,6 +5,7 @@ using Test, Catlab
 # Identities.
 #-------------
 X = SetOb(Int)
+
 i = SetFunction(IdentityFunction(X))
 @test i(1) == 1
 startswith(sprint(show, i), "id(")

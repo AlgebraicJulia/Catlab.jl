@@ -9,24 +9,22 @@ using .....BasicSets: AbsSet, SingletonSet
 using ..Categories: ThCategoryExplicitSets, Category
 import ..Categories: Category
 
-""" Opposite category, where morphism are reversed.
-
-Call `op(::Cat)` instead of directly instantiating this type.
+""" 
+Terminal category in the category of categories: one object, one id morphism.
 """
-@struct_hash_equal struct TrivialCat
-end
+@struct_hash_equal struct TrivialCat end
 
 # ThCategoryExplicitSets Implementation
 #######################################
 
-@instance ThCategoryExplicitSets{Nothing,Nothing,AbsSet} [model::TrivialCat]   begin
-  dom(f::Nothing) = nothing
+@instance ThCategoryExplicitSets{Nothing,Nothing,AbsSet} [model::TrivialCat]  begin
+  dom(::Nothing) = nothing
 
-  codom(f::Nothing) = nothing
+  codom(::Nothing) = nothing
 
-  id(x::Nothing) = nothing
+  id(::Nothing) = nothing
 
-  compose(f::Nothing,g::Nothing) = nothing
+  compose(::Nothing,::Nothing) = nothing
 
   ob_set() = SetOb(SingletonSet())
 

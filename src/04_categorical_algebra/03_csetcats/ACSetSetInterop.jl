@@ -1,6 +1,10 @@
 """ 
 General utilities for interop between ACSets with Catlab Set+Function 
 abstractions, independent of context of any particular category 
+
+TODO this should be written after we have quite a few examples of pointwise 
+categories, and then we can know which repeated code makes sense to abstract out
+into this file.
 """
 module ACSetSetInterop
 
@@ -73,7 +77,6 @@ FinDomFunction(c::Column{Int,Union{AttrVar,T}}, dom, codom) where {T} =
   FinDomFunction(
     T[c[i] for i in dom], codom
   )
-
 
 function VarFunction(X::ACSet, f::Symbol)
   S = acset_schema(X)

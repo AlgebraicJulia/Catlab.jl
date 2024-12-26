@@ -1,6 +1,6 @@
 module PathCats
 
-export PathCat 
+export PathCat, PathCatAsFinCat
 
 using StructEquality
 
@@ -28,48 +28,24 @@ Morphisms assumed to be paths, composed by concatenation.
   eqs()::Eqs
 end
 
-""" Any type which subtypes this ought implement ThPathCat """
-abstract type PathCatImpl{Ob,Gen} end
   
 # Wrapper type for models of `ThPathCat`
 #######################################
 
-""" 
-Wrapper type for models of `ThPathCat`
+ThPathCat.Meta.@wrapper PathCat
 
-A finitely presented (but not necessarily finite!) category.
-"""
-@struct_hash_equal struct PathCat{Ob,Gen}
-  impl::PathCatImpl{Ob,Gen}
-  function PathCat(impl::PathCatImpl{Ob,Gen}) where {Ob,Gen}
-    implements(impl, ThPathCat) || error("Model isn't a PathCat")
-    new{Ob,Gen}(impl)
-  end
+struct PathCatAsFinCat{Ob,Hom}
+  val::PathCat 
+  PathCatAsFinCat(p::PathCat) = 
+    new{impl_type(p,:Ob), impl_type(p,:Gen)}(p)
 end
 
-GATlab.getvalue(p::PathCat) = p.impl
-
-# 
-src(p::PathCat, x) = ThPathCat.src[getvalue(p)](x)
-
-tgt(p::PathCat, x) = ThPathCat.tgt[getvalue(p)](x)
-
-dom(::PathCat, x::Path) = src(x)
-
-codom(::PathCat, x::Path) = tgt(x)
-
-
-ob_set(p::PathCat) = ThPathCat.ob_set[getvalue(p)]()
-
-gen_set(p::PathCat) = ThPathCat.gen_set[getvalue(p)]()
-
-
-
-GATlab.equations(p::PathCat) = equations(getvalue(p))
+GATlab.getvalue(p::PathCatAsFinCat) = getvalue(p.val)
+GATlab.equations(p::PathCatAsFinCat) = equations(getvalue(p))
 
 
 @instance ThFinCat{Ob,Path{Ob,Gen},Gen,Path{Ob,Gen},FinSet} [
-    model::PathCat{Ob,Gen}] where {Ob,Gen} begin
+    model::PathCatAsFinCat{Ob,Gen}] where {Ob,Gen} begin
 
   src(g::Gen)::Ob = ThPathCat.src[getvalue(model)](g)
   
@@ -90,7 +66,5 @@ GATlab.equations(p::PathCat) = equations(getvalue(p))
   gen_set()::FinSet = gen_set[getvalue(model)]()
 
 end
-
-FinCat(m::PathCatImpl) = FinCat(PathCat(m))
 
 end # module

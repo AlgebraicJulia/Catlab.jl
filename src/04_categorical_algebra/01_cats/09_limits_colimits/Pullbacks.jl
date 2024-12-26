@@ -7,9 +7,16 @@ using GATlab
 using ...Categories: Category
 using ...FreeDiagrams: Multispan, Multicospan
 
-using ..Limits: AbsLimit, JoinAlgorithm, ComposeProductEqualizer
-using ..Products: ProductLimit
-using ..Equalizers: EqLimit
+using ..Limits: AbsLimit, JoinAlgorithm, ComposeProductEqualizer, LimitCone
+using ..Products: ThCategoryUnbiasedProducts
+
+
+@theory ThCategoryPullbacks <: ThCategoryUnbiasedProducts begin
+  MCSpan::TYPE  # type of multicospan
+
+  limit(d::MCSpan)::Limit
+  universal(lim::Limit, d::MCSpan, sp::MSpan)::(apex(sp) → ob(lim))
+end
 
 """ Unlike other limits, there are many different ways to represent a Pullback 
 in Catlab """ 
@@ -43,10 +50,10 @@ for limits.
 
 See also: [`CompositePushout`](@ref).
 """
-struct CompositePullback <: AbsLimit
+struct CompositePullback{Hom} <: AbsLimit
   cone::Multispan
-  prod::ProductLimit
-  eq::EqLimit
+  prod::LimitCone
+  eq::Hom
 end
 
 

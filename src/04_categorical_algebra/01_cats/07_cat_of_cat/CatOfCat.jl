@@ -1,6 +1,6 @@
 module CatOfCat 
 
-export CatC, FinCatC#, FinDomCatC
+export CatC, FinCatC
 
 using StructEquality
 
@@ -43,21 +43,6 @@ presented categories are provided by another module, [`FinCats`](@ref).
 end
 
 @default_model ThCategory{Category, Functor} [model::CatC]
-
-# @struct_hash_equal struct FinDomCatC end
-
-# @instance ThCategory{FinCat, FinDomFunctor} [model::FinDomCatC] begin
-
-#   dom(f::FinDomFunctor)::FinCat = dom[getvalue(f)]()
-
-#   codom(f::FinDomFunctor)::Cat = Cat(codom[getvalue(f)]())
-
-#   id(c::FinCat) = FinDomFunctor(c)
-
-#   compose(f::FinDomFunctor, g::FinDomFunctor)::FinDomFunctor = 
-#     FinDomFunctor(CompositeFinDomFunctor(f,g))
-
-# end
 
 @struct_hash_equal struct FinCatC end
 

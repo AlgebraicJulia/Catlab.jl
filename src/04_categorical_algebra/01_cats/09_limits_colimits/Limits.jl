@@ -1,26 +1,43 @@
 module Limits
 
-export Limit, cone, limit,LimitCone, proj1, proj2, pair
+export Limit, diagram, cone, limit,LimitCone, proj1, proj2, AbsLimit
        
 using StructEquality
+using GATlab
 
 using .....Theories: dom, codom
-import .....Theories: universal
-import .....Theories: pair, proj1, proj2, incl
+import .....Theories: universal, ob
+import .....Theories: proj1, proj2, incl
 
-using ...Categories: Category
+using ...Categories: Category, ThCategoryExplicitSets
 using ...FreeDiagrams
 import ...FreeDiagrams: apex, feet, legs
 using ...FinFunctors: FinDomFunctor
 using ...Diagrams: Diagram
 
-abstract type AbsLimit end
 
+@theory ThCategoryLimitBase <: ThCategoryExplicitSets begin
+  Limit()::TYPE
+  ob(lim::Limit)::Ob
+
+  MSpan::TYPE # type of (multi)spans
+  apex(s::MSpan)::Ob # apex of the span
+end
+
+apex(::WithModel, m::Multispan; context=nothing) = 
+  apex(m;context) # always use dispatch
+
+"""
+`AbsLimit` implementations should be able to recover the diagram that it is a limit of and a computed limit cone.
+"""
+abstract type AbsLimit end
 
 
 cone(lim::AbsLimit) = lim.cone # by default, assume AbsLimit has `cone` field
 
 apex(lim::AbsLimit) = apex(cone(lim))
+
+ob(lim::AbsLimit) = apex(lim)
 
 feet(lim::AbsLimit) = feet(cone(lim))
 
@@ -35,6 +52,16 @@ proj1(lim::AbsLimit) = let (l,_) = legs(lim); l end
 proj2(lim::AbsLimit) = let (_,l) = legs(lim); l end
 
 Base.length(lim::AbsLimit) = length(cone(lim))
+
+ob(::WithModel, x::AbsLimit; context=nothing) = 
+    ob(x; context)
+
+""" 
+By default, computing a universal property with a limit will pull out the
+diagram type so that we can dispatch on it
+"""
+universal(m::WithModel, d::AbsLimit, s::Multispan; context=nothing) = 
+  universal(m, d, getvalue(diagram(d)), s; context)
 
 # Algorithms
 ############
@@ -70,7 +97,10 @@ Most common representation of the result of a limit computation: a limit cone
 """
 @struct_hash_equal struct LimitCone <: AbsLimit
   cone::Multispan
+  diagram::FreeDiagram
 end
+
+diagram(c::LimitCone) = c.diagram
 
 
 # Generic limits
@@ -81,43 +111,5 @@ limit(d::FreeDiagram, m::Category; alg=DefaultLimit()) =
 
 limit(d::FinDomFunctor; alg=DefaultLimit(), kw...) = 
   limit(FreeDiagram(d), codom(d); alg, kw...)
-
-
-
-# Universal interface
-#####################
-
-# """ Coerce spans to multispans when calling `universal` """
-# universal(C, P, s::Span) = universal(C, P, Multispan(s))  
-
-
-# THIS CHECK CODE COULD STILL BE USEFUL
-# if check
-#   co = cone_objects(c.diag)
-#   feet(x) == co || error("Span $(feet(x)) doesn't match cone_objects $co")
-#   bp = BipartiteFreeDiagram(getvalue(c.diag); colimit=false)
-
-#   for i in 1:nv₁(bp)
-#     allequal(map(incident(bp, i, :src)) do j 
-#       x[bp[j, :tgt]] ⋅ bp[j, :hom]
-#     end) || error("Non-commuting cone for ob₁ $i")
-#   end
-# end
-# _universal(getvalue(c.diag), getcategory(c.diag), getvalue(c), x)
-# universal(c::AbsLimit, x::Span; check=false) = universal(c, Multispan(x); check)
-
-# Named universal maps (for no particular Limit kind)
-#####################################################
-
-""" Pairing of morphisms: universal property of products/pullbacks.
-
-To implement for products of type `T`, define the method
-`universal(::BinaryProduct{T}, ::Span{T})` and/or
-`universal(::Product{T}, ::Multispan{T})` and similarly for pullbacks.
-"""
-pair(C, lim::AbsLimit, fs::AbstractVector) = universal(C, lim, Multispan(fs))
-
-pair(C, lim::AbsLimit, f1::T, f2::T) where {T} = pair(C, lim, [f1, f2])
-
 
 end # module

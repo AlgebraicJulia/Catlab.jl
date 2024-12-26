@@ -59,7 +59,7 @@ Base.lastindex(comp::ComposableMorphisms) = lastindex(comp.homs)
 objects(p::ComposableMorphisms) = [dom(p), codom.(hom(p))...]
 
 """ Apply hom map to the homs """
-fmap(d::ComposableMorphisms, _, h) = ComposableMorphisms(h.(d))  
+fmap(d::ComposableMorphisms, _, h, O::Type, H::Type) = ComposableMorphisms(Vector{H}(h.(d)))  
 
 
 """ Pair of composable morphisms in a category.

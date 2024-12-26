@@ -45,4 +45,4 @@ h, p, q = Hom(:h, X, Y), Hom(:p, B, X), Hom(:q, D, Y)
 β = SquareDiagram(p, q, g, h)
 @test pcompose(α, β) == SquareDiagram(m⋅p, n⋅q, f, h)
 
-end
+end # module

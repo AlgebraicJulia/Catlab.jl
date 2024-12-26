@@ -67,7 +67,6 @@ function hom(A::SubACSetComponentwise{T}) where T <: ACSet
 end
 
 @instance ThSubobjectBiHeytingAlgebra{ACSet,SubACSet} begin
-  @import ob
   meet(A::SubACSet, B::SubACSet) = meet(A, B, SubOpBoolean())
   join(A::SubACSet, B::SubACSet) = join(A, B, SubOpBoolean())
   top(X::ACSet) = top(X, SubOpWithLimits())

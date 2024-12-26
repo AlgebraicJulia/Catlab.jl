@@ -3,10 +3,13 @@
 module CSets
 using Reexport
 
+include("Heteromorphisms.jl")
+@reexport using .Heteromorphisms
+
 include("CSets.jl")
 
-include("CodomsOfACSet.jl")
-@reexport using .CodomsOfACSet
+include("CollageCats.jl")
+@reexport using .CollageCats
 
 include("ACSetFunctors.jl")
 @reexport using .ACSetFunctors

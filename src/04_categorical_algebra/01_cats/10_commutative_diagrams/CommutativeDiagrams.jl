@@ -113,4 +113,4 @@ hom(f::SquareHom) = f.hom
   end
 end
 
-end
+end # module

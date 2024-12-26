@@ -8,7 +8,7 @@ module TestLimits
 using Test, Catlab
 
 A, B, C = Ob(FreeCategory, :A, :B, :C)
-const M = Category(TypeCat(FreeCategory.Meta.M()))
+const M = Category(TypeCat(FreeCategory.Meta.M))
 
 # Limits
 ########
@@ -16,7 +16,7 @@ DD(x) = DiscreteDiagram(x)
 # Limit data structure.
 f, g = Hom(:f, C, A), Hom(:g, C, B)
 dia = DD([A,B])
-lim = Limit(Diagram(dia, M), Span(f,g))
+lim = limit(Diagram(dia, M), Span(f,g))
 @test ob(lim) == C
 @test apex(lim) == C
 @test legs(lim) == [f,g]

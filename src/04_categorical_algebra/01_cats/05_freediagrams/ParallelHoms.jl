@@ -46,16 +46,17 @@ cone_objects(para::ParallelMorphisms) = SVector(dom(para))
 cocone_objects(para::ParallelMorphisms) = SVector(codom(para))
 
 """ Replace objects and homs via functions """
-fmap(d::ParallelMorphisms, o, h) = 
-  ParallelMorphisms(o(d.dom), o(d.codom), h.(d.homs))
+fmap(d::ParallelMorphisms, o, h, O::Type, H::Type) = 
+  ParallelMorphisms(o(d.dom)::O, o(d.codom)::O, Vector{H}(h.(d.homs)))
 
 
-function ParallelMorphisms(xs::Hs) where {H, Hs<:AbstractVector{H}}
+function ParallelMorphisms(xs::Hs; cat=nothing) where {H, Hs<:AbstractVector{H}}
   isempty(xs) && error("Parallel morphisms must be nonempty")
-  allequal(dom.(xs)) || error("Parallel morphism must share domain")
-  allequal(codom.(xs)) || error("Parallel morphism must share domain")
-  d, c = dom(first(xs)), codom(first(xs))
+  𝒞 = isnothing(cat) ? Dispatch(ThCategory, [typeof(dom(first(xs))), H]) : cat
+  d, c = dom[𝒞](first(xs)), codom[𝒞](first(xs))
   Ob = Union{typeof(d), typeof(c)}
+  allequal(dom[𝒞].(xs)) || error("Parallel morphism must share domain")
+  allequal(codom[𝒞].(xs)) || error("Parallel morphism must share domain")
   ParallelMorphisms{Ob,H,Hs}(d, c, xs)
 end
 

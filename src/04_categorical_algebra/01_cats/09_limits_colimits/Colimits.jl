@@ -1,19 +1,41 @@
 module Colimits 
 export Colimit, AbsColimit, initial, cocone, colimit, pushout,ColimitCocone, 
-       CompositeColimit, coproduct, create,copair, proj, coproj1, coproj2, 
+       CompositeColimit, coproduct, create, proj, coproj1, coproj2, 
       CompositePushout,  NamedColimit, ComposeCoproductCoequalizer
 
 using StructEquality
+using GATlab
 
-using .....Theories: dom, codom, universal
-import .....Theories: copair, coproj1, coproj2, factorize, proj
+using .....Theories: dom, codom
+import .....Theories: coproj1, coproj2, factorize, proj, ob, universal
 
-using ...Categories: Category
+using ...Categories: Category, ThCategoryExplicitSets
 using ...FreeDiagrams
 import ...FreeDiagrams: apex, feet, legs
 using ...FinFunctors: FinDomFunctor
 using ...Diagrams: Diagram
+import ..Limits: diagram
 
+"""
+Colimit should be sent to AbsColimit.
+Legs should be sent to Vector{Hom} for whatever Hom is.
+"""
+@theory ThCategoryColimitsBase <: ThCategoryExplicitSets begin 
+  Colimit()::TYPE
+  ob(colim::Colimit)::Ob
+
+  MCospan::TYPE # type of (multi)cospans
+  apex(s::MCospan)::Ob # apex of the cospan
+end
+
+apex(::WithModel, m::Multicospan; context=nothing) = 
+  apex(m; context) # always use dispatch
+
+
+"""
+`AbsColimit` implementations should be able to recover the (free) diagram that
+it is a colimit of and a computed colimit cocone.
+"""
 abstract type AbsColimit end
 
 
@@ -32,6 +54,28 @@ proj(coeq::AbsColimit) = only(legs(coeq))
 coproj1(colim::AbsColimit) = let (l,_) = legs(colim); l end
 
 coproj2(colim::AbsColimit) = let (_,l) = legs(colim); l end
+
+ob(::WithModel, x::AbsColimit; context=nothing) = ob(x) # always use dispatch
+
+
+""" Coproducts of a discrete diagram are always represented as Multispans """
+@struct_hash_equal struct ColimitCocone <: AbsColimit 
+  cocone::Multicospan
+  diagram::FreeDiagram
+end 
+
+ob(c::ColimitCocone) = apex(c.cocone)
+
+cocone(c::ColimitCocone) = c.cocone
+
+diagram(c::ColimitCocone) = c.diagram
+
+""" 
+By default, computing a universal property with a limit will pull out the
+diagram type so that we can dispatch on it
+"""
+universal(m::WithModel, d::AbsColimit, s::Multicospan; context=nothing) = 
+  universal(m, d, getvalue(diagram(d)), s; context)
 
 # Colimit algorithms
 ######################
@@ -56,19 +100,6 @@ conventions and add tags where necessary to avoid name clashes.
 """
 @struct_hash_equal struct NamedColimit <: ColimitAlgorithm end 
 
-
-# Colimit Implementations 
-#########################
-
-""" 
-Most common representation of the result of a limit computation: a limit cone
-"""
-@struct_hash_equal struct ColimitCocone <: AbsColimit
-  cocone::Multicospan
-end
-
-
-
 # Generic colimits
 ####################
 
@@ -77,37 +108,6 @@ colimit(d::FreeDiagram, m::Category; alg=DefaultColimit())  =
 
 colimit(d::FinDomFunctor; alg=DefaultColimit(), kw...) = 
   colimit(FreeDiagram(d), codom(d); alg, kw...)
-
-
-
-# Named colimits
-##################
-
-
-
-
-# """
-# Apply the universal property of a colimit to a multicospan
-# Optionally validate the cospan.
-# """
-# function universal(c::Colimit, x::Multicospan; check=false)
-#   if check
-#     co = cocone_objects(c.diag)
-#     feet(x) == co || error("Cospan $(feet(x)) doesn't match cocone_objects $co")
-#     bp = BipartiteFreeDiagram(getvalue(c.diag); colimit=true)
-
-#     for i in 1:nv₂(bp)
-#       allequal(map(incident(bp, i, :tgt)) do j 
-#         bp[j, :hom]  ⋅ x[bp[j, :tgt]] 
-#       end) || error("Non-commuting cocone for ob₂ $i")
-#     end
-#   end
-#   _universal(getvalue(c.diag), getcategory(c.diag), getvalue(c), x)
-# end
-
-# universal(c::Colimit, x::Cospan; check=false) = universal(c, Multicospan(x); check)
-
-
 
 # Named universal maps 
 ######################
@@ -119,21 +119,5 @@ function factorize(colim::AbsColimit, h)
   universal(colim, Multicospan([h]))
 end
 
-
-""" Copairing of morphisms: universal property of coproducts/pushouts.
-
-To implement for coproducts of type `T`, define the method
-`universal(::BinaryCoproduct{T}, ::Cospan{T})` and/or
-`universal(::Coproduct{T}, ::Multicospan{T})` and similarly for pushouts.
-"""
-copair(C, colim::AbsColimit, fs::AbstractVector)  =
-  universal(C, colim, Multicospan(fs))
-
-copair(C, lim::AbsColimit, f1::T,f2::T) where {T} = 
-  copair(C, lim, [f1, f2])
-  
-# copair(f, g, m::Category) = copair([f,g], m)
-# copair(C, fs::AbstractVector)  = 
-#   copair(C, coproduct(C, codom.(fs)), fs)
 
 end # module

@@ -1,4 +1,4 @@
-module SetCLimits 
+module SetCat 
 
 export SetC
 
@@ -27,63 +27,59 @@ using ...Cats
   end
 end
 
-@instance ThCategoryWithTerminal{AbsSet,SetFunction,TerminalLimit
-                                } [model::SetC] begin 
-  @import Ob, Hom, id, compose, dom, codom, →, ⋅, ◊
+# @instance ThCategoryWithTerminal{AbsSet,SetFunction,TerminalLimit
+#                                 } [model::SetC] begin 
 
-  terminal()::TerminalLimit = TerminalLimit{AbsSet,SetFunction}(FinSet(nothing))
-  ob(t::TerminalLimit)::AbsSet = t.ob
-  delete(::TerminalLimit, a::AbsSet) = 
-    SetFunction(ConstantFunction(nothing, a, FinSet(nothing)))
+#   terminal()::TerminalLimit = TerminalLimit{AbsSet,SetFunction}(FinSet(nothing))
+#   ob(t::TerminalLimit)::AbsSet = t.ob
+#   delete(::TerminalLimit, a::AbsSet) = 
+#     SetFunction(ConstantFunction(nothing, a, FinSet(nothing)))
     
-end
+# end
 
-@instance ThCategoryWithInitial{AbsSet,SetFunction,InitialColimit
-                                } [model::SetC] begin 
-  @import Ob, Hom, id, compose, dom, codom, →, ⋅, □
+# @instance ThCategoryWithInitial{AbsSet,SetFunction,InitialColimit
+#                                 } [model::SetC] begin 
 
-  initial()::InitialColimit = InitialColimit{AbsSet,SetFunction}(FinSet(Set{Union{}}()))
-  ob(t::InitialColimit)::AbsSet = t.ob
-  create(::InitialColimit, a::AbsSet) = FinDomFunction(Dict(), a)
-end
-
+#   initial()::InitialColimit = InitialColimit{AbsSet,SetFunction}(FinSet(Set{Union{}}()))
+#   ob(t::InitialColimit)::AbsSet = t.ob
+#   create(::InitialColimit, a::AbsSet) = FinDomFunction(Dict(), a)
+# end
 
 
-@instance ThCategoryUnbiasedProducts{AbsSet,SetFunction,TerminalLimit,
-    DiscreteDiagram, Multispan,ProductLimit} [model::SetC] begin
 
-  @import Ob, Hom, id, compose, dom, codom, →, ⋅, terminal, Terminal, ob, delete, ◊
+# @instance ThCategoryUnbiasedProducts{AbsSet,SetFunction,TerminalLimit,
+#     DiscreteDiagram, Multispan,LimitCone} [model::SetC] begin
 
-  ap(s::Multispan)::AbsSet = apex(s)
+#   ap(s::Multispan)::AbsSet = apex(s)
 
-  ob(t::ProductLimit)::AbsSet = t.ob
+#   ob(t::LimitCone)::AbsSet = t.ob
 
-  function product(a::DiscreteDiagram)::ProductLimit
-    X = if all(s -> s isa FinSet, a)
-      FinSet(ProdFinSet(collect(a)))
-    else 
-      SetOb(ProdSet(collect(a)))
-    end
-    πs = [ SetFunction(x -> getindex(x, i), X, Xi) for (i, Xi) in enumerate(a)]
-    ProductLimit(Multispan(X, πs))
-  end
+#   function product(a::DiscreteDiagram)::LimitCone
+#     X = if all(s -> s isa FinSet, a)
+#       FinSet(ProdFinSet(collect(a)))
+#     else 
+#       SetOb(ProdSet(collect(a)))
+#     end
+#     πs = [ SetFunction(x -> getindex(x, i), X, Xi) for (i, Xi) in enumerate(a)]
+#     LimitCone(Multispan(X, πs))
+#   end
 
-  function universal(p::ProductLimit, span::Multispan)
-    Xs = feet(p)
-    if !all(X -> X isa FinSet, Xs)
-      @assert length(cone(p)) == length(span)
-      fs = Tuple(legs(span))
-      SetFunction(x -> map(f -> f(x), fs), apex(span), ob(p))
-    else
-      ns = length.(codom.(span))
-      indices = LinearIndices(Tuple(ns))
-      v = map(apex(cone)) do i 
-        indices[(f(i) for f in span)...]
-      end
-      FinFunction(v, apex(res))  
-    end
-  end
-end
+#   function universal(p::LimitCone, span::Multispan)
+#     Xs = feet(p)
+#     if !all(X -> X isa FinSet, Xs)
+#       @assert length(cone(p)) == length(span)
+#       fs = Tuple(legs(span))
+#       SetFunction(x -> map(f -> f(x), fs), apex(span), ob(p))
+#     else
+#       ns = length.(codom.(span))
+#       indices = LinearIndices(Tuple(ns))
+#       v = map(apex(cone)) do i 
+#         indices[(f(i) for f in span)...]
+#       end
+#       FinFunction(v, apex(res))  
+#     end
+#   end
+# end
 
 
 end # module

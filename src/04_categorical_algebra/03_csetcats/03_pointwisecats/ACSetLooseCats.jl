@@ -23,3 +23,5 @@ colimit in C-Set.
 For the distinction between tight and loose, see [`ACSetTranformation`](@ref).
 """
 struct ACSetLoose end
+
+# TODO

@@ -11,3 +11,4 @@ For the distinction between tight and loose, see [`ACSetTranformation`](@ref).
 """
 struct ACSetTight end 
 
+# TODO

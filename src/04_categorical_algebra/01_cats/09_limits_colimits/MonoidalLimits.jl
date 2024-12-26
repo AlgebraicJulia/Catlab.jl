@@ -5,9 +5,8 @@ using GATlab
 
 using .....Theories
 
-using ..Products: TypedCatWithProducts, CatWithProducts, ThCategoryUnbiasedProducts
+using ..Products: TypedCatWithProducts, CatWithProducts, ThCategoryUnbiasedProducts, product
 
-using .ThCategoryUnbiasedProducts: product
 import .ThCartesianCategory: otimes, munit
 
 ThCartesianCategory.Meta.@typed_wrapper CartesianMonoidal
@@ -23,7 +22,6 @@ products have been implemented following the limits interface.
 """
 @instance ThCartesianCategory{Ob, Hom} [model::TypedCatWithProducts{Ob,Hom}
                                        ] where {Ob,Hom} begin
-  @import Ob, Hom, dom, codom, →, pair, delete # TODO
 
   otimes(A::Ob, B::Ob)::Ob = ob(product(CatWithProducts(getvalue(model)), A, B))
 
@@ -50,7 +48,8 @@ products have been implemented following the limits interface.
   proj2(A::Ob, B::Ob) = proj2(product(CatWithProducts(getvalue(model)), A, B))
 
   id(A::Ob) = id(CatWithProducts(getvalue(model)), A)
-  ◊(A::Ob) = ◊(CatWithProducts(getvalue(model)), A)
+  pair(A::Hom, B::Hom) = error("TODO")
+  delete(A::Ob) = error("TODO")
   compose(A::Hom,B::Hom) = compose(CatWithProducts(getvalue(model)), A, B)
 end
 
