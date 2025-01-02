@@ -5,7 +5,7 @@ using StructEquality
 
 using GATlab
 
-import ....Theories: dom, codom, compose, id
+import ....Theories: dom, codom, compose, id, ThCategory
 import ....BasicSets: force
 
 using ..FreeDiagrams, ..LimitsColimits

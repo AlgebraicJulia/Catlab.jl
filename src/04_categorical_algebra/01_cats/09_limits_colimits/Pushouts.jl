@@ -4,13 +4,12 @@ export ThCategoryWithPushouts, CatWithPushouts, pushout, composite_colimit, comp
 using StructEquality
 using GATlab
 
-using ...Categories: Category
+using ...Categories: Category, compose
 using ...FreeDiagrams
 
 using ..LimitsColimits: AbsColimit, ThCategoryColimitBase, ColimitCocone, 
                         CatWithCoequalizers, coproduct, coequalizer, factorize
 import ..Colimits: diagram, universal, colimit
-using .ThCategory: compose
 
 """
 Theory of unbiased pushouts, where `MSpan` is intended to be sent to multispans in the category.

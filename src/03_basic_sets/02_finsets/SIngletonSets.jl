@@ -10,8 +10,7 @@ using ..FinSets: ThFinSet
 import ..FinSets: FinSet
 
 """ A set with one element """
-@struct_hash_equal struct SingletonSet
-end 
+@struct_hash_equal struct SingletonSet end 
 
 
 # Other methods

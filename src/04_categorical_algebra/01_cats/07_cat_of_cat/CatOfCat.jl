@@ -8,7 +8,7 @@ using GATlab
 
 using ....Theories: @default_model, dom, codom, id, compose
 using ....BasicSets: AbsSet, SetOb
-using ..Categories: Category, Cat, ThCategoryExplicitSets
+using ..Categories: Category, Cat, ThCategoryExplicitSets, ThCategory
 using ..Functors: Functor, ThFunctor
 using ..CompFunctor: CompositeFunctor
 using ..FinCats: FinCat

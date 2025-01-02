@@ -1,0 +1,8 @@
+include("Paths.jl")
+include("Categories.jl")
+include("FinCats.jl")
+include("Functors.jl")
+include("FreeDiagrams.jl")
+include("CommutativeDiagrams.jl")
+include("Limits.jl")
+# include("Diagrams.jl")

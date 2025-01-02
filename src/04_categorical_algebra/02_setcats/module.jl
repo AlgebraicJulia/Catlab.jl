@@ -5,6 +5,10 @@ using Reexport
 include("SkelFinSetCat/module.jl") # SetFunctions
 @reexport using .SkelFinSetCat
 
+include("FinSetCat/module.jl") # SetFunctions
+@reexport using .FinSetCat
+
+
 include("SetCat.jl") # SetFunctions
 @reexport using .SetCat
 

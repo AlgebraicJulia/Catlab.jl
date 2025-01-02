@@ -5,7 +5,7 @@ using StructEquality
 using GATlab
 
 import ....Theories: dom, codom, id, compose, ⋅, ∘
-using ..FinCats, ..FreeDiagrams
+using ..Cats, ..FinCats, ..FreeDiagrams
 using ..FinFunctors: mapvals, FinFunctor, FinDomFunctor
 import ..FinFunctors: collect_ob, collect_hom
 using ..NatTrans: Transformation

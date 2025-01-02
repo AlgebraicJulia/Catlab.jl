@@ -24,12 +24,31 @@ and codomain are `FinSet(FinSetInt(n::Int))`.
       error("Domain mismatch in composition: $(codom(f)) != $(dom(g))")
     SetFunction(f, g)
   end
+
 end
 
 @instance ThCategoryExplicitSets{FinSetInt, FinFunction, AbsSet
                                 } [model::SkelFinSet] begin
+
   ob_set() = SetOb(FinSetInt)
+
   hom_set() = SetOb(FinFunction)
+
 end
 
+@instance ThCategoryColimitBase{FinSetInt,FinFunction,AbsSet,AbsColimit,
+                                Multicospan} [model::SkelFinSet] begin 
 
+  ob(t::AbsColimit)::FinSetInt = ob(t)
+
+  apex(t::Multicospan)::FinSetInt = t.apex
+
+end 
+
+@instance ThCategoryLimitBase{FinSetInt,FinFunction,AbsSet,AbsLimit,
+                                Multispan} [model::SkelFinSet] begin 
+
+  ob(t::AbsLimit)::FinSetInt = ob(t)
+
+  apex(t::Multispan)::FinSetInt = t.apex
+end 

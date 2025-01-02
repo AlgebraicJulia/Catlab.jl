@@ -4,7 +4,7 @@ The focus is on categories and monoidal categories, but other related structures
 are also included.
 """
 module Theories
-export CategoryExpr, ObExpr, HomExpr
+export CategoryExpr, ObExpr, HomExpr, ThCategory
 
 using Reexport
 
@@ -13,6 +13,7 @@ import AlgebraicInterfaces: dom, codom, compose, id, Ob, ob, Hom, hom, munit,
   mcompose, ocompose, oapply, attr, attrtype
 
 @reexport using GATlab
+using GATlab.Stdlib: ThCategory
 import GATlab: show_unicode, show_latex
 
 """ Base type for GAT expressions in categories or other categorical structures.

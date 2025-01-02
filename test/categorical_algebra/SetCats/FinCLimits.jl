@@ -3,11 +3,6 @@ module TestSetCLimits
 using Test, Catlab, GATlab
 using .ThCategory
 
-const C = Category(TypeCat(SetC()))
-const IC = CatWithInitial(SetC())
-const TC = CatWithTerminal(SetC())
-const PC = CatWithProducts(SetC())
-
 # const CC = CatWithCoproducts(SetC())
 # const CMC = CocartesianMonoidal(TypedCatWithProducts(SetC()))
 
@@ -15,9 +10,6 @@ const PC = CatWithProducts(SetC())
 ###########################
 
 # expected = Colimit(Diagram(C), Multicospan(FinSet(), FinFunction[]))
-I = initial(IC)
-@test ob(I) == FinSet(Set{Union{}}())
-@test collect(create(IC, I, FinSet(4)) ) == Int[]
 
 
 T = terminal(TC)

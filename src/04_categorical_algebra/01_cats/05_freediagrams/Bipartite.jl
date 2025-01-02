@@ -8,7 +8,7 @@ using StructEquality
 
 using ACSets, GATlab 
 
-import .....Theories: hom
+import .....Theories: hom, ThCategory
 using .....BasicSets: FinSet
 using .....Graphs
 import .....Graphs: nv₁, nv₂

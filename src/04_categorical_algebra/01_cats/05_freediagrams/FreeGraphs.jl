@@ -4,6 +4,7 @@ export FreeGraph
 
 using GATlab, ACSets
 
+using .....Theories: ThCategory
 using .....Graphs
 using .....BasicSets: FinSet
 using ...FreeDiagrams: FreeDiagram, ThFreeDiagram, obtype, homtype, obset, homset

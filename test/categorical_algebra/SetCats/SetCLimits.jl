@@ -5,26 +5,6 @@ using Test, Catlab
 # Limits
 ########
 
-const C = Category(TypeCat(SetC()))
-const TC = CatWithTerminal(SetC())
-const PC = CatWithProducts(SetC())
-const CMC = CartesianMonoidal(TypedCatWithProducts(SetC()))
-
-# Terminal object.
-#------------------
-T = terminal(TC)
-@test ob(T) == FinSet(nothing)
-@test delete(TC, T, SetOb(Int))(3) === nothing
-@test ◊(TC, SetOb(Int))(3) === nothing
-
-# Trivial product.
-#-----------------
-lim = limit(C, SingletonDiagram(SetOb(Int)))
-@test ob(lim) == SetOb(Int)
-
-f = SetFunction(length, SetOb(Vector{String}), SetOb(Int))
-@test universal(C, lim, Multispan([f])) === f
-
 # Binary product.
 #-----------------
 DD = DiscreteDiagram([SetOb(Int), SetOb(String)])

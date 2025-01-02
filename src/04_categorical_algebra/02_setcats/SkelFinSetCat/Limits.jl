@@ -16,9 +16,6 @@ using ..SkelFinSetCat
 @instance ThCategoryWithTerminal{FinSetInt, FinFunction, AbsSet, AbsLimit, 
                                  Multispan, EmptyDiagram,
                                 } [model::SkelFinSet] begin 
-  ob(x::AbsLimit) = ob(x) # always use dispatch
-  apex(x::Multispan) = apex(x) # always use dispatch
-
   limit(::EmptyDiagram)::AbsLimit = 
     TerminalLimit{FinSetInt,FinFunction}(FinSetInt(1))
 

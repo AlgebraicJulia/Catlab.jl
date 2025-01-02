@@ -4,7 +4,6 @@ export OpCat, op
 using StructEquality
 
 using GATlab
-import GATlab: op
 
 using .....BasicSets: AbsSet
 using ..Categories

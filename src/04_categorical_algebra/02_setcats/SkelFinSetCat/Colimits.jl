@@ -16,10 +16,6 @@ import ....Cats: composite_universal, diagram
 @instance ThCategoryWithInitial{FinSetInt,FinFunction,AbsSet,AbsColimit,
     Multicospan, EmptyDiagram} [model::SkelFinSet] begin 
 
-  ob(t::AbsColimit)::FinSetInt = ob(t)
-
-  apex(t::Multicospan)::FinSetInt = t.apex
-
   colimit(::EmptyDiagram)::AbsColimit = 
     InitialColimit{FinSetInt,FinFunction}(FinSetInt(0))
 

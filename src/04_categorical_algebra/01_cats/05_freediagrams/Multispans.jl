@@ -6,13 +6,13 @@ using StaticArrays: StaticVector, SVector
 using StructEquality, MLStyle
 using GATlab 
 
+using .....Theories: dom, codom, ThCategory
 using .....BasicSets: FinSet
 import .....BasicSets: left, right, untag
 
 using ...FreeDiagrams: ThFreeDiagram, FreeDiagram
 import ...FreeDiagrams: fmap, cone_objects, cocone_objects, specialize
 
-using .ThCategory: dom, codom
 using .ThFreeDiagram
 
 #############################################

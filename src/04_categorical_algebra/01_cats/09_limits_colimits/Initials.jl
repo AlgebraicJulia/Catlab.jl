@@ -7,7 +7,7 @@ using GATlab
 using GATlab.Syntax.TheoryInterface: WithModel
 
 import .....BasicSets: untag
-import .....Theories: initial, create, □, universal, ob
+import .....Theories: initial, create, □, universal, ob, ThCategory
 import ...Functors: fmap
 using ...FreeDiagrams
 import ...FreeDiagrams: apex

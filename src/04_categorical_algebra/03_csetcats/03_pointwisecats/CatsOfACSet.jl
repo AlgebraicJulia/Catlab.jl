@@ -5,10 +5,9 @@ using ACSets, GATlab
 import ACSets: acset_schema
 
 using .....BasicSets: AbsSet, SetOb
-using ....Cats: Category, ThCategoryExplicitSets
+using ....Cats: Category, ThCategoryExplicitSets, dom, codom, compose, id, ThCategory
 using ...ACSetTransformations: ACSetTransformation
 using ...CSets
-using .ThCategory
 
 
 @instance ThCategory{ACSet, ACSetTransformation} [model::ACSetCategory] begin

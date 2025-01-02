@@ -4,9 +4,9 @@ export OppositeFinFunctor
 
 using StructEquality
 using GATlab
-import GATlab: op, getvalue
 
 using ...Categories: Cat, obtype, homtype, dom, codom
+import ...Categories: op
 using ...FinCats: FinCat, gentype
 
 using ..FinFunctors: ThFinDomFunctor, FinDomFunctor, ob_map, gen_map
@@ -27,7 +27,7 @@ end
 # Accessor 
 ##########
 
-getvalue(F::OppositeFinDomFunctor) = F.func
+GATlab.getvalue(F::OppositeFinDomFunctor) = F.func
 
 # Constructors
 ##############

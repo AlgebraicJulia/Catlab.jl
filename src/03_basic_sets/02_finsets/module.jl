@@ -6,20 +6,30 @@ using Reexport
 
 include("FinSets.jl")
 include("FinSetInts.jl")
-include("SingletonSets.jl")
-include("EitherFinSet.jl")
-include("TabularSet.jl")
-include("FinSetHash.jl")
-include("FinSetVect.jl")
-include("SumFinSets.jl")
-include("ProdFinSets.jl")
-
 @reexport using .FinSetInts
+
+include("SingletonSets.jl")
 @reexport using .SingletonSets
+
+include("EmptySets.jl")
+@reexport using .EmptySets
+
+include("EitherFinSet.jl")
 @reexport using .EitherFSet
+
+include("TabularSet.jl")
 @reexport using .TabSet
+
+include("FinSetHash.jl")
 @reexport using .FSetHash
+
+include("FinSetVect.jl")
 @reexport using .FSetVect
+
+include("SumFinSets.jl")
 @reexport using .SumFinSets
+
+include("ProdFinSets.jl")
 @reexport using .ProdFinSets
+
 end # module

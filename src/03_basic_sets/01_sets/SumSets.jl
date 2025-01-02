@@ -1,6 +1,6 @@
 module SumSets 
 
-export SumSet, TaggedElem, Tagged, untag
+export SumSet, TaggedElem, Tagged, untag, getidx
 
 using StructEquality, MLStyle
 

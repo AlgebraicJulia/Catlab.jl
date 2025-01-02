@@ -2,7 +2,8 @@ module Singletons
 export SingletonLimit, SingletonColimit
 
 using StructEquality
-using GATlab: WithModel, getvalue
+using GATlab: WithModel, getvalue, @model_method
+
 using ...Categories: Category, id, ThCategory
 using ...FreeDiagrams
 import ...FreeDiagrams: ob
@@ -22,16 +23,17 @@ import ..Colimits: cocone, colimit
   end
 end
 
-function limit(m, d::SingletonDiagram; context=nothing)
+function limit(m::WithModel, d::SingletonDiagram; context=nothing)
   x = only(d)
-  SingletonLimit(x, m)
+  SingletonLimit(x, getvalue(m))
 end
 
 cone(lim::SingletonLimit) = SMultispan{1}(lim.x, lim.id_x)
 
-diagram(lim::SingletonLimit) = SingletonDiagram(lim.ob)
+diagram(lim::SingletonLimit) = SingletonDiagram(lim.x)
 
-universal(lim::SingletonLimit, ::Multispan) = lim.id_x
+@model_method universal
+universal(::WithModel, ::SingletonLimit, f::Multispan) = only(f)
 
 
 # Colimits

@@ -18,8 +18,13 @@ vector length.
 """
 @struct_hash_equal struct FinFunctionDict{T<:AbsSet}
   val::Dict
+  dom::FinSet
   codom::T
 end
+
+""" Default assumed domain """
+FinFunctionDict(val::Dict, codom::AbsSet) = 
+  FinFunctionDict(val, FinSet(Set(collect(keys(val)))), codom)
 
 # Accessor
 ##########
@@ -43,7 +48,7 @@ end
 @instance ThSetFunction{Any, SetFunction, FinSet, T
                        } [model::FinFunctionDict{T}] where T begin
 
-  dom()::AbsSet = FinSet(Set(collect(keys(getvalue(model)))))
+  dom()::AbsSet = model.dom
 
   codom()::T = model.codom
 
@@ -60,6 +65,11 @@ FinFunction(f::AbstractDict) = FinFunction(f, FinSet(Set(values(f))))
 """ Default `FinFunction` from a `AbstractDict` and codom"""
 FinFunction(f::AbstractDict, cod::FinSet) = 
   FinFunction(FinFunctionDict(f, cod))
+
+  """ Default `FinFunction` from a `AbstractDict` and codom"""
+FinFunction(f::AbstractDict, dom::FinSet, cod::FinSet) = 
+  FinFunction(FinFunctionDict(f, dom, cod))
+
 
 FinDomFunction(f::AbstractDict, cod::AbsSet) = 
   FinDomFunction(FinFunctionDict(f, cod))

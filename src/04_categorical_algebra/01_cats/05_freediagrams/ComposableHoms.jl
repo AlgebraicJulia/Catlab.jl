@@ -5,11 +5,11 @@ using StaticArrays: StaticVector, SVector
 using StructEquality
 using GATlab 
 
+import .....Theories: dom, codom
 using .....BasicSets: FinSet
 using ...FreeDiagrams: ThFreeDiagram, FreeDiagram
 import ...FreeDiagrams: fmap, specialize
 
-import .ThCategory: dom, codom
 
 """ Composable morphisms in a category.
 

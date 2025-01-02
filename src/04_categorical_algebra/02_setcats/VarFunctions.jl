@@ -7,7 +7,7 @@ using StructEquality
 using GATlab
 import GATlab: getvalue
 
-import ....Theories: dom, codom 
+import ....Theories: dom, codom, ThCategory
 using ....BasicSets
 import ....BasicSets: left, right, force, preimage, is_monic, is_epic
 

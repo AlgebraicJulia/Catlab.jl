@@ -5,11 +5,12 @@ export OppositeFinCat
 using StructEquality
 
 using GATlab 
-import GATlab: getvalue, op, equations
+import GATlab: getvalue, equations
 
 using ......BasicSets: FinSet
 using ...Paths: Path
 using ...Categories: obtype, homtype, ob_set, hom_set
+import ...Categories: op
 using ..FinCats: ThFinCat, gentype, gen_set, src, tgt
 import ..FinCats: FinCat
 

@@ -1,9 +1,10 @@
 export Category, Cat, dom, codom, compose, id, obtype, homtype, ob_set, hom_set,
-       ThCategoryExplicitSets
+       ThCategoryExplicitSets, ThCategory
 
 using StructEquality
 
 using GATlab
+using GATlab.Stdlib: ThCategory
 
 import ....Theories: dom, codom, compose, id 
 using ....BasicSets: AbsSet

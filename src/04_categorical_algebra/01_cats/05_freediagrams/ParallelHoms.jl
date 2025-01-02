@@ -7,11 +7,11 @@ using StaticArrays: StaticVector, SVector
 using StructEquality
 using GATlab 
 
+import .....Theories: dom, codom, hom, ThCategory
 using .....BasicSets: FinSet
 using ...FreeDiagrams: ThFreeDiagram, FreeDiagram
 import ...FreeDiagrams: fmap, cone_objects, cocone_objects, specialize
 
-import .ThCategory: dom, codom
 
 @struct_hash_equal struct ParallelMorphisms{Ob, Hom, Homs<:AbstractVector{Hom}}
   dom::Ob

@@ -1,72 +1,51 @@
-module FinCLimits 
 
-using DataStructures, StructEquality, StaticArrays, GATlab
+module FinSetCatLimits
 
-using ACSets: incident, copy_parts!
-using GATlab: ThCategory
-using .ThCategory
+using StructEquality, StaticArrays
 
-using ....Theories: ThCocartesianCategory, hom
-using ....Graphs
-using ....BasicSets
-using ....BasicSets.FinFunctions: ensure_indexed
+using GATlab
 
-using ...Cats
-using ...Cats.FreeDiagrams: BipartiteFreeDiagram, objects
-using ...Cats.LimitsColimits: LimitAlgorithm, NamedColimit, LimitImpl
-import ...Cats.LimitsColimits: limit, colimit, _universal, cone, ob
+using .....Theories, .....Graphs, .....BasicSets
+using ....Cats
+using ..FinSetCat: FinSetC
 
-# Structs
-#########
 
-""" Category of finite sets and functions """
-@struct_hash_equal struct FinSetC end
+############
+# Terminal #
+############
 
-"""
-The normal Default colimit alg will be to check if the diagram is in FinSetInt,
-otherwise to use NamedColimits. `DefaultAlg′ is the default alg for FinSetInt
-colimits.
-"""
-@struct_hash_equal struct DefaultAlg′ <: LimitAlgorithm end 
+@instance ThCategoryWithTerminal{FinSet, FinFunction, AbsSet, AbsLimit, 
+                                 Multispan, EmptyDiagram,
+                                } [model::FinSetC] begin 
+  limit(::EmptyDiagram)::AbsLimit = 
+    TerminalLimit{FinSet,FinFunction}(FinSet(nothing))
 
-""" Limit of finite sets with a reverse mapping or index into the limit set.
+  universal(::AbsLimit, ::EmptyDiagram, a::Multispan) = 
+    FinFunction(ConstantFunction(nothing, apex(a), FinSet(nothing)))
 
-This type provides a fallback for limit algorithms that do not come with a
-specialized algorithm to apply the universal property of the limit. In such
-cases, you can explicitly construct a mapping from tuples of elements in the
-feet of the limit cone to elements in the apex of the cone.
-
-The index is constructed the first time it is needed. Thus there is no extra
-cost to using this type if the universal property will not be invoked.
-"""
-mutable struct FinSetIndexedLimit <: LimitImpl
-  cone::Multispan
-  index::Union{AbstractDict,Nothing}
 end
 
-FinSetIndexedLimit(cone::Multispan) = FinSetIndexedLimit(cone, nothing)
 
-cone(l::FinSetIndexedLimit) = l.cone
-ob(l::FinSetIndexedLimit) = apex(cone(l))
+@instance ThCategoryUnbiasedProducts{FinSet, FinFunction, AbsSet, AbsLimit, 
+                                 Multispan, DiscreteDiagram,
+                                } [model::FinSetC] begin 
 
-function make_limit_index(cone::Multispan)
-  πs = Tuple(legs(cone))
-  index = Dict{Tuple{map(eltype∘codom, πs)...}, eltype(apex(cone))}()
-  for x in apex(cone)
-    index[map(π -> π(x), πs)] = x
+  function limit(d::DiscreteDiagram)::AbsLimit  
+    Xs = collect(d)
+    P = ProdSet(Xs) |> FinSet
+    πs = [FinFunction(SetFunctionCallable(tup -> tup[j], P, X)) 
+          for (j, X) in enumerate(Xs)]
+    LimitCone(Multispan(P, πs, Xs), FreeDiagram(d))
   end
-  return index
+
+  universal(lim::AbsLimit, ::DiscreteDiagram, fs::Multispan) = 
+    FinFunction(SetFunctionCallable(i -> tuple([f(i) for f in fs]...), apex(fs), ob(lim)))
+
 end
 
-function _universal(::Any, ::SetC, lim::FinSetIndexedLimit, cone::Multispan)
-  if isnothing(lim.index)
-    lim.index = make_limit_index(lim.cone)
-  end
-  fs = Tuple(legs(cone))
-  FinFunction(Int[lim.index[map(f -> f(x), fs)] for x in apex(cone)],
-              ob(lim))
-end
 
+
+if false 
 """ Limit of finite sets viewed as a table.
 
 Any limit of finite sets can be canonically viewed as a table
@@ -81,11 +60,11 @@ original limit algorithm does not support efficient application of the universal
 property. On the other hand, this representation has the disadvantage of
 generally making the element type of the limit set more complicated.
 """
-struct TabularLimit <: AbsLimit
+@struct_hash_equal struct TabularLimit <: AbsLimit
   cone::Multispan
 end
 
-function TabularLimit(lim::Limit; names=nothing)
+function TabularLimit(lim::AbsLimit; names=nothing)
   πs = legs(lim)
   names = isnothing(names) ? (1:length(πs)) : names
   names = Tuple(column_name(name) for name in names)
@@ -96,7 +75,7 @@ function TabularLimit(lim::Limit; names=nothing)
   Limit(lim.diagram, cone)
 end
 
-function _universal(::Diagram, ::SetC, lim::TabularLimit,cone::Multispan)
+function universal(::Diagram, lim::TabularLimit,cone::Multispan)
   fs = Tuple(legs(cone))
   FinFunction(x -> Row(map(f -> f(x), fs)), apex(cone), ob(lim))
 end
@@ -107,25 +86,17 @@ column_name(i::Integer) = Symbol("x$i") # Same default as DataFrames.jl.
 # Terminal object
 #################
 
-limit(e::EmptyDiagram, m::SetC, ::DefaultAlg) =
+limit(e::EmptyDiagram) =
   Limit(Diagram(e, Category(TypeCat(m))), Multispan(FinSet(1), FinFunction[]))
 
-_universal(::EmptyDiagram, ::SetC, ::LimitCone, c::Multispan) =
+universal(::EmptyDiagram, ::LimitCone, c::Multispan) =
   SetFunction(ConstantFunction(1, apex(c), FinSet(1)))
 
-# Initial object
-################
 
-colimit(e::EmptyDiagram, m::SetC, ::DefaultAlg) =
-  Colimit(Diagram(e, Category(TypeCat(m))), Multicospan(FinSet(),FinFunction[]))
-
-_universal(::EmptyDiagram, ::SetC, ::ColimitCocone, x::Multicospan) =
-  FinFunction(Int[], apex(x))
- 
 # Products
 ##########
 
-function limit(Xs::DiscreteDiagram, m::SetC, ::DefaultAlg)
+function limit(Xs::DiscreteDiagram)
   all(X -> X isa FinSet, Xs) || return type_product(Xs)
   ns = length.(Xs)
   indices = CartesianIndices(Tuple(ns))
@@ -139,10 +110,10 @@ end
 function type_product(Xs::DiscreteDiagram{Ob,Hom}) where {Ob,Hom}
   X = TypeSet(Tuple{map(eltype, Xs)...}) |> SetOb
   πs = [ SetFunction(x -> getindex(x, i), X, Xi) for (i, Xi) in enumerate(Xs) ]
-  Limit(Diagram(Xs, Category(TypeCat(SetC()))), Multispan(X, πs))
+  Limit(FreeDiagram(Xs), Multispan(X, πs))
 end
 
-function _universal(Xs::DiscreteDiagram, ::SetC, res::LimitCone, cone::Multispan)
+function universal(Xs::DiscreteDiagram, res::LimitCone, cone::Multispan)
   all(X -> X isa FinSet, Xs) || return universal_typeset(res, cone)
   ns = length.(codom.(cone))
   indices = LinearIndices(Tuple(ns))
@@ -158,29 +129,11 @@ function universal_typeset(lim::LimitCone, span::Multispan)
   SetFunction(x -> map(f -> f(x), fs), apex(span), ob(lim))
 end
 
-# Coproducts
-############
-
-""" Coproduct in FinSetInt """
-function colimit(Xs::DiscreteDiagram, m::SetC, ::DefaultAlg′)
-  ns = length.(Xs)
-  n = sum(ns)
-  offsets = [0, cumsum(ns)...]
-  ιs = map(1:length(ns)) do j 
-    FinFunction((1:ns[j]) .+ offsets[j], n) 
-  end
-  Colimit(Diagram(Xs, Category(TypeCat(m))), Multicospan(FinSet(n), ιs))
-end
-
-function _universal(::DiscreteDiagram, ::SetC, ::ColimitCocone, cocone::Multicospan{Ob,Hom}) where {Ob,Hom}
-  cod = apex(cocone)
-  FinDomFunction(mapreduce(collect, vcat, cocone, init=Int[]), cod)
-end
 
 # Equalizers
 ############
 
-function limit(para::ParallelMorphisms, c::SetC, ::DefaultAlg)
+function limit(para::ParallelMorphisms)
   @assert !isempty(para)
   f1, frest = para[1], para[2:end]
   m = length(dom(para))
@@ -188,72 +141,10 @@ function limit(para::ParallelMorphisms, c::SetC, ::DefaultAlg)
   Limit(Diagram(para, Category(TypeCat(c))), Multispan(dom(eq), [eq]))
 end
 
-function _universal(::ParallelMorphisms, ::SetC, res::LimitCone, x::Multispan)
+function universal(::ParallelMorphisms, res::LimitCone, x::Multispan)
   ι = collect(only(cone(res)))
   h = only(x)
   FinFunction(Int[only(searchsorted(ι, h(i))) for i in dom(h)], length(ι))
-end
-
-# Coequalizers
-##############
-
-""" Equalizer in FinSetInt """
-function colimit(para::ParallelMorphisms{Ob,Hom}, c::SetC, ::DefaultAlg′) where {Ob,Hom}
-  @assert !isempty(para)
-  f1, frest = para[1], para[2:end]
-  m, n = length(dom(para)), length(codom(para))
-  sets = IntDisjointSets(n)
-  for i in 1:m
-    for f in frest
-      union!(sets, f1(i), f(i))
-    end
-  end
-  q = quotient_projection(sets)
-  Colimit(Diagram(para, Category(TypeCat(c))), Multicospan([q]))
-end
-
-function _universal(::ParallelMorphisms, ::SetC, res::ColimitCocone, x::Multicospan)
-  pass_to_quotient(only(cocone(res)), only(x))
-end
-
-""" Create projection map π: X → X/∼ from partition of X.
-"""
-function quotient_projection(sets::IntDisjointSets)
-  h = [ find_root!(sets, i) for i in 1:length(sets) ]
-  roots = unique!(sort(h))
-  FinFunction([ searchsortedfirst(roots, r) for r in h ], length(roots))
-end
-
-""" Given h: X → Y, pass to quotient q: X/~ → Y under projection π: X → X/~.
-"""
-function pass_to_quotient(π::FinFunction, h::FinFunction)
-  @assert dom(π) == dom(h)
-  q = zeros(Int, length(codom(π)))
-  for i in dom(h)
-    j = π(i)
-    if q[j] == 0
-      q[j] = h(i)
-    else
-      q[j] == h(i) || error("Quotient map of colimit is ill-defined")
-    end
-  end
-  any(==(0), q) && error("Projection map is not surjective")
-  FinFunction(q, codom(h))
-end
-
-function pass_to_quotient(π::FinFunction, h::FinDomFunction)
-  @assert dom(π) == dom(h)
-  q = Vector{Union{Some{eltype(codom(h))},Nothing}}(nothing, length(codom(π)))
-  for i in dom(h)
-    j = π(i)
-    if isnothing(q[j])
-      q[j] = Some(h(i))
-    else
-      something(q[j]) == h(i) || error("Quotient map of colimit is ill-defined")
-    end
-  end
-  any(isnothing, q) && error("Projection map is not surjective")
-  FinDomFunction(map(something, q), codom(h))
 end
 
 
@@ -264,7 +155,7 @@ end
 # Hash Join
 #----------
 
-function limit(cospan::Multicospan{Ob, Hom}, m::SetC, ::HashJoin) where {Ob,Hom}
+function limit(cospan::Multicospan{Ob, Hom}, ::HashJoin) where {Ob,Hom}
   # We follow the standard terminology for hash joins: in a multiway hash join,
   # one function, called the *probe*, will be iterated over and need not be
   # indexed, whereas the other functions, call *build* inputs, must be indexed.
@@ -309,7 +200,7 @@ function hash_join(builds::AbstractVector, probe::FinDomFunction)
   (map(FinFunction, π_builds, map(dom, builds)), FinFunction(πp, dom(probe)))
 end
 
-function hash_join(build::FinDomFunction{Int}, probe::FinDomFunction{Int})
+function hash_join(build::FinDomFunction, probe::FinDomFunction)
   πb, πp = Int[], Int[]
   for y in dom(probe)
     xs = preimage(build, probe(y))
@@ -325,7 +216,7 @@ end
 # SortMergeJoin
 ###############
 
-function limit(cospan::Multicospan{Ob,Hom}, m::SetC, ::SortMergeJoin) where {Ob,Hom}
+function limit(cospan::Multicospan{Ob,Hom}, ::SortMergeJoin) where {Ob,Hom}
   funcs = map(collect, legs(cospan))
   sorts = map(sortperm, funcs)
   values = similar_mutable(funcs, eltype(apex(cospan)))
@@ -374,7 +265,7 @@ similar_mutable(x::AbstractVector, T::Type) = similar(x, T)
 A nested-loop join is algorithmically the same as `ComposeProductEqualizer`,
 but for completeness and performance we give a direct implementation here.
 """
-function nested_loop_limit(cospan::Multicospan{Ob,Hom}, m::SetC, ::NestedLoopJoin) where {Ob,Hom}
+function nested_loop_limit(cospan::Multicospan{Ob,Hom}, ::NestedLoopJoin) where {Ob,Hom}
   funcs = legs(cospan)
   ns = map(length, feet(cospan))
   πs = map(_ -> Int[], funcs)
@@ -393,7 +284,7 @@ end
 # Smart Join
 ############
 
-function limit(cospan::Multicospan{Ob,Hom}, m::SetC, ::SmartJoin) where {Ob,Hom}
+function limit(cospan::Multicospan{Ob,Hom}, ::SmartJoin) where {Ob,Hom}
   # Handle the important special case where one of the legs is a constant
   # (function out of a singleton set). In this case, we just need to take a
   # product of preimages of the constant value.
@@ -421,7 +312,7 @@ function limit(cospan::Multicospan{Ob,Hom}, m::SetC, ::SmartJoin) where {Ob,Hom}
 end
 
 """ Use SmartJoin by default """
-limit(cospan::Multicospan{Ob,Hom}, m::SetC, ::DefaultAlg) where {Ob,Hom} = 
+limit(cospan::Multicospan{Ob,Hom}) where {Ob,Hom} = 
   limit(cospan, m, SmartJoin())
 
 
@@ -431,7 +322,7 @@ limit(cospan::Multicospan{Ob,Hom}, m::SetC, ::DefaultAlg) where {Ob,Hom} =
 """
 Bipartite limit via a big product and equalizer
 """
-function limit(dia::AbsBipartiteFreeDiagram, m::SetC, ::ComposeProductEqualizer)
+function limit(dia::BipartiteFreeDiagram, ::ComposeProductEqualizer)
   cat = Category(TypeCat(m))
   prod = product(ob₁(dia), cat)
   eq = equalizer(map(edges(dia)) do e
@@ -442,13 +333,13 @@ function limit(dia::AbsBipartiteFreeDiagram, m::SetC, ::ComposeProductEqualizer)
   Limit(Diagram(dia, cat), CompositeLimit(cone, prod, ι))
 end
 
-function _universal(::AbsBipartiteFreeDiagram, ::SetC, lim::CompositeLimit, x::Multispan)
+function universal(::BipartiteFreeDiagram, lim::CompositeLimit, x::Multispan)
   ι = collect(lim.incl)
   h = universal(lim.prod, x)
   FinFunction(Int[only(searchsorted(ι, h(i))) for i in dom(h)], apex(lim))
 end
 
-function limit(d::AbsBipartiteFreeDiagram{Ob,Hom}, m::SetC, ::DefaultAlg) where {Ob,Hom}
+function limit(d::BipartiteFreeDiagram{Ob,Hom}) where {Ob,Hom}
   cat = Category(TypeCat(m))
   dia = Diagram(d, cat)
   # As in a pullback, this method assumes that all objects in layer 2 have
@@ -541,7 +432,7 @@ The result is a new bipartite free diagram that has the same vertices but is
 *simple*, i.e., has no multiple edges. The list of inclusion morphisms into
 layer 1 of the original diagram is also returned.
 """
-function equalize_all(d::AbsBipartiteFreeDiagram{Ob,Hom}) where {Ob,Hom}
+function equalize_all(d::BipartiteFreeDiagram{Ob,Hom}) where {Ob,Hom}
   d_simple = BipartiteFreeDiagram{Ob,Hom}()
   copy_parts!(d_simple, d, V₂=vertices₂(d))
   ιs = map(vertices₁(d)) do u
@@ -552,17 +443,17 @@ function equalize_all(d::AbsBipartiteFreeDiagram{Ob,Hom}) where {Ob,Hom}
     end
 
     # Equalize all sets of parallel edges out of u.
-    ι = id[SetC()](ob₁(d, u))
+    ι = id[model](ob₁(d, u))
     for es in values(out_edges)
       if length(es) > 1
-        fs = [compose[SetC()](ι,f) for f in hom(d, es)]
-        ι = compose[SetC()](incl(equalizer(fs, Category(TypeCat(SetC())))), ι)
+        fs = [compose[model](ι,f) for f in hom(d, es)]
+        ι = compose[model](incl(equalizer(fs), ι))
       end
     end
 
     add_vertex₁!(d_simple, ob₁=dom(ι)) # == u
     for (v, es) in pairs(out_edges)
-      add_edge!(d_simple, u, v, hom=compose[SetC()](ι,hom(d, first(es))))
+      add_edge!(d_simple, u, v, hom=compose[model](ι,hom(d, first(es))))
     end
     ι
   end
@@ -575,7 +466,7 @@ The resulting diagram has the same layer 1 vertices but a possibly reduced set
 of layer 2 vertices. Layer 2 vertices are merged when they have exactly the same
 multiset of adjacent vertices.
 """
-function pair_all(d::AbsBipartiteFreeDiagram{Ob,Hom}) where {Ob,Hom}
+function pair_all(d::BipartiteFreeDiagram{Ob,Hom}) where {Ob,Hom}
   d_paired = BipartiteFreeDiagram{Ob,Hom}()
   copy_parts!(d_paired, d, V₁=vertices₁(d))
 
@@ -594,7 +485,7 @@ function pair_all(d::AbsBipartiteFreeDiagram{Ob,Hom}) where {Ob,Hom}
       add_edges!(d_paired, srcs, fill(v, length(srcs)),
                  hom=hom(d, only(in_edges)))
     else
-      prod = product(ob₂(d, tgts), Category(TypeCat(SetC())))
+      prod = product(ob₂(d, tgts))
       v = add_vertex₂!(d_paired, ob₂=ob(prod))
       for (i,u) in enumerate(srcs)
         f = pair(prod, hom(d, getindex.(in_edges, i)))
@@ -611,7 +502,7 @@ Uses the general formula for limits in Set (Leinster, 2014, Basic Category
 Theory, Example 5.1.22 / Equation 5.16). This method is simple and direct,
 but extremely inefficient!
 """
-function limit(F::FreeDiagram, m::SetC, ::DefaultAlg)
+function limit(F::FreeDiagram)
   cat = Category(TypeCat(m))
   prod = product(ob(F), cat)
   n, πs = length(ob(prod)), legs(prod)
@@ -626,161 +517,12 @@ function limit(F::FreeDiagram, m::SetC, ::DefaultAlg)
 end
 
 
-function _universal(::FreeDiagram, ::SetC, lim::CompositeLimit, cone::Multispan)
+function universal(::FreeDiagram, lim::CompositeLimit, cone::Multispan)
   ι = collect(lim.incl)
   h = universal(lim.prod, cone)
   FinFunction(Int[only(searchsorted(ι, h(i))) for i in dom(h)],
               ob(lim))
 end
-
-
-"""
-Colimit in FinSetInt.
-
-As in a pushout, this method assume that all objects in layer 1 have
-outgoing morphisms so that they can be excluded from the coproduct.
-"""
-function colimit(d::AbsBipartiteFreeDiagram, m::SetC, ::DefaultAlg′)
-  @assert !any(isempty(incident(d, u, :src)) for u in vertices₁(d))
-  coprod = coproduct(ob₂(d), Category(TypeCat(m)))
-  n, ιs = length(ob(coprod)), legs(coprod)
-  sets = IntDisjointSets(n)
-  for u in vertices₁(d)
-    out_edges = incident(d, u, :src)
-    for (e1, e2) in zip(out_edges[1:end-1], out_edges[2:end])
-      h1, h2 = hom(d, e1), hom(d, e2)
-      ι1, ι2 = ιs[tgt(d, e1)], ιs[tgt(d, e2)]
-      for i in ob₁(d, u)
-        union!(sets, ι1(h1(i)), ι2(h2(i)))
-      end
-    end
-  end
-  π = quotient_projection(sets)
-  cocone = Multicospan(codom(π), [compose[m](ιs[i],π) for i in vertices₂(d) ])
-  Colimit(Diagram(d, Category(TypeCat(m))), CompositeColimit(cocone, coprod, π))
-end
-
-""" 
-Colimit in FinSetInt. Uses the general formula for colimits in Set 
-(Leinster, 2014, Basic Category Theory, Example 5.2.16).
-"""
-function colimit(F::FreeDiagram{Ob,Hom}, m::SetC, ::DefaultAlg′) where {Ob,Hom}
-  coprod = coproduct(ob(F), Category(TypeCat(m)))
-  n, ιs = length(ob(coprod)), legs(coprod)
-  sets = IntDisjointSets(n)
-  for e in edges(F)
-    s, t, h = src(F, e), tgt(F, e), hom(F, e)
-    for i in dom(h)
-      union!(sets, ιs[s](i), ιs[t](h(i)))
-    end
-  end
-  π = quotient_projection(sets)
-  cocone = Multicospan{Ob,Hom}(map(ι -> compose[m](ι,π), ιs))
-  Colimit(Diagram(F, Category(TypeCat(m))),CompositeColimit(cocone, coprod, π))
-end
-
-function _universal(::Union{FreeDiagram,AbsBipartiteFreeDiagram}, ::SetC, colim::CompositeColimit, cocone::Multicospan)
-  h = universal(colim.coprod, cocone)
-  pass_to_quotient(colim.proj, h)
-end
-
-
-""" Default algorithm for a colimit of a span is ComposeCoproductCoequalizer """
-colimit(span::Multispan, m::SetC, ::DefaultAlg′) =   
-  colimit(span, Category(TypeCat(m)), ComposeCoproductCoequalizer())
-
-# Colimits with names
-#--------------------
-
-"""
-If the diagram is in skeleton of FinSet, use `DefaultAlg′`. Otherwise, used 
-`NamedColimit` algorithm which is only defined for BipartiteFreeDiagrams
-Reducing to the case of bipartite free diagrams is a bit lazy, but at least
-using `specialize` below should avoid some gross inefficiencies.
-"""
-function colimit(d::DiagramImpl, m::SetC, ::DefaultAlg)
-  is_diag_finsetint(d) && return colimit(d, m, DefaultAlg′())
-  colimit(BipartiteFreeDiagram(d), m, NamedColimit())
 end 
 
-""" Every object in the diagram is a FinSetInt """
-is_diag_finsetint(d::DiagramImpl) = all(x-> getvalue(x) isa FinSetInt, objects(d))
-
-""" 
-Compute colimit of diagram in the skeleton of FinSet (`FinSet{Int}`).
-Note: no performance would be gained by using `DisjointSets{T}` from
-DataStructures.jl because it is just a wrapper around `IntDisjointSets` that
-internally builds the very same indices that we use below.
-"""
-function colimit(d::BipartiteFreeDiagram{Ob,Hom}, m::SetC, ::NamedColimit) where {Ob,Hom}
-  sets₁_skel = map(set -> skeletize(set, index=false), ob₁(d))
-  sets₂_skel = map(set -> skeletize(set, index=true), ob₂(d))
-  funcs = map(edges(d)) do e
-    skeletize(hom(d,e), sets₁_skel[src(d,e)], sets₂_skel[tgt(d,e)])
-  end
-  d_skel = BipartiteFreeDiagram{FinSet,FinDomFunction}()
-  add_vertices₁!(d_skel, nv₁(d), ob₁=dom.(sets₁_skel))
-  add_vertices₂!(d_skel, nv₂(d), ob₂=dom.(sets₂_skel))
-  add_edges!(d_skel, src(d), tgt(d), hom=funcs)
-
-  # PROBLEM: if we `specialize` here, it changes the # of legs of the colimit!
-  # But computing `ιs` requires bijection between `colim_skel` and `sets₂_skel`
-  # We want to `specialize` to make the colimit more efficient, though.
-  colim_skel = colimit(d_skel, m, DefaultAlg′())
-
-  # Assign elements/names to the colimit set.
-  elems = Vector{Symbol}(undef, length(apex(colim_skel)))
-  for (ι, Y) in zip(colim_skel, sets₂_skel)
-    for i in dom(Y)
-      elems[ι(i)] = Y(i)
-    end
-  end
-  # The vector should already be filled, but to reduce arbitrariness we prefer
-  # names from the layer 1 sets whenever possible. For example, when computing a
-  # pushout, we prefer names from the apex of cospan to names from the feet.
-  for (u, X) in zip(vertices₁(d_skel), sets₁_skel)
-    e = first(incident(d_skel, u, :src))
-    f, ι = hom(d_skel, e), legs(colim_skel)[tgt(d_skel, e)]
-    for i in dom(X)
-      elems[ι(f(i))] = X(i)
-    end
-  end
-  # Eliminate clashes in provisional list of names.
-  unique_by_tagging!(elems)
-  ιs = map(colim_skel, sets₂_skel) do ι, Y
-    FinFunction(Dict(Y(i) => elems[ι(i)] for i in dom(Y)), FinSet(Set(elems)))
-  end
-  Colimit(Diagram(d, Category(TypeCat(m))), Multicospan(FinSet(Set(elems)), ιs))
-end
-
-function skeletize(set::FinSet; index::Bool=false)
-  # FIXME: We should support `unique_index` and it should be used here.
-  FinDomFunction(collect(set), set, index=index)
-end
-function skeletize(f::FinFunction, X, Y)
-  FinFunction(i -> only(preimage(Y, f(X(i)))), dom(X), dom(Y))
-end
-
-""" Make list of elements unique by adding tags if necessary.
-
-If the elements are already unique, they will not be mutated.
-"""
-function unique_by_tagging!(elems::AbstractVector{T}; tag=default_tag) where T
-  tag_count = Dict{T,Int}()
-  for x in elems
-    tag_count[x] = haskey(tag_count, x) ? 1 : 0
-  end
-  for (i, x) in enumerate(elems)
-    (j = tag_count[x]) > 0 || continue
-    tagged = tag(x, j)
-    @assert !haskey(tag_count, tagged) # Don't conflict with original elems!
-    elems[i] = tagged
-    tag_count[x] += 1
-  end
-  elems
-end
-
-default_tag(x::Symbol, t) = Symbol(x, "#", t)
-default_tag(x::AbstractString, t) = string(x, "#", t)
-
-end # module
+end #module

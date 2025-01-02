@@ -5,7 +5,7 @@ using StructEquality
 
 using GATlab
 
-import .....Theories: terminal, delete, ◊, universal, ob
+import .....Theories: terminal, delete, ◊, universal, ob, ThCategory
 using ...FreeDiagrams
 import ...FreeDiagrams: EmptyDiagram, apex
 using ..Limits: AbsLimit, DefaultLimit, ThCategoryLimitBase
@@ -35,7 +35,7 @@ terminal(m::WithModel; context=nothing) =
 delete(C, x) = delete[getvalue(C)](x)
 
 function delete(m::WithModel, x; context)
-  O,H = impl_type.(Ref(getvalue(m)), Ref(ThCategory), [:Ob, :Hom])
+  O, H = impl_types(getvalue(m), ThCategory)
   emp = EmptyDiagram{O}()
   universal(m, terminal(m; context), emp, Multispan{O,H}(x, H[], O[]); context)
 end

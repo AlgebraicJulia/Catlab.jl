@@ -4,9 +4,9 @@ export OppositeFunctor
 
 using StructEquality
 using GATlab
-import GATlab: op, getvalue
 
 using ...Categories: Cat, dom, codom, obtype, homtype
+import ...Categories: op
 using ..Functors: ThFunctor, Functor, ob_map, hom_map
 
 """ Opposite functor, given by the same mapping between opposite categories.
@@ -19,7 +19,7 @@ Call `op(::Functor)` instead of directly instantiating this type.
     new{obtype(dom(f)), obtype(codom(f)), homtype(dom(f)), homtype(codom(f))}(f)
 end
 
-getvalue(F::OppositeFunctor) = F.func
+GATlab.getvalue(F::OppositeFunctor) = F.func
 
 op(f::Functor) = if getvalue(f) isa OppositeFunctor 
   getvalue(getvalue(f)) # optimization
