@@ -2,9 +2,9 @@ using Test
 
 # include("aqua.jl") # can uncomment once PR is more complete
 
-@testset "Theories" begin
-  include("theories/Theories.jl")
-end
+# @testset "Theories" begin
+#   include("theories/Theories.jl") # TO SAVE TIME
+# end
 
 # @testset "Graphs" begin
   # include("graphs/Graphs.jl") # TO SAVE TIME

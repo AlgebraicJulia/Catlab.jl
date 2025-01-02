@@ -1,7 +1,6 @@
 module TestDiagrams
-using Test
 
-using Catlab.Theories, Catlab.Graphs, Catlab.CategoricalAlgebra
+using Test, Catlab
 
 const SchSGraph = SchSymmetricGraph
 
@@ -15,24 +14,22 @@ C = FinCat(@acset Graph begin
   src = [1,2]
   tgt = [3,3]
 end)
-D = FinDomFunctor([:E,:E,:V], [:tgt,:src], C, FinCat(SchSGraph); homtype=:generator)
-d = Diagram{id}(D)
-@test shape(d) == C
-@test ob_map(d, 3) == SchSGraph[:V]
-@test hom_map(d, 1) == SchSGraph[:tgt]
-@test first.(collect_ob(d)) == [:E,:E,:V]
-@test first.(collect_hom(d)) == [:tgt,:src]
-@test startswith(sprint(show, d), "Diagram{id}(")
-@test hash(D) != hash(Diagram{op}(D))
+D = FinCat(SchSGraph)
+(V, E), (s, t, _) = ob_generators(D), hom_generators(D)
+𝒥 = FinDomFunctor([E,E,V], [t,s], C, D; homtype=:generator)
 
-C′ = deepcopy(C)
-d′ = Diagram{id}(FinDomFunctor([:E,:E,:V], [:tgt,:src], C′, FinCat(SchSGraph)))
-@test hash(d) == hash(d′)
+@test ob_map(𝒥, 3) == SchSGraph[:V]
+@test gen_map(𝒥, 1) == SchSGraph[:tgt]
+@test first.(collect_ob(𝒥)) == [:E,:E,:V]
+@test first.(collect_hom(𝒥)) == [:tgt,:src]
+
+𝒥′ = FinDomFunctor([E,E,V], [t,s], deepcopy(C), D; homtype=:generator)
+@test hash(𝒥) == hash(𝒥′)
 
 # Diagram morphisms
 ###################
 
-f = DiagramHom{id}([(2,:inv), (1,:inv), 3], [2,1], d, d)
+f = DiagramHom([(2,:inv), (1,:inv), 3], [2,1], 𝒥, 𝒥)
 @test dom(f) == d
 @test codom(f) == d
 @test hash(f) == hash(DiagramHom{id}([(2,:inv), (1,:inv), 3], [2,1], d, d))
@@ -81,4 +78,4 @@ d = munit(Diagram{id}, C, :V)
 f = munit(DiagramHom{id}, C, :src)
 @test only(components(diagram_map(f))) == SchGraph[:src]
 
-end
+end # module

@@ -12,7 +12,7 @@ import ...Functors: fmap
 using ...FreeDiagrams
 import ...FreeDiagrams: apex
 
-using ..Colimits: AbsColimit, DefaultColimit, ThCategoryColimitsBase
+using ..Colimits: AbsColimit, DefaultColimit, ThCategoryColimitBase
 import ..Colimits: colimit, cocone, diagram
 
 # Theory of categories with an initial object
@@ -21,7 +21,7 @@ import ..Colimits: colimit, cocone, diagram
 """
 `Initial` is expected to be implemented by `InitialColimit`.
 """
-@theory ThCategoryWithInitial <: ThCategoryColimitsBase begin
+@theory ThCategoryWithInitial <: ThCategoryColimitBase begin
   Empty()::TYPE
 
   colimit(e::Empty)::Colimit

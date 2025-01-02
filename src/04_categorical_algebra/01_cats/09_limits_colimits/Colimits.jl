@@ -1,7 +1,7 @@
 module Colimits 
 export Colimit, AbsColimit, initial, cocone, colimit, pushout,ColimitCocone, 
        CompositeColimit, coproduct, create, proj, coproj1, coproj2, 
-      CompositePushout,  NamedColimit, ComposeCoproductCoequalizer
+      CompositePushout,  NamedColimit, ComposeCoproductCoequalizer, ThCategoryColimitBase
 
 using StructEquality
 using GATlab
@@ -13,14 +13,13 @@ using ...Categories: Category, ThCategoryExplicitSets
 using ...FreeDiagrams
 import ...FreeDiagrams: apex, feet, legs
 using ...FinFunctors: FinDomFunctor
-using ...Diagrams: Diagram
 import ..Limits: diagram
 
 """
 Colimit should be sent to AbsColimit.
 Legs should be sent to Vector{Hom} for whatever Hom is.
 """
-@theory ThCategoryColimitsBase <: ThCategoryExplicitSets begin 
+@theory ThCategoryColimitBase <: ThCategoryExplicitSets begin 
   Colimit()::TYPE
   ob(colim::Colimit)::Ob
 
@@ -40,6 +39,8 @@ abstract type AbsColimit end
 
 
 cocone(lim::AbsColimit) = lim.cocone # by default, assume AbsColimit has `cocone` field
+
+ob(lim::AbsColimit) = apex(lim)
 
 apex(lim::AbsColimit) = apex(cocone(lim))
 
@@ -103,15 +104,12 @@ conventions and add tags where necessary to avoid name clashes.
 # Generic colimits
 ####################
 
-colimit(d::FreeDiagram, m::Category; alg=DefaultColimit())  = 
-  colimit(BipartiteFreeDiagram(d; colimit=true), m, alg)
-
-colimit(d::FinDomFunctor; alg=DefaultColimit(), kw...) = 
-  colimit(FreeDiagram(d), codom(d); alg, kw...)
+"""Not a specific limit: look at the diagram type """
+colimit(m::WithModel, d::FreeDiagram; context=nothing)  = 
+  colimit(m, getvalue(specialize(d; colimit=true)); context)
 
 # Named universal maps 
 ######################
-
 
 function factorize(colim::AbsColimit, h)
   getvalue(colim.diag) isa ParallelMorphisms || error(

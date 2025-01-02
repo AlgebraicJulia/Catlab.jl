@@ -34,6 +34,9 @@ include("Pushouts.jl")
 include("MonoidalColimits.jl")
 @reexport using .MonoidalColimits
 
+include("Graphs.jl")
+@reexport using .Graphs
+
 include("EpiMono.jl")
 @reexport using .EpiMono
 

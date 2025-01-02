@@ -12,7 +12,7 @@ using ACSets
 using ACSets.DenseACSets: constructor, datatypes
 using GATlab
 using ....Theories: ob, hom, dom, codom, attr, AttrTypeExpr, ⋅
-using ..Categories, ...Cats.FinCats, ..Limits, ..Diagrams, ....BasicSets.FinSets, ..CSets, ..HomSearch
+using ...Cats
 using ....Graphs, ..FreeDiagrams
 import ..Categories: ob_map, hom_map
 import GATlab: functor

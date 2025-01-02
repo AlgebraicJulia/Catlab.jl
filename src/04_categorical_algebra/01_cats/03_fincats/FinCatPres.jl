@@ -4,7 +4,7 @@ export FinCatPresentation, ThFinCat
 
 using StructEquality
 
-using GATlab 
+using GATlab, ACSets
 import GATlab: equations, getvalue
 
 using ......Theories: ThSchema, ThPointedSetSchema, AttrTypeExpr, FreeSchema
@@ -53,27 +53,34 @@ presentation(C::FinCatPresentation) = C.presentation # synonym for getvalue
 
 # Implementation of FinCat interface
 ####################################
+# AnyHom = Union{FreeSchema.Hom{:generator}, FreeSchema.Hom{:compose}, FreeSchema.Hom{:id}}
 
-@instance ThFinCat{GATExpr{:generator}, GATExpr, GATExpr{:generator}, 
-                   Path{GATExpr{:generator}, GATExpr}, FinSet
+@instance ThFinCat{FreeSchema.Ob{:generator}, FreeSchema.Hom, FreeSchema.Hom{:generator}, 
+    Path{FreeSchema.Ob{:generator}, FreeSchema.Hom{:generator}}, FinSet
                   } [model::FinCatPresentation{T}] where {T} begin
-  src(f::GATExpr{:generator})::GATExpr{:generator} = dom(getvalue(model), f)
+  src(f::FreeSchema.Hom{:generator})::FreeSchema.Ob{:generator} = dom(f)
 
-  tgt(f::GATExpr{:generator})::GATExpr{:generator} = codom(getvalue(model), f)
+  tgt(f::FreeSchema.Hom{:generator})::FreeSchema.Ob{:generator} = codom(f)
 
-  dom(f::GATExpr)::GATExpr{:generator} = dom(getvalue(model), f)
+  dom(f::FreeSchema.Hom)::FreeSchema.Ob{:generator} = dom(f)
 
-  codom(f::GATExpr)::GATExpr{:generator} = codom(getvalue(model), f)
+  codom(f::FreeSchema.Hom)::FreeSchema.Ob{:generator} = codom(f)
+  
+  id(x::FreeSchema.Ob{:generator})::FreeSchema.Hom = id(getvalue(model), x)
 
-  id(x::GATExpr{:generator})::GATExpr = id(getvalue(model), x)
+  function compose(f::Path{FreeSchema.Ob{:generator}, FreeSchema.Hom{:generator}}
+                  )::FreeSchema.Hom 
+    length(f) == 0 && return id(src(f))
+    length(f) == 1 && return only(f)
+    compose(collect(f)...)
+  end
 
-  compose(f::Path{GATExpr{:generator}, GATExpr})::GATExpr = compose(getvalue(model), collect(f)...)
-
-  function decompose(f::GATExpr) 
-    args = if f isa GATExpr{:generator}
+  function decompose(f::FreeSchema.Hom
+                     )::Path{FreeSchema.Ob{:generator}, FreeSchema.Hom{:generator}}
+    args = if f isa FreeSchema.Hom{:generator}
       [f]
     elseif f isa GATExpr{:id}
-      GATExpr{:generator}[]
+      FreeSchema.Hom{:generator}[]
     elseif f isa GATExpr{:compose}
       f.args
     end

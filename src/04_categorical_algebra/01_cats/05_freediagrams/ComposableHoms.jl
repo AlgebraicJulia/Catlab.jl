@@ -6,8 +6,8 @@ using StructEquality
 using GATlab 
 
 using .....BasicSets: FinSet
-using ...FreeDiagrams: ThFreeDiagram
-import ...FreeDiagrams: fmap
+using ...FreeDiagrams: ThFreeDiagram, FreeDiagram
+import ...FreeDiagrams: fmap, specialize
 
 import .ThCategory: dom, codom
 
@@ -89,5 +89,11 @@ end
   homset()::FinSet = FinSet(length(model))
 end
 
+function specialize(::Type{ComposableMorphisms}, d::FreeDiagram)
+  o, h, os = obset(d), homset(d), ob(d)
+  srcs, tgts = src.(Ref(d), h), tgt.(Ref(d), h)
+  start = setdiff(srcs,tgts)
+  ComposableMorphisms() # TODO
+end
 
 end # module

@@ -4,11 +4,11 @@ export Slice, SliceHom
 using StructEquality
 
 using GATlab
-using ..FreeDiagrams, ..Limits, ..CSets
-using ....Theories: ThCategory
+
 import ....Theories: dom, codom, compose, id
-import ..Limits: limit, colimit, universal
-import ..BasicSets: force
+import ....BasicSets: force
+
+using ..FreeDiagrams, ..LimitsColimits
 
 """
 The data of the object of a slice category (say, some category C sliced over an
@@ -49,17 +49,17 @@ force(s::SliceHom) = SliceHom(
 
 
 struct SliceLimit{Hom, Ob <: Slice{Hom}, Diagram,
-                  Cone <: Multispan{Ob}} <: AbstractLimit{Ob,Diagram}
+                  Cone <: Multispan{Ob}} <: AbsLimit
   diagram::Diagram
   cone::Cone
-  underlying::AbstractLimit
+  underlying::AbsLimit
 end
 
 struct SliceColimit{Hom, Ob <: Slice{Hom}, Diagram,
-                    Cocone <: Multicospan{Ob}} <: AbstractColimit{Ob,Diagram}
+                    Cocone <: Multicospan{Ob}} <: AbsColimit
   diagram::Diagram
   cocone::Cocone
-  underlying::AbstractColimit
+  underlying::AbsColimit
 end
 
 

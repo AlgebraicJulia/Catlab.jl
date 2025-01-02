@@ -9,16 +9,15 @@ import .....Theories: product, universal, pair
 import ..FreeDiagrams: ob
 using ..Multispans: Multispan
 using ..Discrete: DiscreteDiagram
-using ..Limits: AbsLimit
+using ..Limits: AbsLimit, ThCategoryLimitBase
 import ..Limits: limit
-using ..Terminals: ThCategoryWithTerminal
 
 """
 Alternative, unbiased presentation of `ThCategoryWithProducts` which focuses on 
 computational and ergonomic aspects at the expense of hiding a lot of structure 
 within Julia datatypes such as `DiscreteDiagram`.
 """
-@theory ThCategoryUnbiasedProducts <: ThCategoryWithTerminal begin
+@theory ThCategoryUnbiasedProducts <: ThCategoryLimitBase begin
   DiscDiag::TYPE  # type of discrete diagrams, i.e. vectors of Ob
 
   limit(d::DiscDiag)::Limit
@@ -44,7 +43,7 @@ product(m::CatWithProducts, x, y, xs...) = product[getvalue(m)](x,y,xs...)
 product(m::WithModel, x, y, xs...; context=nothing) = limit(m, DiscreteDiagram([x,y,xs...]); context)
 
 
-""" Pairing of morphisms: universal property of products/pullbacks.
+""" Pairing of morphisms: universal property of products.
 """
   
 pair(C::WithProducts, lim::AbsLimit, fs::AbstractVector) = pair[getvalue(C)](lim, fs)

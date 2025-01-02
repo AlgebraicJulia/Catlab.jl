@@ -1,6 +1,6 @@
 module Multispans 
 
-export Multispan, Multicospan, Span, Cospan, apex, feet, legs
+export Multispan, Multicospan, Span, Cospan, SMultispan, SMulticospan, apex, feet, legs
 
 using StaticArrays: StaticVector, SVector
 using StructEquality, MLStyle
@@ -10,9 +10,10 @@ using .....BasicSets: FinSet
 import .....BasicSets: left, right, untag
 
 using ...FreeDiagrams: ThFreeDiagram, FreeDiagram
-import ...FreeDiagrams: fmap, cone_objects, cocone_objects
+import ...FreeDiagrams: fmap, cone_objects, cocone_objects, specialize
 
 using .ThCategory: dom, codom
+using .ThFreeDiagram
 
 #############################################
 # Common to (multi)spans and (multi)cospans #
@@ -67,9 +68,9 @@ end
 
 const SMultispan{N,Ob,Hom} = Multispan{Ob,Hom,<:StaticVector{N,Hom}}
 
-SMultispan{N}(apex, legs::Vararg{Any,N}) where N =
-  Multispan(apex, SVector{N}(legs...))
-SMultispan{N}(legs::Vararg{Any,N}) where N = Multispan(SVector{N}(legs...))
+SMultispan{N}(apex, legs::Vararg{Any,N}; cat=nothing) where N =
+  Multispan(apex, SVector{N}(legs...); cat)
+SMultispan{N}(legs::Vararg{Any,N}; cat=nothing) where N = Multispan(SVector{N}(legs...); cat)
 
 """ Span of morphims in a category.
 
@@ -94,7 +95,11 @@ function Multispan(apex::Ob,legs::AbstractVector{Hom}; cat=nothing) where {Ob,Ho
 end
 
 """ Construct from just a list, assuming it's nonempty """
-Multispan(legs::AbstractVector) = Multispan(dom(first(legs)), legs)
+function Multispan(legs::AbstractVector; cat=nothing) 
+  l = first(legs)
+  apx = isnothing(cat) ? dom(l) : dom[cat](l)
+  Multispan(apx, legs; cat)
+end 
 
 """ Cast a span to a Multispan """
 Multispan(s::Span{Ob,Hom}) where {Ob, Hom} = Multispan{Ob,Hom}(apex(s), legs(s))
@@ -127,9 +132,11 @@ end
 
 
 """ Specialize a free diagram (can fail) """
-function Multispan(d::FreeDiagram)
-  hs = hom_map.(Ref(d), homset(d))
-  Multispan(ob_map(d, first(homset(d))), hs)
+function specialize(::Type{Multispan}, d::FreeDiagram)
+  es = homset(d)
+  apex_v = only(unique(src.(Ref(d), es)))
+  feet = obmap.(Ref(d), tgt.(Ref(d), es))
+  Multispan(obmap(d, apex_v), hommap.(Ref(d), es), feet)
 end
 
 
@@ -163,9 +170,9 @@ end
 
 const SMulticospan{N,Ob,Hom} = Multicospan{Ob,Hom,<:StaticVector{N,Hom}}
 
-SMulticospan{N}(apex, legs::Vararg{Any,N}) where N =
-  Multicospan(apex, SVector{N}(legs...))
-SMulticospan{N}(legs::Vararg{Any,N}) where N = Multicospan(SVector{N}(legs...))
+SMulticospan{N}(apex, legs::Vararg{Any,N}; cat=nothing) where N =
+  Multicospan(apex, SVector{N}(legs...); cat)
+SMulticospan{N}(legs::Vararg{Any,N}; cat=nothing) where N = Multicospan(SVector{N}(legs...); cat)
 
 """ Cospan of morphisms in a category.
 
@@ -189,8 +196,11 @@ function Multicospan(apex::Ob,legs::AbstractVector{Hom}; cat=nothing) where {Ob,
 end
 
 """ Construct from just a list, assuming it's nonempty """
-Multicospan(legs::AbstractVector) = Multicospan(codom(first(legs)), legs)
-
+function Multicospan(legs::AbstractVector; cat=nothing)
+  l = first(legs)
+  apx = isnothing(cat) ? codom(l) : codom[cat](l)
+  Multicospan(apx, legs; cat)
+end 
 
 """ Cast a cospan to a Multicospan """
 Multicospan(s::Cospan{Ob,Hom}) where {Ob, Hom} = 
@@ -221,9 +231,11 @@ cone_objects(cospan::Multicospan) = feet(cospan)
 end
 
 """ Specialize a free diagram (can fail) """
-function Multicospan(d::FreeDiagram)
-  hs = hom_map.(Ref(d), homset(d))
-  Multiscopan(ob_map(d, first(homset(d))), hs)
+function specialize(::Type{Multicospan}, d::FreeDiagram)
+  es = homset(d)
+  apex_v = only(unique(tgt.(Ref(d), es)))
+  feet = obmap.(Ref(d), src.(Ref(d), es))
+  Multicospan(obmap(d, apex_v), hommap.(Ref(d), es), feet)
 end
 
 """ Replace homs via a replacement function """

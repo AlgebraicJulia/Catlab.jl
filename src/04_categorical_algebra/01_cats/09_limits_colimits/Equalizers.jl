@@ -10,12 +10,11 @@ import .....Theories: equalizer, factorize, universal, ob
 
 using ..FreeDiagrams: Multispan, ParallelMorphisms
 
-using ..Limits: AbsLimit, LimitCone
+using ..Limits: AbsLimit, LimitCone, ThCategoryLimitBase
 import ..Limits: limit
-using ..Products: ThCategoryUnbiasedProducts
 
   
-@theory ThCategoryWithEqualizers <: ThCategoryUnbiasedProducts begin
+@theory ThCategoryWithEqualizers <: ThCategoryLimitBase begin
   ParallelDiagram()::TYPE # type of ParallelMorphisms
   limit(p::ParallelDiagram)::Limit
   universal(eq::Limit, p::ParallelDiagram, s::MSpan)::(apex(s) → ob(eq))
@@ -26,10 +25,10 @@ ThCategoryWithEqualizers.Meta.@wrapper CatWithEqualizers
 # Named limits / universal properties
 #####################################
 
-equalizer(C::CatWithEqualizers, xs...) = equalizer[getvalue(C)](collect(xs))
+equalizer(C::CatWithEqualizers, xs...) = equalizer[getvalue(C)](xs...)
 
-equalizer(m::WithModel, d::AbstractVector; context=nothing) = 
-  limit(m, ParallelMorphisms(d; cat=getvalue(m)); context)
+equalizer(m::WithModel, x,xs...; context=nothing) = 
+  limit(m, ParallelMorphisms([x,xs...]; cat=getvalue(m)); context)
 
 """ Factor morphism through (co)equalizer, via the universal property.
 
@@ -41,6 +40,12 @@ function factorize(C::CatWithEqualizers, lim::AbsLimit, h)
   o = dom(C, h)
   universal(C, lim, Multispan(o, [h], [o]))
 end
+
+function factorize(m::WithModel, lim::AbsLimit, h; context=nothing)
+ o = dom(m, h)
+ universal(m, lim, Multispan(o, [h], [o]))
+end
+
 
 # Limit data structures 
 #######################

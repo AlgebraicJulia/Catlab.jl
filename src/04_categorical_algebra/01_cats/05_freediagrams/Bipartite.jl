@@ -8,17 +8,14 @@ using StructEquality
 
 using ACSets, GATlab 
 
+import .....Theories: hom
 using .....BasicSets: FinSet
 using .....Graphs
 import .....Graphs: nv₁, nv₂
 
-using ...FreeDiagrams: ThFreeDiagram, FreeDiagram, obtype, homtype
-import ...FreeDiagrams: fmap, cone_objects, cocone_objects
-
-using ..Discrete: DiscreteDiagram
-using ..Multispans: Multispan, Multicospan, apex, feet, legs
-using ..ParallelHoms: ParallelMorphisms
-using ..FreeGraphs: FreeGraph
+using ...Categories: obtype, homtype
+using ..FreeDiagrams
+import ..FreeDiagrams: fmap, cone_objects, cocone_objects, specialize
 
 using .ThFreeDiagram
 
@@ -71,12 +68,18 @@ BipartiteFreeDiagram{Ob,Hom}() where {Ob,Hom} =
   BasicBipartiteFreeDiagram{Ob,Hom}()
 
 BipartiteFreeDiagram(obs₁::AbstractVector{Ob₁}, obs₂::AbstractVector{Ob₂},
-                     homs::AbstractVector{Tuple{Hom,Int,Int}}) where {Ob₁,Ob₂,Hom} =
-  BipartiteFreeDiagram{Union{Ob₁,Ob₂},Hom}(obs₁, obs₂, homs)
+                     homs::AbstractVector{Tuple{Hom,Int,Int}}; cat=nothing) where {Ob₁,Ob₂,Hom} =
+  BipartiteFreeDiagram{Union{Ob₁,Ob₂},Hom}(obs₁, obs₂, homs; cat)
 
 function BipartiteFreeDiagram{Ob,Hom}(obs₁::AbstractVector, obs₂::AbstractVector,
-                                      homs::AbstractVector) where {Ob,Hom}
-  @assert all(obs₁[s] == dom(f) && obs₂[t] == codom(f) for (f,s,t) in homs)
+                                      homs::AbstractVector; cat=nothing) where {Ob,Hom}
+
+  cat = isnothing(cat) ? Dispatch(ThCategory, [Ob,Hom]) : cat
+  for (f,s,t) in homs
+    obs₁[s] == dom[cat](f) || error("Bad dom($f) = $(dom[cat](f)) ≠ $(obs₁[s])")
+    obs₂[t] == codom[cat](f) || error("Bad codom($f) = $(codom[cat](f)) ≠ $(obs₂[t])")
+  end
+
   d = BipartiteFreeDiagram{Ob,Hom}()
   add_vertices₁!(d, length(obs₁), ob₁=obs₁)
   add_vertices₂!(d, length(obs₂), ob₂=obs₂)
@@ -187,5 +190,10 @@ end
 
 BipartiteFreeDiagram(F::FreeDiagram) = 
   BipartiteFreeDiagram{obtype(F), homtype(F)}(F)
+
+
+function specialize(::Type{BipartiteFreeDiagram}, d::FreeDiagram)
+  BipartiteFreeDiagram{impl_type(d, :Ob), impl_type(d, :Hom)}(d)
+end
 
 end # module

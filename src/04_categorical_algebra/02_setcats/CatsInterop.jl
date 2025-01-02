@@ -1,23 +1,19 @@
 module CatsInterop 
 export U_CatSet
 
-using ...Cats.Categories: Cat, ob_set, codom
-using ...Cats.FinCats: FinCat
-
-using ....BasicSets: SetOb, FinDomFunction
-using ...Cats.FinFunctors: FinDomFunctor, collect_ob
+using ....BasicSets: FinDomFunction
+using ...Cats: Cat, ob_set, codom, Functor, collect_ob, Category, CatC
+using ..SetCat: SetC
 
 """ Forgetful functor Cat → Set.
 
-Sends a category to its set of objects and a functor to its object map. This was formerly called `Ob`
+Sends a category to its set of objects and a functor to its object map. 
 """
-U_CatSet(c::Cat) = ob_set(c)
+U_CatSet = Functor(o-> ob_set(o), 
+                   h->FinDomFunction(collect_ob(h), ob_set(codom(h))), 
+                   Category(CatC()), 
+                   Category(SetC()))
 
-U_CatSet(c::FinCat) = ob_set(c)
-
-
-""" Forgetful functor Cat to Set """
-U_CatSet(F::FinDomFunctor) = FinDomFunction(collect_ob(F), U_CatSet(codom(F)))
-
+# This was formerly called `Ob`
 
 end # module

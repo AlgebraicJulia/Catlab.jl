@@ -1,5 +1,5 @@
 export ThFreeDiagram, FreeDiagram, cocone_objects, cone_objects, diagram_type, 
-       fmap
+       fmap, specialize, ob, hom
 using StaticArrays: StaticVector, SVector
 
 using GATlab, ACSets
@@ -67,4 +67,8 @@ obs and homs of FreeDiagram while preserving the edges and vertices.
 fmap(f::FreeDiagram, o, h, O::Type, H::Type) = 
   FreeDiagram(fmap(getvalue(f), o, h, O, H))
 
+"""    specialize(::Type{T}, d::FreeDiagram) 
 
+Interpret a FreeDiagram as a specific implementation of type T, e.g. DiscreteDiagram, Multispan, etc. 
+"""
+function specialize end # implemented by each model of FreeDiagram

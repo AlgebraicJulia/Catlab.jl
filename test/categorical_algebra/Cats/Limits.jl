@@ -16,19 +16,22 @@ DD(x) = DiscreteDiagram(x)
 # Limit data structure.
 f, g = Hom(:f, C, A), Hom(:g, C, B)
 dia = DD([A,B])
-lim = limit(Diagram(dia, M), Span(f,g))
+lim = LimitCone(Span(f,g), FreeDiagram(dia))
 @test ob(lim) == C
 @test apex(lim) == C
 @test legs(lim) == [f,g]
 
-lim2 = Limit(Diagram(DD([A,B]), M), Span(Hom(:f, C, A),Hom(:g, C, B)))
+lim2 = LimitCone(Span(Hom(:f, C, A),Hom(:g, C, B)), FreeDiagram(DD([A,B])),)
 @test hash(lim2) == hash(lim)
 
 # Specializing to singleton limit.
-d = FreeDiagram{FreeCategory.Ob,FreeCategory.Hom}()
+d = FreeGraph{FreeCategory.Ob,FreeCategory.Hom}()
 add_vertex!(d, ob=A)
-specialize(d; colimit=false)
-lim = limit(specialize(d; colimit=false), M)
+
+d = getvalue(specialize(FreeDiagram(d)))
+ThCategory.id[FreeCategory.Meta.M](A)
+ThCategory.id(A)
+lim = limit(getvalue(M), d)
 @test ob(lim) == A
 
 # Colimits
@@ -36,15 +39,16 @@ lim = limit(specialize(d; colimit=false), M)
 
 # Colimit data structure.
 f, g = Hom(:f, A, C), Hom(:g, B, C)
-colim = Colimit(Diagram(DD([A,B]),M), Cospan(f,g))
+colim = ColimitCocone(Cospan(f,g), FreeDiagram(DD([A,B])))
 @test ob(colim) == C
 @test apex(colim) == C
 @test legs(colim) == [f,g]
 
 # Specializing to singleton colimit.
-d = FreeDiagram{FreeCategory.Ob,FreeCategory.Hom}()
+d = FreeGraph{FreeCategory.Ob,FreeCategory.Hom}()
 add_vertex!(d, ob=A)
-colim = colimit(specialize(d), M)
+d = getvalue(specialize(FreeDiagram(d)))
+colim = colimit(getvalue(M), d)
 @test ob(colim) == A
 
 # Epi mono.

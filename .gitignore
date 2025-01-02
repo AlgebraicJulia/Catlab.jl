@@ -11,3 +11,5 @@ Manifest.toml
 *.jl.cov
 *.jl.*.cov
 *.jl.mem
+
+lcov.info

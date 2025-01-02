@@ -8,8 +8,8 @@ using StructEquality
 using GATlab 
 
 using .....BasicSets: FinSet
-using ...FreeDiagrams: ThFreeDiagram
-import ...FreeDiagrams: fmap, cone_objects, cocone_objects
+using ...FreeDiagrams: ThFreeDiagram, FreeDiagram
+import ...FreeDiagrams: fmap, cone_objects, cocone_objects, specialize
 
 import .ThCategory: dom, codom
 
@@ -72,5 +72,9 @@ ParallelPair(first, last) =  ParallelMorphisms(SVector(first, last))
   homset()::FinSet = FinSet(length(model))
 end
 
+function specialize(::Type{ParallelMorphisms}, d::FreeDiagram)
+  s, t = src(d, first(homset(d))), tgt(d, first(homset(d)))
+  ParallelMorphisms(ob_map(d, s), ob_map(d, t), hom(d))
+end
 
 end # module 

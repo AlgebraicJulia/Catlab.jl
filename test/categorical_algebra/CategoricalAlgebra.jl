@@ -15,7 +15,7 @@ end
   include("Cats/Functors.jl")
   include("Cats/FreeDiagrams.jl")
   include("Cats/CommutativeDiagrams.jl")
-  # include("Cats/Limits.jl")
+  include("Cats/Limits.jl")
   # include("Cats/Diagrams.jl")
 
 end

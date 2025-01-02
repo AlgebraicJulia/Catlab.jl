@@ -32,7 +32,7 @@ import ..FinFunctors: FinDomFunctor, FinFunctor
   """
   function FinDomFunctorMap(o,h,d::FinCat,c::C; homtype=nothing) where {C<:AbsCat}
     homtype = isnothing(homtype) ? (c isa FinCat ? :path : :hom) : homtype
-    h′ = mapvals(f-> coerce_hom(c, f; homtype), h) 
+    h′ = mapvals(f-> coerce_hom(c, f; homtype), h;) 
 
     DO, CO = impl_type.([d,c], :Ob)
     DH, CH = impl_type.([d,c], :Hom)

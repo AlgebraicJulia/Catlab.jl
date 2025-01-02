@@ -21,15 +21,17 @@ end
 
 @acset_type FreeGraph(SchFreeGraph, index=[:src,:tgt]) <: AbstractFreeGraph
 
-objects(f::FreeGraph) = ob(f)
-
 """ Infer types """
-FreeGraph(obs::AbstractVector{Ob},homs::AbstractVector{Tuple{Hom,Int,Int}}
-           ) where {Ob,Hom} = FreeGraph{Ob,Hom}(obs, homs)
+FreeGraph(obs::AbstractVector{Ob},homs::AbstractVector{Tuple{Hom,Int,Int}}; cat=nothing
+           ) where {Ob,Hom} = FreeGraph{Ob,Hom}(obs, homs; cat)
 
 function FreeGraph{Ob,Hom}(obs::AbstractVector,
-                             homs::AbstractVector) where {Ob,Hom}
-  @assert all(obs[s] == dom(f) && obs[t] == codom(f) for (f,s,t) in homs)
+                             homs::AbstractVector; cat=nothing) where {Ob,Hom}
+  cat = isnothing(cat) ? Dispatch(ThCategory, [Ob,Hom]) : cat
+  for (f,s,t) in homs
+    obs[s] == dom[cat](f) || error("Bad dom($f) = $(dom[cat](f)) ≠ $(obs[s])")
+    obs[t] == codom[cat](f) || error("Bad codom($f) = $(codom[cat](f)) ≠ $(obs[t])")
+  end
   d = FreeGraph{Ob,Hom}()
   add_vertices!(d, length(obs), ob=obs)
   length(homs) > 0 && add_edges!(d, getindex.(homs,2), getindex.(homs,3), hom=first.(homs))
@@ -52,9 +54,12 @@ function FreeGraph(d::FreeDiagram)
   return F
 end
 
-# FreeCatGraph interface 
+# Constructor
+#############
 FreeCatGraph(n::FreeGraph) =  FreeCatGraph(getvalue(n))
 
+# FreeDiagraminterface 
+######################
 
 @instance ThFreeDiagram{Int,Int,Ob,Hom,FinSet
                        } [model::FreeGraph{Ob,Hom}] where {Ob,Hom} begin
@@ -65,6 +70,5 @@ FreeCatGraph(n::FreeGraph) =  FreeCatGraph(getvalue(n))
   obset()::FinSet = FinSet(nv(model))
   homset()::FinSet = FinSet(ne(model))
 end
-
 
 end # module

@@ -19,7 +19,7 @@ import ....Theories: id, compose
 import ....BasicSets: SetOb, SetFunction, force
 
 using ...Cats
-import ...Cats: FinDomFunctor, obtype, homtype, obtype, homtype, get_ob, get_hom
+import ...Cats: FinDomFunctor, obtype, homtype, obtype, homtype, get_ob, get_hom, is_natural
 using ..ACSetTransformations
 using ..ACSetTransformations: _ACSetTransformation
 import ..ACSetTransformations: ACSetTransformation

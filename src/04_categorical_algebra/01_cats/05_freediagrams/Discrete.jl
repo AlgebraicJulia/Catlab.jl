@@ -9,8 +9,8 @@ import ACSets: objects
 
 using .....BasicSets: FinSet
 import .....BasicSets: untag
-using ...FreeDiagrams: ThFreeDiagram
-import ...FreeDiagrams: fmap, cone_objects, cocone_objects
+using ...FreeDiagrams: ThFreeDiagram, FreeDiagram, ob
+import ...FreeDiagrams: fmap, cone_objects, cocone_objects, specialize
 
 """ Discrete diagram: a diagram with no non-identity morphisms.
 """
@@ -65,6 +65,10 @@ function untag(d::DiscreteDiagram{Ob}, i::Int, ::Int) where Ob
   end)
 end
 
+function specialize(::Type{DiscreteDiagram}, d::FreeDiagram; kw...)
+  DiscreteDiagram{impl_type(d, :Ob)}(ob(d))
+end
+
 # Special subtypes
 #-----------------
 
@@ -74,13 +78,21 @@ EmptyDiagram{Ob}() where Ob = DiscreteDiagram(SVector{0,Ob}())
 
 EmptyDiagram() = EmptyDiagram{Union{}}()
 
+specialize(::Type{EmptyDiagram}, d::FreeDiagram; kw...) =
+  EmptyDiagram{impl_type(d, :Ob)}()
+
 const SingletonDiagram{Ob} = DiscreteDiagram{Ob,<:StaticVector{1,Ob}}
 
 SingletonDiagram(ob) = DiscreteDiagram(SVector(ob))
+
+specialize(::Type{SingletonDiagram}, d::FreeDiagram; kw...) =
+  SingletonDiagram(only(ob(d)))
 
 const ObjectPair{Ob} = DiscreteDiagram{Ob,<:StaticVector{2,Ob}}
 
 ObjectPair(first, second) = DiscreteDiagram(SVector(first, second))
 
+specialize(::Type{ObjectPair}, d::FreeDiagram; kw...) =
+  ObjectPair(ob(d)...)
 
 end # module

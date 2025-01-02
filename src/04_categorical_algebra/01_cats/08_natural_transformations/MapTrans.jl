@@ -1,8 +1,15 @@
 module MapTrans 
 
-export is_natural
+export is_natural, FinTransformationMap
+using StructEquality
+using GATlab
 
-using ..FinFunctors: FinDomFunctor, mapvals
+using ...Categories: Cat
+using ...Functors: Functor
+using ...FinCats: FinCat
+using ...FinFunctors: FinDomFunctor, mapvals
+
+using ..NatTrans: ThTransformation, Transformation
 
 
 """ A natural transformation whose domain category is finitely generated.
@@ -13,14 +20,14 @@ given by a finite amount of data (one morphism in ``D`` for each generating
 object of ``C``) and its naturality is verified by finitely many equations (one
 equation for each generating morphism of ``C``).
 """
-const FinTransformation{C<:FinCat,D<:Cat,Dom<:FinDomFunctor,Codom<:FinDomFunctor} =
-  Transformation{C,D,Dom,Codom}
+# const FinTransformation{C<:FinCat,D<:Cat,Dom<:FinDomFunctor,Codom<:FinDomFunctor} =
+#   Transformation{C,D,Dom,Codom}
 
 FinTransformation(F, G; components...) = FinTransformation(components, F, G)
 
 """ Components of a natural transformation.
 """
-components(α::FinTransformation) =
+components(α::Transformation) =
   make_map(x -> component(α, x), ob_generators(dom_ob(α)))
 
 """ Is the transformation between `FinDomFunctors` a natural transformation?
@@ -33,7 +40,8 @@ domains and codomains of the components are checked.
 
 See also: [`is_functorial`](@ref).
 """
-function is_natural(α::FinTransformation; check_equations::Bool=true)
+function is_natural(α::Transformation; check_equations::Bool=true)
+  # THROW AN ERROR IF THE TRANSFORMATION IS NOT A FINTRANSFORMATION?
   F, G = dom(α), codom(α)
   C, D = dom(F), codom(F) # == dom(G), codom(G)
   all(ob_generators(C)) do c
@@ -70,7 +78,7 @@ end
 """ Natural transformation with components given by explicit mapping.
 """
 @struct_hash_equal struct FinTransformationMap{C<:FinCat,D<:Cat,
-    Dom<:FinDomFunctor{C,D},Codom<:FinDomFunctor,Comp} <: FinTransformation{C,D,Dom,Codom}
+    Dom<:FinDomFunctor{C,D},Codom<:FinDomFunctor,Comp}
   components::Comp
   dom::Dom
   codom::Codom
@@ -90,26 +98,27 @@ components(α::FinTransformationMap) = α.components
 
 op(α::FinTransformationMap) = FinTransformationMap(components(α),
                                                    op(codom(α)), op(dom(α)))
+# Composition of Transformations 
+#
+# function Categories.do_compose(α::FinTransformationMap, β::FinTransformation)
+#   F = dom(α)
+#   D = codom(F)
+#   FinTransformationMap(mapvals(α.components, keys=true) do c, f
+#                          compose(D, f, component(β, c))
+#                        end, F, codom(β))
+# end
 
-function Categories.do_compose(α::FinTransformationMap, β::FinTransformation)
-  F = dom(α)
-  D = codom(F)
-  FinTransformationMap(mapvals(α.components, keys=true) do c, f
-                         compose(D, f, component(β, c))
-                       end, F, codom(β))
-end
+# function Categories.do_composeH(F::FinDomFunctorMap, β::Transformation)
+#   G, H = dom(β), codom(β)
+#   FinTransformationMap(mapvals(c -> component(β, c), F.ob_map),
+#                        compose(F, G), compose(F, H))
+# end
 
-function Categories.do_composeH(F::FinDomFunctorMap, β::Transformation)
-  G, H = dom(β), codom(β)
-  FinTransformationMap(mapvals(c -> component(β, c), F.ob_map),
-                       compose(F, G), compose(F, H))
-end
-
-function Categories.do_composeH(α::FinTransformationMap, H::Functor)
-  F, G = dom(α), codom(α)
-  FinTransformationMap(mapvals(f->hom_map(H,f),α.components),
-                      compose(F, H), compose(G, H))
-end
+# function Categories.do_composeH(α::FinTransformationMap, H::Functor)
+#   F, G = dom(α), codom(α)
+#   FinTransformationMap(mapvals(f->hom_map(H,f),α.components),
+#                       compose(F, H), compose(G, H))
+# end
 
 function Base.show(io::IO, α::FinTransformationMap)
   print(io, "FinTransformation(")

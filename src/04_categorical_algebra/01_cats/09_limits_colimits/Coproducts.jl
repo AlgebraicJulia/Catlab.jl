@@ -8,16 +8,15 @@ using .....Theories: dom
 import .....Theories: coproduct, universal, copair
 using ..FreeDiagrams: Multicospan, apex, DiscreteDiagram
 import ..FreeDiagrams: ob
-using ..Colimits: AbsColimit
+using ..Colimits: AbsColimit, ThCategoryColimitBase
 import ..Colimits: colimit, cocone
-using ..Initials: ThCategoryWithInitial
 
 """
 Alternative, unbiased presentation of `ThCategoryWithCoproducts` which focuses on 
 computational and ergonomic aspects at the expense of hiding a lot of structure 
 within Julia datatypes such as `DiscreteDiagram`.
 """
-@theory ThCategoryUnbiasedCoproducts <: ThCategoryWithInitial begin
+@theory ThCategoryUnbiasedCoproducts <: ThCategoryColimitBase begin
   DiscDiag::TYPE  # type of discrete diagrams, i.e. vectors of Ob
 
   colimit(d::DiscDiag)::Colimit # Unbiased products.

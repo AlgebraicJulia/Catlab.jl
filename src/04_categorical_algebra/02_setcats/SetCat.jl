@@ -14,7 +14,7 @@ using ...Cats
 """ Category of sets and functions """
 @struct_hash_equal struct SetC end
 
-@instance ThCategory{AbsSet, SetFunction} [model::SetC] begin
+@instance ThCategoryExplicitSets{AbsSet, SetFunction,AbsSet} [model::SetC] begin
   dom(f::SetFunction)::AbsSet = dom(f)
   codom(f::SetFunction)::AbsSet = codom(f)
 
@@ -25,6 +25,8 @@ using ...Cats
       error("Domain mismatch in composition: $(codom(f)) != $(dom(g))")
     SetFunction(f, g)
   end
+  ob_set() = SetOb(AbsSet)
+  hom_set() = SetOb(SetFunction)
 end
 
 # @instance ThCategoryWithTerminal{AbsSet,SetFunction,TerminalLimit

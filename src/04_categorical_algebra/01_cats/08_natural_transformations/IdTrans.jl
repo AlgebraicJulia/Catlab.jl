@@ -4,13 +4,12 @@ export IdentityTransformation
 using StructEquality
 
 using GATlab
-import GATlab: getvalue
 
-using ..Categories: Cat
-using ..Functors: Functor
-using ..NatTrans: NatTransImpl, ThTransformation
+using ...Categories: Cat
+using ...Functors: Functor
+using ..NatTrans: ThTransformation
 
-@struct_hash_equal struct IdentityTransformation{DO,CH} <: NatTransImpl{DO,CH}
+@struct_hash_equal struct IdentityTransformation{DO,CH}
   dom::Functor
   IdentityTransformation(F::Functor) = new{obtype(dom(F)), homtype(codom(F))}(F)
 end
@@ -18,7 +17,7 @@ end
 # Accessors
 ###########
 
-getvalue(i::IdentityTransformation) = i.dom
+GATlab.getvalue(i::IdentityTransformation) = i.dom
 
 # Instance of ThTransformation
 ##############################

@@ -1,6 +1,7 @@
 module Limits
 
-export Limit, diagram, cone, limit,LimitCone, proj1, proj2, AbsLimit
+export Limit, diagram, cone, limit,LimitCone, proj1, proj2, AbsLimit, 
+       SingletonLimit, JoinAlgorithm, ThCategoryLimitBase, ThCategoryWithLimits
        
 using StructEquality
 using GATlab
@@ -13,8 +14,6 @@ using ...Categories: Category, ThCategoryExplicitSets
 using ...FreeDiagrams
 import ...FreeDiagrams: apex, feet, legs
 using ...FinFunctors: FinDomFunctor
-using ...Diagrams: Diagram
-
 
 @theory ThCategoryLimitBase <: ThCategoryExplicitSets begin
   Limit()::TYPE
@@ -24,16 +23,23 @@ using ...Diagrams: Diagram
   apex(s::MSpan)::Ob # apex of the span
 end
 
-apex(::WithModel, m::Multispan; context=nothing) = 
-  apex(m;context) # always use dispatch
+apex(::WithModel, m::Multispan; context=nothing) = apex(m) # always use dispatch
 
 """
-`AbsLimit` implementations should be able to recover the diagram that it is a limit of and a computed limit cone.
+`AbsLimit` implementations should be able to recover the diagram that it is a 
+limit of and a computed limit cone.
+
+Any implementation must provide 
+- cone()::Multispan 
+- diagram()::FreeDiagram
+
+Every use of a AbsLimit (e.g. in `universal`) must use these 
+methods or the methods below which are derived from these.
 """
 abstract type AbsLimit end
 
-
-cone(lim::AbsLimit) = lim.cone # by default, assume AbsLimit has `cone` field
+cone(lim::AbsLimit) = lim.cone # by default, assume AbsLimit has a `cone` field
+diagram(lim::AbsLimit) = lim.diagram # by default, assume a `diagram` field
 
 apex(lim::AbsLimit) = apex(cone(lim))
 
@@ -53,8 +59,7 @@ proj2(lim::AbsLimit) = let (_,l) = legs(lim); l end
 
 Base.length(lim::AbsLimit) = length(cone(lim))
 
-ob(::WithModel, x::AbsLimit; context=nothing) = 
-    ob(x; context)
+ob(::WithModel, x::AbsLimit; context=nothing) = apex(x) # always use dispatch
 
 """ 
 By default, computing a universal property with a limit will pull out the
@@ -100,16 +105,11 @@ Most common representation of the result of a limit computation: a limit cone
   diagram::FreeDiagram
 end
 
-diagram(c::LimitCone) = c.diagram
-
+diagram(c::LimitCone) = c.diagram  
 
 # Generic limits
 ####################
 
-limit(d::FreeDiagram, m::Category; alg=DefaultLimit()) = 
-  limit(BipartiteFreeDiagram{Ob,Hom}(d; colimit=false), m, alg)
-
-limit(d::FinDomFunctor; alg=DefaultLimit(), kw...) = 
-  limit(FreeDiagram(d), codom(d); alg, kw...)
+function limit end
 
 end # module

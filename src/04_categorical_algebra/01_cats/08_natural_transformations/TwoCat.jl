@@ -1,92 +1,18 @@
-module NatTrans 
+module TwoCat 
+export Cat2, co
 
-export co, Cat2, component, dom_ob, codom_ob, is_natural
+using StructEquality 
+using GATlab 
 
-using StructEquality
-using Reexport
-
-using GATlab
-import GATlab: getvalue
-
-using ....Theories: ThCategory2
-import .ThCategory2: dom, codom, compose, ⋅, ∘, id, composeH, *
-using ..Categories: Cat
-using ..Functors: Functor
-
-# Natural transformations
-#########################
-
-# The equations that come with this will be less tedious to do when colimits 
-# of GATs are a thing
-@theory ThTransformation begin
-  DO::TYPE; CH::TYPE; Fun::TYPE
-  dom()::Fun 
-  codom()::Fun
-  component(x::DO)::CH
-end
-
-""" Subtypes of this ought implement the ThTransformation interface """
-abstract type NatTransImpl{DO,CH} end
-
-""" Abstract base type for a natural transformation between functors.
-
-A natural transformation ``α: F ⇒ G`` has a domain ``F`` and codomain ``G``
-([`dom`](@ref) and [`codom`](@ref)), which are functors ``F,G: C → D`` having
-the same domain ``C`` and codomain ``D``. The transformation consists of a
-component ``αₓ: Fx → Gx`` in ``D`` for each object ``x ∈ C``, accessible using
-[`component`](@ref) or indexing notation (`Base.getindex`).
-"""
-@struct_hash_equal struct Transformation{DO,CH} 
-  impl::NatTransImpl{DO,CH}
-  function Transformation(i::NatTransImpl{DO,CH}) where {DO,CH}
-    implements(i, ThTransformation) || error("Bad model")
-    F, G = ThTransformation.dom[i](), ThTransformation.codom[i]()
-    dom(F) == dom(G) || error("Domains don't match")
-    codom(F) == codom(G) || error("Codomains don't match")
-    obtype(dom(F)) == DO || error("Bad dom ob type")
-    homtype(codom(F)) == CH || error("Bad codom hom type")
-    new{DO,CH}(i)
-  end
-end
-
-getvalue(t::Transformation) = t.impl 
-
-# Theory methods 
-
-
-
-
-""" Component of natural transformation.
-"""
-component(t::Transformation, x::Any) = 
-  ThTransformation.component[getvalue(t)](x)
-
-@inline Base.getindex(α::Transformation, c) = component(α, c)
-
-""" Domain object of natural transformation.
-
-Given ``α: F ⇒ G: C → D``, this function returns ``C``.
-"""
-dom_ob(α::Transformation) = dom(dom(α)) # == dom(codom(α))
-
-""" Codomain object of natural transformation.
-
-Given ``α: F ⇒ G: C → D``, this function returns ``D``.
-"""
-codom_ob(α::Transformation) = codom(dom(α)) # == codom(codom(α))
-
-# Implementations
-#################
-
-include("NatTransImpls/IdTrans.jl")
-
-@reexport using .IdTrans
-
+using .....Theories: ThCategory2
+using ...Categories: Cat 
+using ...Functors: Functor 
+using ..NatTrans: Transformation
 
 # # 2-category of categories
 # ##########################
 
-struct Cat2 end 
+@struct_hash_equal struct Cat2 end 
 
 @instance ThCategory2{Cat,Functor,Transformation} [model::Cat2] begin
   dom(F::Functor) = ThFunctor.dom[getvalue(F)]()

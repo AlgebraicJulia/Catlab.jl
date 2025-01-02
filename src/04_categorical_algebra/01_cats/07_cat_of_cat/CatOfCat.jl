@@ -7,7 +7,8 @@ using StructEquality
 using GATlab
 
 using ....Theories: @default_model, dom, codom, id, compose
-using ..Categories: Category, Cat
+using ....BasicSets: AbsSet, SetOb
+using ..Categories: Category, Cat, ThCategoryExplicitSets
 using ..Functors: Functor, ThFunctor
 using ..CompFunctor: CompositeFunctor
 using ..FinCats: FinCat
@@ -30,7 +31,7 @@ presented categories are provided by another module, [`FinCats`](@ref).
 """
 @struct_hash_equal struct CatC end
 
-@instance ThCategory{Category, Functor} [model::CatC] begin
+@instance ThCategoryExplicitSets{Category, Functor, AbsSet} [model::CatC] begin
 
   dom(f::Functor)::Category = ThFunctor.dom[getvalue(f)]()
 
@@ -39,6 +40,10 @@ presented categories are provided by another module, [`FinCats`](@ref).
   id(c::Category) = Functor(c)
 
   compose(f::Functor, g::Functor) = Functor(CompositeFunctor(f,g))
+
+  ob_set()::SetOb = SetOb(Category)
+
+  hom_set()::SetOb = SetOb(Functor)
 
 end
 
@@ -57,6 +62,5 @@ end
   compose(f::FinFunctor, g::FinFunctor) = FinFunctor(CompositeFinDomFunctor(f,g))
 
 end
-
 
 end # module

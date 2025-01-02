@@ -1,5 +1,5 @@
 export FinFunction, FinDomFunction, preimage, is_indexed,
-       is_monic, is_epic, is_iso, Fin_FinDom
+       is_monic, is_epic, is_iso, Fin_FinDom, ensure_indexed
 
 
 import ACSets.Columns: preimage, Column

@@ -67,6 +67,16 @@ end
 # @test eltype(otimes(CMC, fill(SetOb(Int), 3)...)) == Tuple{Int,Int,Int}
 # @test otimes(CMC, fs)((1,5,10)) == (2,7,13)
 
+
+# Pullback of a cospan into non-finite set.
+f = FinDomFunction([:a, :a, :c, :b], SetOb(Symbol))
+g = FinDomFunction([:a, :a, :d, :b], SetOb(Symbol))
+π1, π2 = lim = pullback[𝒞](f, g)
+@test ob(lim) == FinSet(5)
+@test force(π1) == FinFunction([1,1,2,2,4], 4)
+@test force(π2) == FinFunction([1,2,1,2,4], 4)
+
+
 # Colimits
 ##########
 
@@ -80,5 +90,33 @@ f = SetFunction(string, TypeSet(Int), TypeSet(String))
 # VarSets
 S = SetOb(VarSet{Union{}}(5))
 @test SetOb(S) == S
+
+# pushouts
+# TODO check that input cospan commutes?
+# k = FinFunction([1,2,5], 5)
+# @test_throws ErrorException copair(colim,h,k)
+
+h, k = FinDomFunction.([[:b,:c],[:a,:b,:c]], Ref(SetOb(Symbol)))
+
+ℓ = copair(colim, h, k)
+@test force(compose(C,coproj1(colim), ℓ)) == h
+@test force(compose(C,coproj2(colim), ℓ)) == k
+k = FinDomFunction([:a,:d,:c], SetOb(Symbol))
+@test_throws ErrorException copair(colim,h,k)
+
+
+# Ternary pullback using different algorithms.
+f, g = FinDomFunction.([[:a,:b,:c],[:c,:b,:a]], Ref(SetOb(Symbol)))
+h = FinDomFunction([:a,:a,:b,:b,:c,:c], SetOb(Symbol))
+fgh = Multicospan([f, g, h])
+lim = limit(fgh, C, ComposeProductEqualizer())
+@test ob(lim) == FinSet(6)
+reference_tuples = tuples(lim)
+
+for alg in (NestedLoopJoin(), SortMergeJoin(), HashJoin())
+  lim = limit(fgh, C, alg)
+  @test ob(lim) == FinSet(6)
+  @test tuples(lim) == reference_tuples
+end
 
 end # module

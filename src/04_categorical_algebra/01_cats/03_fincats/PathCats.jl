@@ -34,7 +34,7 @@ end
 
 ThPathCat.Meta.@wrapper PathCat
 
-struct PathCatAsFinCat{Ob,Hom}
+@struct_hash_equal struct PathCatAsFinCat{Ob,Hom}
   val::PathCat 
   PathCatAsFinCat(p::PathCat) = 
     new{impl_type(p,:Ob), impl_type(p,:Gen)}(p)

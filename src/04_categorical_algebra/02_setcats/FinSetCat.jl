@@ -374,7 +374,7 @@ similar_mutable(x::AbstractVector, T::Type) = similar(x, T)
 A nested-loop join is algorithmically the same as `ComposeProductEqualizer`,
 but for completeness and performance we give a direct implementation here.
 """
-function limit(cospan::Multicospan{Ob,Hom}, m::SetC, ::NestedLoopJoin) where {Ob,Hom}
+function nested_loop_limit(cospan::Multicospan{Ob,Hom}, m::SetC, ::NestedLoopJoin) where {Ob,Hom}
   funcs = legs(cospan)
   ns = map(length, feet(cospan))
   πs = map(_ -> Int[], funcs)

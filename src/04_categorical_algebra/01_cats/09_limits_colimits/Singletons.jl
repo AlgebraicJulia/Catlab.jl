@@ -2,66 +2,61 @@ module Singletons
 export SingletonLimit, SingletonColimit
 
 using StructEquality
+using GATlab: WithModel, getvalue
 using ...Categories: Category, id, ThCategory
 using ...FreeDiagrams
 import ...FreeDiagrams: ob
 using ..Limits: AbsLimit
 using ..Colimits: AbsColimit
-import ..Limits: universal, limit, cone, legs
+import ..Limits: universal, limit, cone, diagram
+import ..Colimits: cocone, colimit
 
-""" 
-Special case when diagram is a singleton
+
+""" Limit of a singleton diagram.
 """
 @struct_hash_equal struct SingletonLimit{Ob,Hom} <: AbsLimit
-  ob::Ob
-  i::Hom
-  function SingletonLimit(m::Category, o::O) where O 
-    i = ThCategory.id(m,o)
-    new{O,typeof(i)}(o, i)
+  x::Ob
+  id_x::Hom
+  SingletonLimit(x::Ob, m) where Ob = let i = id[m](x);
+    new{Ob,typeof(i)}(x, i)
   end
 end
 
-ob(s::SingletonLimit) = s.ob
+function limit(m, d::SingletonDiagram; context=nothing)
+  x = only(d)
+  SingletonLimit(x, m)
+end
 
-legs(s::SingletonLimit) = [s.i]
+cone(lim::SingletonLimit) = SMultispan{1}(lim.x, lim.id_x)
 
-cone(s::SingletonLimit) = Multispan(ob(s), legs(s))
+diagram(lim::SingletonLimit) = SingletonDiagram(lim.ob)
 
-"""
-In *any* category, we know how to construct the limit of a singleton diagram.
-"""
-limit(m::Category, d::SingletonDiagram) = SingletonLimit(m, only(d))
+universal(lim::SingletonLimit, ::Multispan) = lim.id_x
 
-universal(::Category, ::SingletonLimit, cone::Multispan) = only(cone)
 
 # Colimits
 ##########
 
-
-""" 
-Special case when diagram is a singleton
+""" Colimit of a singleton diagram.
 """
 @struct_hash_equal struct SingletonColimit{Ob,Hom} <: AbsColimit
-  ob::Ob
-  i::Hom
-  function SingletonColimit(d::SingletonDiagram, o::O) where O
-    i = id(m, o)
-    new{O,typeof(i)}(o, i)
+  x::Ob
+  id_x::Hom
+  SingletonColimit(x::Ob, m) where Ob = let i = id[m](x);
+    new{Ob,typeof(i)}(x, i)
   end
+
+end
+function colimit(m, d::SingletonDiagram; context=nothing)
+  x = only(d)
+  SingletonColimit(x, m)
 end
 
-ob(s::SingletonColimit) = s.ob
 
-legs(s::SingletonColimit) = [s.i]
+cocone(lim::SingletonColimit) = SMulticospan{1}(lim.x, lim.id_x)
 
-cocone(s::SingletonColimit)  = Multicospan(ob(s), legs(s))
+diagram(lim::SingletonColimit) = SingletonDiagram(lim.ob)
 
-"""
-In *any* category, we know how to construct the limit of a singleton diagram.
-"""
-colimit(m::Category, d::SingletonDiagram) =
-  Colimit(Diagram(d, m), SingletonColimit(d, m))
+universal(lim::SingletonColimit, ::Multicospan) = lim.id_x
 
- universal(::Category,lim::SingletonColimit, cocone::Multicospan) = only(cocone)
-
-end 
+end # module
