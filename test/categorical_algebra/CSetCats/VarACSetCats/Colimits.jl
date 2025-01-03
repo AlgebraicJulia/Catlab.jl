@@ -23,7 +23,7 @@ expected = @acset VES begin
   elabel=[:e,AttrVar(2),:e,AttrVar(4)] 
 end
 
-colim = ι₁, ι₂ = coproduct[𝒱](g,g)
+colim = ι₁, ι₂ = coproduct[𝒱](g, g)
 
 @test ob(colim) == expected
 @test ι₁[:V](1) == 1

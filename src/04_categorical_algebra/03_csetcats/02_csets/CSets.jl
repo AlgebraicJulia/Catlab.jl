@@ -1,6 +1,7 @@
 export ACSetCategory, ACSetTransformation, sets, naturality_failures, is_natural, 
        show_naturality_failures, get_ob, get_hom, get_op, get_attrtype, get_attr, pre, post,
-      ThACSetCategory, entity_cat, attr_cat, prof_cat, map_components, infer_acset_cat, coerce
+      ThACSetCategory, entity_cat, attr_cat, prof_cat, map_components, infer_acset_cat, 
+      coerce, coerce_ob, coerce_attr, coerce_components
 
 using Base.Iterators: flatten
 using Reexport
@@ -43,7 +44,7 @@ ACSets.
 @theory ThACSetCategory begin 
   EntityCat::TYPE; AttrCat::TYPE; ProfCat::TYPE
   Ob::TYPE;Hom::TYPE; AttrType::TYPE; Op::TYPE; Attr::TYPE
-  Sym::TYPE; ACS::TYPE; ACSHom::TYPE; SetType::TYPE; FnType::TYPE
+  Sym::TYPE; Any′::TYPE; ACS::TYPE; ACSHom::TYPE; SetType::TYPE; FnType::TYPE
 
   # Interpreting the data from the ACSet as living in some collage category
   entity_cat()::EntityCat
@@ -53,8 +54,9 @@ ACSets.
   # An empty ACSet (has implementation details e.g. indexing)
   constructor()::ACS 
 
-  # Interpret user-friendly hom data in an intuitive way
-  coerce(f::ACSHom)::ACSHom 
+  # Interpret user-friendly ACSetTransformation data in an intuitive way
+  coerce_ob(f::Any′, d::Ob, cd::Ob)::Hom
+  coerce_attr(f::Any′, T::Any′, d::AttrType, cd::AttrType)::Op 
 
   # Extracting Ob/Hom data from an ACSet data structure
   get_ob(x::ACS, o::Sym)::Ob
@@ -74,6 +76,43 @@ ThACSetCategory.Meta.@wrapper ACSetCategory
 
 # Other methods
 ###############
+""" 
+Apply coerce_ob and coerce_attr to the components of an ACSetTransformation.
+Any keys not present will be interpreted as `nothing`.
+"""
+function coerce(f::ACSetTransformation; cat=nothing)
+  cat = isnothing(cat) ? infer_acset_cat(f) : cat
+  X, Y, S = dom(f), codom(f), acset_schema(cat)
+  comps = Dict(map(ob(S)) do o
+    o => coerce_ob(cat, get(components(f), o, nothing), 
+                        get_ob(cat, X, o), get_ob(cat, Y, o))
+  end)
+  attr_comps = Dict(map(attrtypes(S)) do o
+    o => coerce_attr(cat, get(components(f), o , nothing), attrtype_type(X, o),
+                          get_attrtype(cat, X, o), get_attrtype(cat, Y, o))
+  end)
+  _ACSetTransformation(merge(comps,attr_comps), X, Y)
+end
+
+""" 
+Apply coerce_ob and coerce_attr to the components of an ACSetTransformation.
+
+Does not require that all schema ob and attrtypes are present in `f`.
+"""
+function coerce_components(f::ACSetTransformation; cat=nothing)
+  cat = isnothing(cat) ? infer_acset_cat(f) : cat
+  X, Y, S = dom(f), codom(f), acset_schema(cat)
+  comps = Dict(map(collect(pairs(components(f)))) do (k ,v)
+    k => if k ∈ ob(S)
+      coerce_ob(cat, v, get_ob(cat, X, k), get_ob(cat, Y, k))
+    elseif k ∈ attrtypes(S)
+      coerce_attr(cat, v, attrtype_type(X, k),
+                  get_attrtype(cat, X, k), get_attrtype(cat, Y, k))
+    end
+  end)
+  _ACSetTransformation(comps, X, Y)
+end
+
 
 acset_schema(a::ACSetCategory) = acset_schema(constructor(a))
   

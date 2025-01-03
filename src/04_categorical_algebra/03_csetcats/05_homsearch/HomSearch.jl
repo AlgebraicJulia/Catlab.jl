@@ -271,7 +271,7 @@ function backtracking_search(f, X::ACSet, Y::ACSet;
   monic = unique([iso..., monic...])
 
   if error_failures
-    uns = naturality_failures(ACSetTransformation(X,Y;initial..., cat)) # TODO removed `type_components`
+    uns = naturality_failures(coerce_components(_ACSetTransformation(initial,X,Y); cat))
     all(isempty,[uns[a] for a in keys(uns)]) ||
       error(sprint(show_naturality_failures, uns))
   end

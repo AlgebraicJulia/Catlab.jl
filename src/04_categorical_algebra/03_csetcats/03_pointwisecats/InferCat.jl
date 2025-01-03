@@ -44,5 +44,5 @@ hasvar(X::ACSet) = any(o->hasvar(X,o), attrtypes(acset_schema(X)))
 function ACSetTransformation(comps, dom::ACSet, codom::ACSet; 
                              cat::Union{Nothing,ACSetCategory}=nothing)
   cat = isnothing(cat) ? infer_acset_cat(comps, dom, codom) : cat
-  return coerce(cat, _ACSetTransformation(comps, dom, codom))
+  return coerce(_ACSetTransformation(comps, dom, codom); cat)
 end

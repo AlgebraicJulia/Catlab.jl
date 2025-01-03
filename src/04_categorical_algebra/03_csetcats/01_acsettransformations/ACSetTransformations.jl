@@ -128,60 +128,6 @@ function _ACSetTransformation(components, X::ACSet, Y::ACSet)
   return StructACSetTransformation{S}(NamedTuple(components), X, Y)
 end
 
-# Component coercion
-#####################
-
-# """
-# Interpret raw vectors in standard ways to produce FinDomFunctions.
-# """
-# function coerce_components(S, components, X::ACSet{<:PT}, Y) where PT
-#   @assert keys(components) ⊆ objects(S) ∪ attrtypes(S)
-#   kw = Dict(map(types(S)) do c  
-#     c => PT <: MarkAsDeleted ? (dom_parts=parts(X,c), codom_parts=parts(Y,c)) : (;)
-#   end)
-#   ocomps = NamedTuple(map(objects(S)) do c
-#     c => coerce_component(c, get(components, c, 1:0), 
-#                           nparts(X,c), nparts(Y,c); kw[c]...)
-#   end)
-#   acomps = NamedTuple(map(attrtypes(S)) do c
-#     c => coerce_attrvar_component(c, get(components, c, 1:0), 
-#           TypeSet(attrtype_type(X, c)), TypeSet(attrtype_type(Y, c)), 
-#           nparts(X,c), nparts(Y,c); kw[c]...)
-#   end)
-#   return merge(ocomps, acomps)
-# end 
-
-
-# coerce_component(ob::Symbol, f::T, dom_size::Int, codom_size::Int; kw...) where {T<:Integer} =
-#   error("Scalar component for $ob not allowed; " *
-#   "this is probably from a scalar component in an ACSetTransformation, please use a vector")
-
-# coerce_component(x::Symbol, f::T, dom_size::Int, codom_size::Int; kw...
-#                 ) where {T<:AbstractVector{<:Integer}} = FinFunction(f, dom_size, codom_size; kw...)
-
-# """ Coerce VarFunction to a SetFunction """
-# function coerce_attrvar_component(ob::Symbol, f::VarFunction,::TypeSet{T}, ::TypeSet{T},
-#   dom_size::Int, codom_size::Int; kw...) where {T}
-#   SetFunction(f)
-# end
-
-# function coerce_attrvar_component(
-#     ob::Symbol, f::AbstractVector,::TypeSet{T}, ::TypeSet{T},
-#     dom_size::Int, codom_size::Int; kw...) where {T}
-#   e = "Domain error in component $ob variable assignment $(length(f)) != $dom_size"
-#   length(f) == dom_size || error(e)
-#   return VarFunction{T}(f, FinSet(codom_size))
-# end
-
-
-# """Coerce an arbitrary julia function to a LooseVarFunction assuming no variables"""
-# function coerce_attrvar_component(ob::Symbol, f::Function, d::TypeSet{T},cd::TypeSet{T′},
-#   dom_size::Int, codom_size::Int; kw...) where {T,T′}
-#   dom_size == 0 || error("Cannot specify $ob component with $f with $dom_size domain variables")
-#   coerce_attrvar_component(ob, LooseVarFunction{T,T′}([], f, FinSet(codom_size)), 
-#                            d, cd, dom_size,codom_size)
-# end
-
 # Mark as deleted
 #################
 

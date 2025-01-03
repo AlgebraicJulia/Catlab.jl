@@ -19,32 +19,24 @@ elements of some (fixed) Julia type or elements of a finite set.
 """
 @struct_hash_equal struct VarACSetCat <: AbsACSetCat
   constructor::Any
-  function VarACSetCat(x::ACSet)
-    new(constructor(x))
-  end
+  VarACSetCat(x::ACSet) = new(constructor(x))
 end
 
 ACSets.acset_schema(c::VarACSetCat) = acset_schema(c.constructor())
 
 @instance ThACSetCategory{SkelFinSet, InitialModel′, InitialModel′,
                           FinSetInt, FinFunction, FinSetInt, VarFunction, 
-                          VarFunction,Symbol,ACSet,ACSetTransformation,
+                          VarFunction,Symbol, Any, ACSet,ACSetTransformation,
                           AbsSet, AbstractVector
                          } [model::VarACSetCat] begin
 
   constructor()::ACSet = model.constructor()
 
-  function coerce(f::ACSetTransformation)
-    X, Y, S = dom(f), codom(f), acset_schema(model)
-    comps = Dict(map(ob(S)) do o
-      o => coerce_component(o, get(components(f), o, nothing), 
-                    FinSet(get_ob[model](X, o)), FinSet(get_ob[model](Y, o)))
-    end )
-    attr_comps = Dict(map(attrtypes(S)) do o
-      o => coerce_attr_component_varfun(o, attrtype_type(X, o), get(components(f), o , nothing), FinSet(get_ob[model](X, o)), FinSet(get_ob[model](Y, o)))
-    end)
-    _ACSetTransformation(merge(comps,attr_comps), X, Y)
-  end
+  coerce_ob(f::Any,d::FinSetInt,c::FinSetInt) = 
+    coerce_component(f,FinSet(d),FinSet(c))
+
+  coerce_attr(f::Any,T::Any,d::FinSetInt,c::FinSetInt) = 
+    coerce_attr_varfun(f, T, FinSet(d), FinSet(c))
 
   entity_cat() = SkelFinSet()
 
@@ -82,38 +74,37 @@ ACSets.acset_schema(c::VarACSetCat) = acset_schema(c.constructor())
 
 end
 
-function coerce_attr_component_varfun(o::Symbol, T::Type, f::AbsVarFunction{T′}, d::FinSet, cd::FinSet)  where {T′}
-  T′ <: T || error("Bad $o VarFunction type: $(T′) ⊀ $(T)  ")
+function coerce_attr_varfun(f::AbsVarFunction{T′}, T::Type, 
+                            d::FinSet, cd::FinSet)  where {T′}
+  T′ <: T || error("Bad VarFunction type: $(T′) ⊀ $(T)  ")
   dom(f) == d || error("bad $f $(dom(f))≠$d")
   codom(f) == cd || error("bad $f $(codom(f))≠$cd")
   f
 end
 
-function coerce_attr_component_varfun(o::Symbol, T::Type, ::Nothing, d::FinSet, cd::FinSet) 
-  isempty(d) || error("Bad $o component: nonempty domain $d")
+function coerce_attr_varfun(::Nothing, T::Type, d::FinSet, cd::FinSet) 
+  isempty(d) || error("Bad: nonempty domain $d")
   return VarFunction{T}([], cd)
 end
 
 """ Assume this is a function purely on the FinSet component """
-function coerce_attr_component_varfun(o::Symbol, T::Type, f::Fin_FinDom, 
-                                      d::FinSet, cd::FinSet)
-  dom(f) == d || error("Bad $o component: mismatched dom $d ≠ $(dom(f))")
-  codom(f) == cd || error("Bad $o component: mismatched dom $cd ≠ $(codom(f))")
+function coerce_attr_varfun(f::Fin_FinDom, T::Type, d::FinSet, cd::FinSet)
+  dom(f) == d || error("Bad: mismatched dom $d ≠ $(dom(f))")
+  codom(f) == cd || error("Bad: mismatched dom $cd ≠ $(codom(f))")
   inject(f, T)
 end
 
-function coerce_attr_component_varfun(o::Symbol, T::Type, f::Vector, d::FinSet, 
-                                      cd::FinSet) 
+function coerce_attr_varfun(f::Vector, T::Type, d::FinSet, cd::FinSet) 
   length(f) == length(d) && getvalue(d) isa FinSetInt ||  error(
-    "Bad $o domain $d for $f")
+    "Bad domain $d for $f")
   VarFunction{T}(map(f) do v 
     if v isa AttrVar
-      getvalue(v) ∈ cd || error("Bad $o value $v for codom $cd")
+      getvalue(v) ∈ cd || error("Bad value $v for codom $cd")
       getvalue(v)
     elseif v isa T 
       AttrVal{T}(v)
     else 
-      error("Bad $o::$T value: $v :: $(typeof(v))")
+      error("Bad::$T value: $v :: $(typeof(v))")
     end
   end, cd)
 

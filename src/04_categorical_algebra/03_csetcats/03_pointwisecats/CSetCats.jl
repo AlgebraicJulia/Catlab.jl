@@ -29,20 +29,14 @@ ACSets.acset_schema(c::CSetCat) = acset_schema(c.constructor)
 
 @instance ThACSetCategory{SkelFinSet, InitialModel′, InitialModel′,
                           FinSetInt, FinFunction, Union{}, Union{}, Union{},
-                          Symbol,ACSet,ACSetTransformation,
+                          Symbol, Any, ACSet,ACSetTransformation,
                           AbsSet, AbstractVector
                          } [model::CSetCat] begin
 
   constructor()::ACSet = model.constructor()
 
-  function coerce(f::ACSetTransformation)
-    X, Y, = dom(f), codom(f)
-    comps = Dict(map(ob(acset_schema(X))) do o
-      o => coerce_component(o, get(components(f), o, nothing), 
-        FinSet(get_ob[model](X, o)), FinSet(get_ob[model](Y, o)))
-    end )
-    _ACSetTransformation(comps, X, Y)
-  end
+  coerce_ob(f::Any, d::FinSetInt, c::FinSetInt) = 
+    coerce_component(f,FinSet(d),FinSet(c))
 
   entity_cat() = SkelFinSet()
 
@@ -69,17 +63,17 @@ end
 
   
 """ Check nat trans component dom/codom matches those of the ACSets """
-function coerce_component(o::Symbol, f::SetFunction, d::FinSet, cd::FinSet)
-  dom(f) == d || error("Domain error in $o: $(dom(f)) != $d")
-  codom(f) == cd || error("Domain error in $o: $(codom(f)) != $cd")
+function coerce_component(f::SetFunction, d::FinSet, cd::FinSet)
+  dom(f) == d || error("Domain error: $(dom(f)) != $d")
+  codom(f) == cd || error("Domain error: $(codom(f)) != $cd")
   return f
 end
 
 """ Giving component as a Vector means assuming that domain is a FinSetInt """
-function coerce_component(o::Symbol, f::AbstractVector, d::FinSet, cd::FinSet)
-  FinSet(length(f)) == d ||error("Domain error in $o: $(FinSet(length(f))) ≠ $d")
+function coerce_component(f::AbstractVector, d::FinSet, cd::FinSet)
+  FinSet(length(f)) == d ||error("Domain error: $(FinSet(length(f))) ≠ $d")
   for (i, v) in enumerate(f) 
-    v ∈ cd || error("Codomain error in $o for dom element #$i: $v ∉ $cd")
+    v ∈ cd || error("Codomain error for dom element #$i: $v ∉ $cd")
   end
   return FinFunction(f, cd)
 end
@@ -88,13 +82,13 @@ end
 Not giving any data for a component means assuming it must be canonical, i.e. an 
 empty domain or singleton codomain 
 """
-function coerce_component(o::Symbol, ::Nothing, d::FinSet, cd::FinSet)
+function coerce_component(::Nothing, d::FinSet, cd::FinSet)
   if length(d) == 0
     FinFunction(getvalue(d) isa FinSetInt ? Int[] : Set{eltype(cd)}(), cd)
   elseif length(cd) == 1
     FinFunction(ConstantFunction(only(parts(Y, o)), d, cd))
   else 
-    error("Missing component $o")
+    error("Missing component with dom $d and codom $cd")
   end
 end
 

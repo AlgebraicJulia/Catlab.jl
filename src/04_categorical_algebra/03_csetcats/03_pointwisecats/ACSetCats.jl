@@ -16,8 +16,13 @@ using ..PointwiseCats: AbsACSetCat
 
 using .ThACSetCategory
 
+
 """
-The category of ACSets (and *tight* transformations) has ...
+The category of attributed C-sets and tight homomorphisms is isomorphic to a
+slice category of C-Set, as explained in our paper "Categorical Data Structures
+for Technical Computing". Colimits in this category thus reduce to colimits of
+C-sets, by a standard result about slice categories. Limits are more complicated
+and are currently not supported.
 """
 @struct_hash_equal struct ACSetCat <: AbsACSetCat
   constructor::Any
@@ -33,23 +38,16 @@ codom(c::ACSetCat, x) = codom(acset_schema(c), x)
 
 @instance ThACSetCategory{SkelFinSet, TerminalModel′, TrivialCodom,
                           FinSetInt, FinFunction, Nothing, Nothing, FinDomFunction,     
-                          Symbol, ACSet, ACSetTransformation,
+                          Symbol, Any, ACSet, ACSetTransformation,
                           AbsSet, AbstractVector
                          } [model::ACSetCat] begin
 
   constructor()::ACSet = model.constructor()
 
-  function coerce(f::ACSetTransformation)
-    X, Y, S = dom(f), codom(f), acset_schema(model)
-    comps = Dict(map(ob(S)) do o
-      o => coerce_component(o, get(components(f), o, nothing), 
-                            FinSet(get_ob[model](X, o)), FinSet(get_ob[model](Y, o)))
-    end )
-    attr_comps = Dict(map(attrtypes(S)) do o
-      o => coerce_attr_component_nothing(o, get(components(f), o , nothing))
-    end)
-    _ACSetTransformation(merge(comps,attr_comps), X, Y)
-  end
+  coerce_ob(f::Any,d::FinSetInt,c::FinSetInt) = 
+    coerce_component(f,FinSet(d),FinSet(c))
+
+  coerce_attr(::Any, ::Any,::Nothing,::Nothing) = nothing
 
   entity_cat() = SkelFinSet()
 

@@ -24,6 +24,8 @@ expected = @acset VES begin
   V=4; E=2; src=[1,3]; tgt=[2,4]; vlabel=[:a,:b,:a,:b]; elabel=[:e,:e] 
 end
 
-@test expected == ob(coproduct[𝒟](g,g)) # replace with is_isomorphic once that's working
+colim = coproduct[𝒟](g, g)
+
+@test is_isomorphic(expected, ob(colim)) 
 
 end # module

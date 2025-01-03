@@ -2,7 +2,6 @@ module TestACSetTransformations
 
 using Test, Catlab
 
-
 # Constructors and accessors.
 #---------------------------
 g, h = path_graph(Graph, 4), cycle_graph(Graph, 2)
