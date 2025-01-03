@@ -81,8 +81,11 @@ end
 
 coerce_attr_component_nothing(::Symbol, ::Nothing) = nothing 
 
-coerce_attr_component_nothing(o::Symbol, f::SetFunction) = f
+coerce_attr_component_nothing(o::Symbol, f::SetFunction) = 
+  isempty(f) ? nothing : error("Bad $o component: $f")
 
+coerce_attr_component_nothing(o::Symbol, f::Vector) = 
+  isempty(f) ? nothing : error("Bad $o component: $f")
 
 # """ The *default* category to interpret an ACSet in """
 # ACSetCategory(x::ACSet) = ACSetCategory(ACSetCat(x))

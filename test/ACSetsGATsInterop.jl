@@ -1,7 +1,6 @@
 module TestACSetsGATsInterop
-using Test
 
-using GATlab, Catlab, ACSets
+using Test, GATlab, Catlab, ACSets
 
 @present SchDendrogram(FreeSchema) begin
   X::Ob

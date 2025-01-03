@@ -1,13 +1,13 @@
 module VarFunctions 
 
-export VarFunction, AttrVal, AttrC, get_type, AbsVarFunction
+export VarFunction, AttrVal, AttrC, get_type, AbsVarFunction, inject
 
 using StructEquality
 
 using GATlab
 import GATlab: getvalue
 
-import ....Theories: dom, codom, ThCategory
+import ....Theories: dom, codom, ThCategory, compose
 using ....BasicSets
 import ....BasicSets: left, right, force, preimage, is_monic, is_epic
 
@@ -128,8 +128,7 @@ force(s::VarFunction{T}) where T = VarFunction{T}(force(getvalue(s)))
 VarFunction{T}(args...) where T = VarFunction{T}(FinDomFunction(args...))
 
 function VarFunction{T}(v::AbstractVector, cod::AbsSet) where T 
-  cod = SetOb(UnionSet(cod, SetOb(AttrVal{T})))
-  VarFunction{T}(FinDomFunction(FinFunctionVector(v, cod)))
+  VarFunction{T}(FinDomFunction(FinFunctionVector(v, either_cod(cod,T))))
 end
 
 (f::VarFunction)(i) = getvalue(f)(i) # regular function on non-AttrVals
@@ -247,5 +246,11 @@ end
 dom(f::VarFunction{T}) where T  = dom[AttrC{T}()](f)
 
 codom(f::VarFunction{T}) where T  = codom[AttrC{T}()](f)
+
+
+inject(i::FinSet, T::Type) = 
+  VarFunction{T}(FinDomFunction(SetFunctionCallable(identity, i, either_cod(i,T))))
+
+inject(f::FinFunction, T::Type) = compose[AttrC{T}()](f, inject(codom(f), T))
 
 end # module

@@ -70,11 +70,7 @@ function pointwise_colimit(model, d)
 
   Xs = cocone_objects(d)
   ent_ιs = map(legs, ent_colimits)
-  attr_ιs = NamedTuple(map(attrs(S)) do (f,c,d) 
-    d => map(zip(Xs, legs(attr_colimits[d]))) do (X,ι)
-      post[𝒫](get_attr(model, X, f), ι)
-    end
-  end)
+  attr_ιs = map(legs, attr_colimits)
   Y = pointwise_colimit_apex(model, Xs, ent_colimits, attr_colimits, ent_ιs)
   ιs = pack_components(model, merge(ent_ιs, attr_ιs), Xs, map(X -> Y, Xs))
   ACSetColimit(Multicospan(Y, Vector{ACSetTransformation}(ιs)), merge(ent_colimits, attr_colimits), Fd)
@@ -94,7 +90,7 @@ function pointwise_universal(model::ACSetCategory, lim::AbsColimit, cone::Multic
     o => universal[𝒟](lim.colimits[o], getvalue(upa[o]))
   end)
   ACSetTransformation(merge(ent_components, attr_components), 
-                      ob(lim), apex(cone), model)
+                      ob(lim), apex(cone); cat=model)
 end
 
 """

@@ -66,7 +66,7 @@ function pointwise_universal(model::ACSetCategory, lim::AbsLimit, cone::Multispa
   acomps = Dict(map(attrtype(S)) do o 
     o => universal[𝒟](lim.limits[o], getvalue(upa[o]))
   end)
-  ACSetTransformation(merge(comps, acomps), apex(cone), ob(lim), model)
+  ACSetTransformation(merge(comps, acomps), apex(cone), ob(lim); cat=model)
 end
 
 """

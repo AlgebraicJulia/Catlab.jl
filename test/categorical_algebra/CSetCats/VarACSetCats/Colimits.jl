@@ -12,8 +12,8 @@ const VES = VELabeledGraph{Symbol}
 
 const 𝒱 = ACSetCategory(VarACSetCat(VES()))
 
-# Initial
-##########
+# Coproduct
+###########
 
 g = @acset VES begin V=2; E=2; Label=2; src=1; tgt=2; vlabel=[AttrVar(1),:b]; elabel=[:e, AttrVar(2)] end
 
@@ -23,6 +23,13 @@ expected = @acset VES begin
   elabel=[:e,AttrVar(2),:e,AttrVar(4)] 
 end
 
-@test ob(coproduct[𝒱](g,g)) == expected
+colim = ι₁, ι₂ = coproduct[𝒱](g,g)
+
+@test ob(colim) == expected
+@test ι₁[:V](1) == 1
+@test ι₂[:V](1) == 3
+@test ι₁[:Label](1) == 1
+@test ι₂[:Label](1) == 3
+@test ι₁[:Label](AttrVal(:x)) == AttrVal(:x)
 
 end # module

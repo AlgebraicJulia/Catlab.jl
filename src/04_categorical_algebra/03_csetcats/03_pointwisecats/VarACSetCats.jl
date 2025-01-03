@@ -3,13 +3,13 @@ export VarACSetCat, abstract_attributes, var_reference
 
 using StructEquality, MLStyle
 using GATlab, ACSets
-using ACSets.DenseACSets: attr_type
+using ACSets.DenseACSets: attr_type, attrtype_type
 
 using .....BasicSets, ....SetCats
 using ....Cats: ThCategoryExplicitSets, ThCategoryUnbiasedProducts
 using ...CSets, ...ACSetTransformations
 using ....SetCats: AbsVarFunction
-import ..ACSetCats: coerce_component, coerce_attr_component_nothing
+import ..ACSetCats: coerce_component
 using ..PointwiseCats: AbsACSetCat
 using .ThACSetCategory
 
@@ -41,7 +41,7 @@ ACSets.acset_schema(c::VarACSetCat) = acset_schema(c.constructor())
                     FinSet(get_ob[model](X, o)), FinSet(get_ob[model](Y, o)))
     end )
     attr_comps = Dict(map(attrtypes(S)) do o
-      o => coerce_attr_component_nothing(o, get(components(f), o , nothing))
+      o => coerce_attr_component_varfun(o, attrtype_type(X, o), get(components(f), o , nothing), FinSet(get_ob[model](X, o)), FinSet(get_ob[model](Y, o)))
     end)
     _ACSetTransformation(merge(comps,attr_comps), X, Y)
   end
@@ -82,8 +82,42 @@ ACSets.acset_schema(c::VarACSetCat) = acset_schema(c.constructor())
 
 end
 
-coerce_attr_component_nothing(::Symbol, f::AbsVarFunction) = f
+function coerce_attr_component_varfun(o::Symbol, T::Type, f::AbsVarFunction{T′}, d::FinSet, cd::FinSet)  where {T′}
+  T′ <: T || error("Bad $o VarFunction type: $(T′) ⊀ $(T)  ")
+  dom(f) == d || error("bad $f $(dom(f))≠$d")
+  codom(f) == cd || error("bad $f $(codom(f))≠$cd")
+  f
+end
 
+function coerce_attr_component_varfun(o::Symbol, T::Type, ::Nothing, d::FinSet, cd::FinSet) 
+  isempty(d) || error("Bad $o component: nonempty domain $d")
+  return VarFunction{T}([], cd)
+end
+
+""" Assume this is a function purely on the FinSet component """
+function coerce_attr_component_varfun(o::Symbol, T::Type, f::Fin_FinDom, 
+                                      d::FinSet, cd::FinSet)
+  dom(f) == d || error("Bad $o component: mismatched dom $d ≠ $(dom(f))")
+  codom(f) == cd || error("Bad $o component: mismatched dom $cd ≠ $(codom(f))")
+  inject(f, T)
+end
+
+function coerce_attr_component_varfun(o::Symbol, T::Type, f::Vector, d::FinSet, 
+                                      cd::FinSet) 
+  length(f) == length(d) && getvalue(d) isa FinSetInt ||  error(
+    "Bad $o domain $d for $f")
+  VarFunction{T}(map(f) do v 
+    if v isa AttrVar
+      getvalue(v) ∈ cd || error("Bad $o value $v for codom $cd")
+      getvalue(v)
+    elseif v isa T 
+      AttrVal{T}(v)
+    else 
+      error("Bad $o::$T value: $v :: $(typeof(v))")
+    end
+  end, cd)
+
+end
 
 
 # Misc other methods

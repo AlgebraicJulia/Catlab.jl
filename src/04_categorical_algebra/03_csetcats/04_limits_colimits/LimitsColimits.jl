@@ -34,10 +34,11 @@ end
 
 """ Named tuple of vectors of FinFunctions → vector of C-set transformations.
 """
-function pack_components(model::ACSetCategory, fs::NamedTuple{names}, doms, codoms) where names
+function pack_components(cat::ACSetCategory, fs::NamedTuple{names}, doms, codoms) where names
   components = map((x...) -> NamedTuple{names}(x), fs...)
-  models = map(_->model, fs)
-  map(ACSetTransformation, components, doms, codoms, models)
+  map(zip(components, doms, codoms)) do (component, dom, codom)
+    ACSetTransformation(component, dom, codom; cat)
+  end |> collect
 end
 
 

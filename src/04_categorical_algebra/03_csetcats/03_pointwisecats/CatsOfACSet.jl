@@ -20,11 +20,11 @@ using ...CSets
   codom(f::ACSetTransformation) = f.codom
 
   function id(x::ACSet) 
-    M, S = getvalue(model), acset_schema(model)
+    M, S = model, acset_schema(model)
     𝒞, 𝒟 = Category(entity_cat(M)), Category(attr_cat(M))
     ecomps = Dict(o => id(𝒞, get_ob(M, x, o)) for o in ob(S))
     acomps = Dict(o => id(𝒟, get_attrtype(M, x, o)) for o in attrtypes(S))
-    ACSetTransformation(merge(ecomps, acomps), x, x, M)
+    ACSetTransformation(merge(ecomps, acomps), x, x; cat=M)
   end
 
   function compose(f::ACSetTransformation, g::ACSetTransformation)
@@ -32,8 +32,8 @@ using ...CSets
     𝒞, 𝒟 = Category(entity_cat(model)), Category(attr_cat(model))
 
     ecomps = Dict(o => compose(𝒞, f[o], g[o]) for o in ob(S))
-    acomps = Dict(o => opcompose(𝒟, f[o], g[o]) for o in attrtypes(S))
-    ACSetTransformation(merge(ecomps, acomps), f.dom, g.codom, model)
+    acomps = Dict(o => compose(𝒟, f[o], g[o]) for o in attrtypes(S))
+    ACSetTransformation(merge(ecomps, acomps), f.dom, g.codom; cat=model)
   end
 
 end 

@@ -28,6 +28,8 @@ const FinFunction = SetFunction{Any, SetFunction, FinSet, FinSet}
 
 const FinDomFunction = SetFunction{Any, SetFunction, FinSet, AbsSet}
 
+FinDomFunction(f::FinFunction) = FinDomFunction(getvalue(f))
+
 const Fin_FinDom = Union{FinFunction, FinDomFunction}
 
 # These could be made to fail early if ever used in performance-critical areas

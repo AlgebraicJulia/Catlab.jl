@@ -91,7 +91,7 @@ empty domain or singleton codomain
 function coerce_component(o::Symbol, ::Nothing, d::FinSet, cd::FinSet)
   if length(d) == 0
     FinFunction(getvalue(d) isa FinSetInt ? Int[] : Set{eltype(cd)}(), cd)
-  elseif nparts(Y,o) == 1
+  elseif length(cd) == 1
     FinFunction(ConstantFunction(only(parts(Y, o)), d, cd))
   else 
     error("Missing component $o")

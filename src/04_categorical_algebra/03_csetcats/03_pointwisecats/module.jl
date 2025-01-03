@@ -22,4 +22,8 @@ include("VarACSetCats.jl")
 include("CatsOfACSet.jl")
 @reexport using .CatsOfACSet
 
+
+include("InferCat.jl")
+
+
 end # module

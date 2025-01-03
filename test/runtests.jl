@@ -29,3 +29,7 @@ end
 # @testset "Programs" begin
 #   include("programs/Programs.jl")
 # end
+
+# Misc 
+######
+include("ACSetsGATsInterop.jl")

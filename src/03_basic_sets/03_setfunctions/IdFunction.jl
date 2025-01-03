@@ -9,7 +9,7 @@ import GATlab: getvalue
 import ACSets.Columns: preimage
 
 using ..Sets: AbsSet, SetOb
-using ..SetFunctions: ThSetFunction, show_domains
+using ..SetFunctions: ThSetFunction, show_domains, dom, codom
 import ..SetFunctions: SetFunction
 
 
@@ -46,7 +46,10 @@ end
 
   codom()::T = getvalue(model)
 
-  app(i::Any)::Any = i
+  function app(i::Any)::Any 
+    i ∈ dom[model]() || error("$i ∉ $(dom[model]()) for identity function")
+    return i
+  end
 
   postcompose(f::SetFunction)::SetFunction = f
 

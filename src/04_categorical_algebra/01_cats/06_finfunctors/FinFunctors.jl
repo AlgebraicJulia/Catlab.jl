@@ -1,6 +1,6 @@
 export FinFunctor, FinDomFunctor, is_functorial, functoriality_failures, is_initial, 
         collect_ob, collect_hom, make_map, components, gen_map, dom_to_graph,
-        ThFinDomFunctor
+        ThFinDomFunctor, force
 
 using DataStructures: IntDisjointSets, in_same_set, num_groups
 using StructEquality

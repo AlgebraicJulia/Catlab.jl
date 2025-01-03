@@ -1,6 +1,6 @@
-export ACSetCategory, sets, naturality_failures, is_natural, 
+export ACSetCategory, ACSetTransformation, sets, naturality_failures, is_natural, 
        show_naturality_failures, get_ob, get_hom, get_op, get_attrtype, get_attr, pre, post,
-      ThACSetCategory, entity_cat, attr_cat, prof_cat
+      ThACSetCategory, entity_cat, attr_cat, prof_cat, map_components, infer_acset_cat, coerce
 
 using Base.Iterators: flatten
 using Reexport
@@ -95,39 +95,10 @@ FinDomFunctor(acs::ACSet) = FinDomFunctor(acs, ACSetCategory(acs))
 
 
 
-
-
-
-""" 
-Sensible defaults for interpreting an ACSetTransformation as living in a particular kind of ACSet category 
-"""
-function infer_acset_cat(comps, X::ACSet, Y::ACSet)::ACSetCategory
-  S = acset_schema(X)
-  cat = if isempty(attrtypes(S))
-    CSetCat
-  elseif hasvar(X) || hasvar(Y) 
-    VarACSetCat
-  else 
-    ACSetCat
-  end
-  return ACSetCategory(cat(X))
-end
-
+# Must be implemented after the pointwise cats are defined
 infer_acset_cat(f::ACSetTransformation) = 
   infer_acset_cat(components(f), dom(f), codom(f))
 
-function hasvar(X::ACSet,x) 
-  s = acset_schema(X)
-  (x∈ attrs(acset_schema(X),just_names=true) && hasvar(X,codom(s,x))) || 
-  x∈attrtypes(acset_schema(X)) && nparts(X,x)>0
-end
-hasvar(X::ACSet) = any(o->hasvar(X,o), attrtypes(acset_schema(X)))
-  
-function ACSetTransformation(comps, dom::ACSet, codom::ACSet, 
-                             cat::Union{Nothing,ACSetCategory}=nothing)
-  cat = isnothing(cat) ? infer_acset_cat(comps, dom, codom) : cat
-  return coerce(cat, _ACSetTransformation(comps, dom, codom))
-end
 
 # Naturality
 ############
@@ -146,9 +117,8 @@ Xₕ ↓  ✓  ↓ Yₕ
 You're allowed to run this on a named tuple partly specifying an ACSetTransformation,
 though at this time the domain and codomain must be fully specified ACSets.
 """
-function is_natural(α::ACSetTransformation, C::Union{Nothing,ACSetCategory}=nothing)
-  C = isnothing(C) ? ACSetCategory(ACSetCat(dom(α))) : C
-  fails = naturality_failures(C, dom(α), codom(α), components(α))
+function is_natural(α::ACSetTransformation; cat::Union{Nothing,ACSetCategory}=nothing)
+  fails = naturality_failures(dom(α), codom(α), components(α); cat)
   all(isempty, last.(collect(fails)))
 end
 
@@ -160,8 +130,9 @@ for f does not commute. Components should be a NamedTuple or Dictionary
 with keys contained in the names of S's morphisms and values vectors or dicts
 defining partial functions from X(c) to Y(c).
 """
-function naturality_failures(C::ACSetCategory, X::ACSet, Y::ACSet, comps)
+function naturality_failures(X::ACSet, Y::ACSet, comps; cat=nothing)
   S = acset_schema(X)
+  C = isnothing(cat) ? infer_acset_cat(X) : cat
   α(o::Symbol, i) = comps[o](i)
   ks = keys(comps)
   𝒞, 𝒟 = entity_cat(C), attr_cat(C)
@@ -186,7 +157,7 @@ end
 
 function naturality_failures(α::ACSetTransformation; cat=nothing)
   cat = isnothing(cat) ? infer_acset_cat(α) : cat
-  naturality_failures(cat, dom(α), codom(α), α.components)
+  naturality_failures(dom(α), codom(α), α.components; cat)
 end
 
 """ Pretty-print failures of transformation to be natural.
@@ -213,7 +184,7 @@ show_naturality_failures(io::IO, α::ACSetTransformation) =
 show_naturality_failures(α::ACSetTransformation) =
   show_naturality_failures(stdout, α)
 
-force(C::ACSetCategory, α::ACSetTransformation) = map_components(C, force, α)
+force(α::ACSetTransformation; cat=nothing) = map_components(force, α; cat)
 
-map_components(C::ACSetCategory, f, α::ACSetTransformation) =
-  ACSetTransformation(map(f, components(α)), dom(α), codom(α), C)
+map_components(f, α::ACSetTransformation; cat=nothing) =
+  ACSetTransformation(map(f, components(α)), dom(α), codom(α); cat)

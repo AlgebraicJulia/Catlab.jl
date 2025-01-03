@@ -16,6 +16,9 @@ include("03_pointwisecats/module.jl")
 include("04_limits_colimits/module.jl")
 @reexport using .LimitsColimits
 
+include("05_homsearch/module.jl")
+@reexport using .HomSearch
+
 # include("SubCSets.jl")
 # @reexport using .SubCSets
 
