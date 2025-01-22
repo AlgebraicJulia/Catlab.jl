@@ -54,7 +54,7 @@ FinRel(set::S) where {T,S<:AbstractSet{T}} = FinRel{S,T}(set)
 Base.eltype(::Type{FinRel{S,T}}) where {S,T} = T
 Base.iterate(s::FinRel, args...) = iterate(iterable(s), args...)
 Base.length(s::FinRel) = length(iterable(s))
-Base.in(s::FinRel, elem) = in(s, iterable(s))
+Base.in(elem, s::FinRel) = in(elem, iterable(s))
 iterable(s::FinRel{Int}) = 1:s.set
 iterable(s::FinRel{<:AbstractSet}) = s.set
 

@@ -55,7 +55,7 @@ FinSet(n::Int) = FinSetInt(n)
 
 Base.iterate(set::FinSetInt, args...) = iterate(1:set.n, args...)
 Base.length(set::FinSetInt) = set.n
-Base.in(set::FinSetInt, elem) = in(elem, 1:set.n)
+Base.in(elem, set::FinSetInt) = in(elem, 1:set.n)
 
 Base.show(io::IO, set::FinSetInt) = print(io, "FinSet($(set.n))")
 
@@ -75,7 +75,7 @@ FinSet(collection::S) where {T, S<:Union{AbstractVector{T},AbstractSet{T}}} =
 
 Base.iterate(set::FinSetCollection, args...) = iterate(set.collection, args...)
 Base.length(set::FinSetCollection) = length(set.collection)
-Base.in(set::FinSetCollection, elem) = in(elem, set.collection)
+Base.in(elem, set::FinSetCollection) = in(elem, set.collection)
 
 function Base.show(io::IO, set::FinSetCollection)
   print(io, "FinSet(")
@@ -320,7 +320,7 @@ The iterable part of a varset is its collection of `AttrVar`s.
 """
 Base.iterate(set::VarSet{T}, args...) where T = iterate(AttrVar.(1:set.n), args...)
 Base.length(set::VarSet{T}) where T = set.n
-Base.in(set::VarSet{T}, elem) where T = in(elem, 1:set.n)
+Base.in(elem, set::VarSet{T}) where T = in(elem, 1:set.n)
 Base.eltype(set::VarSet{T}) where T = Union{AttrVar,T}
 
 
