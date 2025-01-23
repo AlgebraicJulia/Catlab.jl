@@ -52,3 +52,5 @@ end
   compose(f::Hom,g::Hom) = associate_unit(normalize_zero(new(f,g; strict=true)), id)
   compose(f::Hom,a::Attr) = associate_unit(normalize_zero(new(f,a; strict=true)), id)
 end
+
+
