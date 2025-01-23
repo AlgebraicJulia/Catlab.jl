@@ -8,12 +8,12 @@ import Base: +, *
 using StructEquality
 
 using GATlab
-using ...Theories: ThDistributiveBicategoryRelations
-import ...Theories: dom, codom, id, compose, ⋅, ∘, dagger, dunit, dcounit,
+using ....Theories: ThDistributiveBicategoryRelations
+import ....Theories: dom, codom, id, compose, ⋅, ∘, dagger, dunit, dcounit,
   otimes, ⊗, munit, braid, oplus, ⊕, mzero, swap,
   mcopy, Δ, mmerge, ∇, delete, ◊, create, □, plus, zero, coplus, cozero,
   pair, copair, proj1, proj2, coproj1, coproj2, meet, join, top, bottom
-import ..FinCats: force
+import ...Cats: force
 using ..Matrices
 using ..Matrices: zero_matrix
 

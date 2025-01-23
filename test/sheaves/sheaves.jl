@@ -4,7 +4,7 @@ using Catlab.CategoricalAlgebra.Categories
 using Catlab.Sheaves
 
 import Catlab.CategoricalAlgebra.Categories: do_ob_map, do_hom_map
-using Catlab.CategoricalAlgebra.Matrices: MatrixDom
+using Catlab.CategoricalAlgebra.Misc.Matrices: MatrixDom
 import Catlab.Sheaves: pullback_matrix, FinSetCat
 
 VectSheaf = Sheaf(DiagramTopology(), FVectPullback())

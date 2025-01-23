@@ -11,8 +11,8 @@ using StaticArrays: StaticVector, SVector
 using StructEquality
 
 using GATlab
-using ...Theories: ThDoubleCategory
-import ...Theories: ob, hom, dom, codom, src, tgt, top, bottom,
+using ....Theories: ThDoubleCategory
+import ....Theories: ob, hom, dom, codom, src, tgt, top, bottom,
   compose, id, pcompose, pid, ⋅, *
 import ..FreeDiagrams: left, right
 

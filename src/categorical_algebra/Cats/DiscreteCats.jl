@@ -3,7 +3,7 @@ export DiscreteCat
 
 using StructEquality
 
-using ...BasicSets, ..Categories, ..FinCats
+using ....BasicSets, ..Categories, ..FinCats
 import ..Categories: hom, dom, codom, id, compose, hom_map
 import ..FinCats: FinCat, ob_generators, hom_generators, ob_generator
 

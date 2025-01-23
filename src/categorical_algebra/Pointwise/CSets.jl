@@ -16,30 +16,28 @@ using StructEquality
 
 using CompTime
 @reexport using ACSets
-@reexport using ...ACSetsGATsInterop
+@reexport using ....ACSetsGATsInterop
 using ACSets.Columns
 using ACSets.DenseACSets: indices, unique_indices, attr_type, attrtype_type,
   datatypes, constructor
 
 using GATlab
-using ...Graphs.BasicGraphs
+using ....Graphs.BasicGraphs
 
-using ...Theories
-import ...Theories: ob, hom, dom, codom, compose, ⋅, id,
+using ....Theories
+import ....Theories: ob, hom, dom, codom, compose, ⋅, id,
   meet, ∧, join, ∨, top, ⊤, bottom, ⊥, ⊕, ⊗
 
-using ...BasicSets
-import ...BasicSets: FinSet, FinFunction, FinDomFunction, force, 
+using ....BasicSets
+import ....BasicSets: FinSet, FinFunction, FinDomFunction, force, 
   is_monic, is_epic, preimage, SetOb, SetFunction, TypeSet
 
-using ..FreeDiagrams, ..Limits, ..Subobjects, ..SetCats, ..FinSetCats, ..FinCats
-using ..VarFunctions 
-import ..VarFunctions: VarSet, VarFunction
-import ..FinSetCats: predicate
-import ..Limits: limit, colimit, universal
-import ..Subobjects: Subobject, implies, ⟹, subtract, \, negate, ¬, non, ~
-using ..Diagrams: Diagram, diagram
-import ..FinCats: FinDomFunctor, components, is_natural
+using ...Cats, ...SetCats
+import ...Cats: limit, colimit, universal, FinDomFunctor, components, is_natural
+import ...Cats.Subobjects: Subobject, implies, ⟹, subtract, \, negate, ¬, non, ~
+import ...SetCats: VarSet, VarFunction
+import ...SetCats.FinSetCats: predicate
+# using ..Diagrams: Diagram, diagram # shouldn't these be exported?
 
 # Sets interop
 ##############

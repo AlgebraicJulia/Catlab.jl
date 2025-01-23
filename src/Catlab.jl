@@ -3,7 +3,7 @@ module Catlab
 using Reexport
 
 include("theories/Theories.jl")
-include("categorical_algebra/ACSetsGATsInterop.jl")
+include("ACSetsGATsInterop.jl") # This should be upstreamed to an extension of ACSets.jl
 include("graphs/Graphs.jl")
 include("basic_sets/module.jl")
 include("categorical_algebra/module.jl")

@@ -12,16 +12,15 @@ using Reexport
 using ACSets
 
 @reexport using ..SetCats
-using ...Theories, ...Graphs, ...BasicSets
-using ..FinCats, ..FreeDiagrams, ..Limits, ..Subobjects
-import ...Theories: Ob, meet, ∧, join, ∨, top, ⊤, bottom, ⊥, ⋅, dom, codom,
+using ....Theories, ....Graphs, ....BasicSets
+import ....Theories: Ob, meet, ∧, join, ∨, top, ⊤, bottom, ⊥, ⋅, dom, codom,
   compose
-import ..Categories: ob, hom, dom, codom, compose, id, ob_map, hom_map
-import ..FinCats: force, ob_generators, hom_generators, ob_generator,
-  ob_generator_name, graph, is_discrete
-using ..FinCats: dicttype
-import ..Limits: limit, colimit, universal, BipartiteColimit
-import ..Subobjects: Subobject, SubobjectHom
+using ...Cats
+using ...Cats.FinCats: dicttype
+import ...Cats: ob, hom, dom, codom, compose, id, ob_map, hom_map, 
+                force, ob_generators, hom_generators, ob_generator,
+                ob_generator_name, graph, is_discrete, limit, colimit, 
+                universal, Subobject
 
 
 # For now, we do not preserve or compose indices, only the function vectors.

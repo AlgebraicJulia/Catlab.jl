@@ -12,13 +12,14 @@ using StaticArrays: StaticVector, SVector
 
 using ACSets
 using GATlab
-using ...BasicSets
-using ..FreeDiagrams, ..Limits, ..FinSetCats, ..CSets
-import ..FreeDiagrams: apex, legs, feet, left, right, bundle_legs
-import ..CSets: components, force
-using ...Theories: ThCategory
-import ...Theories: dom, codom, compose, ⋅, id, otimes, ⊗, munit, braid, σ,
+
+using ....Theories: ThCategory
+import ....Theories: dom, codom, compose, ⋅, id, otimes, ⊗, munit, braid, σ,
   mcopy, Δ, mmerge, ∇, delete, ◊, create, □, dunit, dcounit, dagger
+
+using ....BasicSets, ...Cats, ...SetCats, ..CSets
+import ...Cats.FreeDiagrams: apex, legs, feet, left, right, bundle_legs
+import ..CSets: components, force
 
 # Generic structured cospans
 ############################

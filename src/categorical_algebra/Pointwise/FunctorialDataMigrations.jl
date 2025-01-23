@@ -11,14 +11,14 @@ using MLStyle: @match
 using ACSets
 using ACSets.DenseACSets: constructor, datatypes
 using GATlab
-using ...Theories: ob, hom, dom, codom, attr, AttrTypeExpr, ⋅
-using ..Categories, ..FinCats, ..Limits, ..Diagrams, ..FinSetCats, ..CSets, ..HomSearch
-using ...Graphs, ...BasicSets, ..FreeDiagrams
-import ..Categories: ob_map, hom_map
 import GATlab: functor
-using ..FinCats: make_map, mapvals, presentation_key
+
+using ....Theories: ob, hom, dom, codom, attr, AttrTypeExpr, ⋅
+using ....Graphs, ....BasicSets
+using ...Cats, ...SetCats, ..CSets, ..HomSearch
+using ...Cats.FinCats: make_map, mapvals, presentation_key
+import ...Cats: ob_map, hom_map
 using ..Chase: collage, crel_type, pres_to_eds, add_srctgt, chase
-using ..VarFunctions: VarSet
 
 # Data types
 ############

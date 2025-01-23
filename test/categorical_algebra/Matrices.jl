@@ -2,7 +2,7 @@ module TestMatrices
 using Test
 using SparseArrays
 
-using Catlab.CategoricalAlgebra.Matrices
+using Catlab.CategoricalAlgebra.Misc.Matrices
 
 # Dense matrices
 ################

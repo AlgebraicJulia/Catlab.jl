@@ -5,9 +5,9 @@ module GraphCategories
 using DataStructures
 
 using ACSets
-using ...BasicSets, ..Limits
-using ...Graphs.BasicGraphs
-import ...Graphs.GraphAlgorithms: connected_component_projection,
+using ....BasicSets, ..Limits
+using ....Graphs.BasicGraphs
+import ....Graphs.GraphAlgorithms: connected_component_projection,
   connected_component_projection_bfs
 
 function connected_component_projection(g::ACSet)::FinFunction

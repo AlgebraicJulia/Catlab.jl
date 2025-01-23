@@ -1,13 +1,12 @@
-module SetCats
 export Ob 
 
 using GATlab
-using ...Theories: ThCategory
-import ...Theories: Ob, dom, codom, id, compose, ⋅, ∘
+using ....Theories: ThCategory
+import ....Theories: Ob, dom, codom, id, compose, ⋅, ∘
 import ..Categories: show_type_constructor, show_domains
 
 
-using ...BasicSets, ..Categories, ..FreeDiagrams, ..Limits
+using ....BasicSets, ..Categories, ..FreeDiagrams, ..Limits
 import ..Limits: limit, colimit, universal
 
 
@@ -96,4 +95,3 @@ end
 
 colimit(Xs::SingletonDiagram{<:TypeSet}) = colimit(Xs, SpecializeColimit())
 
-end # module

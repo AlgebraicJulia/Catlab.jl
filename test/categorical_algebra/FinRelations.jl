@@ -1,8 +1,8 @@
 module TestFinRelations
 using Test
 
-using Catlab.Theories, Catlab.CategoricalAlgebra.FinRelations
-using Catlab.CategoricalAlgebra.Matrices: MatrixDom
+using Catlab.Theories, Catlab.CategoricalAlgebra.Misc.FinRelations
+using Catlab.CategoricalAlgebra.Misc.Matrices: MatrixDom
 
 # Category of finite ordinals and relations
 ###########################################

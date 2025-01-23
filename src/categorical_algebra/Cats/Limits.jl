@@ -20,8 +20,8 @@ using StaticArrays: StaticVector, SVector
 
 using ACSets
 using GATlab
-using ...Theories
-import ...Theories: dom, codom, ob, hom,
+using ....Theories
+import ....Theories: dom, codom, ob, hom,
   terminal, product, proj1, proj2, equalizer, incl,
   initial, coproduct, coproj1, coproj2, coequalizer, proj,
   delete, create, pair, copair, factorize, universal
