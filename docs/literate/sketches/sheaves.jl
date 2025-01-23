@@ -4,7 +4,7 @@
 # to illustrate this process.
 
 using Test
-using Catlab.CategoricalAlgebra
+using Catlab.CategoricalAlgebra, Catlab.BasicSets
 using Catlab.CategoricalAlgebra.Categories
 using Catlab.Sheaves
 import Catlab.CategoricalAlgebra.Categories: do_ob_map, do_hom_map

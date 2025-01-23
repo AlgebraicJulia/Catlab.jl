@@ -1,8 +1,8 @@
 module TestSets
 using Test
 
-using Catlab.Theories, Catlab.CategoricalAlgebra
-using Catlab.CategoricalAlgebra.FinSets: VarSet
+using Catlab.BasicSets, Catlab.Theories, Catlab.CategoricalAlgebra
+using Catlab.CategoricalAlgebra.VarFunctions: VarSet
 
 # Sets from Julia types
 #######################

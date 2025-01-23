@@ -12,7 +12,8 @@ using StaticArrays: StaticVector, SVector
 
 using ACSets
 using GATlab
-using ..FreeDiagrams, ..Limits, ..FinSets, ..CSets
+using ...BasicSets
+using ..FreeDiagrams, ..Limits, ..FinSetCats, ..CSets
 import ..FreeDiagrams: apex, legs, feet, left, right, bundle_legs
 import ..CSets: components, force
 using ...Theories: ThCategory

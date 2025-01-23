@@ -1,7 +1,8 @@
 module TestFinCats
+
 using Test
 
-using Catlab.Theories, Catlab.CategoricalAlgebra, Catlab.Graphs
+using Catlab.BasicSets, Catlab.Theories, Catlab.CategoricalAlgebra, Catlab.Graphs
 
 # Categories on graphs
 ######################

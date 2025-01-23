@@ -1,8 +1,7 @@
 module TestFinSets
 using Test
 
-using Catlab.Theories, Catlab.CategoricalAlgebra
-using Catlab.CategoricalAlgebra.FinSets: VarSet
+using Catlab.BasicSets, Catlab.Theories, Catlab.CategoricalAlgebra
 
 sshow(args...) = sprint(show, args...)
 
@@ -516,7 +515,7 @@ A, B = SubFinSet(X, [1,2,5,6,8,9]), SubFinSet(X, [2,3,5,7,8])
 @test ob(A) == X
 A_pred = SubFinSet(Bool[1,1,0,0,1,1,0,1,1,0])
 @test hom(A) == hom(A_pred)
-@test FinSets.predicate(A) == FinSets.predicate(A_pred)
+@test FinSetCats.predicate(A) == FinSetCats.predicate(A_pred)
 
 # Lattice of subsets.
 @test A ∧ B |> force == SubFinSet(X, [2,5,8])
@@ -531,6 +530,7 @@ for alg in (SubOpBoolean(), SubOpWithLimits())
   @test bottom(X, alg) |> force == SubFinSet(X, 1:0)
 end
 
+using Catlab, Test
 # VarFunctions
 ##############
 # Construction 

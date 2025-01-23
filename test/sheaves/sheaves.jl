@@ -1,5 +1,5 @@
 using Test
-using Catlab.CategoricalAlgebra
+using Catlab.CategoricalAlgebra, Catlab.BasicSets
 using Catlab.CategoricalAlgebra.Categories
 using Catlab.Sheaves
 

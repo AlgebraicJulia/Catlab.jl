@@ -2,7 +2,7 @@ using BenchmarkTools
 const SUITE = BenchmarkGroup()
 
 using Random
-using Catlab.CategoricalAlgebra
+using Catlab.CategoricalAlgebra, Catlab.BasicSets
 
 bench = SUITE["Limits"] = BenchmarkGroup()
 

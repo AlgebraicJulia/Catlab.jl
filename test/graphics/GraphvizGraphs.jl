@@ -6,7 +6,7 @@ using Catlab.Theories, Catlab.Graphs, Catlab.Graphics.GraphvizGraphs
 import Catlab.Graphics: Graphviz
 using Catlab.CategoricalAlgebra.Subobjects
 using Catlab.CategoricalAlgebra.CSets
-using Catlab.CategoricalAlgebra.FinSets
+using Catlab.BasicSets
 
 const stmts = Graphviz.filter_statements
 

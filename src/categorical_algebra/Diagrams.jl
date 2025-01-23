@@ -9,12 +9,12 @@ using StructEquality
 using GATlab
 import ...Theories: dom, codom, id, compose, ⋅, ∘, munit
 using ...Theories: ThCategory, composeH, FreeSchema
+import ...BasicSets: FinDomFunction
 import ..Categories: ob_map, hom_map, op, co
-using ..FinCats, ..FreeDiagrams, ..FinSets
+using ..FinCats, ..FreeDiagrams, ..FinSetCats
 using ..FinCats: mapvals,FinDomFunctorMap,FinCatPresentation
 import ..FinCats: force, collect_ob, collect_hom
 import ..Limits: limit, colimit, universal
-import ..FinSets: FinDomFunction
 # Data types
 ############
 

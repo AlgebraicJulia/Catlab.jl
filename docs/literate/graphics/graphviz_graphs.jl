@@ -63,7 +63,7 @@ to_graphviz(f, draw_codom=false, edge_colors=false)
 # It is also possible to visualize maps between finite sets (`FinFunction`s
 # between `FinSet`s) using Graphviz.
 
-using Catlab.CategoricalAlgebra.FinSets
+using Catlab.BasicSets
 
 A = FinSet(4)
 B = FinSet(3)

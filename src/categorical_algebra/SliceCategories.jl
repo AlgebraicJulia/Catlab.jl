@@ -7,8 +7,8 @@ using GATlab
 using ..FreeDiagrams, ..Limits, ..CSets
 using ...Theories: ThCategory
 import ...Theories: dom, codom, compose, id
+import ...BasicSets: force
 import ..Limits: limit, colimit, universal
-import ..FinSets: force
 
 """
 The data of the object of a slice category (say, some category C sliced over an

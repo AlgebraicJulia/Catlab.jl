@@ -3,7 +3,7 @@ using LinearAlgebra
 using SparseArrays
 using ...CategoricalAlgebra
 using ...CategoricalAlgebra.Categories
-using ...CategoricalAlgebra.FinSets
+using ...BasicSets
 using ...CategoricalAlgebra.Matrices
 using ...Theories
 import ..CategoricalAlgebra.Categories: CatSize

@@ -1,7 +1,8 @@
 module TestFreeDiagrams
+
 using Test
 
-using Catlab.Theories, Catlab.Graphs, Catlab.CategoricalAlgebra
+using Catlab.BasicSets, Catlab.Theories, Catlab.Graphs, Catlab.CategoricalAlgebra
 
 A, B, C, D = Ob(FreeCategory, :A, :B, :C, :D)
 
