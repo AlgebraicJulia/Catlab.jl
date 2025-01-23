@@ -23,7 +23,7 @@ using StaticArrays: StaticVector, SVector
 
 using ACSets
 using GATlab
-using ...Theories, ...Graphs, ..FinCats
+using ....Theories, ....Graphs, ..FinCats
 import AlgebraicInterfaces: ob, hom, dom, codom
 import ..FinCats: FreeCatGraph, FinDomFunctor, collect_ob, collect_hom
 

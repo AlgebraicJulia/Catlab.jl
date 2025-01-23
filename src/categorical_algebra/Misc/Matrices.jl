@@ -11,8 +11,8 @@ using SparseArrays
 import SparseArrays: blockdiag
 
 using GATlab
-using ...Theories: ThDistributiveSemiadditiveCategory
-import ...Theories: dom, codom, id, compose, ⋅, ∘,
+using ....Theories: ThDistributiveSemiadditiveCategory
+import ....Theories: dom, codom, id, compose, ⋅, ∘,
   otimes, ⊗, munit, braid, oplus, ⊕, mzero, swap,
   mcopy, Δ, delete, ◊, plus, zero, pair, copair, proj1, proj2, coproj1, coproj2
 

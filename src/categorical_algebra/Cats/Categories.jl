@@ -21,9 +21,9 @@ using StructEquality
 
 using GATlab
 import GATlab: op
-import ...Theories: ThCategory2, ob, hom
+import ....Theories: ThCategory2, ob, hom
 import .ThCategory2: dom, codom, compose, ⋅, ∘, id, composeH, *
-import ...BasicSets.SetFunctions: show_domains, show_type_constructor
+import ....BasicSets.SetFunctions: show_domains, show_type_constructor
 
 # Categories
 ############

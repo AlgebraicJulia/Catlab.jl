@@ -15,7 +15,8 @@ export FinCat, FinCatGraph, Path, ob_generator, hom_generator,
   equations, is_discrete, is_free, graph, edges, src, tgt, presentation,
   FinFunctor, FinDomFunctor, is_functorial, functoriality_failures,
   collect_ob, collect_hom, force, make_map,
-  FinTransformation, components, is_natural, is_initial,dom_to_graph
+  FinTransformation, components, is_natural, is_initial,dom_to_graph,
+  FinCatPresentation
 
 using StructEquality
 using Reexport
@@ -25,12 +26,12 @@ using DataStructures: IntDisjointSets, in_same_set, num_groups
 using ACSets
 using GATlab
 import GATlab: equations
-using ...Theories: ThCategory, ThSchema, ThPointedSetCategory, ThPointedSetSchema,
+using ....Theories: ThCategory, ThSchema, ThPointedSetCategory, ThPointedSetSchema,
   ObExpr, HomExpr, AttrExpr, AttrTypeExpr, FreeSchema, FreePointedSetCategory, zeromap
-import ...Theories: dom, codom, id, compose, ⋅, ∘
-using ...Graphs
-import ...Graphs: edges, src, tgt, enumerate_paths
-import ...BasicSets: force
+import ....Theories: dom, codom, id, compose, ⋅, ∘
+using ....Graphs
+import ....Graphs: edges, src, tgt, enumerate_paths
+import ....BasicSets: force
 @reexport using ..Categories
 import ..Categories: CatSize, ob, hom, ob_map, hom_map, component, op
 # Categories

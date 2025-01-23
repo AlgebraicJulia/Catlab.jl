@@ -6,15 +6,15 @@ using DataStructures: OrderedDict, IntDisjointSets, union!, find_root!
 
 using ACSets
 
-import ....Theories: dom, codom, compose, id, ⋅
-using ....BasicSets
-import ....BasicSets: FinFunction, SetOb, FinSet, is_monic, force, preimage, is_epic
+import .....Theories: dom, codom, compose, id, ⋅
+using .....BasicSets
+import .....BasicSets: FinFunction, SetOb, FinSet, is_monic, force, preimage, is_epic
 
-using ..Limits, ..Subobjects, ..FreeDiagrams
+using ...Cats
+using ...Cats.Limits: BipartiteColimit
+using ...Cats.Subobjects: SubobjectHom
+import ...Cats.Limits: colimit, universal
 import ..FinSetCats: predicate
-using ..Limits: BipartiteColimit
-import ..Limits: colimit, universal
-using ..Subobjects: SubobjectHom
 
 # Variable component maps 
 #########################
