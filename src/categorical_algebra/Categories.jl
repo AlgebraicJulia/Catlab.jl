@@ -23,6 +23,7 @@ using GATlab
 import GATlab: op
 import ...Theories: ThCategory2, ob, hom
 import .ThCategory2: dom, codom, compose, ⋅, ∘, id, composeH, *
+import ...BasicSets.SetFunctions: show_domains, show_type_constructor
 
 # Categories
 ############
@@ -186,21 +187,6 @@ function Base.show(io::IO, F::CompositeFunctor)
 end
 
 show_type_constructor(io::IO, ::Type{<:Functor}) = print(io, "Functor")
-
-function show_domains(io::IO, f; domain::Bool=true, codomain::Bool=true,
-                      recurse::Bool=true)
-  if get(io, :hide_domains, false)
-    print(io, "…")
-  else
-    if domain
-      show(IOContext(io, :compact=>true, :hide_domains=>!recurse), dom(f))
-    end
-    if codomain
-      domain && print(io, ", ")
-      show(IOContext(io, :compact=>true, :hide_domains=>!recurse), codom(f))
-    end
-  end
-end
 
 # Callables
 #----------

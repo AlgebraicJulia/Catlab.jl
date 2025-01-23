@@ -19,8 +19,8 @@ export chase
 
 using ACSets.DenseACSets: datatypes
 using GATlab
-using ...Theories
-using ..CSets, ..HomSearch, ..FinSets, ..FinCats, ..Limits, ..FreeDiagrams
+using ...Theories, ...BasicSets
+using ..CSets, ..HomSearch, ..FinSetCats, ..FinCats, ..Limits, ..FreeDiagrams
 using ..FinCats: FinCatPresentation
 import ..Limits: universal
 import ..Categories: ob_map

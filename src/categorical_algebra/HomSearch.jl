@@ -13,7 +13,7 @@ export ACSetHomomorphismAlgorithm, BacktrackingSearch, HomomorphismQuery,
        subobject_graph, partial_overlaps, maximum_common_subobject,
        compile_hom_search
    
-using ...Theories, ..CSets, ..FinSets, ..FreeDiagrams, ..Subobjects
+using ...Theories, ...BasicSets, ..CSets, ..FinSetCats, ..FreeDiagrams, ..Subobjects
 using ...Graphs.BasicGraphs
 using ..CSets: map_components
 using ACSets.DenseACSets: attrtype_type, delete_subobj!

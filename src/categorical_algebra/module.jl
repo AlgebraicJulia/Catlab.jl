@@ -7,8 +7,10 @@ include("FinCats.jl")
 include("FreeDiagrams.jl")
 include("Limits.jl")
 include("Subobjects.jl")
-include("Sets.jl")
-include("FinSets.jl")
+include("SetCats.jl")
+include("FinSetCats.jl")
+include("DiscreteCats.jl")
+include("VarFunctions.jl")
 include("Permutations.jl")
 include("Matrices.jl")
 include("FinRelations.jl")
@@ -29,8 +31,10 @@ include("SliceCategories.jl")
 @reexport using .Limits
 @reexport using .Subobjects
 
-@reexport using .Sets
-@reexport using .FinSets
+@reexport using .SetCats
+@reexport using .FinSetCats
+@reexport using .DiscreteCats
+@reexport using .VarFunctions
 @reexport using .Permutations
 @reexport using .CSets
 @reexport using .HomSearch

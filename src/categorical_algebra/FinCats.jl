@@ -30,6 +30,7 @@ using ...Theories: ThCategory, ThSchema, ThPointedSetCategory, ThPointedSetSchem
 import ...Theories: dom, codom, id, compose, ⋅, ∘
 using ...Graphs
 import ...Graphs: edges, src, tgt, enumerate_paths
+import ...BasicSets: force
 @reexport using ..Categories
 import ..Categories: CatSize, ob, hom, ob_map, hom_map, component, op
 # Categories

@@ -7,7 +7,7 @@ export ACSetMorphism,
   LooseACSetTransformation, SubACSet, SubCSet,
   components, type_components, force,
   naturality_failures, show_naturality_failures, is_natural, in_bounds,
-  abstract_attributes, is_cartesian
+  abstract_attributes, is_cartesian, is_monic, is_epic
 
 using Base.Iterators: flatten
 using Base.Meta: quot
@@ -23,18 +23,22 @@ using ACSets.DenseACSets: indices, unique_indices, attr_type, attrtype_type,
 
 using GATlab
 using ...Graphs.BasicGraphs
+
 using ...Theories
 import ...Theories: ob, hom, dom, codom, compose, ⋅, id,
   meet, ∧, join, ∨, top, ⊤, bottom, ⊥, ⊕, ⊗
 
-using ..FreeDiagrams, ..Limits, ..Subobjects, ..Sets, ..FinSets, ..FinCats
-using ..FinSets: VarFunction, LooseVarFunction, IdentityFunction, VarSet, AbsVarFunction
+using ...BasicSets
+import ...BasicSets: FinSet, FinFunction, FinDomFunction, force, 
+  is_monic, is_epic, preimage, SetOb, SetFunction, TypeSet
+
+using ..FreeDiagrams, ..Limits, ..Subobjects, ..SetCats, ..FinSetCats, ..FinCats
+using ..VarFunctions 
+import ..VarFunctions: VarSet, VarFunction
+import ..FinSetCats: predicate
 import ..Limits: limit, colimit, universal
 import ..Subobjects: Subobject, implies, ⟹, subtract, \, negate, ¬, non, ~
-import ..Sets: SetOb, SetFunction, TypeSet
 using ..Diagrams: Diagram, diagram
-import ..FinSets: FinSet, FinFunction, FinDomFunction, force, predicate, 
-                  is_monic, is_epic, preimage
 import ..FinCats: FinDomFunctor, components, is_natural
 
 # Sets interop
