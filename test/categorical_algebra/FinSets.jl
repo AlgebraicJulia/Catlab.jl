@@ -1,7 +1,6 @@
 module TestFinSets
-using Test
 
-using Catlab.BasicSets, Catlab.Theories, Catlab.CategoricalAlgebra
+using Test, Catlab
 
 sshow(args...) = sprint(show, args...)
 

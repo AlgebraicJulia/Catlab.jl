@@ -17,7 +17,7 @@ using ....Theories: ThCategory
 import ....Theories: dom, codom, compose, ⋅, id, otimes, ⊗, munit, braid, σ,
   mcopy, Δ, mmerge, ∇, delete, ◊, create, □, dunit, dcounit, dagger
 
-using ....BasicSets, ...Cats, ...SetCats, ..CSets
+using ....BasicSets, ...Cats, ...SetCats, ..ACSetTransformations, ..CSets
 import ...Cats.FreeDiagrams: apex, legs, feet, left, right, bundle_legs
 import ..CSets: components, force
 

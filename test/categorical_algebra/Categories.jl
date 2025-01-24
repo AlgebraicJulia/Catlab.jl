@@ -41,7 +41,7 @@ f′ = Hom(:f, x′, y′)
 @test F(f) == f′
 
 F_op = op(F)
-@test F_op isa Categories.OppositeFunctor
+@test F_op isa OppositeFunctor
 @test (dom(F_op), codom(F_op)) == (op(dom(F)), op(codom(F)))
 @test F_op(x) == x′
 @test F_op(f) == f′

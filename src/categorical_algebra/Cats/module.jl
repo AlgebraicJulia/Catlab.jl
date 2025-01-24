@@ -2,30 +2,37 @@ module Cats
 
 using Reexport
 
-include("Categories.jl")
+include("Paths.jl")
+@reexport using .Paths
+
+include("categories/module.jl")
 @reexport using .Categories
 
-include("FinCats.jl")
+include("fincats/module.jl")
 @reexport using .FinCats
 
-include("FreeDiagrams.jl")
+include("functors/module.jl")
+@reexport using .Functors
+
+include("finfunctors/module.jl")
+@reexport using .FinFunctors
+
+include("freediagrams/module.jl")
 @reexport using .FreeDiagrams
 
-include("Limits.jl")
-@reexport using .Limits
+include("limits_colimits/module.jl")
+@reexport using .LimitsColimits
 
-include("Diagrams.jl")
+include("transformations/module.jl")
+@reexport using .Transformations
+
+include("diagrams/module.jl")
 @reexport using .Diagrams
-
-include("DiscreteCats.jl")
-@reexport using .DiscreteCats
-
-include("GraphCategories.jl")
 
 include("CommutativeDiagrams.jl")
 @reexport using .CommutativeDiagrams
 
-include("SliceCategories.jl")
+include("slice/module.jl")
 @reexport using .SliceCategories
 
 include("Subobjects.jl")

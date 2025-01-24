@@ -4,7 +4,7 @@ export SchElements, AbstractElements, Elements, elements, inverse_elements
 using DataStructures: OrderedDict
 
 using ....Theories
-using ..CSets,  ..HomSearch # ..FinSets (TODO was this BasicSets or FinSetCats?)
+using ..ACSetTransformations, ..CSets,  ..HomSearch
 
 @present SchElements(FreeSchema) begin
   (El, Arr, Ob, Hom)::Ob

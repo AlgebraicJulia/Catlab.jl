@@ -1,4 +1,4 @@
-export SetFunction
+export SetFunction, show_domains
 
 using ....Theories: dom, codom
 using ..Sets 
