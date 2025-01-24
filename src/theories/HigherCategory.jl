@@ -168,6 +168,8 @@ show_unicode(io::IO, expr::CategoryExpr{:pcompose}; kw...) =
 show_latex(io::IO, expr::CategoryExpr{:pcompose}; kw...) =
   show_latex_infix(io, expr, "*"; kw...)
 
+
+
 # Lawless Double Category
 ##########################
 
