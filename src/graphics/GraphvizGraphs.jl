@@ -7,7 +7,8 @@ using StaticArrays: StaticVector, SVector
 using Colors: Colorant, @colorant_str, hex, distinguishable_colors
 
 using ...Theories
-using ...Graphs, ...CategoricalAlgebra.Subobjects, ...CategoricalAlgebra.CSets, ...BasicSets
+using ...Graphs, ...CategoricalAlgebra.Subobjects, ...BasicSets,
+      ...CategoricalAlgebra.ACSetTransformations, ...CategoricalAlgebra.CSets
 import ..Graphviz
 
 # Property graphs

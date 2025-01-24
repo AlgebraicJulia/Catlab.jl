@@ -1,8 +1,6 @@
 module TestFinCats
 
-using Test
-
-using Catlab.BasicSets, Catlab.Theories, Catlab.CategoricalAlgebra, Catlab.Graphs
+using Test, Catlab
 
 # Categories on graphs
 ######################
@@ -63,7 +61,7 @@ G = FinFunctor((V=[2,1], E=[[1],[2]]), C, C)
 @test collect_hom(F) == [Path(h, [1,3]), Path(h, [2,4])]
 
 F_op = op(F)
-@test F_op isa FinFunctor && F_op isa FinCats.FinDomFunctorMap
+@test F_op isa FinFunctor && F_op isa FinDomFunctorMap
 @test dom(F_op) == op(C)
 @test codom(F_op) == op(D)
 @test op(F_op) == F
@@ -179,7 +177,7 @@ G = FinDomFunctor(g)
 @test startswith(sprint(show, α), "FinTransformation(")
 
 α_op = op(α)
-@test α_op isa FinCats.FinTransformationMap
+@test α_op isa FinTransformationMap
 @test dom(α_op) == op(G)
 @test codom(α_op) == op(F)
 @test op(α_op) == α

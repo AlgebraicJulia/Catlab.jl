@@ -19,7 +19,7 @@ using ...CategoricalAlgebra.Categories
 using ...CategoricalAlgebra.Misc.Matrices
 import ..CategoricalAlgebra.Categories: CatSize
 import ...CategoricalAlgebra: legs, apex
-import ...CategoricalAlgebra.Cats.Categories: do_ob_map, do_hom_map
+import ...CategoricalAlgebra.Cats.Functors: do_ob_map, do_hom_map
 
 
 abstract type SmallCatSize <: CatSize end

@@ -17,7 +17,7 @@ using StaticArrays: SVector
 
 using GATlab
 import ....Theories: ob, hom, meet, ∧, join, ∨, top, ⊤, bottom, ⊥
-using ....Theories, ..Limits
+using ....Theories, ..LimitsColimits
 
 # Theories
 ##########

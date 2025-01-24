@@ -1,7 +1,6 @@
 module TestCSets
-using Test
 
-using Catlab.BasicSets, Catlab.Theories, Catlab.Graphs, Catlab.CategoricalAlgebra
+using Test, Catlab
 
 @present SchDDS(FreeSchema) begin
   X::Ob
@@ -852,4 +851,4 @@ hs = [:it,:ot]
 @test sum(h->is_cartesian(h,hs),homoms) == 12
 
 
-end
+end # module

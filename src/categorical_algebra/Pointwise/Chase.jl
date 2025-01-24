@@ -21,7 +21,7 @@ using ACSets.DenseACSets: datatypes
 using GATlab
 using ....Theories, ....BasicSets, ...Cats, ...SetCats
 import ...Cats: universal, ob_map
-using ..CSets, ..HomSearch
+using ..ACSetTransformations, ..CSets, ..HomSearch
 
 # EDs
 #####
