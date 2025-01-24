@@ -1,6 +1,6 @@
 using Catlab
 
-# For the following discussion, we will "Set-valued functor" in place of "copresheaf" because it more clearly states the relationship between data when the restriction maps are trivial.
+# For the following discussion, we will "Set-valued functor" in place of "copresheaf" because it more clearly states the relationship between data when the restriction maps are trivial. It's also important to review the concept of a `Presentation`, which is tantamount to a finitely-presented model of a theory.
 
 # It is common to receive many-to-many relations in data science. We can rearrange a many-many mapping into a Set-valued functor:
 df = Dict(:Fiona => [:Math, :Philosophy, :Music],
@@ -39,7 +39,8 @@ foreach(keys(df)) do student
     end
 end
 
-# This is well and good, but it introduces some boilerplate. For an ordinary relationship in data science, I have to add three lines in my schema and almost ten lines of code to source. But these meager additions to the code obscure the possibility of a more elegant design principle at play, here appearing as a proarrow between Students and Classes: 
+# This junction table now contains in memory a linkage between two different types of data. This is well and good, but it introduces some boilerplate. For what is a commonplace relationship in data science, I am in the unsympathetic position of having to add three lines in my schema and almost ten lines of code to source. But these meager requirements can obscure the fact that while the Junction Table is apparently just a table, its role in the database schema is to relate multiple tables together. Therefore it isn't really concerned with presenting data to the user the same way an ordinary table would, its instead a table being used to organize other tables. This role means that there might be a more elegant design principle at play which is capable of making this distinction. In double category theory, this takes the form of a proarrow between Students and Classes:
+#
 p = @present SchSpan(FreeDoubleCategory) begin
     Student::Ob
     Class::Ob
@@ -73,7 +74,7 @@ function acset(p::Presentation{ThDoubleCategory.Meta.T, Symbol})
     out
 end
 
-# We now have a way of defining JunctionTables with the presentation of a Double Category. Notice that we have not defined AttrTypes, which in ACSet terminology are columns associated to the primary keys to each table. So we will refer to this schema as "vanilla," and instantiate the `VanillaJunctionType`
+# As you can see, the ACSet presentation is initialized and the objects and proarrows are inserted. With this method we now have a way of defining JunctionTables with the presentation of a Double Category, or categorically speaking, a functor between models of ThDoubleCategory and ThSchema. Notice that we have not defined AttrTypes, which in ACSet terminology are columns associated to the primary keys to each table. So we will refer to this schema as "vanilla," and instantiate the `VanillaJunctionType`
 
 SchVanilla = acset(p)
 @acset_type VanillaJunctionType(SchVanilla)
@@ -116,6 +117,7 @@ end
 
 Symbol(s::FreeDoubleSchema.AttrType{:generator}) = first(GATlab.args(s))
 Symbol(s::FreeDoubleSchema.Attr{:generator}) = first(GATlab.args(s))
+Symbol(s::FreeDoubleSchema.Ob{:generator}) = first(GATlab.args(s))
 
 function acset(p::Presentation{ThDoubleSchema.Meta.T, Symbol})
     # construct ACSet presentation
@@ -124,10 +126,9 @@ function acset(p::Presentation{ThDoubleSchema.Meta.T, Symbol})
     attrtypes = map(generators(p, :AttrType)) do attrtype
         add_generator!(out, AttrType(FreeSchema.AttrType, Symbol(attrtype)))
     end
-    # add Obs arguments
-    obs = Ob.(Ref(FreeSchema.Ob), only.(GATlab.args.(generators(p, :Ob))))
-    map(obs) do ob
-        add_generator!(out, ob)
+    # add Obs
+    map(generators(p, :Ob)) do ob
+        add_generator!(out, Ob(FreeSchema.Ob, Symbol(ob)))
     end
     # add AttrVals
     map(generators(p, :Attr)) do attr
@@ -145,9 +146,12 @@ function acset(p::Presentation{ThDoubleSchema.Meta.T, Symbol})
     out
 end
 
+# Let's instantiate the schema 
 SchAttr = acset(p)
 @acset_type JunctionNameType(SchAttr)
 j = JunctionNameType{Symbol}()
+
+# ...and now here's the INSERT code for the junction table.
 
 foreach(keys(df)) do student
     classes = df[student]
@@ -164,4 +168,4 @@ foreach(keys(df)) do student
     end
 end
 
-
+# In database practice, junction tables are also just tables and, if your DBA is considerate, will be distinguished in name from other tables by, say, a prefix `J_`. However in the double theory perpsective, the junction table is a distinguished object. Therefore, we can treat it programmatically. The above INSERT code is for instance something we might be able to generalize with access to the junction table as a proarrow generator, `Pro(Student, Class)`. So we will go one step further by generating the INSERT code while we materialize the ACSet presentation.
