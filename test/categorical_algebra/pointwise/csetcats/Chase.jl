@@ -1,7 +1,6 @@
 module TestChase
-using Test
 
-using Catlab.Theories, Catlab.CategoricalAlgebra, Catlab.Graphs
+using Test, Catlab
 using Catlab.CategoricalAlgebra.Chase: egd, tgd, crel_type, pres_to_eds,
   from_c_rel, collage
 
