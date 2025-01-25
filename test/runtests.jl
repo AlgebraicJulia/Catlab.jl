@@ -1,7 +1,13 @@
 using Test
 
+include("ACSetsGATsInterop.jl")
+
 @testset "Theories" begin
   include("theories/runtests.jl")
+end
+
+@testset "BasicSets" begin
+  include("basic_sets/runtests.jl")
 end
 
 @testset "CategoricalAlgebra" begin
