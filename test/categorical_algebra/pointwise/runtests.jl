@@ -5,7 +5,7 @@ using Test
 end
 
 @testset "CSetCats" begin
-  include("CSetCats/runtests.jl")
+  include("csetcats/runtests.jl")
 end 
 
 @testset "ACSetCats" begin

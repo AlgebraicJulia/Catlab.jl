@@ -6,33 +6,19 @@ using Test
 end
 
 @testset "SkelFinSet" begin
-  include("skelfinset/Limits.jl")
-
-  include("skelfinset/Colimits.jl")
+  include("skelfinset/runtests.jl")
 end
 
 @testset "SetC" begin
-
-  include("setcats/Sets.jl")
-
-  include("setcats/Limits.jl")
-
-  include("setcats/Colimits.jl")
-
+  include("setcats/runtests.jl")
 end
 
 @testset "FinSetC" begin
-
-  include("finsetcat/Limits.jl")
-
-  include("finsetcat/Colimits.jl")
+  include("finsetcat/runtests.jl")
 end
 
 @testset "VarFunctions" begin
-
-  include("varfunctions/VarFunctions.jl")
-
-  include("varfunctions/VarFnLimits.jl")
+  include("varfunctions/runtests.jl")
 end
 
 @testset "SubSets" begin
