@@ -32,8 +32,7 @@ using StructEquality
 
 using GATlab
 using ...Graphs.BasicGraphs, ...CategoricalAlgebra.CSets
-import ...CategoricalAlgebra.HomSearch: is_isomorphic
-import ...CategoricalAlgebra.FinCats: graph
+import ...CategoricalAlgebra: is_isomorphic
 import ...Graphs: all_neighbors, neighbors, outneighbors, inneighbors
 
 # Data types

@@ -45,4 +45,4 @@ outer = singleton_diagram(f)
 outer.value = :outer
 @test roundtrip_symbolic(outer) == outer
 
-end
+end # module

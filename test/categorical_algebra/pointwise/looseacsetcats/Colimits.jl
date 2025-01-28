@@ -1,13 +1,10 @@
-module TestLooseACSetColimits
 
-using Catlab, Test
-
+# Pushout with given type components.
 @present SchSetAttr(FreeSchema) begin
   X::Ob; D::AttrType; f::Attr(X,D)
 end
 @acset_type SetAttr(SchSetAttr)
 
-# Pushout with given type components.
 A = @acset SetAttr{Symbol} begin X=2; f=[:a,:b] end
 B = @acset SetAttr{Symbol} begin X=2; f=[:x,:y] end
 C = @acset SetAttr{Symbol} begin X=1; f=[:z] end
@@ -21,5 +18,3 @@ colim = pushout(β, γ, type_components=[g,h])
 @test ob(colim) == @acset(SetAttr{Symbol}, begin X=1; f=[:q] end)
 h′ = (D=FinFunction(Dict(:z=>:b)),)
 @test_throws ErrorException pushout(β, γ, type_components=[g,h′])
-
-end # module

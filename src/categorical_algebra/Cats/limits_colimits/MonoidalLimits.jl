@@ -1,62 +1,59 @@
 module MonoidalLimits 
-export @cartesian_monoidal_instance
+export CartesianMonoidal, otimes, munit, ⊗
 
 using GATlab
 
 using .....Theories
+
+using ..Products: TypedCatWithProducts, CatWithProducts, ThCategoryUnbiasedProducts, product
+
+import .ThCartesianCategory: otimes, munit
+
+ThCartesianCategory.Meta.@typed_wrapper CartesianMonoidal
+
+
+# This is the sort of thing we expect to be able to do with a simple TheoryMap 
+# migration once AlgStructs are integrated into GATlab
 
 """ Define cartesian monoidal structure using limits.
 
 Implements an instance of [`ThCartesianCategory`](@ref) assuming that finite
 products have been implemented following the limits interface.
 """
-macro cartesian_monoidal_instance(Ob, Hom)
-  thcc = ThCartesianCategory.Meta.theory
-  instance_body = quote
-    @import Ob, Hom, →, dom, codom, compose, ⋅, id, munit, delete, pair
+@instance ThCartesianCategory{Ob, Hom} [model::TypedCatWithProducts{Ob,Hom}
+                                       ] where {Ob,Hom} begin
 
-    otimes(A::$Ob, B::$Ob) = ob(product(A, B))
+  otimes(A::Ob, B::Ob)::Ob = ob(product(CatWithProducts(getvalue(model)), A, B))
 
-    function otimes(f::$Hom, g::$Hom)
-      π1, π2 = product(dom(f), dom(g))
-      pair(product(codom(f), codom(g)), π1⋅f, π2⋅g)
-    end
-
-    function braid(A::$Ob, B::$Ob)
-      AB, BA = product(A, B), product(B, A)
-      pair(BA, proj2(AB), proj1(AB))
-    end
-
-    mcopy(A::$Ob) = pair(id(A),id(A))
-    proj1(A::$Ob, B::$Ob) = proj1(product(A, B))
-    proj2(A::$Ob, B::$Ob) = proj2(product(A, B))
+  function otimes(f::Hom, g::Hom)::Hom
+    𝒞 = CatWithProducts(getvalue(model))
+    π1, π2 = product(𝒞, dom(f), dom(g))
+    pair(𝒞, product(𝒞, codom(f), codom(g)), compose(𝒞, π1,f), compose(𝒞, π2, g))
   end
 
-  instance_code = ModelInterface.generate_instance(
-    ThCartesianCategory.Meta.theory,
-    ThCartesianCategory,
-    Dict(zip(sorts(thcc), [Ob, Hom])),
-    nothing,
-    [],
-    instance_body;
-    escape=false
-  )
+  function braid(A::Ob, B::Ob)
+    𝒞 = CatWithProducts(getvalue(model))
+    AB, BA = product(𝒞, A, B), product(𝒞, B, A)
+    pair(𝒞, BA, proj2(AB), proj1(AB))
+  end
 
-  esc(quote
-    import Catlab.Theories: ThCartesianCategory, otimes, ⊗, munit, braid, σ,
-      mcopy, delete, pair, proj1, proj2, Δ, ◊
+  munit()::Ob = ob(terminal[getvalue(model)]())
 
-    $instance_code
+  mcopy(A::Ob) = let 𝒞 = CatWithProducts(getvalue(model)); 
+    pair(𝒞, product(𝒞, A, A), id(𝒞,A), id(𝒞,A)) 
+  end
 
-    otimes(As::AbstractVector{<:$Ob}) = ob(product(As))
+  proj1(A::Ob, B::Ob) = proj1(product(CatWithProducts(getvalue(model)), A, B))
 
-    function otimes(fs::AbstractVector{<:$Hom})
-      Π, Π′ = product(map(dom, fs)), product(map(codom, fs))
-      pair(Π′, map(compose, legs(Π), fs))
-    end
+  proj2(A::Ob, B::Ob) = proj2(product(CatWithProducts(getvalue(model)), A, B))
 
-    munit(::Type{T}) where T <: $Ob = ob(terminal(T))
-  end)
+  id(A::Ob) = id(CatWithProducts(getvalue(model)), A)
+  function pair(A::Hom, B::Hom) 
+    m = getvalue(model)
+    pair[m](product[m](codom(A), codom(B)), A, B)
+  end
+  delete(A::Ob) = delete[getvalue(model)](A)
+  compose(A::Hom,B::Hom) = compose(CatWithProducts(getvalue(model)), A, B)
 end
 
 end # module

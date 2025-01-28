@@ -1,25 +1,22 @@
-module SetFunctions 
-using Reexport 
+module SetFunctions
+
+using Reexport
 
 include("SetFunctions.jl")
-
 include("IdFunction.jl")
-@reexport using .IdFunction
-
-include("Callable.jl")
-@reexport using .Callable
-
 include("CompFunction.jl")
-@reexport using .CompFunction
-
-include("PredFn.jl")
-@reexport using .PredFn
-
 include("ConstFn.jl")
-@reexport using .ConstFn
-
+include("ConstEither.jl")
+include("PredFn.jl")
+include("Callable.jl")
 include("Force.jl")
-@reexport using .Force
 
+@reexport using .IdFunction
+@reexport using .CompFn
+@reexport using .ConstFn
+@reexport using .ConstEitherFn
+@reexport using .PredFn
+@reexport using .CallableFn
+@reexport using .Force
 
 end # module

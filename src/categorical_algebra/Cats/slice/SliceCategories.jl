@@ -1,19 +1,25 @@
-export Slice, SliceHom
+export SliceC, SliceOb
 
 using StructEquality
 
 using GATlab
-using ....Theories: ThCategory
-import ....Theories: dom, codom, compose, id
+
+import ....Theories: dom, codom, compose, id, ThCategory
 import ....BasicSets: force
+
+using ...Cats
 
 """
 The data of the object of a slice category (say, some category C sliced over an
 object X in Ob(C)) is the data of a homomorphism in Hom(A,X) for some ob A.
 """
-@struct_hash_equal struct Slice{Hom}
-  slice::Hom
+@struct_hash_equal struct SliceOb{ObT, HomT}
+  ob::ObT
+  hom::HomT
 end
+
+SliceOb(hom; cat=nothing) = 
+  SliceOb(isnothing(cat) ? dom(hom) : dom[cat](hom), hom)
 
 """
 The data of the morphism of a slice category (call it h, and suppose a category
@@ -24,33 +30,67 @@ in the underlying category that makes the following triangle commute.
 A --> B
 f ↘ ↙ g
    X
+
+So a slice category has 
 """
-@struct_hash_equal struct SliceHom{Hom, Dom<:Slice, Codom<:Slice}
-  dom::Dom
-  codom::Codom
-  f::Hom
-end
-
-function SliceHom(d::Dom, cd::Codom, f::Hom; strict::Bool=true) where {Dom,Codom,Hom}
-  !strict || codom(d) == codom(cd) || error("$d and $cd not in same category")
-  !strict || dom(d) == dom(f) || error("dom $d does not match $f")
-  !strict || dom(cd) == codom(f) || error("codom $cd does not match $f")
-  return SliceHom{Hom,Dom,Codom}(d, cd, f)
-end
-
-dom(s::Slice) = dom(s.slice)
-codom(s::Slice) = codom(s.slice)
-force(s::Slice)  = Slice(force(s.slice))
-force(s::SliceHom) = SliceHom(
-  force(dom(s)), force(codom(s)), force(s.f))
-
-
-@instance ThCategory{Slice, SliceHom} begin
-  dom(f::SliceHom) = f.dom
-  codom(f::SliceHom) = f.codom
-  id(A::Slice) = SliceHom(A, A, id(dom(A.slice)))
-  function compose(f::SliceHom, g::SliceHom)
-    SliceHom(dom(f), codom(g), compose(f.f, g.f))
+@struct_hash_equal struct SliceC{ObT, HomT, C}
+  cat::C
+  over::ObT
+  function SliceC(cat::C, over) where C
+    types = try 
+      impl_types(cat, ThCategory)
+    catch e 
+      throw(e)
+    end
+    implements(cat, ThCategoryExplicitSets, types) || error("Bad cat $cat")
+    new{types..., C}(cat, over)
   end
 end
+
+using .ThCategoryExplicitSets
+
+@instance ThCategoryExplicitSets{SliceOb{<:ObT, <:HomT}, HomT, AbsSet
+                                } [model::SliceC{ObT, HomT, C}
+                                  ] where {ObT, HomT, C} begin
+  function Ob(x::SliceOb{<:ObT, <:HomT})
+    try
+      Ob[model.cat](x.ob)
+    catch e
+      error("ob is not valid", e)
+    end
+    try
+      Hom[model.cat](x.hom, x.ob, model.over)
+    catch e
+      error("hom is not valid", e)
+    end
+    x
+  end
+
+  function Hom(f::HomT, x::SliceOb{<:ObT, <:HomT}, y::SliceOb{<:ObT, <:HomT})
+    try
+      Hom[model.cat](f, x.ob, y.ob)
+    catch e
+      error("morphism is not valid in base category", e)
+    end
+    compose[model.cat](f, y.hom; context=(a=x.ob, b=y.ob, c=model.over)) == x.hom ||
+      error("commutativity of triangle does not hold")
+    f
+  end
+
+  id(x::SliceOb{<:ObT, <:HomT}) = id[model.cat](x.ob)
+
+  dom(::HomT; context) = context[:dom]
+
+  codom(::HomT; context) = context[:codom]
+
+  function compose(f::HomT, g::HomT; context=nothing)
+    context=isnothing(context) ? nothing : map(x -> x.ob, context)
+    compose[model.cat](f, g; context)
+  end
+
+  # Actually we can get more specific than this with PredicatedSets.
+  ob_set() = SetOb(SliceOb{ObT, HomT})
+  hom_set() = SetOb(HomT)
+end
+
 

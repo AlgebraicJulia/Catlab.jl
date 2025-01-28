@@ -8,29 +8,32 @@ include("Paths.jl")
 include("categories/module.jl")
 @reexport using .Categories
 
-include("fincats/module.jl")
+include("fincats/module.jl") 
 @reexport using .FinCats
 
-include("functors/module.jl")
+include("functors/module.jl") 
 @reexport using .Functors
-
-include("finfunctors/module.jl")
-@reexport using .FinFunctors
 
 include("freediagrams/module.jl")
 @reexport using .FreeDiagrams
 
-include("limits_colimits/module.jl")
-@reexport using .LimitsColimits
+include("finfunctors/module.jl") 
+@reexport using .FinFunctors
 
-include("transformations/module.jl")
+include("CatOfCat.jl")
+@reexport using .CatOfCat
+
+include("natural_transformations/module.jl")
 @reexport using .Transformations
 
-include("diagrams/module.jl")
-@reexport using .Diagrams
+include("limits_colimits/module.jl") 
+@reexport using .LimitsColimits
 
 include("CommutativeDiagrams.jl")
 @reexport using .CommutativeDiagrams
+
+include("diagrams/module.jl")
+@reexport using .Diagrams
 
 include("slice/module.jl")
 @reexport using .SliceCategories

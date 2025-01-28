@@ -11,10 +11,11 @@ using Reexport
 
 include("HomSearch.jl")
 
-include("VMHomSearch.jl")
+include("VMSearch.jl")
 @reexport using .VMHomSearch
 
 include("MCO.jl")
 @reexport using .MCO
+
 
 end # module

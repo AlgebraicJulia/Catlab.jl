@@ -1,78 +1,91 @@
-export FinCat, FinCatSize, ob_generator, hom_generator,
+export FinCat, ob_generator, hom_generator,
   ob_generator_name, hom_generator_name, ob_generators, hom_generators,
-  equations, is_discrete, is_free, graph, edges, src, tgt, presentation,
-  FinFunctor, ob_generator, hom_generator
+  equations, is_discrete, is_free, edges, src, tgt, gentype, decompose
 
 using StructEquality
-using Reexport
-using DataStructures: IntDisjointSets, in_same_set, num_groups
 
-using ACSets
 using GATlab
-import GATlab: equations
-using ....Theories: ThCategory
-import ....Theories: dom, codom, id, compose, ⋅, ∘
-using ....Graphs
-@reexport using ..Categories
-import ..Categories: CatSize, ob, hom, op
+import GATlab: equations, getvalue
 
-# Categories
-############
+import .....Theories: dom, codom, id, compose, ⋅, ∘
+using .....Graphs
+import .....Graphs: Graph, NamedGraph, src, tgt
+using .....BasicSets: FinSet, AbsSet, SetOb
 
-""" Size of a finitely presented category.
+import ..Paths: Path
+
+using ..Categories: ThCategoryExplicitSets, Cat, AbsCat
+import ..Categories: ob_set, hom_set, obtype, homtype
+
+
+# Theory of Finite Categories
+#############################
+
 """
-struct FinCatSize <: CatSize end
+A FinCat has an unbiased `compose` method which must convert a path of 
+generators into a Hom. (It is ok for Hom=Path, in which case this is a no-op).
+One should also be able to express a hom in terms of generators (though this 
+need not be unique, so `decompose` is a one-sided inverse).
 
-""" A finitely presented (but not necessarily finite!) category.
+This interface does NOT specify the fact that any implementation of FinCat 
+should specify `equations`.
+
+`Path` and `Set′` types are expected to be sent to Catlab's `Path` and `FinSet`.
+
+The following laws are expected to hold:
+  compose(emptyPath(a)) == id(a) ⊣ [a::Ob]
+  compose(decompose(h)) == h ⊣ [(x,y)::Ob, a::Hom(x,y)]
+  compose(a ++ b) = compose(compose(a), compose(b)) ⊣ [a::Path(x,y), b::Path(y,z)]
 """
-const FinCat{Ob,Hom} = Cat{Ob,Hom,FinCatSize}
+@theory ThFinCat begin
+  Ob::TYPE
+  Hom(dom::Ob,codom::Ob)::TYPE; 
+  id(a::Ob)::Hom(a,a)
 
-""" Object generators of finitely presented category.
+  Gen(src::Ob,tgt::Ob)::TYPE; 
+  
+  Path′(p_src::Ob, p_tgt::Ob)::TYPE;
+  compose(vgen::Path′(a,b))::Hom(a,b) ⊣ [(a,b)::Ob]
+  decompose(h::Hom(a,b))::Path′(a,b) ⊣ [(a,b)::Ob]
 
-The object generators of finite presented category are almost always the same as
-the objects. In principle, however, it is possible to have equations between
-objects, so that there are fewer objects than object generators.
+  Set′::TYPE  # FinSet
+  ob_set()::Set′
+  gen_set()::Set′
+end
+  
+ThFinCat.Meta.@wrapper FinCat <: AbsCat
+
+
+# Other methods
+#--------------
+
+Base.show(io::IO, C::FinCat) = show(io, getvalue(C))
+
+""" synonym for `ob_set` """
+ob_generators(f::FinCat)::FinSet = ob_set(f)
+
+""" synonym for `gen_set` """
+hom_generators(f::FinCat)::FinSet = gen_set(f)
+
+obtype(c::FinCat)::Type = eltype(ob_set(c))
+
+homtype(c::FinCat)::Type = impl_type(c, :Hom)
+
+gentype(f::FinCat) = eltype(hom_generators(f))
+
+hom_set(f::FinCat) = SetOb(impl_type(f, :Hom))
+
+compose(c::FinCat, f, g) = compose(c, vcat(decompose(c, f), decompose(c, g)))
+
+""" 
+Create path from a vector of generators. If no s/t provided, then the list 
+must not be empty 
 """
-function ob_generators end
-
-""" Morphism generators of finitely presented category.
-"""
-function hom_generators end
-
-""" Coerce or look up object generator in a finitely presented category.
-
-Because object generators usually coincide with objects, the default method for
-[`ob`](@ref) in finitely presented categories simply calls this function.
-"""
-function ob_generator end
-
-ob(C::FinCat, x) = ob_generator(C, x)
-
-""" Coerce or look up morphism generator in a finitely presented category.
-
-Since morphism generators often have a different data type than morphisms (e.g.,
-in a free category on a graph, the morphism generators are edges and the
-morphisms are paths), the return type of this function is generally different
-than that of [`hom`](@ref).
-"""
-function hom_generator end
-
-""" Name of object generator, if any.
-
-When object generators have names, this function is a one-sided inverse to
-[`ob_generator`](@ref) in that `ob_generator(C, ob_generator_name(C, x)) == x`.
-"""
-function ob_generator_name end
-
-""" Name of morphism generator, if any.
-
-When morphism generators have names, this function is a one-sided inverse to
-[`hom_generator`](@ref). See also: [`ob_generator_name`](@ref).
-"""
-function hom_generator_name end
-
-# Second clause should be superfluous but we'll include it anyway.
-Base.isempty(C::FinCat) = isempty(ob_generators(C)) && isempty(hom_generators(C))
+function Path(f::FinCat, gs::AbstractVector, s=nothing, t=nothing)
+  s = isnothing(s) ? src(f, first(gs)) : s
+  t = isnothing(t) ? tgt(f, last(gs)) : t
+  Path(isempty(gs) ? gentype(f)[] : gs, s, t)
+end
 
 """ Is the category discrete?
 
@@ -80,22 +93,44 @@ A category is *discrete* if it is has no non-identity morphisms.
 """
 is_discrete(C::FinCat) = isempty(hom_generators(C))
 
+# Second clause should be superfluous, but we'll include it anyway.
+Base.isempty(C::FinCat) = isempty(ob_generators(C)) && isempty(hom_generators(C))
+
+# Equations #
+#------------
 """ Is the category freely generated?
 """
 is_free(C::FinCat) = isempty(equations(C))
 
-"""Graph underlying a finitely presented category whose 
-object and
-hom generators are indexable, other
-than one explicitly generated by a graph.
+equations(f::FinCat) = equations(getvalue(f))
+
+# Conversion to Graphs #
+#-----------------------
 """
-function graph(C::FinCat) 
-  g = NamedGraph{Symbol,Symbol}()
-  obgens = ob_generators(C)
-  homgens = hom_generators(C)
-  add_vertices!(g,length(obgens);vname=nameof.(obgens))
-  s(f) = only(indexin([dom(C,f)],obgens))
-  t(f) = only(indexin([codom(C,f)],obgens))
-  add_edges!(g,Int[s(f) for f in homgens],Int[t(f) for f in homgens];ename=nameof.(homgens)) 
+Graph underlying a finitely presented category whose object and hom generators 
+are indexable, other than one explicitly generated by a graph.
+"""
+function NamedGraph(C::FinCat)
+  Ob, Gen = obtype(C), gentype(C)
+  g = NamedGraph{Ob,Gen}()
+  obgens = collect(ob_generators(C))
+  homgens = collect(hom_generators(C))
+  add_vertices!(g,length(obgens);vname=obgens)
+  s(f) = only(indexin([src(C,f)],obgens))
+  t(f) = only(indexin([tgt(C,f)],obgens))
+  add_edges!(g,Int[s(f) for f in homgens],Int[t(f) for f in homgens];
+              ename=homgens) 
   g
 end
+
+function Graph(C::FinCat) 
+  g = Graph()
+  obgens = collect(ob_generators(C))
+  homgens = collect(hom_generators(C))
+  add_vertices!(g,length(obgens))
+  s(f) = only(indexin([src(C,f)],obgens))
+  t(f) = only(indexin([tgt(C,f)],obgens))
+  add_edges!(g,Int[s(f) for f in homgens],Int[t(f) for f in homgens]) 
+  return g
+end
+

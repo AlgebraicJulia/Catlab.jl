@@ -1,85 +1,65 @@
-export Category, Cat, CatSize, LargeCatSize, dom, codom, compose, id, ob, hom, is_hom_equal
+export Category, Cat, dom, codom, compose, id, obtype, homtype, ob_set, hom_set,
+       ThCategoryExplicitSets, ThCategory, AbsCat, validate
 
 using StructEquality
 
 using GATlab
-import ....Theories: ThCategory, ob, hom
-import .ThCategory: dom, codom, compose, ⋅, id
-import ....BasicSets.SetFunctions: show_domains, show_type_constructor
+using GATlab.Stdlib: ThCategory
 
-# Categories
-############
+import ....Theories: dom, codom, compose, id 
+using ....BasicSets: AbsSet
 
-""" Size of a category, used for dispatch and subtyping purposes.
+# Theory of Categories with explicit sets
+#########################################
 
-A [`Category`](@ref) type having a particular `CatSize` means that categories of
-that type are *at most* that large.
 """
-abstract type CatSize end
-
-""" Size of a large category, such as Set.
-
-To the extent that they form a category, we regard Julia types and functions
-([`TypeCat`](@ref)) as forming a large category.
+A category may have ob and hom sets more specific than Julia types, so we 
+extend the interface to require explicitly providing these sets.
 """
-struct LargeCatSize <: CatSize end
+@theory ThCategoryExplicitSets <: ThCategory begin
+  Set′::TYPE
+  ob_set()::Set′
+  hom_set()::Set′
+end
 
-""" Abstract base type for a category.
-
-The objects and morphisms in the category have Julia types `Ob` and `Hom`,
-respectively. Note that these types do *not* necessarily form an `@instance` of
-the theory of categories, as they may not meaningfully form a category outside
-the context of this object. For example, a finite category regarded as a
-reflexive graph with a composition operation might have type `Cat{Int,Int}`,
-where the objects and morphisms are numerical identifiers for vertices and edges
-in the graph.
-
-The basic operations available in any category are: [`dom`](@ref),
-[`codom`](@ref), [`id`](@ref), [`compose`](@ref).
+""" Subtyped by wrappers by Cat and FinCat """
+abstract type AbsCat end 
 """
-abstract type Category{Ob,Hom,Size<:CatSize} end
-
-""" Alias for [`Category`](@ref).
+A (possibly) large category with ob/hom given by AbsSets with element types
+Ob/Hom.
 """
+ThCategoryExplicitSets.Meta.@wrapper Category <: AbsCat
+
+""" Coerce something to a category, no-op on actual categories """
+Category(c::Category) = c 
+
+# Should this be worked into the constructor somehow? 
+# User-provided validation unary operation?
+function validate(c::Category) 
+  O, H = eltype(ob_set(c)), eltype(hom_set(c))
+  ObT, HomT = impl_type(c, :Ob), impl_type(c, :Hom)
+  O == ObT || error("Inconsistent ob type $O ≠ $ObT")
+  H == HomT || error("Inconsistent hom type: $H ≠ $HomT")
+end
+
+
+""" Alias for [`Category`](@ref). """
 const Cat = Category
 
-""" Coerce or look up object in category.
+# unary composition
+compose(::Cat, f) = f 
 
-Converts the input to an object in the category, which should be of type `Ob` in
-a category of type `Cat{Ob,Hom}`. How this works depends on the category, but a
-common case is to look up objects, which might be integers or GAT expressions,
-by their human-readable name, usually a symbol.
+# n-ary composition
+compose(c::Cat, f, g, h, fs...) = reduce(compose[getvalue(c)], [f,g,h, fs...])
 
-See also: [`hom`](@ref).
-"""
-function ob end
+coerce_set(T::Type, ::Nothing) = SetOb(T)
 
-""" Coerce or look up morphism in category.
+coerce_set(T::Type, s::AbsSet) = 
+  eltype(s) == T ? s : error("Bad eltype $s ≠ $T")
 
-See also: [`ob`](@ref).
-"""
-function hom end
+Base.show(io::IO, m::Cat) = Base.show(io, getvalue(m))
 
-""" Domain of morphism in category.
-"""
-dom(C::Cat, f) = dom(f)
+obtype(c::Category)::Type = eltype(ob_set(c))
 
-""" Codomain of morphism in category.
-"""
-codom(C::Cat, f) = codom(f)
+homtype(c::Category)::Type = eltype(hom_set(c))
 
-""" Identity morphism on object in category.
-"""
-id(C::Cat, x) = id(x)
-
-""" Compose morphisms in a category.
-"""
-compose(C::Cat, fs...) = compose(fs...)
-
-""" Are two morphisms in a category equal?
-
-By default, just checks for equality of Julia objects using ``==``. In some
-categories, checking equality of morphisms may involve nontrivial reasoning.
-"""
-is_hom_equal(C::Cat, f, g) = is_hom_equal(f, g)
-is_hom_equal(f, g) = f == g

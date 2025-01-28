@@ -1,21 +1,17 @@
 module Pointwise 
-
 using Reexport
 
-include("ACSetTransformations.jl")
+include("acsettransformations/ACSetTransformations.jl")
 @reexport using .ACSetTransformations
 
 include("csets/module.jl")
 @reexport using .CSets
 
-include("SubCSets.jl")
-@reexport using .SubCSets
-
 include("pointwisecats/module.jl")
 @reexport using .PointwiseCats
 
 include("limits_colimits/module.jl")
-@reexport using .PointwiseLimitsColimits
+@reexport using .LimitsColimits
 
 include("homsearch/module.jl")
 @reexport using .HomSearch
@@ -23,13 +19,16 @@ include("homsearch/module.jl")
 include("CatElements.jl")
 @reexport using .CatElements
 
-include("Chase.jl")
+include("SubCSets.jl")
+@reexport using .SubCSets
+
+include("chase/Chase.jl")
 @reexport using .Chase
 
 include("datamigrations/module.jl")
 @reexport using .FunctorialDataMigrations
 
-include("StructuredCospans.jl")
+include("structured_cospans/StructuredCospans.jl")
 @reexport using .StructuredCospans
 
 end # module

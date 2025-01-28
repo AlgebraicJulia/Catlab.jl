@@ -1,51 +1,32 @@
-export Ob 
 
+export SetC
+
+using StructEquality
 using GATlab
-using ....Theories: ThCategory
-import ....Theories: Ob, dom, codom, id, compose, ⋅, ∘
+
+using ....Theories
+using ....BasicSets: AbsSet, FinSet, ConstantFunction, SetFunction, ProdSet, 
+  SetOb, FinDomFunction, ProdFinSet, FinFunction, FinSetInt
+using ...Cats
 
 
-using ....BasicSets, ...Cats
-import ...Cats: limit, colimit, universal, do_compose
+""" Category of sets and functions """
+@struct_hash_equal struct SetC end
 
+@instance ThCategoryExplicitSets{AbsSet, SetFunction,AbsSet} [model::SetC] begin
+  dom(f::SetFunction)::AbsSet = dom(f)
+  
+  codom(f::SetFunction)::AbsSet = codom(f)
 
-# Category of sets
-##################
+  id(A::AbsSet)::SetFunction = SetFunction(A) # identity function
 
-""" Category of sets and functions.
-"""
-
-@instance ThCategory{SetOb, SetFunction} begin
-  dom(f::SetFunction) = f.dom
-  codom(f::SetFunction) = f.codom
-
-  id(A::SetOb) = SetFunction(identity, A, A)
-
-  function compose(f::SetFunction, g::SetFunction)
+  function compose(f::SetFunction, g::SetFunction)::SetFunction
     codom(f) == dom(g) ||
       error("Domain mismatch in composition: $(codom(f)) != $(dom(g))")
-    compose_id(f, g)
+    SetFunction(f, g)
   end
+
+  ob_set() = SetOb(AbsSet)
+
+  hom_set() = SetOb(SetFunction)
 end
-
-@inline compose_id(f::SetFunction, g::SetFunction) = do_compose(f, g)
-@inline compose_id(f::SetFunction, ::IdentityFunction) = f
-@inline compose_id(::IdentityFunction, g::SetFunction) = g
-@inline compose_id(f::IdentityFunction, ::IdentityFunction) = f
-
-do_compose(f::SetFunction, g::SetFunction) = CompositeFunction(f, g)
-do_compose(f::SetFunction, c::ConstantFunction) =
-  ConstantFunction(c.value, dom(f), codom(c))
-do_compose(c::ConstantFunction, f::SetFunction) =
-  ConstantFunction(f(c.value), dom(c), codom(f))
-do_compose(c::ConstantFunction, d::ConstantFunction) =
-  ConstantFunction(d.value, dom(c), codom(d))
-
-
-""" Forgetful functor Ob: Cat → Set.
-
-Sends a category to its set of objects and a functor to its object map.
-"""
-Ob(::TypeCat{T}) where T = TypeSet{T}()
-
-

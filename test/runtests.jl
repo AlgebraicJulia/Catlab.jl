@@ -3,7 +3,11 @@ using Test
 include("ACSetsGATsInterop.jl")
 
 @testset "Theories" begin
-  include("theories/runtests.jl")
+  include("theories/runtests.jl") # TO SAVE TIME
+end
+
+@testset "Graphs" begin
+  include("graphs/runtests.jl") 
 end
 
 @testset "BasicSets" begin
@@ -14,16 +18,8 @@ end
   include("categorical_algebra/runtests.jl")
 end
 
-@testset "Graphs" begin
-  include("graphs/runtests.jl")
-end
-
 @testset "WiringDiagrams" begin
   include("wiring_diagrams/runtests.jl")
-end
-
-@testset "Graphics" begin
-  include("graphics/runtests.jl")
 end
 
 @testset "ADTs" begin

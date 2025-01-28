@@ -1,4 +1,5 @@
 module TestMonoidalDirectedWiringDiagrams
+
 using Test
 
 using Catlab.Theories, Catlab.WiringDiagrams
@@ -191,9 +192,9 @@ I = munit(typeof(A))
 
 # Coherence relations
 @test is_isomorphic(dunit(otimes(A,B)),
-                    compose(dunit(B), otimes(id(dual(B)), dunit(A), id(B))))
+                    compose(dunit(B), otimes([id(dual(B)), dunit(A), id(B)])))
 @test is_isomorphic(dcounit(otimes(A,B)),
-                    compose(otimes(id(A), dcounit(B), id(dual(A))), dcounit(A)))
+                    compose(otimes([id(A), dcounit(B), id(dual(A))]), dcounit(A)))
 
 ### Adjoint mates
 
@@ -364,4 +365,4 @@ j = junction_diagram
 @test merge_junctions((id(A)⊗j(A,0,2))⋅(j(A,2,0)⊗id(A))) == j(A,1,1)
 @test merge_junctions((j(A,0,2)⊗id(A))⋅(id(A)⊗j(A,2,0))) == j(A,1,1)
 
-end
+end # module

@@ -5,13 +5,16 @@ module GraphCategories
 using DataStructures
 
 using ACSets
-using ....BasicSets, ...Cats
+using ....BasicSets
 using ....Graphs.BasicGraphs
 import ....Graphs.GraphAlgorithms: connected_component_projection,
   connected_component_projection_bfs
 
+using ...Cats: proj, coequalizer
+using ..SetCats: SkelFinSet
+
 function connected_component_projection(g::ACSet)::FinFunction
-  proj(coequalizer(FinFunction(src(g), nv(g)),
+  proj(coequalizer[SkelFinSet()](FinFunction(src(g), nv(g)),
                    FinFunction(tgt(g), nv(g))))
 end
 

@@ -1,4 +1,5 @@
 module TestCPortGraphs
+
 using Test
 
 using Catlab.Graphs, Catlab.WiringDiagrams, Catlab.CategoricalAlgebra
@@ -98,4 +99,4 @@ end
   @test nparts(h, :Wire) == 12
 end
 
-end
+end # module

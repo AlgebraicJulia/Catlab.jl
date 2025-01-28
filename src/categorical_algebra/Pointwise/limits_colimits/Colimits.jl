@@ -1,105 +1,172 @@
+module Colimits 
 
-""" Colimit of attributed C-sets that stores the pointwise colimits in Set.
+export ACSetColimit
+
+using StructEquality
+
+using GATlab, ACSets
+
+import .....Theories: ob
+using .....BasicSets
+using ....Cats, ....SetCats
+import ....Cats: cone, cocone, diagram
+using ...ACSetTransformations, ...CSets
+using ...ACSetCats
+
+using ..LimitsColimits: unpack, pack_components
+
+using .ThHeteroMorphism: post
+
+""" Limit of attributed C-sets that stores the pointwise limits in Set in 
+addition to the usual data of the limit cone + original input diagram.
 """
-@struct_hash_equal struct ACSetColimit{Ob <: ACSet, Diagram,
-    Cocone <: Multicospan{Ob}, Colimits <: NamedTuple} <: AbstractColimit{Ob,Diagram}
-  diagram::Diagram
-  cocone::Cocone
-  colimits::Colimits
+@struct_hash_equal struct ACSetColimit <: AbsColimit
+  cocone::Multicospan
+  colimits::NamedTuple
+  diagram::FreeDiagram
 end
 
-⊕(xs::AbstractVector{T}) where {S, T<:StructACSet{S}} = 
-  foldl(⊕, xs; init=apex(initial(T)))
+cocone(c::ACSetColimit) = c.cocone
+ob(c::ACSetColimit) = apex(cocone(c))
+diagram(c::ACSetColimit) = c.diagram
 
-initial(::Type{T}; kw...) where T <: ACSet =
-  colimit(EmptyDiagram{T}(TightACSetTransformation); kw...)
+@instance ThCategoryWithInitial{ACSet,ACSetTransformation,AbsSet, AbsColimit, 
+    Multicospan, EmptyDiagram}  [model::ACSetCategory] begin
 
-coproduct(X::ACSet, Y::ACSet; kw...) =
-  colimit(ObjectPair(X, Y, TightACSetTransformation); kw...)
-  
-coproduct(Xs::AbstractVector{<:ACSet}; kw...) =
-  colimit(DiscreteDiagram(Xs, TightACSetTransformation); kw...)
+  colimit(d::EmptyDiagram) = pointwise_colimit(model, d)
 
-function colimit(::Type{<:Tuple{ACS,TightACSetTransformation}}, diagram) where {S,Ts,ACS <: StructACSet{S,Ts}}  
-  colimits = map(colimit, unpack_diagram(diagram; S=S,Ts=Ts,var=true))
-  Xs = cocone_objects(diagram)
-  colimit_attrs!(pack_colimit(ACS, S, diagram, Xs, colimits), S, Ts, Xs)
+  universal(lim::AbsColimit, ::EmptyDiagram, cocone::Multicospan) = 
+    pointwise_universal(model, lim, cocone)
 end
 
-function colimit(::Type{<:Tuple{DynamicACSet,TightACSetTransformation}}, diagram) 
-  Xs = cocone_objects(diagram)
-  X = first(Xs)
-  S, Ts, ACS = acset_schema(X), datatypes(X), constructor(X)
-  colimits = map(colimit, unpack_diagram(diagram; S=S, Ts=Ts, var=true))
-  colimit_attrs!(pack_colimit(ACS, S, diagram, Xs, colimits), S, Ts, Xs)
-end
+@instance ThCategoryUnbiasedCoproducts{ACSet,ACSetTransformation,AbsSet, AbsColimit, 
+    Multicospan, DiscreteDiagram}  [model::ACSetCategory] begin
 
-colimit(::Type{<:Tuple{VarSet,<:Any}}, diagram) = 
-  colimit(diagram, ToBipartiteColimit())
+  colimit(d::DiscreteDiagram) = pointwise_colimit(model, d)
 
-function colimit(::Type{<:Tuple{ACS,LooseACSetTransformation}}, diagram;
-                 type_components=nothing) where {S,Ts, ACS<:StructACSet{S,Ts}}
-  isnothing(type_components) &&
-    error("Colimits of loose acset transformations are not supported " *
-          "unless attrtype components of coprojections are given explicitly")
+  universal(lim::AbsColimit, ::DiscreteDiagram, cocone::Multicospan) = 
+    pointwise_universal(model, lim, cocone)
+end  
 
-  ACSUnionAll = Base.typename(ACS).wrapper
-  ColimitACS = ACSUnionAll{
-    (mapreduce(tc -> eltype(codom(tc[d])), typejoin, type_components)
-     for d in attrtypes(S))...}
+@instance ThCategoryWithCoequalizers{ACSet,ACSetTransformation,AbsSet, AbsColimit, 
+    Multicospan, ParallelMorphisms}  [model::ACSetCategory] begin 
 
-  colimits = map(colimit, unpack_diagram(diagram; S=S, Ts=Ts))
-  Xs = cocone_objects(diagram)
-  colimit_attrs!(pack_colimit(ColimitACS, S, diagram, Xs, colimits; 
-                              type_components=type_components), S,Ts,Xs)
-end
+  colimit(d::ParallelMorphisms) = pointwise_colimit(model, d)
 
-""" Make colimit of acsets from colimits of sets, ignoring attributes.
+  universal(lim::AbsColimit, ::ParallelMorphisms, cocone::Multicospan) = 
+    pointwise_universal(model, lim, cocone)
+end 
+
+@instance ThCategoryWithPushouts{ACSet,ACSetTransformation,AbsSet, AbsColimit, 
+    Multicospan, Multispan}  [model::ACSetCategory] begin 
+
+  colimit(d::Multispan) = pointwise_colimit(model, d)
+
+  universal(lim::AbsColimit, ::Multispan, cocone::Multicospan) = 
+    pointwise_universal(model, lim, cocone)
+end 
+
+@instance ThCategoryWithBipartiteColimits{ACSet,ACSetTransformation,AbsSet, AbsColimit, 
+    Multicospan, BipartiteFreeDiagram}  [model::ACSetCategory] begin 
+
+  colimit(d::BipartiteFreeDiagram) = pointwise_colimit(model, d)
+
+  universal(lim::AbsColimit, ::BipartiteFreeDiagram, cocone::Multicospan) = 
+    pointwise_universal(model, lim, cocone)
+end 
+
+
+@instance ThCategoryWithColimits{ACSet,ACSetTransformation,AbsSet, AbsColimit, 
+    Multicospan, FreeGraph}  [model::ACSetCategory] begin 
+
+  colimit(d::FreeGraph) = pointwise_colimit(model, d)
+
+  universal(lim::AbsColimit, ::FreeGraph, cocone::Multicospan) = 
+    pointwise_universal(model, lim, cocone)
+end 
+
+
 """
-function pack_colimit(ACS,S, diagram, Xs, colimits; kw...)
-  Y = ACS()
-  for (c, colim) in pairs(colimits)
-    add_parts!(Y, c, length(ob(colim)))
+Compute a limit in an ACSet category by pointwise limits for each object 
+(in the entity category) and attrtype in the (in the attribute category).
+"""
+function pointwise_colimit(model, d)
+  S, Fd = acset_schema(model), FreeDiagram(d)
+  𝒞= CatWithCoproducts(entity_cat(model))
+  # 𝒫 = prof_cat(model)
+  upe, upa = unpack(model, Fd)
+  ent_colimits = NamedTuple(map(ob(S)) do k
+    k => colimit(𝒞, getvalue(upe[k]))
+  end)
+  attr_colimits = NamedTuple(map(attrtype(S)) do k
+    𝒟 = CatWithCoproducts(attr_cat(model, k))
+    k => colimit(𝒟, getvalue(upa[k])) 
+  end)
+
+  Xs = cocone_objects(d)
+  ent_ιs = map(legs, ent_colimits)
+  attr_ιs = map(legs, attr_colimits)
+  Y = pointwise_colimit_apex(model, Xs, ent_colimits, attr_colimits, ent_ιs)
+  ιs = pack_components(model, merge(ent_ιs, attr_ιs), Xs, map(X -> Y, Xs))
+  ACSetColimit(Multicospan(Y, Vector{ACSetTransformation}(ιs)), merge(ent_colimits, attr_colimits), Fd)
+end
+
+"""
+Apply colimit cocone's universal property to some cocone.
+"""
+function pointwise_universal(model::ACSetCategory, lim::AbsColimit, cone::Multicospan)
+  S= acset_schema(model)
+  𝒞 = entity_cat(model)
+  upe, upa = unpack(model, FreeDiagram(cone))
+  ent_components = Dict(map(ob(S)) do o
+    o => universal[𝒞](lim.colimits[o], getvalue(upe[o]))
+  end)
+  attr_components = Dict(map(attrtype(S)) do o
+    𝒟 = attr_cat(model, o)
+    o => universal[𝒟](lim.colimits[o], getvalue(upa[o]))
+  end)
+  ACSetTransformation(merge(ent_components, attr_components), 
+                      ob(lim), apex(cone); cat=model)
+end
+
+"""
+Given colimits for each component, construct an ACSet that is the apex of the 
+colimit cocone in the relevant category of ACSets and ACSet transformations.
+"""
+function pointwise_colimit_apex(C::ACSetCategory, Xs, 
+    entity_colimits::NamedTuple, attr_colimits::NamedTuple, entity_ιs::NamedTuple)
+  Y, S = constructor(C), acset_schema(C)
+  𝒞 = entity_cat(C)
+  for c in objects(S)
+    add_parts!(Y, c, length(get_set(C, ob[𝒞](entity_colimits[c]))))
+  end
+  for d in attrtypes(S)
+    𝒟 =attr_cat(C, d)
+    add_parts!(Y, d, length(get_attr_set(C, ob[𝒟](attr_colimits[d]))))
   end
   for (f, c, d) in homs(S)
-    Yfs = map((ι, X) -> FinFunction(X, f) ⋅ ι, legs(colimits[d]), Xs)
-    Yf = universal(colimits[c], Multicospan(ob(colimits[d]), Yfs))
-    set_subpart!(Y, f, collect(Yf))
+    Yfs = map((ι, X) -> compose[𝒞](get_hom(C, X, f), ι), legs(entity_colimits[d]), Xs)
+    Yf = universal[𝒞](entity_colimits[c], Multicospan(ob(entity_colimits[d]), Yfs; cat=𝒞))
+    set_subpart!(Y, f, collect(get_fn(C, Yf, get_ob(C, Y, c), get_ob(C, Y, d))))
   end
-  ιs = pack_components(map(legs, colimits), Xs, map(X -> Y, Xs); kw...)
-  ACSetColimit(diagram, Multicospan(Y, ιs), colimits)
-end
 
-
-""" Set data attributes of colimit of acsets using universal property.
-"""
-function colimit_attrs!(colim,S,Ts, Xs) 
-  Y, ιs = ob(colim), legs(colim)
-  for (attr, c, d) in attrs(S)
-    T = attrtype_instantiation(S, Ts, d)
-    data = Vector{Union{Some{Union{T,AttrVar}},Nothing}}(nothing, nparts(Y, c))
-    for (ι, X) in zip(ιs, Xs)
-      ιc, ιd = ι[c], ι[d]
-      for i in parts(X, c)
-        j = ιc(i)
-        if isnothing(data[j])
-          data[j] = Some(ιd(subpart(X, i, attr)))
-        else
-          val1, val2 = ιd(subpart(X, i, attr)), something(data[j])
-          val1 == val2 || error(
-            "ACSet colimit does not exist: $attr attributes $val1 != $val2")
+  for (f, c, d) in attrs(S)
+    𝒫 = prof_cat(C, d)
+    set_subpart!(Y, f, map(parts(Y, c)) do cᵢ
+      res = []
+      for (X, leg, ι) in zip(Xs, legs(attr_colimits[d]), entity_ιs[c])
+        fun = get_attr_fn(C, post[𝒫](get_attr(C, X, f), leg), 
+                          get_ob(C, Y, c), get_attrtype(C, Y, d))
+        for p in preimage(ι, cᵢ)
+          push!(res, fun(p))
         end
       end
-    end
-    set_subpart!(Y, attr, map(something, data))
+      allequal(res) || error("Not all equal $res")
+      val = first(res)
+      return val
+    end)
   end
-  colim
+  return Y
 end
 
-function universal(colim::ACSetColimit, cocone::Multicospan)
-  X = apex(cocone)
-  S, Ts = acset_schema(X), datatypes(X)
-  ud = unpack_diagram(cocone; S=S, Ts=Ts, var=true)
-  components = Dict(k=>collect(universal(colim.colimits[k], ud[k])) for k in keys(ud))
-  ACSetTransformation(ob(colim), apex(cocone); components...)
-end
+end # module

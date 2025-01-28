@@ -1,44 +1,66 @@
+""" This depends on FinSets, so must come afterwards """
 module DiscreteFinCats 
-export DiscreteCat
+
+export DiscreteFinCat
 
 using StructEquality
+using GATlab
 
-using .....BasicSets, ..Categories, ..FinCats
-import ..Categories: hom, dom, codom, id, compose
-import ..FinCats: FinCat, ob_generators, hom_generators, ob_generator, graph, 
-  ob_generator_name
-
-# Discrete categories
-#--------------------
+import .....Graphs: Graph
+using .....BasicSets 
+using ...Paths: Path
+using ..FinCats: ThFinCat, src
+import ..FinCats: FinCat
 
 """ Discrete category on a finite set.
 
 The only morphisms in a discrete category are the identities, which are here
 identified with the objects.
 """
-@struct_hash_equal struct DiscreteCat{Ob,S<:FinSet{<:Any,Ob}} <: FinCat{Ob,Ob}
-  set::S
+@struct_hash_equal struct DiscreteFinCat{Ob}
+  set::FinSet
+  DiscreteFinCat(s::FinSet) =new{eltype(s)}(s)
 end
-DiscreteCat(n::Integer) = DiscreteCat(FinSet(n))
 
-FinCat(s::Union{FinSet,Integer}) = DiscreteCat(s)
+GATlab.getvalue(D::DiscreteFinCat) = D.set
 
-ob_generators(C::DiscreteCat) = C.set
-hom_generators(::DiscreteCat) = ()
-ob_generator(C::DiscreteCat, x) = x ∈ C.set ? x : error("$x ∉ $(C.set)")
-ob_generator_name(C::DiscreteCat, x) = x
-hom(C::DiscreteCat, x) = ob_generator(C, x)
+DiscreteFinCat(n::Integer) = DiscreteFinCat(FinSet(n))
 
-is_discrete(::DiscreteCat) = true
-graph(C::DiscreteCat{Int,FinSetInt}) = Graph(length(C.set))
+Base.show(io::IO, C::DiscreteFinCat) = print(io, "FinCat($(length(C.set)))")
 
-dom(C::DiscreteCat{T}, f) where T = f::T
-codom(C::DiscreteCat{T}, f) where T = f::T
-id(C::DiscreteCat{T}, x) where T = x::T
-compose(C::DiscreteCat{T}, f, g) where T = (f::T == g::T) ? f :
-  error("Nontrivial composite in discrete category: $f != $g")
+@instance ThFinCat{Ob,Ob,Union{},Path{Ob,Union{}},FinSet} [model::DiscreteFinCat{Ob}] where {Ob} begin
 
-Base.show(io::IO, C::DiscreteCat{Int,FinSetInt}) =
-  print(io, "FinCat($(length(C.set)))")
+  Ob(x::Ob) = x ∈ model.set ? x : error("$x not an object of $model")
+
+  Hom(x::Ob, ::Ob, ::Ob) = x ∈ model.set ? x : error("$x not an object of $model")
+
+  id(x::Ob) = x 
+
+  dom(x::Ob) = x 
+
+  codom(x::Ob) = x 
+
+  ob_set() = model.set 
+
+  gen_set() = FinSet(EmptySet())
+
+  decompose(x::Ob) = Path{Int}(x,Union{})
+
+  function compose(x::Path{Ob,Union{}})
+    isempty(x) || error("Discrete Cat has only empty ")
+    src(x)
+  end
+  
+end
+
+Graph(C::DiscreteFinCat) = if getvalue(getvalue(C)) isa FinSetInt 
+  Graph(length(C.set))
+else 
+  error("Cannot cast $C to a graph")
+end
+
+FinCat(s::FinSet) = FinCat(DiscreteFinCat(s))
+
+FinCat(s::Int) = FinCat(DiscreteFinCat(s))
 
 end # module

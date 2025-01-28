@@ -1,51 +1,70 @@
 module MonoidalColimits 
-export @cocartesian_monoidal_instance
+export CocartesianMonoidal, oplus, mzero, ⊕, coproduct
 
 using GATlab
 
 using .....Theories
 
-""" Define cocartesian monoidal structure using colimits.
+using ...Cats: DiscreteDiagram, Multicospan, Category, legs
 
-Implements an instance of [`ThCocartesianCategory`](@ref) assuming that finite
-coproducts have been implemented following the colimits interface.
-"""
-macro cocartesian_monoidal_instance(Ob, Hom)
-  esc(quote
-    import Catlab.Theories: ThCocartesianCategory, oplus, ⊕, mzero, swap,
-      plus, zero, copair, coproj1, coproj2
+using ..Coproducts: TypedCatWithCoproducts, CatWithCoproducts, 
+                    ThCategoryUnbiasedCoproducts, coproduct
+import ..LimitsColimits: bundle_leg
+import .ThCocartesianCategory: oplus, mzero, copair
 
-    @instance ThCocartesianCategory{$Ob, $Hom} begin
-      @import dom, codom, compose, ⋅, id, mzero, copair
+ThCocartesianCategory.Meta.@typed_wrapper CocartesianMonoidal
 
-      oplus(A::$Ob, B::$Ob) = ob(coproduct(A, B))
+@instance ThCocartesianCategory{Ob, Hom} [model::TypedCatWithCoproducts{Ob,Hom}
+] where {Ob,Hom} begin
 
-      function oplus(f::$Hom, g::$Hom)
-        ι1, ι2 = coproduct(codom(f), codom(g))
-        copair(coproduct(dom(f), dom(g)), f⋅ι1, g⋅ι2)
-      end
+  oplus(A::Ob, B::Ob) = ob(model, coproduct(model, A, B))
 
-      function swap(A::$Ob, B::$Ob)
-        AB, BA = coproduct(A, B), coproduct(B, A)
-        copair(AB, coproj2(BA), coproj1(BA))
-      end
+  function oplus(f::Hom, g::Hom)
+    𝒞 = model
+    ι1, ι2 = coproduct(𝒞, codom(f), codom(g))
+    clim = coproduct(𝒞, dom(f), dom(g))
+    copair(𝒞, clim, compose(𝒞, f,ι1), compose(𝒞, g,ι2))
+  end
 
-      plus(A::$Ob) = copair(id(A),id(A))
-      zero(A::$Ob) = create(A)
-      coproj1(A::$Ob, B::$Ob) = coproj1(coproduct(A, B))
-      coproj2(A::$Ob, B::$Ob) = coproj2(coproduct(A, B))
-    end
+  function swap(A::Ob, B::Ob)
+    AB = coproduct(model, A, B)
+    BA = coproduct(model, B, A)
+    copair(model, AB, coproj2(BA), coproj1(BA))
+  end
 
-    oplus(As::AbstractVector{<:$Ob}) = ob(coproduct(As))
+  plus(A::Ob) = copair(id(A),id(A), getvalue(model))
 
-    function oplus(fs::AbstractVector{<:$Hom})
-      ⊔, ⊔′ = coproduct(map(dom, fs)), coproduct(map(codom, fs))
-      copair(⊔, map(compose, fs, legs(⊔′)))
-    end
+  mzero() = ob(model, initial[getvalue(model)]())
+  
+  zero(A::Ob) = create(A, getvalue(model))
 
-    mzero(::Type{T}) where T <: $Ob = ob(initial(T))
-  end)
+  coproj1(A::Ob, B::Ob) = coproj1(coproduct(model, A, B))
+  
+  coproj2(A::Ob, B::Ob) = coproj2(coproduct(model, A, B))
+
+  function copair(A::Hom, B::Hom) 
+    m = getvalue(model)
+    copair[m](coproduct[m](dom(A), dom(B)), A, B)
+  end
+
+  id(A::Ob) = id(CatWithCoproducts(getvalue(model)), A)
+
+  compose(A::Hom,B::Hom) = compose(CatWithCoproducts(getvalue(model)), A, B)
 end
 
+function copair(m::WithModel{<:TypedCatWithCoproducts}, hs::AbstractVector; context=nothing)
+  h, hrest... = hs 
+  foldl((x,y)->copair(m, x,y; context), hrest; init=h)
+end
+
+function oplus(m::WithModel{<:TypedCatWithCoproducts}, hs::AbstractVector; context=nothing)
+  h, hrest... = hs 
+  foldl((x,y)->oplus(m, x,y; context), hrest; init=h)
+end
+
+
+bundle_leg(cospan::Multicospan, is::AbstractVector{Int}, m  
+          )  = copair(CocartesianMonoidal(TypedCatWithCoproducts(m)), 
+                      legs(cospan)[is])
 
 end # module

@@ -1,22 +1,27 @@
-module SetCats 
+module SetCats
 
 using Reexport
 
-include("SetCat/module.jl")
+include("SkelFinSetCat/module.jl") 
+@reexport using .SkelFinSetCat
+
+include("FinSetCat/module.jl") 
+@reexport using .FinSetCat
+
+include("SetCat/module.jl") 
 @reexport using .SetCat
 
-include("FinSetCats/module.jl")
-@reexport using .FinSetCats
+include("CatsInterop.jl")
+@reexport using .CatsInterop
 
-include("SkelFinSetCat/module.jl")
-@reexport using .SetCats
+include("Subsets.jl") 
+@reexport using .Subsets
 
 include("VarFunctions/module.jl")
 @reexport using .VarFunctions
 
-include("GraphCategories.jl")
+include("GraphCategories.jl") # (not reexported)
 
-include("Subsets.jl")
-@reexport using .Subsets
+include("DiscreteCatLimits.jl") # nothing to reexport
 
 end # module

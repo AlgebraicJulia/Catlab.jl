@@ -1,11 +1,3 @@
-module TestLooseACSetTransformations 
-
-using Catlab, Test
-
-g = path_graph(WeightedGraph{Float64}, 2, E=(weight=2,))
-h = path_graph(WeightedGraph{Float64}, 4, E=(weight=[1,2,3],))
-
-# Loose morphisms.
 half = x->x/2
 α = LooseACSetTransformation((V=[1,2], E=[1]), (Weight=half,), g, h)
 α′ = ACSetTransformation(g, h, V=[1,2], E=[1], Weight=half,)
@@ -22,5 +14,3 @@ g = star_graph(WeightedGraph{Bool}, 3, E=(weight=[true,false],))
 @test α² isa LooseACSetTransformation
 @test α²[:V] == force(id(FinSet(3)))
 @test α²[:Weight](true) == true
-
-end # module

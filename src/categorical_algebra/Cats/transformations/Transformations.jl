@@ -6,6 +6,7 @@ import GATlab: op
 
 using ..Cats
 import ..Functors: do_compose
+import ..Cats: force
 
 # Natural transformations
 #########################
