@@ -1,4 +1,4 @@
-export SetFunction, ThSetFunction
+export SetFunction, ThSetFunction, AbsFunction, dom, codom, show_domains
 
 using StructEquality
 
@@ -10,6 +10,8 @@ using ..FinSets: FinSet, FinSetInt
 
 # Theory of SetFunctions
 ########################
+
+abstract type AbsFunction end 
 
 """
 Interface we require any implementation of `SetFunction` to satisfy. We should 
@@ -25,10 +27,10 @@ function with another `ConstantFunction`. `postcompose` is only ever called when
 using `force` to evaluate a `CompositeFunction`.
 """
 @theory ThSetFunction begin
-  Any′::TYPE
-  Fun′::TYPE
-  DomSet::TYPE
-  CodSet::TYPE
+  Any′::TYPE{Any}
+  Fun′::TYPE{AbsFunction}
+  DomSet::TYPE{AbsSet}
+  CodSet::TYPE{AbsSet}
   dom()::DomSet
   codom()::CodSet
   app(e::Any′)::Any′
@@ -43,7 +45,7 @@ end
 Note: This type would be better called simply `Function` but that name is
 already taken by the base Julia type.
 """
-ThSetFunction.Meta.@typed_wrapper SetFunction
+ThSetFunction.Meta.@wrapper SetFunction <: AbsFunction
 
 SetFunction(s::SetFunction) = s
 
@@ -58,4 +60,3 @@ function show_domains(io::IO, f::SetFunction; domain::Bool=true,
   domain && codomain && print(io, ", ")
   codomain && show(IOContext(io, :compact=>true, :hide_domains=>!recurse), codom(f))
 end
-

@@ -15,7 +15,7 @@ import ..Colimits: diagram, universal, colimit
 Theory of unbiased pushouts, where `MSpan` is intended to be sent to multispans in the category.
 """
 @theory ThCategoryWithPushouts <: ThCategoryColimitBase begin
-  MSpan::TYPE  # type of multispans
+  MSpan::TYPE{Multispan}
 
   colimit(d::MSpan)::Colimit
   universal(lim::Colimit, d::MSpan, sp::MCospan)::(ob(lim) → apex(sp))

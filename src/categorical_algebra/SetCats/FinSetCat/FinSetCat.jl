@@ -22,17 +22,17 @@ using .ThCategory
 
   codom(f::FinFunction)::FinSet = codom(f)
 
-  id(A::FinSet)::FinFunction = SetFunction(A) # identity function
+  id(A::FinSet)::FinFunction = FinFunction(A) # identity function
 
   function compose(f::FinFunction, g::FinFunction)::FinFunction
     codom[model](f) == dom[model](g) ||
       error("Domain mismatch in composition: $(codom(f)) != $(dom(g))")
-    SetFunction(f, g)
+    FinFunction(SetFunction(getvalue(f), getvalue(g)))
   end
 
 end
 
-@instance ThCategoryExplicitSets{FinSet, FinFunction, AbsSet
+@instance ThCategoryExplicitSets{FinSet, FinFunction
                                 } [model::FinSetC] begin
 
   ob_set() = SetOb(FinSet)
@@ -41,8 +41,7 @@ end
 
 end
 
-@instance ThCategoryColimitBase{FinSet,FinFunction,AbsSet,AbsColimit,
-                                Multicospan} [model::FinSetC] begin 
+@instance ThCategoryColimitBase{FinSet,FinFunction} [model::FinSetC] begin 
 
   ob(t::AbsColimit)::FinSet = ob(t)
 
@@ -51,8 +50,7 @@ end
 end 
 
 
-@instance ThCategoryLimitBase{FinSet,FinFunction,AbsSet,AbsLimit,
-                                Multispan} [model::FinSetC] begin 
+@instance ThCategoryLimitBase{FinSet,FinFunction} [model::FinSetC] begin 
 
   ob(t::AbsLimit)::FinSet = ob(t)
 

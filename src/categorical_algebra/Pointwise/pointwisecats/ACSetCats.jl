@@ -25,12 +25,12 @@ but the codomain is discrete (only identity morphisms)
 """
 @struct_hash_equal struct TrivialCodom end 
 
-@instance ThHeteroMorphism{FinSetInt, Nothing, FinFunction, Nothing, Fin_FinDom
+@instance ThHeteroMorphism{FinSetInt, Nothing, FinFunction, Nothing, AbsFinDomFunction
                           } [model::TrivialCodom] begin
-  dom(h::Fin_FinDom)::FinSetInt = getvalue(dom(h))
-  codom(h::Fin_FinDom)::Nothing = nothing
-  pre(a::FinFunction, h::Fin_FinDom)::Fin_FinDom = compose[SetC()](a, h)
-  post(a::Fin_FinDom, ::Nothing)::Fin_FinDom = a
+  dom(h::AbsFinDomFunction)::FinSetInt = getvalue(dom(h))
+  codom(h::AbsFinDomFunction)::Nothing = nothing
+  pre(a::FinFunction, h::AbsFinDomFunction)::AbsFinDomFunction = compose[SetC()](a, h)
+  post(a::AbsFinDomFunction, ::Nothing)::AbsFinDomFunction = a
 end 
 
 # ACSetCategory
@@ -55,9 +55,10 @@ ACSets.acset_schema(x::ACSetCat) = acset_schema(x.constructor())
 dom(c::ACSetCat, x) = dom(acset_schema(c), x)
 codom(c::ACSetCat, x) = codom(acset_schema(c), x)
 
-@instance ThACSetCategory{Symbol, Any, ACSet, ACSetTransformation, FinSet, 
-  Fin_FinDom, FinSetInt, FinFunction, SkelFinSet, 
-  Nothing, Nothing, TerminalModel′, Fin_FinDom, TrivialCodom
+@instance ThACSetCategory{
+    Ob = FinSetInt, Hom = FinFunction, 
+    AttrType = Nothing, Op = Nothing, Attr = AbsFinDomFunction, 
+    EntityCat = SkelFinSet, AttrCat = TerminalModel′, ProfCat = TrivialCodom
   } [model::ACSetCat] begin
 
   constructor()::ACSet = model.constructor()
@@ -83,7 +84,7 @@ codom(c::ACSetCat, x) = codom(acset_schema(c), x)
   function get_hom(x::ACSet,h::Symbol)::FinFunction 
     S = acset_schema(x)
     if h ∈ ob(S)
-      SetFunction(FinSet(get_ob[model](x, h)))
+      FinFunction(FinSet(get_ob[model](x, h)))
     else 
       FinFunction(x[h], FinSet(get_ob[model](x, codom(model,h))))
     end
@@ -91,7 +92,7 @@ codom(c::ACSetCat, x) = codom(acset_schema(c), x)
 
   get_op(::ACSet,::Symbol)::Nothing = error("No ops in schemas")
 
-  get_attr(x::ACSet,h::Symbol)::SetFunction = 
+  get_attr(x::ACSet,h::Symbol)::FinDomFunction = 
     FinDomFunction(x[h], SetOb(attr_type(x, h)))
   
   get_attrtype(::ACSet,::Symbol)::Nothing = nothing
@@ -100,10 +101,10 @@ codom(c::ACSetCat, x) = codom(acset_schema(c), x)
 
   get_set(x::FinSetInt) = FinSet(x)
 
-  get_fn(x::FinFunction, ::FinSetInt, ::FinSetInt)::Fin_FinDom = x
+  get_fn(x::FinFunction, ::FinSetInt, ::FinSetInt)::AbsFinDomFunction = x
   
-  get_attr_fn(f::Fin_FinDom, ::FinSetInt, ::Nothing)::Fin_FinDom = f
-  get_op_fn(::Nothing, ::Nothing, ::Nothing)::Fin_FinDom = FinFunction([], FinSet(0))
+  get_attr_fn(f::AbsFinDomFunction, ::FinSetInt, ::Nothing)::AbsFinDomFunction = f
+  get_op_fn(::Nothing, ::Nothing, ::Nothing)::AbsFinDomFunction = FinFunction([], FinSet(0))
 
   get_attr_set(::Nothing) = FinSet()
 

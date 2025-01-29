@@ -26,7 +26,7 @@ right(e::UnionSet) = last(e.sets)
 # ThSet implementation
 ######################
 
-@instance ThSet′{Bool, Any} [model::UnionSet] begin
+@instance ThSet′ [model::UnionSet] begin
 
   in′(i::Any)::Bool = any(s->i ∈ s, model.sets)
 

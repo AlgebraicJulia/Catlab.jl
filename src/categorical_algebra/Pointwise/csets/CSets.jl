@@ -47,12 +47,12 @@ We can refer to generators in the schema profunctor with symbols.
 @theory ThACSetCategory begin 
   # (Implicitly) Fixed Types
   #-------------------------
-  Sym::TYPE;     # how one specifies ob/hom generators in the schema profunctor
-  Any′::TYPE;    # anything a user might throw at you which must be interpreted
-  ACS::TYPE;     # ACSet
-  ACSHom::TYPE;  # ACSetTransformation 
-  SetType::TYPE; # FinSet for `add_parts!`
-  FnType::TYPE;  # FinDomFunction for `set_subpart!`
+  Sym::TYPE{Symbol};     # how one specifies ob/hom generators in the schema profunctor
+  Any′::TYPE{Any};    # anything a user might throw at you which must be interpreted
+  ACS::TYPE{ACSet};     # ACSet
+  ACSHom::TYPE{ACSetTransformation};  # ACSetTransformation 
+  SetType::TYPE{FinSet}; # FinSet for `add_parts!`
+  FnType::TYPE{AbsFinDomFunction};  # FinDomFunction for `set_subpart!`
 
   # Types which vary between different models
   #------------------------------------------

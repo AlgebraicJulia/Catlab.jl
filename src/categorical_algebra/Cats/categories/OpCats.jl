@@ -27,7 +27,7 @@ GATlab.getvalue(c::OppositeCat) = c.cat
 # ThCategoryExplicitSets Implementation
 #######################################
 
-@instance ThCategoryExplicitSets{Ob,Hom,AbsSet} [model::OppositeCat{Ob,Hom}
+@instance ThCategoryExplicitSets{Ob,Hom} [model::OppositeCat{Ob,Hom}
                                                 ] where {Ob,Hom} begin
   dom(f::Hom) = codom(getvalue(model), f)
 

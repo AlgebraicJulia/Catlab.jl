@@ -13,8 +13,7 @@ import ....Cats: composite_universal, diagram
 # Initial #
 ###########
 
-@instance ThCategoryWithInitial{FinSetInt,FinFunction,AbsSet,AbsColimit,
-    Multicospan, EmptyDiagram} [model::SkelFinSet] begin 
+@instance ThCategoryWithInitial{FinSetInt,FinFunction} [model::SkelFinSet] begin 
 
   colimit(::EmptyDiagram)::AbsColimit = 
     InitialColimit{FinSetInt,FinFunction}(FinSetInt(0))
@@ -27,8 +26,7 @@ end
 # Coproducts #
 ##############
 
-@instance ThCategoryUnbiasedCoproducts{FinSetInt,FinFunction,AbsSet,AbsColimit,
-    Multicospan, DiscreteDiagram} [model::SkelFinSet] begin
+@instance ThCategoryUnbiasedCoproducts{FinSetInt,FinFunction} [model::SkelFinSet] begin
 
   function colimit(Xs::DiscreteDiagram)::AbsColimit
     ns = length.(Xs)
@@ -51,8 +49,7 @@ end
 # Coequalizers #
 ################
 
-@instance ThCategoryWithCoequalizers{FinSetInt, FinFunction, AbsSet, AbsColimit, 
-    Multicospan,ParallelMorphisms} [model::SkelFinSet] begin
+@instance ThCategoryWithCoequalizers{FinSetInt, FinFunction} [model::SkelFinSet] begin
 
   function colimit(para::ParallelMorphisms)
     emp = EmptyDiagram{impl_type(model, ThCategory, :Ob)}()
@@ -116,8 +113,7 @@ end
 # Pushouts #
 ############
 
-@instance ThCategoryWithPushouts{FinSetInt, FinFunction, AbsSet, AbsColimit, 
-    Multicospan,Multispan} [model::SkelFinSet] begin
+@instance ThCategoryWithPushouts{FinSetInt, FinFunction} [model::SkelFinSet] begin
 
   colimit(spn::Multispan) =
     composite_colimit(CatWithCoequalizers(model), spn)
@@ -157,8 +153,7 @@ end
 
 
 
-@instance ThCategoryWithBipartiteColimits{FinSetInt, FinFunction, AbsSet, AbsColimit, 
-    Multicospan,BipartiteFreeDiagram} [model::SkelFinSet] begin
+@instance ThCategoryWithBipartiteColimits{FinSetInt, FinFunction} [model::SkelFinSet] begin
     function colimit(d::BipartiteFreeDiagram)
       # As in a pushout, this method assume that all objects in layer 1 have
       # outgoing morphisms so that they can be excluded from the coproduct.
@@ -193,8 +188,7 @@ end
 # Free Graph #
 ##############
 
-@instance ThCategoryWithColimits{FinSetInt, FinFunction, AbsSet, AbsColimit, 
-    Multicospan,FreeGraph} [model::SkelFinSet] begin
+@instance ThCategoryWithColimits{FinSetInt, FinFunction} [model::SkelFinSet] begin
     function colimit(d::FreeGraph)
       # Uses the general formula for colimits in Set (Leinster, 2014, Basic Category
       # Theory, Example 5.2.16).
@@ -218,6 +212,5 @@ end
     end
 
 end
-
 
 end # module

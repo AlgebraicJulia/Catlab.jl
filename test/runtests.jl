@@ -3,7 +3,7 @@ using Test
 include("ACSetsGATsInterop.jl")
 
 @testset "Theories" begin
-  include("theories/runtests.jl") # TO SAVE TIME
+  include("theories/runtests.jl")
 end
 
 @testset "Graphs" begin

@@ -22,7 +22,7 @@ end
 
 GATlab.getvalue(f::FinCatAsCat) = f.val
 
-@instance ThCategoryExplicitSets{Ob,Hom,AbsSet} [model::FinCatAsCat{Ob,Hom}
+@instance ThCategoryExplicitSets{Ob,Hom} [model::FinCatAsCat{Ob,Hom}
                                                 ] where {Ob,Hom} begin
 
   dom(f::Hom) = dom(getvalue(model), f)

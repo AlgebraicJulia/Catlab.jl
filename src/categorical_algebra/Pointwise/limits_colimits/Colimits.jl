@@ -30,8 +30,7 @@ cocone(c::ACSetColimit) = c.cocone
 ob(c::ACSetColimit) = apex(cocone(c))
 diagram(c::ACSetColimit) = c.diagram
 
-@instance ThCategoryWithInitial{ACSet,ACSetTransformation,AbsSet, AbsColimit, 
-    Multicospan, EmptyDiagram}  [model::ACSetCategory] begin
+@instance ThCategoryWithInitial{ACSet,ACSetTransformation}  [model::ACSetCategory] begin
 
   colimit(d::EmptyDiagram) = pointwise_colimit(model, d)
 
@@ -39,8 +38,7 @@ diagram(c::ACSetColimit) = c.diagram
     pointwise_universal(model, lim, cocone)
 end
 
-@instance ThCategoryUnbiasedCoproducts{ACSet,ACSetTransformation,AbsSet, AbsColimit, 
-    Multicospan, DiscreteDiagram}  [model::ACSetCategory] begin
+@instance ThCategoryUnbiasedCoproducts{ACSet,ACSetTransformation}  [model::ACSetCategory] begin
 
   colimit(d::DiscreteDiagram) = pointwise_colimit(model, d)
 
@@ -48,8 +46,7 @@ end
     pointwise_universal(model, lim, cocone)
 end  
 
-@instance ThCategoryWithCoequalizers{ACSet,ACSetTransformation,AbsSet, AbsColimit, 
-    Multicospan, ParallelMorphisms}  [model::ACSetCategory] begin 
+@instance ThCategoryWithCoequalizers{ACSet,ACSetTransformation}  [model::ACSetCategory] begin 
 
   colimit(d::ParallelMorphisms) = pointwise_colimit(model, d)
 
@@ -57,8 +54,7 @@ end
     pointwise_universal(model, lim, cocone)
 end 
 
-@instance ThCategoryWithPushouts{ACSet,ACSetTransformation,AbsSet, AbsColimit, 
-    Multicospan, Multispan}  [model::ACSetCategory] begin 
+@instance ThCategoryWithPushouts{ACSet,ACSetTransformation}  [model::ACSetCategory] begin 
 
   colimit(d::Multispan) = pointwise_colimit(model, d)
 
@@ -66,8 +62,7 @@ end
     pointwise_universal(model, lim, cocone)
 end 
 
-@instance ThCategoryWithBipartiteColimits{ACSet,ACSetTransformation,AbsSet, AbsColimit, 
-    Multicospan, BipartiteFreeDiagram}  [model::ACSetCategory] begin 
+@instance ThCategoryWithBipartiteColimits{ACSet,ACSetTransformation}  [model::ACSetCategory] begin 
 
   colimit(d::BipartiteFreeDiagram) = pointwise_colimit(model, d)
 
@@ -76,8 +71,7 @@ end
 end 
 
 
-@instance ThCategoryWithColimits{ACSet,ACSetTransformation,AbsSet, AbsColimit, 
-    Multicospan, FreeGraph}  [model::ACSetCategory] begin 
+@instance ThCategoryWithColimits{ACSet,ACSetTransformation}  [model::ACSetCategory] begin 
 
   colimit(d::FreeGraph) = pointwise_colimit(model, d)
 

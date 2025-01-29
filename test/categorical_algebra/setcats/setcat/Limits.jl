@@ -84,7 +84,7 @@ lim = (ι,) = limit[𝒞](d)
 # Two pullbacks, which should be reduced to a single pullback by pairing.
 f1, f2 = FinDomFunction.([[1,1,2,2,3,3],[1,2,3]], Ref(SetOb(Int))) 
 g1, g2 = FinDomFunction.([[:a,:a,:a,:b,:b,:b],[:a,:b,:c]], Ref(SetOb(Symbol)))
-d = BipartiteFreeDiagram{AbsSet,FinDomFunction}()
+d = BipartiteFreeDiagram{AbsSet,AbsFunction}()
 add_vertices₁!(d, 2; ob₁=[FinSet(6), FinSet(3)])
 add_vertices₂!(d, 2; ob₂=[SetOb(Int), SetOb(Symbol)])
 add_edges!(d, [1,1,2,2], [1,2,1,2], hom=[f1,g1,f2,g2])

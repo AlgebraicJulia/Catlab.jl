@@ -36,7 +36,7 @@ can use union rather than sum.
   end
 end
 
-@instance ThCategoryExplicitSets{Union{DO, CO}, Union{DH,CH,Het}, AbsSet
+@instance ThCategoryExplicitSets{Union{DO, CO}, Union{DH,CH,Het}
                                 } [model::CollageCat{DO,CO,DH,CH,Het}
                                   ] where {DO,CO,DH,CH,Het} begin
 

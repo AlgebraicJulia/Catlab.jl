@@ -25,7 +25,7 @@ right(e::EitherFinSet) = e.right
 # FinSet Implementation
 #######################
 
-@instance ThFinSet{Bool, Any, Int} [model::EitherFinSet] begin
+@instance ThFinSet [model::EitherFinSet] begin
 
   in′(i::Any)::Bool = i ∈ left(model) || i ∈ right(model)
 

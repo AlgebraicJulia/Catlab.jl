@@ -115,7 +115,7 @@ tuples(lim::AbsLimit) =
 # Pullback involving a constant, which should be handled specially.
 lim = pullback[𝒞](FinFunction([3], 4), FinFunction([1,3,4,2,3,3], 4))
 @test ob(lim)== FinSetInt(3)
-@test getvalue(proj1(lim)) == ConstantFunction(1, FinSet(3), FinSet(1)) 
+@test getvalue(getvalue(proj1(lim))) == ConstantFunction(1, FinSet(3), FinSet(1)) 
 @test proj2(lim) == FinFunction([2,5,6], 6)
 
 # Pullback as limit of free diagram.
@@ -143,6 +143,5 @@ lim = limit[𝒞](bpd)
 h = universal[𝒞](lim, Span(f′, g′; cat=𝒞))
 @test force(compose[𝒞](h, π1)) == f′
 @test force(compose[𝒞](h, π2)) == g′
-
 
 end # module

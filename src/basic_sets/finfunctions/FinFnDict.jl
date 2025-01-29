@@ -7,7 +7,7 @@ using StructEquality
 using GATlab
 
 using ...Sets: AbsSet, SetOb
-using ...SetFunctions: ThSetFunction, SetFunction, dom, codom
+using ...SetFunctions: AbsFunction, ThSetFunction, SetFunction, dom, codom
 using ...FinSets: FinSet
 
 import ..FinFunctions: FinFunction, FinDomFunction
@@ -52,8 +52,7 @@ end
 # SetFunction implementation
 ############################
 
-@instance ThSetFunction{Any, SetFunction, FinSet, T
-                       } [model::FinFunctionDict{T}] where T begin
+@instance ThSetFunction [model::FinFunctionDict{T}] where T begin
 
   dom()::AbsSet = model.dom
 
@@ -61,9 +60,11 @@ end
 
   app(i::Any, )::Any = getvalue(model)[i]
 
-  postcompose(g::SetFunction)::SetFunction = FinDomFunction(
-    FinFunctionDict(Dict(k => g(v) for (k,v) in getvalue(model)), codom(g)))
-
+  function postcompose(g::AbsFunction)::AbsFunction 
+    C = codom(g)
+    (C isa FinSet ? FinFunction : FinDomFunction)(SetFunction(
+      FinFunctionDict(Dict(k => g(v) for (k,v) in getvalue(model)), C)))
+  end
 end
   
 """ Default `FinFunction` from a `AbstractDict`"""
@@ -71,18 +72,17 @@ FinFunction(f::AbstractDict) = FinFunction(f, FinSet(Set(values(f))))
 
 """ Default `FinFunction` from a `AbstractDict` and codom"""
 FinFunction(f::AbstractDict, cod::FinSet) = 
-  FinFunction(FinFunctionDict(f, cod))
+  FinFunction(SetFunction(FinFunctionDict(f, cod)))
 
   """ Default `FinFunction` from a `AbstractDict` and codom"""
 FinFunction(f::AbstractDict, dom::FinSet, cod::FinSet) = 
-  FinFunction(FinFunctionDict(f, dom, cod))
+  FinFunction(SetFunction(FinFunctionDict(f, dom, cod)))
 
 
 FinDomFunction(f::AbstractDict, cod::AbsSet) = 
-  FinDomFunction(FinFunctionDict(f, cod))
+  FinDomFunction(SetFunction(FinFunctionDict(f, cod)))
 
 FinDomFunction(f::AbstractDict, dom::FinSet, cod::AbsSet) = 
-  FinDomFunction(FinFunctionDict(f, dom, cod))
-
+  FinDomFunction(SetFunction(FinFunctionDict(f, dom, cod)))
 
 end # module

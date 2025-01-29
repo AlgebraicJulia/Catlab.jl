@@ -15,9 +15,7 @@ using ..SkelFinSetCat
 # Terminal #
 ############
 
-@instance ThCategoryWithTerminal{FinSetInt, FinFunction, AbsSet, AbsLimit, 
-                                 Multispan, EmptyDiagram,
-                                } [model::SkelFinSet] begin 
+@instance ThCategoryWithTerminal{FinSetInt, FinFunction} [model::SkelFinSet] begin 
   limit(::EmptyDiagram)::AbsLimit = 
     TerminalLimit{FinSetInt,FinFunction}(FinSetInt(1))
 
@@ -29,14 +27,13 @@ end
 # Products #
 ############
 
-@instance ThCategoryUnbiasedProducts{FinSetInt, FinFunction, AbsSet, AbsLimit, 
-    Multispan,DiscreteDiagram} [model::SkelFinSet] begin
+@instance ThCategoryUnbiasedProducts{FinSetInt, FinFunction} [model::SkelFinSet] begin
 
   function limit(Xs::DiscreteDiagram)::AbsLimit
     ns = length.(Xs)
     indices = CartesianIndices(Tuple(ns))
     n = prod(Vector{Int}(ns))
-    πs = [SetFunction(i -> indices[i][j], FinSet(n), FinSet(ns[j])) 
+    πs = [FinFunction(i -> indices[i][j], FinSet(n), FinSet(ns[j])) 
           for j in 1:length(ns)]
     LimitCone(Multispan(FinSetInt(n), πs, FinSetInt.(ns)), 
               FreeDiagram(Xs))
@@ -56,8 +53,7 @@ end
 # Equalizers #
 ##############
 
-@instance ThCategoryWithEqualizers{FinSetInt, FinFunction, AbsSet, AbsLimit, 
-    Multispan,ParallelMorphisms} [model::SkelFinSet] begin
+@instance ThCategoryWithEqualizers{FinSetInt, FinFunction} [model::SkelFinSet] begin
 
   function limit(para::ParallelMorphisms)
     @assert !isempty(para)
@@ -111,8 +107,7 @@ function make_limit_index(cone::Multispan)
   return index
 end
 
-@instance ThCategoryWithPullbacks{FinSetInt, FinFunction, AbsSet, AbsLimit, 
-      Multispan, Multicospan} [model::SkelFinSet] begin
+@instance ThCategoryWithPullbacks{FinSetInt, FinFunction} [model::SkelFinSet] begin
 
     """ 'Smart join' algorithm """
     function limit(cospan::Multicospan)
@@ -222,8 +217,7 @@ end
 # Bipartite #
 #############
 
-@instance ThCategoryWithBipartiteLimits{FinSetInt, FinFunction, AbsSet, AbsLimit, 
-      Multispan, BipartiteFreeDiagram} [model::SkelFinSet] begin
+@instance ThCategoryWithBipartiteLimits{FinSetInt, FinFunction} [model::SkelFinSet] begin
 
   """ 'Smart join' algorithm """
   function limit(d::BipartiteFreeDiagram)
@@ -397,8 +391,7 @@ function composite_universal(lim::FinSetCompositeLimit, cone::Multispan)
 end
 
 
-@instance ThCategoryWithLimits{FinSetInt, FinFunction, AbsSet, AbsLimit, 
-      Multispan, FreeGraph} [model::SkelFinSet] begin
+@instance ThCategoryWithLimits{FinSetInt, FinFunction} [model::SkelFinSet] begin
 
     function limit(d::FreeGraph)
       # Uses the general formula for limits in Set (Leinster, 2014, Basic 

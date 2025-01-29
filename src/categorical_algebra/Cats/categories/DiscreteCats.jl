@@ -26,7 +26,7 @@ DiscreteCat(n::Integer) = DiscreteCat(FinSet(n))
 
 Base.show(io::IO, C::DiscreteCat) = print(io, "DiscreteCat($(C.set))")
 
-@instance ThCategoryExplicitSets{Ob,Ob,AbsSet} [model::DiscreteCat{Ob}] where {Ob} begin
+@instance ThCategoryExplicitSets{Ob,Ob} [model::DiscreteCat{Ob}] where {Ob} begin
   Ob(x::Ob) = x ∈ model.set ? x : error("$x not an object of $model")
   Hom(x::Ob, ::Ob, ::Ob) = x ∈ model.set ? x : error("$x not an object of $model")
   id(x::Ob) = x 

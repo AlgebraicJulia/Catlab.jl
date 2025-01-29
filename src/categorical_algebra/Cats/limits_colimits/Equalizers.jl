@@ -15,7 +15,7 @@ import ..Limits: limit
 
   
 @theory ThCategoryWithEqualizers <: ThCategoryLimitBase begin
-  ParallelDiagram()::TYPE # type of ParallelMorphisms
+  ParallelDiagram()::TYPE{ParallelMorphisms}
   limit(p::ParallelDiagram)::Limit
   universal(eq::Limit, p::ParallelDiagram, s::MSpan)::(apex(s) → ob(eq))
 end

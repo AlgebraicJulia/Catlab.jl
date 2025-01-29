@@ -17,7 +17,7 @@ Terminal category in the category of categories: one object, one id morphism.
 # ThCategoryExplicitSets Implementation
 #######################################
 
-@instance ThCategoryExplicitSets{Nothing,Nothing,AbsSet} [model::TrivialCat]  begin
+@instance ThCategoryExplicitSets{Nothing,Nothing} [model::TrivialCat]  begin
   dom(::Nothing) = nothing
 
   codom(::Nothing) = nothing

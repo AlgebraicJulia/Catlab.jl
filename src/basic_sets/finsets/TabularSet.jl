@@ -60,7 +60,7 @@ end
 # FinSet Implementation
 #######################
 
-@instance ThFinSet{Bool, Any, Int} [model::TabularSet] begin
+@instance ThFinSet [model::TabularSet] begin
 
   in′(i::Any)::Bool = i ∈ getvalue(model)
 

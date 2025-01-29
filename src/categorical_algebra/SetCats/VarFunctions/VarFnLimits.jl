@@ -6,12 +6,12 @@ using .....BasicSets
 using ....Cats, ...SetCats
 using ..VarFunctions
 
-@instance ThCategoryUnbiasedCoproducts{FinSetInt, SetFunction, AbsSet,
-  AbsColimit, Multicospan, DiscreteDiagram} [model::SkelKleisli{T}] where T begin 
+@instance ThCategoryUnbiasedCoproducts{FinSetInt, FinDomFunction
+                                      } [model::SkelKleisli{T}] where T begin 
 
   function colimit(d::DiscreteDiagram)::AbsColimit
     csp = fmap(cocone(colimit[SkelFinSet()](d)), identity, x->pure(x,T), 
-               FinSetInt, SetFunction)
+               FinSetInt, FinDomFunction)
     ColimitCocone(csp, FreeDiagram(d))
   end  
   function universal(::AbsColimit,::DiscreteDiagram, cocone::Multicospan)
@@ -20,8 +20,8 @@ using ..VarFunctions
   end
 end
 
-@instance ThCategoryWithCoequalizers{FinSetInt, SetFunction, AbsSet, AbsColimit, 
-    Multicospan,ParallelMorphisms} [model::SkelKleisli{T}] where T begin
+@instance ThCategoryWithCoequalizers{FinSetInt, FinDomFunction
+                                    } [model::SkelKleisli{T}] where T begin
 
   function colimit(para::ParallelMorphisms)
     emp = EmptyDiagram{impl_type(model, ThCategory, :Ob)}()
@@ -77,7 +77,7 @@ end
 
 Left values are variables. Quotient is only ill-defined if Right values conflict.
 """
-function pass_to_quotient(π::Fin_FinDom, h::Fin_FinDom)
+function pass_to_quotient(π::AbsFinDomFunction, h::AbsFinDomFunction)
   q = Vector{eltype(codom(h))}(fill(Left(0), length(left(getvalue(codom(π))))))
   for i in dom(h)
     j = π(i)
@@ -94,8 +94,8 @@ function pass_to_quotient(π::Fin_FinDom, h::Fin_FinDom)
 end
 
 
-@instance ThCategoryWithPushouts{FinSetInt, SetFunction, AbsSet,
-  AbsColimit, Multicospan, Multispan} [model::SkelKleisli{T}] where T begin 
+@instance ThCategoryWithPushouts{FinSetInt, FinDomFunction
+                                } [model::SkelKleisli{T}] where T begin 
 
   function colimit(spn::Multispan)::AbsColimit
     composite_colimit(CatWithCoequalizers(model), spn)

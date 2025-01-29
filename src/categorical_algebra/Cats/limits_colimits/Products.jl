@@ -18,7 +18,7 @@ computational and ergonomic aspects at the expense of hiding a lot of structure
 within Julia datatypes such as `DiscreteDiagram`.
 """
 @theory ThCategoryUnbiasedProducts <: ThCategoryLimitBase begin
-  DiscDiag::TYPE  # type of discrete diagrams, i.e. vectors of Ob
+  DiscDiag::TYPE{DiscreteDiagram}
 
   limit(d::DiscDiag)::Limit
   universal(lim::Limit, d::DiscDiag, sp::MSpan)::(apex(sp) → ob(lim))

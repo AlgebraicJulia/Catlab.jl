@@ -21,7 +21,7 @@ Base.show(io::IO, ::SingletonSet) = print(io, "Singleton()")
 # FinSet Implementation
 #######################
 
-@instance ThFinSet{Bool, Any, Int} [model::SingletonSet] begin
+@instance ThFinSet [model::SingletonSet] begin
   in′(i::Any)::Bool = isnothing(i)
   eltype()::Any = Nothing
   length()::Int = 1

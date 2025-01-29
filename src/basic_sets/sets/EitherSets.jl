@@ -44,7 +44,7 @@ right(e::EitherSet) = e.right
 # ThSet implementation
 ######################
 
-@instance ThSet′{Bool, Any} [model::EitherSet] begin
+@instance ThSet′ [model::EitherSet] begin
 
   in′(i::Any)::Bool = if i isa Left 
     getvalue(i) ∈ left(model) 

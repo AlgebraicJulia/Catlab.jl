@@ -17,7 +17,7 @@ computational and ergonomic aspects at the expense of hiding a lot of structure
 within Julia datatypes such as `DiscreteDiagram`.
 """
 @theory ThCategoryUnbiasedCoproducts <: ThCategoryColimitBase begin
-  DiscDiag::TYPE  # type of discrete diagrams, i.e. vectors of Ob
+  DiscDiag::TYPE{DiscreteDiagram}  # type of discrete diagrams, i.e. vectors of Ob
 
   colimit(d::DiscDiag)::Colimit # Unbiased products.
 

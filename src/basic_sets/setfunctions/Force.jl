@@ -9,7 +9,7 @@ using GATlab: getvalue
 import ...Sets: force
 using ...FinSets: FinSetInt
 
-using ..SetFunctions: SetFunction, dom, codom, postcompose
+using ..SetFunctions: SetFunction, dom, codom, postcompose, AbsFunction
 using ..ConstFn: ConstantFunction
 using ..CompFn: CompositeFunction
 
@@ -17,7 +17,7 @@ using ..CompFn: CompositeFunction
 Simplification of `SetFunction`. This is where `postcompose` gets used to 
 reduce composites into non-composites.  
 """
-function force(s::SetFunction{Any,SetFunction,C,D})::SetFunction{Any,SetFunction,C,D} where {C,D}
+function force(s::AbsFunction)::AbsFunction
   i = getvalue(s)
   i isa CompositeFunction || return s 
 

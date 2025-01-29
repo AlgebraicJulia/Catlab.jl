@@ -16,10 +16,10 @@ import ...FreeDiagrams: apex, feet, legs
 using ...FinFunctors: FinDomFunctor
 
 @theory ThCategoryLimitBase <: ThCategoryExplicitSets begin
-  Limit()::TYPE
+  Limit()::TYPE{AbsLimit}
   ob(lim::Limit)::Ob
 
-  MSpan::TYPE # type of (multi)spans
+  MSpan::TYPE{Multispan} # type of (multi)spans
   apex(s::MSpan)::Ob # apex of the span
 end
 

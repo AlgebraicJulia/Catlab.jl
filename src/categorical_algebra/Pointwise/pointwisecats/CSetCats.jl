@@ -27,10 +27,11 @@ end
 CSetCat(s::Type) = CSetCat(s())
 ACSets.acset_schema(c::CSetCat) = acset_schema(c.constructor)
 
-@instance ThACSetCategory{Symbol, Any, ACSet, ACSetTransformation, FinSet, 
-Fin_FinDom, FinSetInt, FinFunction, SkelFinSet, 
-  Union{}, Union{}, InitialModel′,Union{},InitialModel′} [model::CSetCat] begin
-
+@instance ThACSetCategory{
+    Ob = FinSetInt, Hom = FinFunction, 
+    AttrType = Union{}, Op = Union{}, Attr = Union{},
+    EntityCat = SkelFinSet, AttrCat = InitialModel′, ProfCat = InitialModel′
+  } [model::CSetCat] begin
  
   # Interpreting the data from the ACSet as living in some collage category
 
@@ -72,13 +73,13 @@ Fin_FinDom, FinSetInt, FinFunction, SkelFinSet,
 
   get_set(x::FinSetInt) = FinSet(x)
 
-  get_fn(x::FinFunction, ::FinSetInt, ::FinSetInt)::Fin_FinDom = x
+  get_fn(x::FinFunction, ::FinSetInt, ::FinSetInt)::AbsFinDomFunction = x
 
 end
 
   
 """ Check nat trans component dom/codom matches those of the ACSets """
-function coerce_component(f::SetFunction, d::FinSet, cd::FinSet)
+function coerce_component(f::FinFunction, d::FinSet, cd::FinSet)
   dom(f) == d || error("Domain error: $(dom(f)) != $d")
   codom(f) == cd || error("Domain error: $(codom(f)) != $cd")
   return f

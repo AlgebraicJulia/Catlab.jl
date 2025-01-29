@@ -29,7 +29,7 @@ end
 # FinSet Implementation
 #######################
 
-@instance ThFinSet{Bool, Any, Int} [model::FinSetHash{T}] where T begin
+@instance ThFinSet [model::FinSetHash{T}] where T begin
   in′(i::Any)::Bool = i ∈ getvalue(model)
   eltype() = T
   length()::Int = length(getvalue(model))

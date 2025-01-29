@@ -200,13 +200,13 @@ function query(X::ACSet, diagram::UndirectedWiringDiagram,
       else
         ConstantFunction(value, FinSet(1))
       end
-      ff = SetFunction(constant)
-      Multispan{AbsSet, SetFunction}(SetFunction[ff])
+      ff = SetFunction(constant) |> specialize
+      Multispan{AbsSet, AbsFunction}(AbsFunction[ff])
     end)
   end
 
    # Call `oapply` and make a table out of the resulting span.
-  outer_span = oapply(diagram, spans, Ob=AbsSet, Hom=Fin_FinDom)
+  outer_span = oapply(diagram, spans, Ob=AbsSet, Hom=AbsFinDomFunction)
   if nparts(diagram, :OuterPort) == 0
     fill((;), length(apex(outer_span)))
   else

@@ -31,8 +31,7 @@ cone(c::ACSetLimit) = c.cone
 
 ob(c::ACSetLimit) = apex(cone(c))
 
-@instance ThCategoryWithTerminal{ACSet,ACSetTransformation,AbsSet, AbsLimit, 
-    Multispan, EmptyDiagram}  [model::ACSetCategory] begin 
+@instance ThCategoryWithTerminal{ACSet,ACSetTransformation}  [model::ACSetCategory] begin 
 
   limit(d::EmptyDiagram) = pointwise_limit(model, d)
 
@@ -41,8 +40,7 @@ ob(c::ACSetLimit) = apex(cone(c))
 
 end
 
-@instance ThCategoryUnbiasedProducts{ACSet,ACSetTransformation,AbsSet, AbsLimit, 
-    Multispan, DiscreteDiagram}  [model::ACSetCategory] begin 
+@instance ThCategoryUnbiasedProducts{ACSet,ACSetTransformation}  [model::ACSetCategory] begin 
 
   limit(d::DiscreteDiagram) = pointwise_limit(model, d)
 
@@ -52,8 +50,7 @@ end
 end 
 
 
-@instance ThCategoryWithEqualizers{ACSet,ACSetTransformation,AbsSet, AbsLimit, 
-    Multispan, ParallelMorphisms}  [model::ACSetCategory] begin 
+@instance ThCategoryWithEqualizers{ACSet,ACSetTransformation}  [model::ACSetCategory] begin 
 
   limit(d::ParallelMorphisms) = pointwise_limit(model, d)
 
@@ -62,8 +59,7 @@ end
   
 end 
 
-@instance ThCategoryWithPullbacks{ACSet,ACSetTransformation,AbsSet, AbsLimit, 
-    Multispan, Multicospan}  [model::ACSetCategory] begin 
+@instance ThCategoryWithPullbacks{ACSet,ACSetTransformation}  [model::ACSetCategory] begin 
 
   limit(d::Multicospan) = pointwise_limit(model, d)
 
@@ -72,8 +68,7 @@ end
   
 end 
 
-@instance ThCategoryWithBipartiteLimits{ACSet,ACSetTransformation,AbsSet, AbsLimit, 
-    Multispan, BipartiteFreeDiagram}  [model::ACSetCategory] begin 
+@instance ThCategoryWithBipartiteLimits{ACSet,ACSetTransformation}  [model::ACSetCategory] begin 
 
   limit(d::BipartiteFreeDiagram) = pointwise_limit(model, d)
 
@@ -81,8 +76,7 @@ end
     pointwise_universal(model, lim, cone)
 end 
 
-@instance ThCategoryWithLimits{ACSet,ACSetTransformation,AbsSet, AbsLimit, 
-    Multispan, FreeGraph}  [model::ACSetCategory] begin 
+@instance ThCategoryWithLimits{ACSet,ACSetTransformation}  [model::ACSetCategory] begin 
 
   limit(d::FreeGraph) = pointwise_limit(model, d)
 

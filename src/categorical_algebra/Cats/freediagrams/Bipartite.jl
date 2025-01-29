@@ -122,8 +122,11 @@ function BipartiteFreeDiagram{Ob,Hom}(cospan::Multicospan) where {Ob,Hom}
   return d
 end
 
-BipartiteFreeDiagram(para::ParallelMorphisms{Ob,Hom}) where {Ob,Hom} = 
-  BipartiteFreeDiagram{Ob,Hom}(para)
+function BipartiteFreeDiagram(para::ParallelMorphisms{Ob,Hom}; 
+                              cat=nothing) where {Ob,Hom} 
+  O,H = isnothing(cat) ? (Ob,Hom) : impl_type.(Ref(cat),Ref(ThCategory), [:Ob,:Hom])
+  BipartiteFreeDiagram{O,H}(para)
+end
 
 function BipartiteFreeDiagram{Ob,Hom}(para::ParallelMorphisms) where {Ob,Hom}
   d = BipartiteFreeDiagram{Ob,Hom}()

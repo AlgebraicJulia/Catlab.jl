@@ -23,16 +23,16 @@ category and D is a category with Kleisli composition.
 """
 @struct_hash_equal struct VarProf{T} end 
 
-@instance ThHeteroMorphism{FinSetInt,FinSetInt,FinFunction, SetFunction, SetFunction
+@instance ThHeteroMorphism{DomOb=FinSetInt,CodOb=FinSetInt,DomHom=FinFunction, CodHom=FinDomFunction, Het=FinDomFunction
                           } [model::VarProf{T}] where T begin
 
-  dom(g::SetFunction) = dom[SkelKleisli(T)](g)
+  dom(g::FinDomFunction) = dom[SkelKleisli(T)](g)
   
-  codom(g::SetFunction) = codom[SkelKleisli(T)](g)
+  codom(g::FinDomFunction) = codom[SkelKleisli(T)](g)
 
-  pre(f::FinFunction, g::SetFunction) = compose[SkelKleisli(T)](pure(f, T), g)
+  pre(f::FinFunction, g::FinDomFunction) = compose[SkelKleisli(T)](pure(f, T), g)
 
-  post(f::SetFunction, g::SetFunction) = compose[SkelKleisli(T)](f, g)
+  post(f::FinDomFunction, g::FinDomFunction) = compose[SkelKleisli(T)](f, g)
 
 end 
 
@@ -50,15 +50,15 @@ end
 ACSets.acset_schema(c::VarACSetCat) = acset_schema(c.constructor())
 attrtype_type(model::VarACSetCat, T::Symbol) = attrtype_type(model.constructor(), T)
 
-@instance ThACSetCategory{Symbol, Any, ACSet, ACSetTransformation, FinSet, 
-Fin_FinDom, FinSetInt, FinFunction, SkelFinSet, 
-  FinSetInt, SetFunction, SkelKleisli, SetFunction, VarProf
+@instance ThACSetCategory{
+    Ob = FinSetInt, Hom = FinFunction, 
+    AttrType = FinSetInt, Op = FinDomFunction, Attr = FinDomFunction, 
+    EntityCat = SkelFinSet, AttrCat = SkelKleisli, ProfCat=VarProf
   } [model::VarACSetCat] begin
 
   constructor()::ACSet = model.constructor()
 
   # Interpreting the data from the ACSet as living in some collage category
-
   entity_cat() = SkelFinSet()
 
   attr_cat(T::Symbol) = SkelKleisli(attrtype_type(model, T)) 
@@ -83,7 +83,7 @@ Fin_FinDom, FinSetInt, FinFunction, SkelFinSet,
 
   get_op(::ACSet,::Symbol)::Union{} = error("Does not exist")
 
-  function get_attr(x::ACSet,h::Symbol)::SetFunction 
+  function get_attr(x::ACSet,h::Symbol)::FinDomFunction 
     S, T = acset_schema(x), attr_type(x, h)
     v = map(x[h]) do elem 
       elem isa AttrVar ? Left(getvalue(elem)) : Right(elem)
@@ -97,13 +97,13 @@ Fin_FinDom, FinSetInt, FinFunction, SkelFinSet,
 
   get_set(x::FinSetInt)::FinSet = FinSet(x)
 
-  get_fn(x::FinFunction, ::FinSetInt, ::FinSetInt)::Fin_FinDom = x
+  get_fn(x::FinFunction, ::FinSetInt, ::FinSetInt)::AbsFinDomFunction = x
 
   get_attr_set(x::FinSetInt)::FinSet = FinSet(x)
 
-  get_op_fn(x::SetFunction, ::FinSetInt, ::FinSetInt)::Fin_FinDom = x
+  get_op_fn(x::FinDomFunction, ::FinSetInt, ::FinSetInt)::AbsFinDomFunction = x
 
-  get_attr_fn(x::SetFunction, ::FinSetInt, ::FinSetInt)::Fin_FinDom = 
+  get_attr_fn(x::FinDomFunction, ::FinSetInt, ::FinSetInt)::AbsFinDomFunction = 
     FinDomFunction(map(dom(x)) do v
       fx = getvalue(x(v))
       x(v) isa Right ? fx : AttrVar(fx)
@@ -124,7 +124,7 @@ function coerce_attr_varfun(::Nothing, T::Type, d::FinSet, cd::FinSet)
 end
 
 """  """
-function coerce_attr_varfun(f::Fin_FinDom, T::Type, d::FinSet, cd::FinSet)
+function coerce_attr_varfun(f::AbsFinDomFunction, T::Type, d::FinSet, cd::FinSet)
   sort(collect(dom(f))) == sort(collect(d)) || error("Bad: mismatched dom $d ≠ $(dom(f))")
   # first we optimistically assume that we already have a VarFunction
   codom(f) == either(cd, SetOb(T)) && return f

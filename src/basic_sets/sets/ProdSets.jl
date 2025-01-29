@@ -31,7 +31,7 @@ Base.length(e::ProdSet) = length(getvalue(e))
 # ThSet implementation
 ######################
 
-@instance ThSet′{Bool, Any} [model::ProdSet] begin
+@instance ThSet′ [model::ProdSet] begin
 
   in′(i::Any)::Bool = (i isa Tuple && length(i)==length(model) 
     && all(e ∈ s for (s, e) in zip(model, i)))

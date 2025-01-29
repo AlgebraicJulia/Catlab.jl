@@ -15,9 +15,7 @@ using ...SkelFinSetCat: FinSetIndexedLimit
 # Terminal #
 ############
 
-@instance ThCategoryWithTerminal{FinSet, FinFunction, AbsSet, AbsLimit, 
-                                 Multispan, EmptyDiagram,
-                                } [model::FinSetC] begin 
+@instance ThCategoryWithTerminal{FinSet, FinFunction} [model::FinSetC] begin 
   limit(::EmptyDiagram)::AbsLimit = 
     TerminalLimit{FinSet,FinFunction}(FinSet(nothing))
 
@@ -30,9 +28,7 @@ end
 # Products #
 ############
 
-@instance ThCategoryUnbiasedProducts{FinSet, FinFunction, AbsSet, AbsLimit, 
-                                 Multispan, DiscreteDiagram,
-                                } [model::FinSetC] begin 
+@instance ThCategoryUnbiasedProducts{FinSet, FinFunction} [model::FinSetC] begin 
 
   function limit(d::DiscreteDiagram)::AbsLimit  
     Xs = collect(d)
@@ -53,9 +49,7 @@ end
 ##############
 
 
-@instance ThCategoryWithEqualizers{FinSet, FinFunction, AbsSet, AbsLimit, 
-                                 Multispan, ParallelMorphisms,
-                                } [model::FinSetC] begin 
+@instance ThCategoryWithEqualizers{FinSet, FinFunction} [model::FinSetC] begin 
 
   function limit(para::ParallelMorphisms)::AbsLimit  
     @assert !isempty(para)
@@ -72,9 +66,7 @@ end
   end  
 end
 
-@instance ThCategoryWithPullbacks{FinSet, FinFunction, AbsSet, AbsLimit, 
-                                 Multispan, Multicospan,
-                                } [model::FinSetC] begin 
+@instance ThCategoryWithPullbacks{FinSet, FinFunction} [model::FinSetC] begin 
   function limit(cospan::Multicospan)::AbsLimit  
       # Handle the important special case where one of the legs is a constant
   # (function out of a singleton set). In this case, we just need to take a
@@ -106,9 +98,7 @@ end
   end  
 end
 
-@instance ThCategoryWithBipartiteLimits{FinSet, FinFunction, AbsSet, AbsLimit, 
-                                 Multispan, BipartiteFreeDiagram,
-                                } [model::FinSetC] begin 
+@instance ThCategoryWithBipartiteLimits{FinSet, FinFunction} [model::FinSetC] begin 
   function limit(d::BipartiteFreeDiagram)::AbsLimit  
     # As in a pullback, this method assumes that all objects in layer 2 have
     # incoming morphisms.
@@ -256,7 +246,7 @@ insert(vec::Vector{T}, i, x::S) where {T,S} =
 insert(vec::StaticVector{N,T}, i, x::S) where {N,T,S} =
   StaticArrays.insert(similar_type(vec, typejoin(T,S))(vec), i, x)
 
-function hash_join(builds::AbstractVector, probe::Fin_FinDom)
+function hash_join(builds::AbstractVector, probe::AbsFinDomFunction)
   π_builds, πp = map(_ -> Int[], builds), Int[]
   for y in dom(probe)
     val = probe(y)

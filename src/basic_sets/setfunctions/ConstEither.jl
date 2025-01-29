@@ -6,8 +6,7 @@ using StructEquality
 
 using GATlab
 
-using ..Sets: AbsSet, UnionSet, left, right
-using ..SetFunctions: ThSetFunction, dom, codom
+using ..Sets, ..SetFunctions
 import ..SetFunctions: SetFunction
 
 """
@@ -35,7 +34,7 @@ GATlab.getvalue(c::ConstEither) = c.fun
 # SetFunction implementation
 ############################
 
-@instance ThSetFunction{Any, SetFunction, AbsSet, AbsSet} [model::ConstEither] begin
+@instance ThSetFunction [model::ConstEither] begin
 
   dom()::AbsSet = model.dom
 
@@ -44,7 +43,7 @@ GATlab.getvalue(c::ConstEither) = c.fun
   app(i::Any)::Any = 
     i ∈ right(getvalue(model.codom)) ? i : getvalue(model)(i)
 
-  postcompose(f::SetFunction)::SetFunction = 
+  postcompose(f::AbsFunction)::AbsFunction = 
     SetFunction(ConstEither(f(getvalue(model)), model.dom, codom[model](f)))
 
 end

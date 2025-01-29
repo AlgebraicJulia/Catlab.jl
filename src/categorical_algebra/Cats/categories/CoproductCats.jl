@@ -26,7 +26,7 @@ GATlab.getvalue(x::CoproductCat) = x.cats
 
 Base.getindex(x::CoproductCat, i::Int) = x.cats[i]
 
-@instance ThCategoryExplicitSets{O,H,AbsSet} [model::CoproductCat{O,H}
+@instance ThCategoryExplicitSets{O,H} [model::CoproductCat{O,H}
                                              ] where {O,H} begin 
 
   function id(x::O)::H 
@@ -76,7 +76,7 @@ GATlab.getvalue(x::NamedCoproductCat) = x.cats
 
 Base.getindex(x::NamedCoproductCat, i::Int) = x.cats[i]
 
-@instance ThCategoryExplicitSets{O,H,AbsSet} [model::NamedCoproductCat{O,H}
+@instance ThCategoryExplicitSets{O,H} [model::NamedCoproductCat{O,H}
                                              ] where {O,H} begin 
 
   function id(x::O)::H 

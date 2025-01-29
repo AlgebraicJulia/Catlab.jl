@@ -11,8 +11,7 @@ using ..SliceCategories
 # Colimits #
 ############
 
-@instance ThCategoryWithInitial{SliceOb{ObT, HomT}, HomT, AbsSet, AbsColimit,
-    Multicospan, EmptyDiagram} [model::SliceC{ObT, HomT, C}] where {ObT, HomT, C} begin 
+@instance ThCategoryWithInitial{SliceOb{ObT, HomT}, HomT} [model::SliceC{ObT, HomT, C}] where {ObT, HomT, C} begin 
 
   colimit(::EmptyDiagram)::AbsColimit = 
     InitialColimit{SliceOb{<:ObT, <:HomT}, HomT}(
@@ -22,8 +21,7 @@ using ..SliceCategories
     FinFunction(Int[], FinSet(apex[model](a)))
 end
 
-@instance ThCategoryUnbiasedCoproducts{SliceOb{ObT, HomT}, HomT, AbsSet, AbsColimit,
-    Multicospan, DiscreteDiagram} [model::SliceC{ObT, HomT, C}] where {ObT, HomT, C} begin 
+@instance ThCategoryUnbiasedCoproducts{SliceOb{ObT, HomT}, HomT} [model::SliceC{ObT, HomT, C}] where {ObT, HomT, C} begin 
 
   colimit(d::DiscreteDiagram)::AbsColimit = colimit_slice(model, FreeDiagram(d))
 
@@ -31,8 +29,7 @@ end
     slice_colimit_universal(model, colim, diag, csp)
 end
 
-@instance ThCategoryWithPushouts{SliceOb{ObT, HomT}, HomT, AbsSet, AbsColimit,
-    Multicospan, Multispan} [model::SliceC{ObT, HomT, C}] where {ObT, HomT, C} begin 
+@instance ThCategoryWithPushouts{SliceOb{ObT, HomT}, HomT} [model::SliceC{ObT, HomT, C}] where {ObT, HomT, C} begin 
 
   colimit(d::Multispan)::AbsColimit = colimit_slice(model, FreeDiagram(d))
 
@@ -40,8 +37,7 @@ end
     slice_colimit_universal(model, colim, diag, csp)
 end
 
-@instance ThCategoryWithBipartiteColimits{SliceOb{ObT, HomT}, HomT, AbsSet, AbsColimit,
-    Multicospan, BipartiteFreeDiagram} [model::SliceC{ObT, HomT, C}] where {ObT, HomT, C} begin 
+@instance ThCategoryWithBipartiteColimits{SliceOb{ObT, HomT}, HomT} [model::SliceC{ObT, HomT, C}] where {ObT, HomT, C} begin 
 
   colimit(d::BipartiteFreeDiagram)::AbsColimit = colimit_slice(model, FreeDiagram(d))
 
@@ -71,8 +67,8 @@ end
 ##########
 # Limits #
 ##########
-@instance ThCategoryUnbiasedProducts{SliceOb{ObT, HomT}, HomT, AbsSet, AbsLimit,
-    Multispan, DiscreteDiagram} [model::SliceC{ObT, HomT, C}] where {ObT, HomT, C} begin 
+@instance ThCategoryUnbiasedProducts{SliceOb{ObT, HomT}, HomT
+    } [model::SliceC{ObT, HomT, C}] where {ObT, HomT, C} begin 
 
   limit(d::DiscreteDiagram)::AbsLimit = limit_slice(model, FreeDiagram(d))
 
@@ -123,6 +119,5 @@ function slice_limit_universal(model, lim::AbsLimit, diag::FreeDiagram, sp::Mult
   𝒞, apx = model.cat, apex(sp)
   universal[𝒞](lim.underlying, Multispan(apx.ob, [apx.hom, sp...]; cat=𝒞))
 end
-
 
 end # module

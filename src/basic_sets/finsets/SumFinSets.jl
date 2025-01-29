@@ -39,7 +39,7 @@ Base.length(e::SumFinSet) = length(getvalue(e))
 # ThSet implementation
 ######################
 
-@instance ThFinSet{Bool, Any, Int} [model::SumFinSet] begin
+@instance ThFinSet [model::SumFinSet] begin
 
   in′(i::Any)::Bool = ThFinSet.in′[SumSet(model)](i) # reuse implementation
 

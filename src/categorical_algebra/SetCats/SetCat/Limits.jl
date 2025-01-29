@@ -12,11 +12,12 @@ using ..SetCat: SetC
 # Terminal #
 ############
 
-@instance ThCategoryWithTerminal{AbsSet,SetFunction,AbsSet, AbsLimit, 
-Multispan, EmptyDiagram} [model::SetC] begin 
+@instance ThCategoryWithTerminal{AbsSet,AbsFunction} [model::SetC] begin 
 
   limit(d::EmptyDiagram)::AbsLimit = limit[FinSetC()](d)
-  universal(::AbsLimit, ::EmptyDiagram, a::Multispan) =     SetFunction(ConstantFunction(nothing, apex(a), FinSet(nothing)))
+  function universal(::AbsLimit, ::EmptyDiagram, a::Multispan)
+    SetFunction(ConstantFunction(nothing, apex(a), FinSet(nothing))) |> specialize
+  end
                                   
 end
 
@@ -24,8 +25,7 @@ end
 # Products #
 ############
 
-@instance ThCategoryUnbiasedProducts{AbsSet,SetFunction,AbsSet, AbsLimit, 
-  Multispan, DiscreteDiagram} [model::SetC] begin 
+@instance ThCategoryUnbiasedProducts{AbsSet,SetFunction} [model::SetC] begin 
 
   function limit(a::DiscreteDiagram)::AbsLimit
     all(s -> s isa FinSet, a) && return limit[FinSetC()](a)
@@ -39,7 +39,7 @@ end
     if !all(X -> X isa FinSet, Xs)
       @assert length(cone(res)) == length(span)
       fs = Tuple(legs(span))
-      SetFunction(x -> map(f -> f(x), fs), apex(span), ob(res))
+      SetFunction(x -> map(f -> f(x), fs), apex(span), ob(res)) |> specialize
     else
       ns = length.(codom.(span))
       indices = LinearIndices(Tuple(ns))
@@ -55,9 +55,7 @@ end
 # Equalizers #
 ##############
 
-@instance ThCategoryWithEqualizers{FinSet, FinFunction, AbsSet, AbsLimit, 
-                                 Multispan, ParallelMorphisms,
-                                } [model::SetC] begin 
+@instance ThCategoryWithEqualizers{FinSet, FinFunction} [model::SetC] begin 
 
   function limit(para::ParallelMorphisms)::AbsLimit
     @assert !isempty(para)
@@ -82,33 +80,30 @@ end
 # Pullbacks #
 #############
 
-@instance ThCategoryWithPullbacks{AbsSet, SetFunction, AbsSet, AbsLimit, 
-                                 Multispan, Multicospan,
-                                } [model::SetC] begin 
-  function limit(cospan::Multicospan)::AbsLimit  
-      # Handle the important special case where one of the legs is a constant
-  # (function out of a singleton set). In this case, we just need to take a
-  # product of preimages of the constant value.
-  funcs = legs(cospan)
-  i = findfirst(f -> length(dom(f)) == 1, funcs)
-  if !isnothing(i)
-    c = funcs[i](1)
-    ιs = map(deleteat′(funcs, i)) do f
-      FinFunction(preimage(f, c), dom(f))
+@instance ThCategoryWithPullbacks{AbsSet, SetFunction} [model::SetC] begin 
+  function limit(cospan::Multicospan)::AbsLimit 
+    # Handle the important special case where one of the legs is a constant
+    # (function out of a singleton set). In this case, we just need to take a
+    # product of preimages of the constant value.
+    funcs = legs(cospan)
+    i = findfirst(f -> length(dom(f)) == 1, funcs)
+    if !isnothing(i)
+      c = funcs[i](1)
+      ιs = map(deleteat′(funcs, i)) do f
+        FinFunction(preimage(f, c), dom(f))
+      end
+      x, πs = if length(ιs) == 1
+        dom(only(ιs)), ιs
+      else
+        prod = limit[model](DiscreteDiagram(map(dom, ιs)))
+        ob[model](prod), map(compose[model], legs(prod), ιs)
+      end
+      πs = insert′(πs, i, FinFunction(ConstantFunction(1, x, FinSet(1))))
+      return FinSetIndexedLimit(FreeDiagram(cospan), Multispan(x, πs))
     end
-    x, πs = if length(ιs) == 1
-      dom(only(ιs)), ιs
-    else
-      prod = limit[model](DiscreteDiagram(map(dom, ιs)))
-      ob[model](prod), map(compose[model], legs(prod), ιs)
-    end
-    πs = insert′(πs, i, FinFunction(ConstantFunction(1, x, FinSet(1))))
-    return FinSetIndexedLimit(FreeDiagram(cospan), Multispan(x, πs))
-  end
-  # In the general case, for now we always just do a hash join, although
-  # sort-merge joins can sometimes be faster.
-  hash_join(cospan, model)
-
+    # In the general case, for now we always just do a hash join, although
+    # sort-merge joins can sometimes be faster.
+    hash_join(cospan, model)
   end
 
   function universal(res::AbsLimit, ::Multicospan, x::Multispan) 
@@ -143,7 +138,7 @@ insert′(vec::Vector{T}, i, x::S) where {T,S} =
 insert′(vec::StaticVector{N,T}, i, x::S) where {N,T,S} =
   StaticArrays.insert(similar_type(vec, typejoin(T,S))(vec), i, x)
 
-function hash_join(builds::AbstractVector, probe::Fin_FinDom)
+function hash_join(builds::AbstractVector, probe::AbsFinDomFunction)
   π_builds, πp = map(_ -> Int[], builds), Int[]
   for y in dom(probe)
     val = probe(y)
@@ -179,9 +174,7 @@ end
 # Bipartite #
 #############
 
-@instance ThCategoryWithBipartiteLimits{AbsSet, SetFunction, AbsSet, AbsLimit, 
-                                 Multispan, BipartiteFreeDiagram,
-                                } [model::SetC] begin 
+@instance ThCategoryWithBipartiteLimits{AbsSet, SetFunction} [model::SetC] begin 
   function limit(d::BipartiteFreeDiagram)::AbsLimit  
     # As in a pullback, this method assumes that all objects in layer 2 have
     # incoming morphisms.
@@ -229,7 +222,7 @@ end
       pb = pullback[model](SVector(hom(d, join_edges)...))
 
       # Create a new bipartite diagram with joined vertices.
-      d_joined = BipartiteFreeDiagram{AbsSet,SetFunction}()
+      d_joined = BipartiteFreeDiagram{AbsSet,AbsFunction}()
       copy_parts!(d_joined, d, V₁=to_keep, V₂=setdiff(vertices₂(d),v), E=edges(d))
       joined = add_vertex₁!(d_joined, ob₁=apex(pb))
       for (u, π) in zip(to_join, legs(pb))

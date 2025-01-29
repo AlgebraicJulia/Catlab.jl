@@ -6,16 +6,14 @@ using ...Categories: TrivialCat
 using ...FreeDiagrams
 using ..LimitsColimits
 
-@instance ThCategoryWithInitial{Nothing,Nothing,AbsSet,AbsColimit,Multicospan, 
-                                EmptyDiagram} [model::TrivialCat] begin 
+@instance ThCategoryWithInitial{Nothing,Nothing} [model::TrivialCat] begin 
 
   colimit(::EmptyDiagram)::AbsColimit = InitialColimit{Nothing,Nothing}(nothing)
 
   universal(::AbsColimit, ::EmptyDiagram, ::Multicospan) = nothing
 end
 
-@instance ThCategoryUnbiasedCoproducts{Nothing,Nothing,AbsSet,AbsColimit, Multicospan,
-                                       DiscreteDiagram} [model::TrivialCat] begin 
+@instance ThCategoryUnbiasedCoproducts{Nothing,Nothing} [model::TrivialCat] begin 
 
   colimit(d::DiscreteDiagram) = let n = length(d); ns=fill(nothing, n);
     ColimitCocone(Multicospan(nothing, ns, ns), FreeDiagram(d))
@@ -25,8 +23,7 @@ end
 
 end
 
-@instance ThCategoryWithCoequalizers{Nothing,Nothing,AbsSet,AbsColimit,Multicospan,
-                                     ParallelMorphisms} [model::TrivialCat] begin 
+@instance ThCategoryWithCoequalizers{Nothing,Nothing} [model::TrivialCat] begin 
 
   colimit(d::ParallelMorphisms) = 
     ColimitCocone(Multicospan([nothing], [nothing], [nothing]), FreeDiagram(d))
@@ -35,8 +32,7 @@ end
   universal(::AbsColimit, ::ParallelMorphisms, ::Multicospan) = nothing
 end
 
-@instance ThCategoryWithPushouts{Nothing,Nothing,AbsSet,AbsColimit,Multicospan,
-                                 Multispan} [model::TrivialCat] begin 
+@instance ThCategoryWithPushouts{Nothing,Nothing} [model::TrivialCat] begin 
 
   colimit(d::Multispan) = let n = length(d); ns=fill(nothing, n);
     ColimitCocone(Multicospan(nothing, ns, ns), FreeDiagram(d))
@@ -46,16 +42,14 @@ end
 end
 
 
-@instance ThCategoryWithTerminal{Nothing,Nothing,AbsSet,AbsLimit,Multispan,
-                                 EmptyDiagram} [model::TrivialCat] begin
+@instance ThCategoryWithTerminal{Nothing,Nothing} [model::TrivialCat] begin
 
     limit(::EmptyDiagram)::AbsLimit = InitialColimit{Nothing,Nothing}(nothing)
 
     universal(::AbsLimit, ::EmptyDiagram, ::Multispan) = nothing
 end
 
-@instance ThCategoryUnbiasedProducts{Nothing,Nothing,AbsSet,AbsLimit,Multispan,
-                                     DiscreteDiagram} [model::TrivialCat] begin 
+@instance ThCategoryUnbiasedProducts{Nothing,Nothing} [model::TrivialCat] begin 
 
   limit(d::DiscreteDiagram) = let n = length(d); ns=fill(nothing, n);
     LimitCone(Multispan(nothing, ns, ns), FreeDiagram(d))
@@ -65,8 +59,7 @@ end
 end
 
 
-@instance ThCategoryWithEqualizers{Nothing,Nothing,AbsSet,AbsLimit,Multispan,
-                                  ParallelMorphisms} [model::TrivialCat] begin 
+@instance ThCategoryWithEqualizers{Nothing,Nothing} [model::TrivialCat] begin 
 
   limit(d::ParallelMorphisms) = 
     LimitCone(Multispan([nothing], [nothing], [nothing]), FreeDiagram(d))
@@ -74,8 +67,7 @@ end
   universal(::AbsLimit, ::ParallelMorphisms, ::Multispan) = nothing
 end
 
-@instance ThCategoryWithPullbacks{Nothing,Nothing,AbsSet,AbsLimit,Multispan,
-                                  Multicospan} [model::TrivialCat] begin 
+@instance ThCategoryWithPullbacks{Nothing,Nothing} [model::TrivialCat] begin 
 
   limit(d::Multicospan) = let n = length(d); ns=fill(nothing, n);
     LimitCone(Multispan(nothing, ns, ns), FreeDiagram(d))

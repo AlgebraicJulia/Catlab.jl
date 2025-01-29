@@ -19,7 +19,7 @@ ThCategory.Meta.@typed_wrapper TypeCat
 # ThCategoryExplicitSets Implementation
 ######################################
 
-@instance ThCategoryExplicitSets{Ob,Hom,AbsSet
+@instance ThCategoryExplicitSets{Ob,Hom
                                 } [model::TypeCat{Ob,Hom}] where {Ob,Hom} begin
 
   dom(f::Hom) = dom(model, f)

@@ -20,10 +20,10 @@ Colimit should be sent to AbsColimit.
 Legs should be sent to Vector{Hom} for whatever Hom is.
 """
 @theory ThCategoryColimitBase <: ThCategoryExplicitSets begin 
-  Colimit()::TYPE
+  Colimit()::TYPE{AbsColimit}
   ob(colim::Colimit)::Ob
 
-  MCospan::TYPE # type of (multi)cospans
+  MCospan::TYPE{Multicospan} # type of (multi)cospans
   apex(s::MCospan)::Ob # apex of the cospan
 end
 

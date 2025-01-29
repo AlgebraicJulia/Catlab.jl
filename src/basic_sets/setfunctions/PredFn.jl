@@ -6,8 +6,7 @@ using StructEquality
 
 using GATlab
 
-using ..Sets: AbsSet, SetOb, PredicatedSet
-using ..SetFunctions: ThSetFunction, dom, codom
+using ..Sets, ..SetFunctions
 import ..SetFunctions: SetFunction
 
 """ 
@@ -15,7 +14,7 @@ Wrapper around `SetFunction` that checks inputs/outputs are compatible with
 (co)domain predicates, if any.
 """
 @struct_hash_equal struct PredicatedFunction 
-  val::SetFunction
+  val::AbsFunction
 end
 
 # Accessor
@@ -26,11 +25,11 @@ GATlab.getvalue(p::PredicatedFunction) = p.val
 # SetFunction Implementation
 ############################
 
-@instance ThSetFunction{Any, SetFunction, AbsSet, AbsSet} [model::PredicatedFunction] begin
+@instance ThSetFunction [model::PredicatedFunction] begin
 
-  dom()::SetOb = dom(getvalue(model))
+  dom()::AbsSet = dom(getvalue(model))
 
-  codom()::SetOb = codom(getvalue(model))
+  codom()::AbsSet = codom(getvalue(model))
 
   function app(i::Any)::Any
     f = getvalue(model)
@@ -41,7 +40,7 @@ GATlab.getvalue(p::PredicatedFunction) = p.val
     v
   end
 
-  postcompose(f::SetFunction)::SetFunction = PredicatedFunction(
+  postcompose(f::AbsFunction)::AbsFunction = PredicatedFunction(
     i -> f(getvalue(model)(i)), dom[model](model), codom[model](f)) |> SetFunction
 end
 

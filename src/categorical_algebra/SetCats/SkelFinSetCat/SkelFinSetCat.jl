@@ -17,18 +17,17 @@ and codomain are `FinSet(FinSetInt(n::Int))`.
 
   codom(f::FinFunction)::FinSetInt = getvalue(codom(f))
 
-  id(A::FinSetInt)::FinFunction = SetFunction(FinSet(A)) # identity function
+  id(A::FinSetInt)::FinFunction = FinFunction(FinSet(A)) # identity function
 
   function compose(f::FinFunction, g::FinFunction)::FinFunction
     codom[model](f) == dom[model](g) ||
       error("Domain mismatch in composition: $(codom(f)) != $(dom(g))")
-    SetFunction(f, g)
+    FinFunction(f, g)
   end
 
 end
 
-@instance ThCategoryExplicitSets{FinSetInt, FinFunction, AbsSet
-                                } [model::SkelFinSet] begin
+@instance ThCategoryExplicitSets{FinSetInt, FinFunction} [model::SkelFinSet] begin
 
   ob_set() = SetOb(FinSetInt)
 
@@ -36,8 +35,7 @@ end
 
 end
 
-@instance ThCategoryColimitBase{FinSetInt,FinFunction,AbsSet,AbsColimit,
-                                Multicospan} [model::SkelFinSet] begin 
+@instance ThCategoryColimitBase{FinSetInt,FinFunction} [model::SkelFinSet] begin 
 
   ob(t::AbsColimit)::FinSetInt = ob(t)
 
@@ -45,8 +43,7 @@ end
 
 end 
 
-@instance ThCategoryLimitBase{FinSetInt,FinFunction,AbsSet,AbsLimit,
-                                Multispan} [model::SkelFinSet] begin 
+@instance ThCategoryLimitBase{FinSetInt,FinFunction} [model::SkelFinSet] begin 
 
   ob(t::AbsLimit)::FinSetInt = ob(t)
 

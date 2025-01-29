@@ -22,7 +22,7 @@ import ..Colimits: colimit, cocone, diagram
 `Initial` is expected to be implemented by `InitialColimit`.
 """
 @theory ThCategoryWithInitial <: ThCategoryColimitBase begin
-  Empty()::TYPE
+  Empty()::TYPE{EmptyDiagram}
 
   colimit(e::Empty)::Colimit
   universal(⊥::Colimit, e::Empty, csp::MCospan)::(ob(⊥) → apex(csp))

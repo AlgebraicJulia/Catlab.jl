@@ -39,7 +39,7 @@ Base.length(e::ProdFinSet) = length(getvalue(e))
 # ThSet implementation
 ######################
 
-@instance ThFinSet{Bool, Any, Int} [model::ProdFinSet] begin
+@instance ThFinSet [model::ProdFinSet] begin
 
   in′(i::Any)::Bool = ThFinSet.in′[ProdSet(model)](i) # reuse implementation
 

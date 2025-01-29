@@ -12,7 +12,7 @@ import ..Colimits: colimit
 import ..Equalizers: factorize
 
 @theory ThCategoryWithCoequalizers <: ThCategoryColimitBase begin
-  ParallelDiagram()::TYPE # type of ParallelMorphisms
+  ParallelDiagram()::TYPE{ParallelMorphisms}
   colimit(p::ParallelDiagram)::Colimit
   universal(eq::Colimit, p::ParallelDiagram, s::MCospan)::(ob(eq) → apex(s))
 end

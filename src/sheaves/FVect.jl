@@ -3,7 +3,7 @@ using GATlab
 @struct_hash_equal struct FinVect end
 
 # The tests do not currently use the category structure of FinVect
-@instance ThCategoryExplicitSets{FinSet, Function, AbsSet} [model::FinVect] begin
+@instance ThCategoryExplicitSets{FinSet, Function} [model::FinVect] begin
   dom(f::FinSet) = error()
   codom(f::FinSet) = error()
   id(f::FinSet) = error()
@@ -34,7 +34,7 @@ FVectPushforward = Functor(identity, # identity on objects
   Category(FinSetC()), Category(FinVect())
 )
 
-@instance ThCategoryExplicitSets{Int, AbstractMatrix{T}, AbsSet
+@instance ThCategoryExplicitSets{Int, AbstractMatrix{T}
                                 } [model::MatC{T}] where T begin 
 
   ob_set() = SetOb(PredicatedSet{Int}(i -> i≥0))

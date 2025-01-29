@@ -19,7 +19,7 @@ Any finite set must satisfy the interface of `ThSet′` in addition to providing
 Julia's iterator interface and having a integer cardinality, i.e. `length`.
 """
 @theory ThFinSet <: ThSet′ begin
-  Int′::TYPE
+  Int′::TYPE{Int}
   length()::Int′
   iterate()::Any′
   iterate(a::Any′)::Any′

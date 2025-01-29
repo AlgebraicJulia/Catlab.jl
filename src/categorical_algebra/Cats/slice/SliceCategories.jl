@@ -49,7 +49,7 @@ end
 
 using .ThCategoryExplicitSets
 
-@instance ThCategoryExplicitSets{SliceOb{<:ObT, <:HomT}, HomT, AbsSet
+@instance ThCategoryExplicitSets{SliceOb{<:ObT, <:HomT}, HomT
                                 } [model::SliceC{ObT, HomT, C}
                                   ] where {ObT, HomT, C} begin
   function Ob(x::SliceOb{<:ObT, <:HomT})

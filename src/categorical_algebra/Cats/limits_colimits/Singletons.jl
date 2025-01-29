@@ -12,7 +12,7 @@ import ..Colimits: cocone, colimit
 `Sing` is expected to be implemented by `SingletonDiagram`.
 """
 @theory ThCategoryWithSingletonLimits <: ThCategoryLimitBase begin
-  Sing()::TYPE
+  Sing()::TYPE{SingletonDiagram}
   limit(e::Sing)::Limit
   universal(lim::Limit, d::Sing, sp::MSpan)::(apex(sp) → ob(lim))
 end
@@ -31,9 +31,9 @@ ob(s::SingletonLimit) = s.x
 cone(s::SingletonLimit) = SMultispan{1}(s.id_x)
 diagram(s::SingletonLimit) = FreeDiagram(SingletonDiagram(s.x))
 
-@instance ThCategoryWithSingletonLimits{Ob, Hom, AbsSet, AbsLimit, Multispan, SingletonDiagram
-                                    } [model::TypeCat{Ob,Hom}
-                                      ]where {Ob,Hom} begin 
+@instance ThCategoryWithSingletonLimits{Ob, Hom
+                                       } [model::TypeCat{Ob,Hom}
+                                         ]where {Ob,Hom} begin 
   limit(d::SingletonDiagram) = SingletonLimit(only(d), model)
   universal(::AbsLimit, ::SingletonDiagram, sp::Multispan) = only(sp)
 end
@@ -46,7 +46,7 @@ end
 `Sing` is expected to be implemented by `SingletonDiagram`.
 """
 @theory ThCategoryWithSingletonColimits <: ThCategoryColimitBase begin
-  Sing()::TYPE
+  Sing()::TYPE{SingletonDiagram}
   colimit(e::Sing)::Colimit
   universal(lim::Colimit, d::Sing, sp::MCospan)::(ob(lim) → apex(sp))
 end
@@ -65,9 +65,9 @@ ob(s::SingletonColimit) = s.x
 cone(s::SingletonColimit) = SMultispan{1}(s.id_x)
 diagram(s::SingletonColimit) = FreeDiagram(SingletonDiagram(s.x))
 
-@instance ThCategoryWithSingletonColimits{Ob, Hom, AbsSet, AbsColimit, Multicospan, SingletonDiagram
-                                    } [model::TypeCat{Ob,Hom}
-                                      ]where {Ob,Hom} begin 
+@instance ThCategoryWithSingletonColimits{Ob, Hom
+                                          } [model::TypeCat{Ob,Hom}
+                                            ]where {Ob,Hom} begin 
   colimit(d::SingletonDiagram) = SingletonColimit(only(d), model)
   universal(::AbsColimit, ::SingletonDiagram, sp::Multicospan) = only(sp)
 end

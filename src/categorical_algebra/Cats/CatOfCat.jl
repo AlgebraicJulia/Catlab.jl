@@ -22,7 +22,7 @@ categories are usually presented by generators and relations.
 """
 @struct_hash_equal struct CatC end
 
-@instance ThCategoryExplicitSets{AbsCat, AbsFunctor, AbsSet} [model::CatC] begin
+@instance ThCategoryExplicitSets{AbsCat, AbsFunctor} [model::CatC] begin
 
   dom(f::AbsFunctor)::AbsCat = ThFunctor.dom[getvalue(f)]()
 

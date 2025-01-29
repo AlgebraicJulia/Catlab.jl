@@ -1,3 +1,7 @@
+"""    specialize(::Type{T}, d::FreeDiagram) 
+
+Interpret a FreeDiagram as a specific implementation of type T, e.g. DiscreteDiagram, Multispan, etc. 
+"""
 module Specialize 
 export specialize 
 

@@ -12,8 +12,7 @@ using ..FinSetCat: FinSetC
 # Initial object #
 ##################
 
-@instance ThCategoryWithInitial{FinSet,FinFunction,AbsSet,AbsColimit,
-    Multicospan, EmptyDiagram} [model::FinSetC] begin 
+@instance ThCategoryWithInitial{FinSet,FinFunction} [model::FinSetC] begin 
 
   colimit(::EmptyDiagram) =
     InitialColimit{FinSet,FinFunction}(FinSet(EmptySet()))
@@ -26,8 +25,7 @@ end
 # Coproducts #
 ##############
 
-@instance ThCategoryUnbiasedCoproducts{FinSet,FinFunction,AbsSet,AbsColimit,
-    Multicospan, DiscreteDiagram} [model::FinSetC] begin
+@instance ThCategoryUnbiasedCoproducts{FinSet,FinFunction} [model::FinSetC] begin
 
   function colimit(d::DiscreteDiagram)::AbsColimit
     Xs = collect(d)
@@ -48,8 +46,7 @@ end
 # Coequalizers #
 ################
 
-@instance ThCategoryWithCoequalizers{FinSet,FinFunction,AbsSet,AbsColimit,
-    Multicospan, ParallelMorphisms} [model::FinSetC] begin
+@instance ThCategoryWithCoequalizers{FinSet,FinFunction} [model::FinSetC] begin
 
   function colimit(para::ParallelMorphisms)::AbsColimit
     @assert !isempty(para)
@@ -101,8 +98,7 @@ end
 # Pushouts #
 ############
 
-@instance ThCategoryWithPushouts{FinSet, FinFunction, AbsSet, AbsColimit, 
-    Multicospan,Multispan} [model::FinSetC] begin
+@instance ThCategoryWithPushouts{FinSet, FinFunction} [model::FinSetC] begin
 
   colimit(spn::Multispan) =
     composite_colimit(CatWithCoequalizers(model), spn)

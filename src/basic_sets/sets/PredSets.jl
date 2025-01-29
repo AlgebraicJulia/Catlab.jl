@@ -34,7 +34,7 @@ end
 # ThSet implementation 
 ######################
 
-@instance ThSet′{Bool, Any} [model::PredicatedSet{T}] where T begin
+@instance ThSet′ [model::PredicatedSet{T}] where T begin
 
   in′(i::Any)::Bool = i isa T && model(i)
 

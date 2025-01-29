@@ -12,17 +12,16 @@ g = FinFunction([1,1,2,2,3], 3)
 h = FinFunction([3,1,2], 3)
 k = FinFunction([1,3,4],3,5)
 @test f isa FinFunction
-@test getvalue(f) isa FinFunctionVector
+@test getvalue(getvalue(f)) isa FinFunctionVector
 @test (dom(f), codom(f)) == (FinSet(3), FinSet(5))
 @test force(f) === f
 @test codom(FinFunction([1,3,4], 4)) == FinSet(4)
 @test k == f
 
-
 X = FinSet(Set([:w,:x,:y,:z]))
 k = FinFunction(Dict(:a => :x, :b => :y, :c => :z), X)
 ℓ = FinFunction(Dict(:w => 2, :x => 1, :y => 1, :z => 4), FinSet(4))
-@test getvalue(ℓ) isa FinFunctionDict
+@test getvalue(getvalue(ℓ)) isa FinFunctionDict
 @test getvalue(dom(ℓ)) isa FinSetHash{Symbol}
 @test (dom(k), codom(k)) == (FinSet(Set([:a, :b, :c])), X)
 @test (dom(ℓ), codom(ℓ)) == (X, FinSet(4))
@@ -48,9 +47,10 @@ force_compose(x...) = force(SetFunction(x...))
 
 
 # Indexing.
+f = FinFunction([1,3,4], 5)
 @test !is_indexed(f)
 @test is_indexed(SetFunction(FinSet(3)))
-@test preimage(SetFunction(FinSet(3)), 2) == [2]
+@test preimage(FinFunction(FinSet(3)), 2) == [2]
 
 f = FinFunction([1,2,1,3], 5, index=true)
 l = FinFunction([1,2,1,3],4,5,index=true)
@@ -64,7 +64,7 @@ l = FinFunction([1,2,1,3],4,5,index=true)
 @test isempty(preimage(f, 4))
 
 g = FinFunction(5:-1:1, 5)
-@test force_compose(f,g) == FinFunction([5,4,5,3], 5)
+@test force_compose(f,g) == FinFunction([5,4,5,3], 5; index=true)
 
 # Pretty-print.
 @test sshow(FinFunction(rot3, FinSet(3), FinSet(3))) ==

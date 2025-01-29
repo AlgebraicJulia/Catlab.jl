@@ -6,8 +6,7 @@ using StructEquality
 
 using GATlab
 
-using ..Sets: AbsSet, PredicatedSet
-using ..SetFunctions: ThSetFunction, show_domains
+using ..Sets, ..SetFunctions
 import ..SetFunctions: SetFunction
 using ..PredFn: PredicatedFunction
 
@@ -16,13 +15,13 @@ using ..PredFn: PredicatedFunction
 
 """ Function in **Set** defined by a callable Julia object.
 """
-@struct_hash_equal struct SetFunctionCallable{D<:AbsSet,C<:AbsSet}
+@struct_hash_equal struct SetFunctionCallable
   func::Any   # usually a `Function` but can be any Julia callable.
-  dom::D
-  codom::C
-  function SetFunctionCallable(f, dom::D, codom::C) where {D,C}
+  dom::AbsSet
+  codom::AbsSet
+  function SetFunctionCallable(f, dom::AbsSet, codom::AbsSet) 
     !isempty(methods(f)) || error("$f must be callable")
-    new{D,C}(f, dom, codom)
+    new(f, dom, codom)
   end
 end
 
@@ -44,15 +43,15 @@ end
 # SetFunction implementation
 ############################
 
-@instance ThSetFunction{Any, SetFunction, D, C} [model::SetFunctionCallable{D,C}] where {D,C} begin
+@instance ThSetFunction [model::SetFunctionCallable] begin
 
-  dom()::D = model.dom
+  dom()::AbsSet = model.dom
 
-  codom()::C = model.codom
+  codom()::AbsSet = model.codom
 
   app(i::Any)::Any = getvalue(model)(i)
 
-  postcompose(f::SetFunction)::SetFunction = 
+  postcompose(f::AbsFunction)::AbsFunction = 
     SetFunction(SetFunctionCallable(  
       i -> f(getvalue(model.func)(i)), model.dom, codom(f)))
 
@@ -62,16 +61,10 @@ end
 # Default constructors 
 ######################
 
-SetFunction(f::Function, d::AbsSet, c::AbsSet) = _set_fn(SetFunction, f, d, c)
-
-SetFunction{A,B,C,D}(f::Function, d::AbsSet, c::AbsSet) where {A,B,C,D} = 
-  _set_fn(SetFunction{A,B,C,D}, f, d, c)
-
-""" Common code between the above two methods """
-function _set_fn(T, f, d, c)
-  s = SetFunctionCallable(f, d, c) |> T
+function SetFunction(f::Function, d::AbsSet, c::AbsSet) 
+  s = SetFunctionCallable(f, d, c)  |> SetFunction
   pred = getvalue(d) isa PredicatedSet || getvalue(c) isa PredicatedSet
-  pred ? T(PredicatedFunction(s)) : s
+  pred ? SetFunction(PredicatedFunction(s)) : s
 end
 
 end # module

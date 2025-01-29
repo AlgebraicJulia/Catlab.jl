@@ -4,24 +4,22 @@ export IdentityFunction
 using StructEquality
 
 using GATlab
-import GATlab: getvalue
 import ACSets.Columns: preimage
 
-using ..Sets: AbsSet, SetOb
-using ..SetFunctions: ThSetFunction, show_domains, dom, codom
+using ..Sets, ..SetFunctions
 import ..SetFunctions: SetFunction
 
 
 """ Identity morphism in **Set**.
 """
-@struct_hash_equal struct IdentityFunction{T<:AbsSet}
-  dom::T
+@struct_hash_equal struct IdentityFunction
+  dom::AbsSet
 end
 
 # Accessor
 ##########
 
-getvalue(i::IdentityFunction) = i.dom
+GATlab.getvalue(i::IdentityFunction) = i.dom
 
 # Other methods 
 ###############
@@ -38,19 +36,18 @@ end
 # SetFunction implementation 
 ############################
 
-@instance ThSetFunction{Any, SetFunction, T, T
-                       } [model::IdentityFunction{T}] where {T} begin
+@instance ThSetFunction [model::IdentityFunction] begin
 
-  dom()::T = getvalue(model)
+  dom()::AbsSet = getvalue(model)
 
-  codom()::T = getvalue(model)
+  codom()::AbsSet = getvalue(model)
 
   function app(i::Any)::Any 
     i ∈ dom[model]() || error("$i ∉ $(dom[model]()) for identity function")
     return i
   end
 
-  postcompose(f::SetFunction)::SetFunction = f
+  postcompose(f::AbsFunction)::AbsFunction = f
 
 end
 

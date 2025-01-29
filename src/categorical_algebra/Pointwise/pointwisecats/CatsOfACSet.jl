@@ -39,7 +39,7 @@ using ...CSets
 
 end 
 
-@instance ThCategoryExplicitSets{ACSet, ACSetTransformation, AbsSet
+@instance ThCategoryExplicitSets{ACSet, ACSetTransformation
                                 } [model::ACSetCategory] begin
                                 
   ob_set() = SetOb(ACSet)

@@ -128,8 +128,9 @@ colim = ι1, ι2 = pushout[𝒞](f, g)
 X = ob(colim)
 @test Set(X) == Set(TaggedElem.([:w,:x,:x,:y1,:z], [1,1,2,1,2]))
 
-@test force(ι1).val.val == Dict(x => TaggedElem(x, 1) for x in A) 
-@test force(ι2).val.val == Dict(
+get(x) = getvalue(getvalue(getvalue(x)))
+@test get(force(ι1)) == Dict(x => TaggedElem(x, 1) for x in A) 
+@test get(force(ι2)) == Dict(
   x => x == :y2 ? TaggedElem(:y1, 1) : TaggedElem(x, 2) for x in B) 
 
 end # module

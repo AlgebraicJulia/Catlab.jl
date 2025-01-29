@@ -17,7 +17,7 @@ A category may have ob and hom sets more specific than Julia types, so we
 extend the interface to require explicitly providing these sets.
 """
 @theory ThCategoryExplicitSets <: ThCategory begin
-  Set′::TYPE
+  Set′::TYPE{AbsSet}
   ob_set()::Set′
   hom_set()::Set′
 end

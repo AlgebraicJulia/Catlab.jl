@@ -14,8 +14,8 @@ One ought be able to ask of any Set whether something is in it. Also a Julia
 type should be provided which includes all elements of the set.
 """
 @theory ThSet′ begin
-  Bool′::TYPE
-  Any′::TYPE
+  Bool′::TYPE{Bool}
+  Any′::TYPE{Any}
   in′(e::Any′)::Bool′ # the order of arguments is reversed, so give a diff name
   eltype()::Any′
 end

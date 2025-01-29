@@ -10,39 +10,11 @@ using ..FreeDiagrams
 using ..Categories: Category
 import ..Categories: obtype, homtype
 
-# """
-# Extend the theory of categories with some extra datatypes (with intended 
-# associated Julia types) useful in both limits and colimits
-# """
-# @theory ThCategoryDiag <: ThCategory begin
-#   # Diagram types
-#   Disc::TYPE; Span′::TYPE; Cospan′::TYPE; Par::TYPE; BPFD::TYPE; FD::TYPE;
-#   Lim::TYPE; Alg::TYPE;
-#   BareHom::TYPE; # when we have a hom but don't know its dom/codom statically
-# end
-
-
-# """
-# Implement this for each diagram impl + category combination.
-
-# `_universal` expects the following arguments: 
-# - the diagram impl 
-# - the category the diagram is in 
-# - the (co)cone result of the (co)Limit
-# - the multi(co)span to which we are applying the universal property
-# """
-# function _universal end 
-
-
 # Algorithms
 ############
 
 """ A limit *or* a colimit algorithm """
 abstract type LimitAlgorithm end
-
-
-
-
 
 # Bundling
 ###########

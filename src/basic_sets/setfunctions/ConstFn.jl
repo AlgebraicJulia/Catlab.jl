@@ -7,19 +7,18 @@ using StructEquality
 using GATlab
 import GATlab: getvalue
 
-using ..Sets: AbsSet, SetOb
-using ..SetFunctions: ThSetFunction, codom
+using ..Sets, ..SetFunctions
 import ..SetFunctions: SetFunction
 
 """ Function in **Set** taking a constant value.
 """
-@struct_hash_equal struct ConstantFunction{D<:AbsSet,C<:AbsSet}
+@struct_hash_equal struct ConstantFunction#{D<:AbsSet,C<:AbsSet}
   value::Any
-  dom::D
-  codom::C
-  function ConstantFunction(v, d::D, c::C) where {D<:AbsSet,C<:AbsSet}
+  dom::AbsSet
+  codom::AbsSet
+  function ConstantFunction(v, d::AbsSet, c::AbsSet)
     v ∈ c || error("Value $v must be element of codom $c")
-    new{D,C}(v, d, c)
+    new(v, d, c)
   end
 end
 
@@ -34,16 +33,15 @@ getvalue(c::ConstantFunction) = c.value
 # SetFunction implementation
 ############################
 
-@instance ThSetFunction{Any, SetFunction, D, C
-                       } [model::ConstantFunction{D,C}] where {D,C} begin
+@instance ThSetFunction [model::ConstantFunction] begin
 
-  dom()::D = model.dom
+  dom()::AbsSet = model.dom
   
-  codom()::C = model.codom
+  codom()::AbsSet = model.codom
 
-  app(x::Any)::Any = getvalue(model)
+  app(::Any)::Any = getvalue(model)
 
-  postcompose(f::SetFunction)::SetFunction = 
+  postcompose(f::AbsFunction)::AbsFunction = 
     SetFunction(ConstantFunction(f(getvalue(model)), model.dom, codom(f)))
 
 end

@@ -7,8 +7,7 @@ using ...Cats
 
 import .ThCategoryUnbiasedCoproducts
 
-@instance ThCategoryWithInitial{Ob,Ob,AbsSet,AbsColimit, Multicospan, EmptyDiagram
-                                } [model::DiscreteCat{Ob}] where {Ob} begin 
+@instance ThCategoryWithInitial{Ob,Ob} [model::DiscreteCat{Ob}] where {Ob} begin 
   function colimit(::EmptyDiagram)::AbsColimit
     if model.set isa FinSet && length(model.set) == 1
       InitialColimit(only(model.set))
@@ -17,13 +16,12 @@ import .ThCategoryUnbiasedCoproducts
     end 
   end
 
-  function universal(lim::AbsColimit, d::EmptyDiagram, c::Multicospan)::Ob
+  function universal(lim::AbsColimit, ::EmptyDiagram, ::Multicospan)::Ob
     ob(lim)
   end 
 end
 
-@instance ThCategoryUnbiasedCoproducts{Ob,Ob,AbsSet,AbsColimit, Multicospan, 
-    DiscreteDiagram} [model::DiscreteCat{Ob}] where {Ob} begin 
+@instance ThCategoryUnbiasedCoproducts{Ob,Ob} [model::DiscreteCat{Ob}] where {Ob} begin 
 
 
   function colimit(d::DiscreteDiagram)::AbsColimit
@@ -37,7 +35,7 @@ end
     end
   end
 
-  function universal(lim::AbsColimit, d::DiscreteDiagram, c::Multicospan)::Ob
+  function universal(lim::AbsColimit, ::DiscreteDiagram, ::Multicospan)::Ob
     apex(lim)
   end 
 end

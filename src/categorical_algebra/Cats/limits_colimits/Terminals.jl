@@ -16,7 +16,7 @@ import ..Limits: limit, cone, diagram
 `Terminal` is expected to be implemented by `TerminalLimit`.
 """
 @theory ThCategoryWithTerminal <: ThCategoryLimitBase begin
-  Empty()::TYPE
+  Empty()::TYPE{EmptyDiagram}
   limit(e::Empty)::Limit
   universal(lim::Limit, d::Empty, sp::MSpan)::(apex(sp) → ob(lim))
 end

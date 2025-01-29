@@ -9,7 +9,7 @@ using GATlab
 import ACSets.Columns: preimage
 
 using ...Sets: AbsSet
-using ...SetFunctions: ThSetFunction, SetFunction, codom
+using ...SetFunctions: AbsFunction, ThSetFunction, SetFunction, codom
 using ...FinSets: FinSet
 import ..FinFunctions: FinFunction, FinDomFunction, is_indexed
 
@@ -17,26 +17,26 @@ import ..FinFunctions: FinFunction, FinDomFunction, is_indexed
 There are two kinds of FinFunctionVector: `FinFunctionVector` and 
 `IndexedFinFunctionVector`.
 """
-abstract type AbsFinFunctionVector{T} end
+abstract type AbsFinFunctionVector end
 
 """ Implicitly domain is `FinSet(length(v))` """
-@struct_hash_equal struct FinFunctionVector{T<:AbsSet} <: AbsFinFunctionVector{T}
+@struct_hash_equal struct FinFunctionVector <: AbsFinFunctionVector
   val::AbstractVector
-  codom::T
+  codom::AbsSet
 end
 
 """  Implicitly domain is `FinSet(length(v))` """
-@struct_hash_equal struct IndexedFinFunctionVector{T<:AbsSet} <: AbsFinFunctionVector{T}
+@struct_hash_equal struct IndexedFinFunctionVector <: AbsFinFunctionVector
   val::AbstractVector
-  codom::T
+  codom::AbsSet
   index::DefaultDict
   """ Create the index cache upon creating the vector """
-  function IndexedFinFunctionVector(v, c::T) where T
+  function IndexedFinFunctionVector(v, c::AbsSet)
     index = DefaultDict{eltype(c), Vector{Int}}(()->[])
     for (i, x) in enumerate(v)
       push!(index[x], i)
     end
-    new{T}(v, c, index)
+    new(v, c, index)
   end
 end
 
@@ -64,32 +64,36 @@ end
 # SetFunction implementation
 ############################
 
-@instance ThSetFunction{Any, SetFunction, FinSet, T} [model::AbsFinFunctionVector{T}] where {
-    T} begin
+@instance ThSetFunction [model::AbsFinFunctionVector] begin
 
   dom()::AbsSet = FinSet(length(getvalue(model)))
 
-  codom()::T = model.codom
+  codom()::AbsSet = model.codom
 
   app(i::Any)::Any = getvalue(model)[i]
 
-  function postcompose(f::SetFunction)::SetFunction
-    FinDomFunction(FF(is_indexed(model))(f.(getvalue(model)), codom(f)))
+  function postcompose(f::AbsFunction)::AbsFunction
+    C = codom(f)
+    (C isa FinSet ? FinFunction : FinDomFunction)(SetFunction(
+      FF(is_indexed(model))(f.(getvalue(model)), C)))
   end
 
 end
 
 # Default constructors
 ######################
+FinFunction(f::AbsFinFunctionVector) = FinFunction(SetFunction(f))
+
+FinDomFunction(f::AbsFinFunctionVector) = FinDomFunction(SetFunction(f))
 
 """ 
 Default `FinFunction` or `FinDomFunction` from a `AbstractVector` and codom
 """
 FinFunction(f::AbstractVector, cod::FinSet; index=false) = 
-  FinFunction(FF(index)(f, cod))
+  FinFunction(SetFunction(FF(index)(f, cod)))
 
 function FinDomFunction(f::AbstractVector, cod::AbsSet; index=false)  
-  FinDomFunction(FF(index)(f, cod))
+  FinDomFunction(SetFunction(FF(index)(f, cod)))
 end
 
 FinFunction(f::AbstractVector, dom::FinSet, cod::FinSet; index=false) = 

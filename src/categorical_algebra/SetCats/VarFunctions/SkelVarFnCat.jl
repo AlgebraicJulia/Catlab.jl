@@ -12,22 +12,22 @@ Compose SetFunctions of the form n -> m+T.
   SkelKleisli(t::Type) = new{t}()
 end
 
-@instance ThCategoryExplicitSets{FinSetInt, SetFunction, AbsSet
+@instance ThCategoryExplicitSets{FinSetInt, FinDomFunction
                                 } [model::SkelKleisli{T}] where T begin 
 
   ob_set() = ProSetOb(FinSetInt)
 
-  hom_set() = PredicatedSet(SetFunction, s -> codom(s) isa EitherSet) |> SetOb
+  hom_set() = PredicatedSet(FinDomFunction, s -> codom(s) isa EitherSet) |> SetOb
 
-  dom(f::SetFunction)::FinSetInt = getvalue(dom(f))
+  dom(f::FinDomFunction)::FinSetInt = getvalue(dom(f))
 
-  codom(f::SetFunction)::FinSetInt = getvalue(left(getvalue(codom(f))))
+  codom(f::FinDomFunction)::FinSetInt = getvalue(left(getvalue(codom(f))))
   
   """ 
   Because Union{} subtypes all other types, this can compose with any other 
   morphism 
   """
-  id(x::FinSetInt) = pure(SetFunction(FinSet(x)), T)
+  id(x::FinSetInt)::FinDomFunction = pure(FinDomFunction(FinSet(x)), T)
 
   """
   f: o -> n + T
@@ -39,7 +39,7 @@ end
   The T's need not be exactly equal: we can interpret the T of the composition
   as the larger of the two (if one is a subtype of the other).
   """
-  function compose(f::SetFunction, g::SetFunction)
+  function compose(f::FinDomFunction, g::FinDomFunction)
     NT, MT, N′ = getvalue.([codom(f), codom(g), dom(g)])
     N,  M, = getvalue.([NT.left, MT.left])
 
@@ -51,14 +51,14 @@ end
     kl(x::Left) = g(getvalue(x))
     kl(x::Right) = x
 
-    SetFunction(f, SetFunction(SetFunctionCallable(
-      kl, FinSet(N), SetOb(MT)))) # compose
+    FinDomFunction(SetFunction(f, SetFunction(SetFunctionCallable(
+      kl, FinSet(N), SetOb(MT))))) # compose
   end
 end
 
 """ Convert a function n->m into a function n->m+T """
-function pure(f::SetFunction, T::Type)
+function pure(f::AbsFunction, T::Type)
   SetFunction(f, SetFunction(SetFunctionCallable(
-    Left, codom(f), either(codom(f), SetOb(T)))))
+    Left, codom(f), either(codom(f), SetOb(T))))) |> specialize
 end
 

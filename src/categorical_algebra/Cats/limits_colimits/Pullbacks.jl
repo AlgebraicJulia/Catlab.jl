@@ -13,7 +13,7 @@ import ..Limits: limit, diagram
 
 
 @theory ThCategoryWithPullbacks <: ThCategoryLimitBase begin
-  MCSpan::TYPE  # type of multicospan
+  MCSpan::TYPE{Multicospan}
 
   limit(d::MCSpan)::Limit
   universal(lim::Limit, d::MCSpan, sp::MSpan)::(apex(sp) → ob(lim))

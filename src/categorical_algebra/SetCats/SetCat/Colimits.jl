@@ -13,8 +13,7 @@ using ..SetCat: SetC
 # Initial object #
 ##################
 
-@instance ThCategoryWithInitial{AbsSet,SetFunction,AbsSet,AbsColimit,
-    Multicospan, EmptyDiagram} [model::SetC] begin 
+@instance ThCategoryWithInitial{AbsSet,SetFunction} [model::SetC] begin 
 
   colimit(d::EmptyDiagram) = colimit[FinSetC()](d)
     
@@ -26,8 +25,7 @@ end
 # Coproducts #
 ##############
 
-@instance ThCategoryUnbiasedCoproducts{AbsSet,SetFunction,AbsSet,AbsColimit,
-    Multicospan, DiscreteDiagram} [model::SetC] begin
+@instance ThCategoryUnbiasedCoproducts{AbsSet,SetFunction} [model::SetC] begin
 
   function colimit(d::DiscreteDiagram)::AbsColimit
     all(x -> x isa FinSet, d) && return colimit[FinSetC()](d)
@@ -50,8 +48,7 @@ end
 # Pushouts #
 ##############
 
-@instance ThCategoryWithPushouts{AbsSet,SetFunction,AbsSet,AbsColimit,
-    Multicospan, Multispan} [model::SetC] begin
+@instance ThCategoryWithPushouts{AbsSet,SetFunction} [model::SetC] begin
 
   function colimit(d::Multispan)::AbsColimit
     error("HERE")

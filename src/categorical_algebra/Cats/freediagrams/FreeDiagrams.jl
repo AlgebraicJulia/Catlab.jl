@@ -8,7 +8,7 @@ import ACSets: objects
 import ....Graphs: src, tgt
 import ....Theories: ob, dom, codom, hom
 using ....BasicSets: FinSet
-import ....BasicSets: left, right
+import ....BasicSets: left, right, specialize
 import ..Categories: obtype, homtype
 import ..Functors: fmap
 
@@ -66,9 +66,3 @@ obs and homs of FreeDiagram while preserving the edges and vertices.
 """
 fmap(f::FreeDiagram, o, h, O::Type, H::Type) = 
   FreeDiagram(fmap(getvalue(f), o, h, O, H))
-
-"""    specialize(::Type{T}, d::FreeDiagram) 
-
-Interpret a FreeDiagram as a specific implementation of type T, e.g. DiscreteDiagram, Multispan, etc. 
-"""
-function specialize end # implemented by each model of FreeDiagram
