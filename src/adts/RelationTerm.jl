@@ -9,7 +9,7 @@ export Var, Typed, Untyped, Kwarg, Statement, UWDExpr, UWDTerm, context
 
 using MLStyle
 using StructTypes
-using ..ADTsCore
+import ..ADTsCore: AbstractTerm
 using ACSets.ACSetInterface
 using ...WiringDiagrams.UndirectedWiringDiagrams
 using ...WiringDiagrams.RelationDiagrams
