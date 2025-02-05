@@ -8,7 +8,7 @@ module RelationalParser
 using MLStyle
 using Base.Iterators
 using Reexport
-using ...ADTs.RelationTerm: Var, Typed, Untyped, Kwarg, Statement, UWDExpr, UWDTerm
+using ...ADTs.RelationTerm: Var, Typed, Untyped, Kwarg, Statement, UWDExpr, UWDTerm, construct
 using ...WiringDiagrams.UndirectedWiringDiagrams
 using ...WiringDiagrams.RelationDiagrams
 using ..ParserCore: ws, eq, lparen, rparen, comma, EOL, colon, ident, expr, collect
@@ -158,7 +158,7 @@ Then it constructs a RelationDiagram object from the UWDExpr object.
 """
 macro relation_str(x::String) begin
   uwd_exp = parse_whole(uwd, x) end
-  return RelationTerm.construct(RelationDiagram, parse_whole(uwd, x))
+  return construct(RelationDiagram, parse_whole(uwd, x))
 end
 
 end
