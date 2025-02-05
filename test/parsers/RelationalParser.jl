@@ -1,9 +1,10 @@
 module TestRelationalParser
 
 using Test
-
-using Catlab.ADTs.RelationTerm
+using PEG
+using Catlab.ADTs.RelationTerm: Var, Typed, Untyped, Kwarg, Statement, UWDExpr, UWDTerm, construct
 using Catlab.Parsers.RelationalParser
+using Catlab.Parsers.RelationalParser: judgements, judgement, args, arg, outerPorts, context, statement, body, uwd, line
 using Catlab.WiringDiagrams.UndirectedWiringDiagrams
 using Catlab.WiringDiagrams.RelationDiagrams
 using Catlab.CategoricalAlgebra.CSets
@@ -91,7 +92,7 @@ end
   @test uwd("""(x,z) where (x,y,z)
     {R(x,y); S(y,z);}""")[1].statements == [Statement(:R, [Untyped(:x), Untyped(:y)]),
     Statement(:S, [Untyped(:y), Untyped(:z)])]
-  @test uwd("""(x,z) where (x,y,z) {R(x,y); S(y,z);}""")[1] isa RelationTerm.UWDExpr
+  @test uwd("""(x,z) where (x,y,z) {R(x,y); S(y,z);}""")[1] isa UWDExpr
 end
 
 # Test Error Handling
@@ -151,7 +152,7 @@ end
   s = [Statement(:R, [v1,v2]),
     Statement(:S, [v2,v3])]
   u = UWDExpr(op, c, s)
-  uwd_result = RelationTerm.construct(RelationDiagram, u)
+  uwd_result = construct(RelationDiagram, u)
   
   @test parsed_result == uwd_result
 

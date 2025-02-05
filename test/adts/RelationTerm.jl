@@ -2,7 +2,7 @@ module TestRelationTerm
 
 using Test
 
-using Catlab.ADTs.RelationTerm
+using Catlab.ADTs.RelationTerm: Var, Typed, Untyped, Kwarg, Statement, UWDExpr, UWDTerm, construct
 using Catlab.WiringDiagrams.UndirectedWiringDiagrams
 using Catlab.WiringDiagrams.RelationDiagrams
 using ACSets.ACSetInterface
@@ -78,7 +78,7 @@ end
   s = [Statement(:R, [v1, v2]), Statement(:S, [v2, v3])]
   u = UWDExpr(op, c, s)
 
-  uwd_result = RelationTerm.construct(RelationDiagram, u)
+  uwd_result = construct(RelationDiagram, u)
   
   d = RelationDiagram(2)
   add_box!(d, 2, name=:R); add_box!(d, 2, name=:S)
@@ -104,7 +104,7 @@ end
   s = [Statement(:R, [v1, v4]), Statement(:S, [v2, v4]), Statement(:T, [v3, v4])]
   u = UWDExpr(op, c, s)
 
-  uwd_result = RelationTerm.construct(RelationDiagram, u)
+  uwd_result = construct(RelationDiagram, u)
 
   d = RelationDiagram([:X,:Y,:Z])
   add_box!(d, [:X,:W], name=:R)
@@ -129,7 +129,7 @@ end
   s = [Statement(:E, [Kwarg(:src, v1), Kwarg(:tgt, v2)]), Statement(:E, [Kwarg(:src, v2), Kwarg(:tgt, v3)])]
   u = UWDExpr(op, c, s)
 
-  uwd_result = RelationTerm.construct(RelationDiagram, u)
+  uwd_result = construct(RelationDiagram, u)
 
   d = RelationDiagram(2, port_names=[:start, :stop])
   add_box!(d, 2, name=:E)
@@ -151,7 +151,7 @@ end
   s = [Statement(:R, [v1, v2]), Statement(:S, [v2, v3])]
   u = UWDExpr(op, c, s)
 
-  uwd_result = RelationTerm.construct(RelationDiagram, u)
+  uwd_result = construct(RelationDiagram, u)
 
   d = RelationDiagram(2)
   add_box!(d, 2, name=:R); add_box!(d, 2, name=:S)
@@ -169,7 +169,7 @@ end
   s = [Statement(:E, [Kwarg(:src, v1), Kwarg(:tgt, v1)])]
   u = UWDExpr(op, c, s)
 
-  uwd_result = RelationTerm.construct(RelationDiagram, u)
+  uwd_result = construct(RelationDiagram, u)
   @test subpart(uwd_result, :port_name) == [:src, :tgt]
 
   # Inferred Outer Ports with no names
@@ -188,7 +188,7 @@ end
   s = [Statement(:infect, [v1, v2, v2, v2]), Statement(:disease, [v2, v3]), Statement(:disease, [v2, v4])]
   u = UWDExpr(op, c, s)
 
-  uwd_result = RelationTerm.construct(RelationDiagram, u)
+  uwd_result = construct(RelationDiagram, u)
   @test all(==(:Pop), subpart(uwd_result, :port_type))
 
 end

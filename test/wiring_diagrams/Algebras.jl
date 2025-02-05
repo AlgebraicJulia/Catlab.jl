@@ -32,6 +32,7 @@ end
 k = oapply(seq, Dict(:g => g, :h => h))
 @test length(legs(k)) == 2
 @test feet(k) == [first(feet(g)), last(feet(h))]
+@test seq(Dict(:g => g, :h => h)) == k
 k0 = apex(k)
 @test (nv(k0), ne(k0)) == (6, 6)
 @test tuples(src(k0), tgt(k0)) == [(1,2), (2,3), (2,4), (3,5), (4,5), (5,6)]
@@ -45,6 +46,7 @@ end
 k = oapply(para, Dict(:g => g, :h => h))
 @test length(legs(k)) == 4
 @test feet(k) == [first(feet(g)), first(feet(h)), last(feet(g)), last(feet(h))]
+@test para(Dict(:g => g, :h => h)) == k
 k0 = apex(k)
 @test (nv(k0), ne(k0)) == (8, 6)
 @test tuples(src(k0), tgt(k0)) == [(1,2), (2,3), (2,4), (5,7), (6,7), (7,8)]

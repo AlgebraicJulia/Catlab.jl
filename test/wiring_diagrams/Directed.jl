@@ -253,6 +253,8 @@ d = compose(f(1),f(2))
 @test ocompose(d, 1, f(1)) == d
 @test ocompose(d, 2, f(2)) == d
 
+@test d(1, f(1)) == ocompose(d, 1, f(1))
+
 # Associativity
 @test ocompose(compose(f(1),f(2)), [
   ocompose(compose(g(1),g(2)), [compose(h(1),h(2)), compose(h(3),h(4))]),
