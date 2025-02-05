@@ -2,8 +2,8 @@ module TestRelationalParser
 
 using Test
 
-using Catlab.ADTs.RelationTerm
-using Catlab.Parsers.RelationalParser
+using Catlab.ADTs.RelationTerm: Var, Typed, Untyped, Kwarg, Statement, UWDExpr, UWDTerm
+using Catlab.Parsers.RelationalParser: judgements, judgement, args, arg, outerPorts, context, statement, body, uwd, line
 using Catlab.WiringDiagrams.UndirectedWiringDiagrams
 using Catlab.WiringDiagrams.RelationDiagrams
 using Catlab.CategoricalAlgebra.CSets

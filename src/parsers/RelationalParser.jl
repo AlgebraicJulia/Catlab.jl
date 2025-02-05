@@ -8,7 +8,7 @@ module RelationalParser
 using MLStyle
 using Base.Iterators
 using Reexport
-import ...ADTs.RelationTerm: Var, Typed, Untyped, Kwarg, Statement, UWDExpr, UWDTerm, context
+using ...ADTs.RelationTerm: Var, Typed, Untyped, Kwarg, Statement, UWDExpr, UWDTerm
 using ...WiringDiagrams.UndirectedWiringDiagrams
 using ...WiringDiagrams.RelationDiagrams
 using ..ParserCore: ws, eq, lparen, rparen, comma, EOL, colon, ident, expr, collect
@@ -17,9 +17,6 @@ using ..ParserCore: ws, eq, lparen, rparen, comma, EOL, colon, ident, expr, coll
 @reexport using PEG
 
 export @relation_str
-
-# export the UWD rules
-export judgements, judgement, args, arg, outerPorts, context, statement, body, uwd, line
 
 
 """ UWD Parsing Expression Grammar
