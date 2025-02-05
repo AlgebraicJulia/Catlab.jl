@@ -8,7 +8,7 @@ module RelationalParser
 using MLStyle
 using Base.Iterators
 using Reexport
-using ...ADTs.RelationTerm
+import ...ADTs.RelationTerm: Var, Typed, Untyped, Kwarg, Statement, UWDExpr, UWDTerm, context
 using ...WiringDiagrams.UndirectedWiringDiagrams
 using ...WiringDiagrams.RelationDiagrams
 using ..ParserCore: ws, eq, lparen, rparen, comma, EOL, colon, ident, expr, collect
