@@ -12,7 +12,6 @@ using ...ADTs.RelationTerm: Var, Typed, Untyped, Kwarg, Statement, UWDExpr, UWDT
 using ...WiringDiagrams.UndirectedWiringDiagrams
 using ...WiringDiagrams.RelationDiagrams
 using ..ParserCore: ws, eq, lparen, rparen, comma, EOL, colon, ident, expr, collect_parsing_pattern
-
 using PEG
 
 export @relation_str
