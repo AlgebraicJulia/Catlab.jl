@@ -1,6 +1,7 @@
 module TestRelationalParser
 
 using Test
+using PEG
 using Catlab.ADTs.RelationTerm: Var, Typed, Untyped, Kwarg, Statement, UWDExpr, UWDTerm, construct
 using Catlab.Parsers.RelationalParser
 using Catlab.Parsers.RelationalParser: judgements, judgement, args, arg, outerPorts, context, statement, body, uwd, line

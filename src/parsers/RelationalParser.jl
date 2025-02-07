@@ -13,8 +13,7 @@ using ...WiringDiagrams.UndirectedWiringDiagrams
 using ...WiringDiagrams.RelationDiagrams
 using ..ParserCore: ws, eq, lparen, rparen, comma, EOL, colon, ident, expr, collect_parsing_pattern
 
-
-@reexport using PEG
+using PEG
 
 export @relation_str
 
