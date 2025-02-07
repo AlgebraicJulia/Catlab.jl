@@ -19,6 +19,7 @@ include("sheaves/Sheaves.jl")
 @reexport using .WiringDiagrams
 @reexport using .Graphics
 @reexport using .Programs
+@reexport using .Parsers: @relation_str
 @reexport using .Sheaves
 
 end
