@@ -2,7 +2,7 @@ module TestRelationTerm
 
 using Test
 
-import Catlab.ADTs.RelationTerm: Var, Typed, Untyped, Kwarg, Statement, UWDExpr, UWDTerm, construct
+using Catlab.ADTs.RelationTerm: Var, Typed, Untyped, Kwarg, Statement, UWDExpr, UWDTerm, construct
 using Catlab.WiringDiagrams.UndirectedWiringDiagrams
 using Catlab.WiringDiagrams.RelationDiagrams
 using ACSets.ACSetInterface
