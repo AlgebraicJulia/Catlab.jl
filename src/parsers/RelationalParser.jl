@@ -11,7 +11,7 @@ using Reexport
 using ...ADTs.RelationTerm: Var, Typed, Untyped, Kwarg, Statement, UWDExpr, UWDTerm, construct
 using ...WiringDiagrams.UndirectedWiringDiagrams
 using ...WiringDiagrams.RelationDiagrams
-using ..ParserCore: ws, eq, lparen, rparen, comma, EOL, colon, ident, expr, collect
+using ..ParserCore: ws, eq, lparen, rparen, comma, EOL, colon, ident, expr, collect_parsing_pattern
 
 
 @reexport using PEG
@@ -72,7 +72,7 @@ All four types of diagram are subtypes of [`RelationDiagram`](@ref).
 # Judgements consists of a list of judgements separated by commas. There can be 0 or more judgements.
 # A typed judgement is of the form (x:X) while an untyped judgement is of the form (x).
 # A type is an expression as we want to allow for complex types.
-@rule judgements = (judgement & (ws & comma & ws & judgement)[*])[:?] |> v -> collect(v)
+@rule judgements = (judgement & (ws & comma & ws & judgement)[*])[:?] |> v -> collect_parsing_pattern(v)
 @rule judgement = ident & colon & expr |> v -> Typed(Symbol(v[1]), v[3]),
       ident |> v -> Untyped(Symbol(v))
 
@@ -86,7 +86,7 @@ All four types of diagram are subtypes of [`RelationDiagram`](@ref).
 
 # Arguments consists of a list of arguments separated by commas. There can be 0 or more arguments.
 # An argument is a var that may be a keyword argument.
-@rule args = (arg & (ws & comma & ws & arg)[*])[:?]  |> v -> collect(v)
+@rule args = (arg & (ws & comma & ws & arg)[*])[:?]  |> v -> collect_parsing_pattern(v)
 @rule arg = ident & eq & ident |> v -> Kwarg(Symbol(v[1]), Untyped(Symbol(v[3]))),
   ident |> v -> Untyped(Symbol(v))
 
