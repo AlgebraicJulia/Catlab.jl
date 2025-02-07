@@ -8,7 +8,7 @@ module RelationTerm
 
 using MLStyle
 using StructTypes
-import ..ADTsCore: AbstractTerm
+using ..ADTsCore: AbstractTerm
 using ACSets.ACSetInterface
 using ...WiringDiagrams.UndirectedWiringDiagrams
 using ...WiringDiagrams.RelationDiagrams
