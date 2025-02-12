@@ -9,7 +9,7 @@ bench = SUITE["Limits"] = BenchmarkGroup()
 function benchmark_pullback(suite::BenchmarkGroup, name, cospan)
   for alg in (NestedLoopJoin(), SortMergeJoin(), HashJoin())
     suite["$name:$(nameof(typeof(alg)))"] =
-      @benchmarkable limit($cospan, alg=$alg)
+      @benchmarkable limit[SkelFinSet()]($cospan, alg=$alg)
   end
 end
 
@@ -17,7 +17,7 @@ sizes = (100, 150)
 f, g = (FinFunction(ones(Int, size), 1) for size in sizes)
 benchmark_pullback(bench, "pullback_terminal", Cospan(f, g))
 
-f = FinFunction(identity, FinSet(10000))
+f = FinFunction(identity, FinSet(10000), FinSet(10000))
 benchmark_pullback(bench, "pullback_identity", Cospan(f, f))
 
 n = 10000

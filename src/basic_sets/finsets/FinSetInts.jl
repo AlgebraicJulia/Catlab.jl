@@ -26,6 +26,7 @@ getvalue(f::FinSetInt) = f.n
 ###############
 
 Base.show(io::IO, set::FinSetInt) = print(io, "FinSet($(set.n))")
+Base.show(io::IO, ::MIME"text/html", set::FinSetInt) = show(io, set)
 
 Base.length(f::FinSetInt) = getvalue(f)
 

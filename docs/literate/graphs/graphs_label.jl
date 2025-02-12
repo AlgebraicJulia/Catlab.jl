@@ -134,7 +134,8 @@ homsᵥ(A₀, A₀)
 
 # ## Limits and Composition by Multiplication
 # Catlab has an implementation of limits for any C-Sets over any schema. So, we can just ask about labeled graphs. Notice that we get more distinct colors in the product than in either initial graph. This is because the labels of the product are pairs of labels from the factors. If `G` has `n` colors and `H` has `m` colors `G×H` will have `n×m` colors.
-draw(apex(product(G,G)))
+Grph = ACSetCategory(G)
+draw(apex(product[Grph](G,G)))
 
 # The graph above looks weirdly disconnected and probably wasn't what you expected to see as the product. When we compose with products, we often want to add the reflexive edges in order to get the expected notion of product.
 add_loops!(G::LGraph) = begin
@@ -146,8 +147,8 @@ end
 add_loops(G::LGraph) = add_loops!(copy(G))
 
 Gᵣ = add_loops(G)
-P = apex(product(Gᵣ, G))
-draw(apex(product(Gᵣ, G)))
+P = apex(product[Grph](Gᵣ, G))
+draw(P)
 
 # We can look at the shape of commuting triangle, which is our favorite 3-vertex graph.
 T = @acset LGraph begin
@@ -173,19 +174,19 @@ Eᵣ = add_loops(E)
 draw(Eᵣ)
 
 # We can draw the product of the edge graph and the triangle graph to get the shape of a triangular prism. You can view this product as extruding `Tᵣ` along `Eᵣ`. Catlab provides a `ReflexiveGraph` as a type that handles these self-loops more intelligently than we are here. Graphviz struggles with the layout here because the product graph will include edges that are a step in both directions. This [blog post](https://www.algebraicjulia.org/blog/post/2021/04/cset-graphs-3/) does a good job explaining products in differnt kinds of graph categories.
-draw(apex(product(Tᵣ,Eᵣ)))
-legs(product(Tᵣ, Eᵣ))[1][:V] |> collect
+draw(apex(product[Grph](Tᵣ,Eᵣ)))
+legs(product[Grph](Tᵣ, Eᵣ))[1][:V] |> collect
 
 # Another limit is the pullback. If you have a cospan, which is a diagram of the shape `X ⟶ A ⟵ Y`, you can pull back one arrow along the other by solving a system of equations. 
-PB₂₂ = pullback(homomorphisms(Tᵣ,Eᵣ)[2],homomorphisms(Tᵣ,Eᵣ)[2]);
+PB₂₂ = pullback[Grph](homomorphisms(Tᵣ,Eᵣ)[2],homomorphisms(Tᵣ,Eᵣ)[2]);
 draw(apex(PB₂₂))
 
 # Note that the pullback depends not only on X,A,Y but also on the two arrows. You can play around with the choice of morphisms to gain an intuition of how the pullback depends on the morphisms.
-PB₂₃ = pullback(homomorphisms(Tᵣ,Eᵣ)[2],homomorphisms(Tᵣ,Eᵣ)[3]);
+PB₂₃ = pullback[Grph](homomorphisms(Tᵣ,Eᵣ)[2],homomorphisms(Tᵣ,Eᵣ)[3]);
 draw(apex(PB₂₃))
 
-# By constructions, the pullback is always a subobject (monic homomorphism) into the product. Catlab can enumerate all such monoic homs.
-homomorphisms(apex(PB₂₂), apex(product(Tᵣ,Tᵣ)), monic=true) |> length
+# By constructions, the pullback is always a subobject (monic homomorphism) into the product. Catlab can enumerate all such monic homs.
+homomorphisms(apex(PB₂₂), apex(product[Grph](Tᵣ,Tᵣ)), monic=true) |> length
 
 # ## Colimits and Composition by Glueing
 # The dual concept to limits is colimits and if limits have vibes of taking all pairs that satisfy certain constraints, colimits have the vibes of designers just gluing stuff together to make it work. 
@@ -202,7 +203,7 @@ draw(X)
 
 # We have to check that the morphism is valid before we go and compute out pushout.
 is_natural(ℓ₁)
-P = pushout(ℓ₁, ℓ₁)
+P = pushout[Grph](ℓ₁, ℓ₁)
 draw(apex(P))
 
 # Now we want to repeat the gluing process to get a bigger mesh. So we are going to need a bigger interface.
@@ -218,5 +219,5 @@ ll = ACSetTransformation(I, apex(P), V=[3,5], L =[3,1,2])
 is_natural(ll)
 lr = ACSetTransformation(I, apex(P), V=[1,4], L =[1,3,2])
 is_natural(lr)
-P₂ = pushout(ll, lr);
+P₂ = pushout[Grph](ll, lr);
 draw(apex(P₂))
