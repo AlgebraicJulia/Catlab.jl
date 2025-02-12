@@ -105,8 +105,8 @@ X = @acset UndirectedBipartiteGraph begin
 end
 
 Yd = ΣF(X; return_unit=true);
-F = codom[Diagram()](Yd)
-Y = Graph(codom[Diagram()](Yd))
+F = codom[DiagramIdCat()](Yd)
+Y = Graph(diagram(codom[DiagramIdCat()](Yd)))
 α = diagram_map(Yd)
 @test nparts(Y, :V) == 7
 @test nparts(Y, :E) == 4
@@ -152,7 +152,7 @@ Yd = Σbang(X; return_unit=true)
 α = diagram_map(Yd)
 a, l1, l2 = getindex.(Ref(α), [A,L1,L2])
 @test length(unique([a(1:2)...,l1(1),l2(1:2)...])) == 1
-Y = Initial(codom[Diagram()](Yd))
+Y = Initial(diagram(codom[DiagramIdCat()](Yd)))
 @test nparts(Y, :I) == 4
 
 # Map from terminal C

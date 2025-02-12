@@ -5,7 +5,7 @@ export SigmaMigration, DeltaMigration, migrate, migrate!,
 using MLStyle: @match
 
 using ACSets
-using ACSets.DenseACSets: constructor, datatypes # do these need explicit `using` now?
+using ACSets.DenseACSets: datatypes
 using GATlab
 import GATlab: functor
 
@@ -89,7 +89,7 @@ Apply a ``Δ`` migration by simple precomposition.
 """
 migrate(X::FinDomFunctor,M::DeltaSchemaMigration) = X∘functor(M)
 migrate(::Type{T}, X::ACSet, M::DeltaMigration) where T <: ACSet =
-  migrate!(T(), X, M)#; homtype=:hom)
+  migrate!(T(), X, M)
 
 migrate(::Type{T}, X::ACSet, FOb, FHom; homtype=:generator) where T <: ACSet =
   migrate!(T(), X, FOb, FHom; homtype)
@@ -292,7 +292,8 @@ function (M::SigmaMigrationFunctor)(d::ACSet; n=100, return_unit::Bool=false, ca
     # This is assuming we're working with CSets or VarACSets
     S[o] => o ∈ ob(Sc) ? elem : TaggedElem(elem, S[o])
   end)
-  DiagramHom(functor(M), diagram_map, FinDomFunctor(d), FinDomFunctor(res))
+  F(x) = DiagramId(FinDomFunctor(x))
+  DiagramHom(functor(M), diagram_map, F(d), F(res))
 end
 
 """

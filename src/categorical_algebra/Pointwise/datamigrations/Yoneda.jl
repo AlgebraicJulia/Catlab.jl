@@ -34,7 +34,7 @@ function representable(cons, obname::Symbol; return_unit_id::Bool=false)
     η = ΣF(X; return_unit=true)
     elem = diagram_map(η)[C[obname]] # UNTAG if necessary
     ηob = obname ∈ ob(S) ? elem : untag(elem, S[obname])
-    (typeof(cons())(codom[Diagram()](η)), only(collect(ηob)))
+    (typeof(cons())(diagram(codom[DiagramIdCat()](η))), only(collect(ηob)))
   else
     ΣF(X)
   end
