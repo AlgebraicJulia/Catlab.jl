@@ -81,8 +81,8 @@ function ComposablePair{Hom}(first::Hom, last::Hom) where Hom
   ComposableMorphisms{Ob, Hom}(SVector(first, last))
 end
 
-@instance ThFreeDiagram{Int,Int,Ob,Hom,FinSet
-                       } [model::ComposableMorphisms{Ob,Hom}] where {Ob, Hom} begin
+@instance ThFreeDiagram{Int,Int,Ob,Hom} [model::ComposableMorphisms{Ob,Hom}
+                                        ] where {Ob, Hom} begin
   src(x::Int)::Int = x
   tgt(x::Int)::Int = x+1
   obmap(x::Int)::Ob = x == 1 ? dom(model[x]) : codom(model[x-1])

@@ -14,7 +14,7 @@ using ....Graphs
 import ....BasicSets: force
 using ..Categories, ..FinCats, ..Functors
 import ..Functors: ob_map, hom_map, show_type_constructor, validate
-import ..FreeDiagrams: FreeDiagram
+import ..FreeDiagrams: FreeDiagram, FreeGraph
 using ..Paths: Path
 
 
@@ -276,7 +276,8 @@ function FreeDiagram(f::FinDomFunctor)
   obdict = Dict(o => i for (i, o) in enumerate(obs))
   D = codom(f)
   homs = [(h, obdict[dom(D,h)], obdict[codom(D,h)]) for h in collect_hom(f)]
-  FreeDiagram{obtype(D),homtype(D)}(obs, homs)
+
+  FreeDiagram(FreeGraph{obtype(D), homtype(D)}(obs, homs))
 end
 
 
@@ -289,8 +290,6 @@ function codom_cat(F::FinDomFunctor)::Category
   error("Bad codom to $F: $𝒞 ")
 end
 
-
-
 function compose_abs_functor(F::FinDomFunctor, G::AbsFunctor)
   C = dom(F)
   FinDomFunctor(mapvals(fx -> ob_map(G, fx), ob_map(F)),
@@ -302,8 +301,6 @@ function compose_abs_functor(F::AbsFunctor, G::AbsFunctor)
   Functor(x -> ob_map(G,  ob_map(F, x)),
           x -> hom_map(G, hom_map(F, x)), dom(F), codom(G))
 end
-
-
 
 
 # Initial functors

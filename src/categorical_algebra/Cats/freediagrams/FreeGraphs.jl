@@ -65,8 +65,8 @@ FreeCatGraph(n::FreeGraph) =  FreeCatGraph(getvalue(n))
 # FreeDiagraminterface 
 ######################
 
-@instance ThFreeDiagram{Int,Int,Ob,Hom,FinSet
-                       } [model::FreeGraph{Ob,Hom}] where {Ob,Hom} begin
+@instance ThFreeDiagram{Int,Int,Ob,Hom} [model::FreeGraph{Ob,Hom}
+                                        ] where {Ob,Hom} begin
   src(x::Int)::Int = src(model, x)
   tgt(x::Int)::Int = tgt(model, x)
   obmap(x::Int)::Ob = model[x, :ob]

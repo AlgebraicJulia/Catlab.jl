@@ -23,6 +23,14 @@ abstract type AbsFinFunctionVector end
 @struct_hash_equal struct FinFunctionVector <: AbsFinFunctionVector
   val::AbstractVector
   codom::AbsSet
+  function FinFunctionVector(val::AbstractVector,codom::AbsSet; check=false)
+    if check 
+      for (i,v) in enumerate(val)
+        v ∈ codom || error("Bad FinFunctionVector value #$i: $v not in $codom")
+      end
+    end 
+    new(val, codom)
+  end
 end
 
 """  Implicitly domain is `FinSet(length(v))` """
@@ -31,9 +39,10 @@ end
   codom::AbsSet
   index::DefaultDict
   """ Create the index cache upon creating the vector """
-  function IndexedFinFunctionVector(v, c::AbsSet)
+  function IndexedFinFunctionVector(v, c::AbsSet; check=false)
     index = DefaultDict{eltype(c), Vector{Int}}(()->[])
     for (i, x) in enumerate(v)
+      check && x ∉ c && error("Bad FinFunctionVector value #$i: $x not in $c")
       push!(index[x], i)
     end
     new(v, c, index)
@@ -89,19 +98,19 @@ FinDomFunction(f::AbsFinFunctionVector) = FinDomFunction(SetFunction(f))
 """ 
 Default `FinFunction` or `FinDomFunction` from a `AbstractVector` and codom
 """
-FinFunction(f::AbstractVector, cod::FinSet; index=false) = 
-  FinFunction(SetFunction(FF(index)(f, cod)))
+FinFunction(f::AbstractVector, cod::FinSet; index=false, kw...) = 
+  FinFunction(SetFunction(FF(index)(f, cod; kw...)))
 
-function FinDomFunction(f::AbstractVector, cod::AbsSet; index=false)  
-  FinDomFunction(SetFunction(FF(index)(f, cod)))
+function FinDomFunction(f::AbstractVector, cod::AbsSet; index=false, kw...)  
+  FinDomFunction(SetFunction(FF(index)(f, cod; kw...)))
 end
 
-FinFunction(f::AbstractVector, dom::FinSet, cod::FinSet; index=false) = 
-  dom == FinSet(length(f)) ? FinFunction(f, cod; index) : error(
+FinFunction(f::AbstractVector, dom::FinSet, cod::FinSet; index=false, kw...) = 
+  dom == FinSet(length(f)) ? FinFunction(f, cod; index, kw...) : error(
     "Bad domain $dom for vector $f")
 
-FinDomFunction(f::AbstractVector, dom::FinSet, cod::AbsSet; index=false) = 
-    dom == FinSet(length(f)) ? FinDomFunction(f, cod; index) : error(
+FinDomFunction(f::AbstractVector, dom::FinSet, cod::AbsSet; index=false, kw...) = 
+    dom == FinSet(length(f)) ? FinDomFunction(f, cod; index, kw...) : error(
       "Bad domain $dom for vector $f")
   
 

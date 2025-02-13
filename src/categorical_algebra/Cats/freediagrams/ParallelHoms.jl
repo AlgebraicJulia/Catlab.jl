@@ -62,8 +62,8 @@ end
 
 ParallelPair(first, last) =  ParallelMorphisms(SVector(first, last))
 
-@instance ThFreeDiagram{Bool,Int,Ob,Hom,FinSet
-                       } [model::ParallelMorphisms{Ob,Hom}] where {Ob, Hom} begin
+@instance ThFreeDiagram{Bool,Int,Ob,Hom} [model::ParallelMorphisms{Ob,Hom}
+                                         ] where {Ob, Hom} begin
   src(::Int)::Int = true
   tgt(::Int)::Int = false
   obmap(x::Bool)::Ob = x ? dom(model) : codom(model)

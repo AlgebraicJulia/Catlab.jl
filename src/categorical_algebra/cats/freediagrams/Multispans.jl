@@ -129,7 +129,7 @@ end
 cocone_objects(span::Multispan) = feet(span)
 
 
-@instance ThFreeDiagram{Int,Int,Union{Ob,Foot},Hom,FinSet
+@instance ThFreeDiagram{Int,Int,Union{Ob,Foot},Hom
                        } [model::Multispan{Ob,Hom,Foot,V,W}
                          ] where {Ob, Hom, Foot, V, W} begin
   src(::Int)::Int = 1
@@ -242,7 +242,7 @@ end
 
 cone_objects(cospan::Multicospan) = feet(cospan)
 
-@instance ThFreeDiagram{Int,Int,Union{Ob,Foot},Hom,FinSet
+@instance ThFreeDiagram{Int,Int,Union{Ob,Foot},Hom
                        } [model::Multicospan{Ob,Hom, Foot, V, W}
                          ] where {Ob,Hom,Foot,V,W} begin
   src(x::Int)::Int = x+1

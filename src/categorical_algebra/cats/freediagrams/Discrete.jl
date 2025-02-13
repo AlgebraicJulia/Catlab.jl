@@ -41,8 +41,8 @@ Base.firstindex(d::DiscreteDiagram) = firstindex(d.objects)
 
 Base.lastindex(d::DiscreteDiagram) = lastindex(d.objects)
 
-@instance ThFreeDiagram{Int,Int,Ob,Union{},FinSet
-                       } [model::DiscreteDiagram{Ob}] where {Ob} begin
+@instance ThFreeDiagram{Int,Int,Ob,Union{}} [model::DiscreteDiagram{Ob}
+                                            ] where {Ob} begin
   src(::Int)::Int = error("No edges")
   tgt(::Int)::Int = error("No edges")
   obmap(x::Int)::Ob = model[x]

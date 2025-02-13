@@ -1,7 +1,7 @@
 module Limits
 
 export Limit, diagram, cone, limit,LimitCone, proj1, proj2, AbsLimit, 
-       JoinAlgorithm, ThCategoryLimitBase, ThCategoryWithLimits
+       JoinAlgorithm, ThCategoryLimitBase, ThCategoryWithLimits, incl
        
 using StructEquality
 using GATlab

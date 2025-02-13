@@ -15,4 +15,7 @@ include("FinDomMap.jl")
 include("CompFinFunctor.jl")
 @reexport using .CompFinFunctor
 
+include("FreeDiagramFunctors.jl")
+@reexport using .FreeDiagramFunctors
+
 end # module

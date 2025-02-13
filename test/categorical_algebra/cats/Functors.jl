@@ -43,12 +43,10 @@ f′ = Hom(:f, x′, y′)
 
 @test id(MM, x′) isa FreeCategory2.Hom
 
-if false  # TODO
-  F_op = op(F)
-  @test getvalue(F_op) isa Categories.OppositeFunctor
-  @test (dom(F_op), codom(F_op)) == (op(dom(F)), op(codom(F)))
-  @test ob_map(F_op,x) == x′
-  @test hom_map(F_op,f) == f′
-end
+F_op = op(F)
+@test getvalue(F_op) isa Cats.OppositeFunctor
+@test (dom(F_op), codom(F_op)) == (op(dom(F)), op(codom(F)))
+@test ob_map(F_op,x) == x′
+@test hom_map(F_op,f) == f′
 
 end # module

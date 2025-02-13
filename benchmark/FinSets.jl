@@ -3,14 +3,15 @@ const SUITE = BenchmarkGroup()
 
 using Random
 using Catlab.CategoricalAlgebra, Catlab.BasicSets
+using Catlab.CategoricalAlgebra.SetCats.FinSetCat.FinSetCatLimits: 
+  nested_loop_limit, sort_merge_limit, hash_join
 
 bench = SUITE["Limits"] = BenchmarkGroup()
 
 function benchmark_pullback(suite::BenchmarkGroup, name, cospan)
-  for alg in (NestedLoopJoin(), SortMergeJoin(), HashJoin())
-    suite["$name:$(nameof(typeof(alg)))"] =
-      @benchmarkable limit[SkelFinSet()]($cospan, alg=$alg)
-  end
+  @benchmarkable suite["$name:NestedLoopJoin"] = nested_loop_limit($cospan)
+  @benchmarkable suite["$name:SortMergeJoin"] = sort_merge_limit($cospan)
+  @benchmarkable suite["$name:HashJoin"] = hash_join($cospan)
 end
 
 sizes = (100, 150)

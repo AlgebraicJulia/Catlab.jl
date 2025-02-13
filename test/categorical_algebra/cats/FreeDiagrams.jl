@@ -67,13 +67,6 @@ diagram = FreeDiagram(bfd)
 @test (src(diagram), tgt(diagram)) == ([1,1,1], [2,3,4])
 @test bfd == as_basic_bipartite(BipartiteFreeDiagram(diagram))
 
-
-# UNCOMMENT LATER OR MOVE TO SetCats folder
-# span = Multispan{AbsSet,SetFunction}([ SetFunction(FinSet(2)) for i in 1:3 ])
-# span = bundle_legs(span, [1, (2,3)], SetC()) 
-# @test apex(span) == FinSet(2)
-# @test codom.(legs(span)) == [FinSet(2), FinSet(4)]
-
 # Cospans.
 f, g = Hom(:f, A, C), Hom(:g, B, C)
 cospan = Cospan(f,g)
@@ -106,12 +99,6 @@ diagram = FreeDiagram(bfd)
 @test collect(hom(diagram)) == [f,g,h]
 @test (src(diagram), tgt(diagram)) == ([1,2,3], [4,4,4])
 @test bfd == as_basic_bipartite(BipartiteFreeDiagram(FreeDiagram(cospan)))
-
-# MOVE TO SETCATS TEST?
-# cospan = Multicospan{AbsSet, SetFunction}([FinFunction([i],3) for i in 1:3])
-# cospan = bundle_legs(cospan, [(1,3), 2], SetC())
-# @test apex(cospan) == FinSet(3)
-# @test legs(cospan) == [FinFunction([1,3], 3), FinFunction([2], 3)]
 
 # Parallel pairs.
 f, g = Hom(:f, A, B), Hom(:g, A, B)
@@ -161,26 +148,15 @@ diagram = FreeDiagram(comp)
 
 # FinDomFunctors
 #---------------
-if false # FinDomFunctor defined after FreeDiagram?
 f, g, h = Hom(:f, A, C), Hom(:g, B, C), Hom(:h, A, B)
 J = FinCat(parallel_arrows(Graph, 2))
-F = FinDomFunctor([A, C], [f, h⋅g], J)
+𝒞 = Category(TypeCat(FreeCategory.Meta.M))
+F = FinDomFunctor([A, C], [f, h⋅g], J, 𝒞)
 @test is_functorial(F)
-@test diagram_type(F) <: Tuple{FreeCategory.Ob,FreeCategory.Hom}
-@test cone_objects(F) == [A, C]
-@test cocone_objects(F) == [A, C]
-
-diagram = FreeDiagram{FreeCategory.Ob{:generator},FreeCategory.Hom}(
-  ParallelPair(f, h⋅g))
-@test FreeDiagram(F) == diagram
-F = FinDomFunctor(diagram)
-@test dom(F) isa FinCat
-@test codom(F) isa TypeCat{<:FreeCategory.Ob,<:FreeCategory.Hom}
-@test ob_map(F, 1) == A
-@test hom_map(F, 2) == h⋅g
-@test collect_ob(F) == [A, C]
-@test collect_hom(F) == [f, h⋅g]
-end 
+D = FreeDiagram(F)
+@test diagram_type(D) == (FreeCategory.Ob,FreeCategory.Hom)
+@test cone_objects(getvalue(D)) == [A, C]
+@test cocone_objects(getvalue(D)) == [A, C]
 
 # Free diagrams
 #--------------

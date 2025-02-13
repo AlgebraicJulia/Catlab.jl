@@ -28,8 +28,8 @@ properties.
 """
 function epi_mono(f, m::Category)
   Im, CoIm = image(f, m), coimage(f, m)
-  iso = factorize(Im, factorize(CoIm, f))
-  ComposablePair(proj(CoIm) ⋅ iso, incl(Im))
+  iso = factorize[getvalue(m)](Im, factorize[getvalue(m)](CoIm, f))
+  ComposablePair(compose(m, proj(CoIm), iso), incl(Im))
 end
 
 

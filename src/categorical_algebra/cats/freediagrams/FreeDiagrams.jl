@@ -20,11 +20,9 @@ codomain (e.g. homs need not specify dom/cod, no composition structure).
 To get a real diagram out of this, one must supply a Category with the
 appropriate Ob/Hom types which are supertypes of the Ob/Hom types of the 
 FreeDiagram.
-
-FSet is intended to be `FinSet` in models.
 """
 @theory ThFreeDiagram begin 
-  V::TYPE; E::TYPE; Ob::TYPE; Hom::TYPE; FSet::TYPE;
+  V::TYPE; E::TYPE; Ob::TYPE; Hom::TYPE; FSet::TYPE{FinSet};
   src(h::E)::V;
   tgt(h::E)::V;
   obset()::FSet

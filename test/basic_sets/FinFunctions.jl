@@ -129,22 +129,18 @@ f = FinFunction([1,3,2], 4)
 # Codomain checks
 #################
 
-if false # Reimplement this later
-  three = FinSet(3)
-  four = FinSet(4)
-  badfunc = [1,5,2]
-  strfunc = ["one","two","three"]
-  strings = TypeSet(String)
+three = FinSet(3)
+four = FinSet(4)
+badfunc = [1,5,2]
+strfunc = ["one","two","three"]
+strings = SetOb(String)
 
-  f = FinFunction(badfunc,three,four,check=true)
-  g = FinDomFunction(strfunc,strings,known_correct=false) #known_correct does nothing
-  h = FinDomFunction(strfunc,strings,index=true,known_correct=true) #known_correct does nothing
+f = FinFunction(badfunc,three,four,check=false)
+g = FinDomFunction(strfunc,strings,check=true) #known_correct does nothing
+h = FinDomFunction(strfunc,strings,index=true,check=true) #known_correct does nothing
 
-  @test_throws ErrorException h = FinFunction(badfunc,four,index=true)
-  @test_throws ErrorException l = FinFunction(badfunc,four)
-  @test_throws ErrorException m = FinFunction(badfunc,four,index=true)
-  @test_throws BoundsError n = FinFunction(badfunc,four,index=true,known_correct=true) 
-end 
-
+@test_throws ErrorException h = FinFunction(badfunc,four,index=true, check=true)
+@test_throws ErrorException l = FinFunction(badfunc,four; check=true)
+@test_throws ErrorException m = FinFunction(badfunc,four,index=true, check=true)
 
 end # module

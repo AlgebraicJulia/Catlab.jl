@@ -111,11 +111,11 @@ colimit(m::WithModel, d::FreeDiagram; context=nothing)  =
 # Named universal maps 
 ######################
 
-function factorize(colim::AbsColimit, h)
-  getvalue(colim.diag) isa ParallelMorphisms || error(
-    "Can only call `factorize` on ParallelMorphisms colimits")
-  universal(colim, Multicospan([h]))
-end
+# function factorize(C::WithModel, colim::AbsColimit, h)
+#   getvalue(diagram(colim)) isa ParallelMorphisms || error(
+#     "Can only call `factorize` on ParallelMorphisms colimits")
+#   universal[C](colim, Multicospan([h]))
+# end
 
 
 end # module

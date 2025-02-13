@@ -54,18 +54,23 @@ d = getvalue(specialize(FreeDiagram(d)))
 # @test ob(colim) == A
 
 # Epi mono.
-if false # TODO - uncomment once CSets is working 
-  X = path_graph(Graph, 2) ⊕ path_graph(Graph, 2)
-  Y = path_graph(Graph, 2) ⊕ apex(terminal(Graph))
-  f = ACSetTransformation(X, Y; V=[1,2,1,2],E=[1,1])
-  Im = path_graph(Graph, 2)
-  epi, mono = epi_mono(f)
-  @test is_isomorphic(codom(epi), Im)
-  @test is_isomorphic(image(f)|>apex, Im)
-  @test is_isomorphic(coimage(f)|>apex, Im)
-  @test is_epic(epi)
-  @test is_monic(mono)
-end 
+𝒞 = ACSetCategory(Graph())
+X = @withmodel TypedCatWithCoproducts(𝒞) (⊕) begin 
+  path_graph(Graph, 2) ⊕ path_graph(Graph, 2)
+end
+Y = @withmodel TypedCatWithCoproducts(𝒞) (⊕) begin 
+  path_graph(Graph, 2) ⊕ cycle_graph(Graph, 1)
+end
+
+f = ACSetTransformation(X, Y; V=[1,2,1,2],E=[1,1])
+Im = path_graph(Graph, 2)
+C = Category(𝒞)
+epi, mono = epi_mono(f, C)
+@test is_isomorphic(codom(epi), Im)
+@test is_isomorphic(image(f, C)|>apex, Im)
+@test is_isomorphic(coimage(f, C)|>apex, Im)
+@test is_epic(epi)
+@test is_monic(mono)
 
 end # module
 

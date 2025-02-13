@@ -140,7 +140,9 @@ cocone_indices(d::FreeDiagramAsBipartite) = d[:orig_vert₂]
 
 cocone_indices(d::BasicBipartiteFreeDiagram) = parts(d,:V₂)
 
-@instance ThFreeDiagram{Int,Int,Ob,Hom,FinSet} [model::_BipartiteFreeDiagram{S,Tuple{Ob,Hom}}] where {S, Ob, Hom} begin
+@instance ThFreeDiagram{Int,Int,Ob,Hom
+                       } [model::_BipartiteFreeDiagram{S,Tuple{Ob,Hom}}
+                         ] where {S, Ob, Hom} begin
   src(e::Int)::Int = src(model, e)
   tgt(e::Int)::Int = tgt(model, e) + nv₁(model) 
   function obmap(x::Int)::Ob 
