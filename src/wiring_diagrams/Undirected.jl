@@ -275,6 +275,14 @@ function ocompose(f::AbstractUWD, i::Int, g::AbstractUWD)
   substitute(f, [i], [g])
 end
 
+function (f::AbstractUWD)(gs::AbstractVector{<:AbstractUWD})
+    substitute(f, boxes(f), gs)
+end
+
+function (f::AbstractUWD)(i::Int, g::AbstractUWD)
+    substitute(f, [i], [g])
+end
+
 function substitute(f::UWD, indices::AbstractVector{Int},
                     gs::AbstractVector{UWD}) where {UWD <: AbstractUWD}
   @assert length(indices) == length(gs)

@@ -145,6 +145,8 @@ function ocompose(g::AbstractOpenCPortGraph, xs::Vector)
   return sum
 end
 
+(g::AbstractOpenCPortGraph)(xs::Vector) = ocompose(g, xs)
+
 @present ThBundledCPG <: SchOpenCPortGraph begin
   Bundle::Ob
   bun::Hom(OuterPort, Bundle)
