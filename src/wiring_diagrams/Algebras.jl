@@ -25,6 +25,11 @@ function oapply(composite::UndirectedWiringDiagram, hom_map::AbstractDict,
   oapply(composite, homs, obs; kwargs...)
 end
 
+(uwd::UndirectedWiringDiagram)(hom_map::AbstractDict, 
+                               ob_map::Union{AbstractDict, Nothing}=nothing; 
+                               kwargs...) = 
+    oapply(uwd, hom_map, ob_map; kwargs...)
+
 # UWD algebras of multi(co)spans
 ################################
 
@@ -70,6 +75,8 @@ function oapply(composite::UndirectedWiringDiagram,
   span = Multispan(ob(lim), outer_legs)
   return_limit ? (span, lim) : span
 end
+
+(uwd::UndirectedWiringDiagram)(spans::AbstractVector{<:Multispan}; kwargs...) = oapply(uwd, spans; kwargs...)
 
 function oapply(composite::UndirectedWiringDiagram,
                 cospans::AbstractVector{<:StructuredMulticospan{L}},
@@ -128,6 +135,11 @@ function oapply(composite::UndirectedWiringDiagram,
   cospan = StructuredMulticospan{L}(Multicospan(ob(colim), outer_legs), outer_feet)
   return_colimit ? (cospan, colim) : cospan
 end
+
+(uwd::UndirectedWiringDiagram)(cospans::AbstractVector{<:StructuredMulticospan{L}}, 
+                               junction_feet::Union{AbstractVector, Nothing}=nothing; 
+                               kwargs...) where L = 
+    oapply(uwd, cospans, junction_feet; kwargs...)
 
 # Queries via UWD algebras
 ##########################
