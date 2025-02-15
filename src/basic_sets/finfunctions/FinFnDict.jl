@@ -9,22 +9,22 @@ using GATlab
 using ...Sets: AbsSet, SetOb
 using ...SetFunctions: AbsFunction, ThSetFunction, SetFunction, dom, codom
 using ...FinSets: FinSet
-
+using ..FinFunctions: specialize
 import ..FinFunctions: FinFunction, FinDomFunction
 
 """ 
 Valid function when domain is indexed by positive integers less than the 
 vector length.
 """
-@struct_hash_equal struct FinFunctionDict{T<:AbsSet}
+@struct_hash_equal struct FinFunctionDict
   val::Dict
   dom::FinSet
-  codom::T
-  function FinFunctionDict(val::Dict, dom::FinSet, codom::T) where T<:AbsSet
+  codom::AbsSet
+  function FinFunctionDict(val::Dict, dom::FinSet, codom::AbsSet)
     for e in dom 
       haskey(val, e) || error("Missing key $e ∈ $dom from $val")
     end
-    new{T}(val, dom, codom)
+    new(val, dom, codom)
   end
 end
 
@@ -33,13 +33,7 @@ FinFunctionDict(val::Dict, codom::AbsSet) =
   FinFunctionDict(val, FinSet(Set(collect(keys(val)))), codom)
 
 
-# Accessor
-##########
-
 GATlab.getvalue(f::FinFunctionDict) = f.val
-
-# Other methods
-###############
 
 function Base.show(io::IO, f::FinFunctionDict)
   print(io, "Fin")
@@ -52,17 +46,17 @@ end
 # SetFunction implementation
 ############################
 
-@instance ThSetFunction [model::FinFunctionDict{T}] where T begin
+@instance ThSetFunction [model::FinFunctionDict] begin
 
   dom()::AbsSet = model.dom
 
-  codom()::T = model.codom
+  codom()::AbsSet = model.codom
 
   app(i::Any, )::Any = getvalue(model)[i]
 
   function postcompose(g::AbsFunction)::AbsFunction 
     C = codom(g)
-    (C isa FinSet ? FinFunction : FinDomFunction)(SetFunction(
+    specialize(SetFunction(
       FinFunctionDict(Dict(k => g(v) for (k,v) in getvalue(model)), C)))
   end
 end

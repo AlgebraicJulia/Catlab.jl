@@ -26,7 +26,7 @@ end
 
 getvalue(o::OppositeFinCat) = o.val
 
-@instance ThFinCat{Ob, Hom, Gen, Path{<:Ob,<:Gen}, FinSet} [model::OppositeFinCat{Ob,Hom,Gen}
+@instance ThFinCat{Ob, Hom, Gen, Path{<:Ob,<:Gen}} [model::OppositeFinCat{Ob,Hom,Gen}
                                       ] where {Ob,Hom,Gen} begin
   src(g::Gen)::Ob = tgt(getvalue(model), g)
 

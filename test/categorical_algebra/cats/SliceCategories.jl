@@ -3,12 +3,13 @@ module TestSliceCategories
 using Test, Catlab
 
 𝒞 = ACSetCategory(Graph())
+𝒞′ = Category(𝒞)
 
 ############
 # Colimits #
 ############
 G = complete_graph(Graph, 2)
-Bipartite = SliceC(𝒞, G)
+Bipartite = SliceC(𝒞′, G)
 
 # Initial 
 #########
@@ -55,7 +56,7 @@ universal property gives a map into the limit object, so it picks the element
 that maps to (a₂,b₁).
 """
 G2,G1,G3 = Graph.([2,1,3])
-𝒞3 = SliceC(𝒞, G3) # objects are sets with labels {1,2,3}
+𝒞3 = SliceC(𝒞′, G3) # objects are sets with labels {1,2,3}
 
 A, B = SliceOb.([ACSetTransformation(G2, G3;V=x) for x in [[1,2],[2,1]]])
 @test id[𝒞3](A) == id[𝒞](G2)

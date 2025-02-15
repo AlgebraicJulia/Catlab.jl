@@ -21,7 +21,7 @@ Morphisms assumed to be paths, composed by concatenation.
 @theory ThPathCat begin 
   Ob::TYPE 
   Gen(src::Ob, tgt::Ob)::TYPE
-  Set′::TYPE  # FinSet
+  Set′::TYPE{FinSet} 
   Eqs::TYPE # Vector{Pair{Vector{Gen}, Vector{Gen}}}
   ob_set()::Set′
   gen_set()::Set′
@@ -44,7 +44,7 @@ GATlab.getvalue(p::PathCatAsFinCat) = getvalue(p.val)
 GATlab.equations(p::PathCatAsFinCat) = equations(getvalue(p))
 
 
-@instance ThFinCat{Ob,Path{Ob,Gen},Gen,Path{Ob,Gen},FinSet} [
+@instance ThFinCat{Ob,Path{Ob,Gen},Gen,Path{Ob,Gen}} [
     model::PathCatAsFinCat{Ob,Gen}] where {Ob,Gen} begin
 
   src(g::Gen)::Ob = ThPathCat.src[getvalue(model)](g)

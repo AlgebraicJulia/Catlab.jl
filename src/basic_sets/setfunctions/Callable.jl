@@ -25,13 +25,7 @@ using ..PredFn: PredicatedFunction
   end
 end
 
-# Accessors
-############
-
 GATlab.getvalue(s::SetFunctionCallable) = s.func
-
-# Other methods 
-###############
 
 function Base.show(io::IO, f::SetFunctionCallable) 
   print(io, "SetFunction")
@@ -56,7 +50,6 @@ end
       i -> f(getvalue(model.func)(i)), model.dom, codom(f)))
 
 end
-
 
 # Default constructors 
 ######################

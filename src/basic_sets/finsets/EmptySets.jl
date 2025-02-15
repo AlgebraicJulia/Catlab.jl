@@ -24,12 +24,7 @@ Base.show(io::IO, ::EmptySet) = print(io, "Empty()")
   in′(i::Any)::Bool = false
   eltype()::Any = Union{}
   length()::Int = 0
-  iterate()::Any = iterate([])
-  iterate(x::Any)::Any = iterate([], x)
+  iterator()::Any = Union{}[]
 end
-
-
-# Should FinSet() be FinSetInt(0) or EmptySet by default?
-
 
 end # module

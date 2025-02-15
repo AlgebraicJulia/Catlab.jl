@@ -68,11 +68,7 @@ end
 
   length()::Int = Tables.rowcount(getvalue(model))
 
-  iterate()::Any = 
-    iterate(Tables.namedtupleiterator(getvalue(model)))
-
-  iterate(x::Any)::Any = 
-    iterate(Tables.namedtupleiterator(getvalue(model)), x)
+  iterator()::Any = Tables.namedtupleiterator(getvalue(model))
 
 end
 

@@ -28,7 +28,7 @@ DiscreteFinCat(n::Integer) = DiscreteFinCat(FinSet(n))
 
 Base.show(io::IO, C::DiscreteFinCat) = print(io, "FinCat($(length(C.set)))")
 
-@instance ThFinCat{Ob,Ob,Union{},Path{Ob,Union{}},FinSet
+@instance ThFinCat{Ob,Ob,Union{},Path{Ob,Union{}}
                   } [model::DiscreteFinCat{Ob}] where {Ob} begin
 
   Ob(x::Ob) = x ∈ model.set ? x : error("$x not an object of $model")

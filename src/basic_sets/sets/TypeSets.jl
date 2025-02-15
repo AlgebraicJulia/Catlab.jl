@@ -6,7 +6,7 @@ using StructEquality
 
 using GATlab
 
-using ..Sets: ThSet′
+using ..Sets: ThSet
 import ..Sets: SetOb
 
 """ Raw Julia type considered as a set"""
@@ -20,7 +20,7 @@ Base.show(io::IO, ::TypeSet{T}) where T = print(io, "TypeSet($T)")
 
 # ThSet implementation 
 
-@instance ThSet′ [model::TypeSet{T}] where T begin
+@instance ThSet [model::TypeSet{T}] where T begin
   in′(i::Any)::Bool = i isa T
   eltype()::Any = T
 end

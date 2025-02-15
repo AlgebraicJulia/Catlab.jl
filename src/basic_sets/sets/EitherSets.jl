@@ -6,7 +6,7 @@ using StructEquality
 
 using GATlab
 
-using ..Sets: ThSet′, AbsSet, SetOb
+using ..Sets: ThSet, AbsSet, SetOb
 import ..UnionSets: left, right
 
 # Should this really be exported by GATlab?
@@ -44,7 +44,7 @@ right(e::EitherSet) = e.right
 # ThSet implementation
 ######################
 
-@instance ThSet′ [model::EitherSet] begin
+@instance ThSet [model::EitherSet] begin
 
   in′(i::Any)::Bool = if i isa Left 
     getvalue(i) ∈ left(model) 

@@ -47,14 +47,8 @@ Base.length(e::ProdFinSet) = length(getvalue(e))
 
   length()::Int = prod(length.(model))
 
-  iterate()::Any = iterate(it(model))
-
-  iterate(x::Any)::Any = iterate(it(model), x)
+  iterator()::Any = Iterators.product(model...)
 
 end
 
-it(model) = Iterators.product(model...)
-
-
 end # module
-

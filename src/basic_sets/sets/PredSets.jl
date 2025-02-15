@@ -6,7 +6,7 @@ using StructEquality
 
 using GATlab
 
-using ..Sets: SetOb, ThSet′
+using ..Sets: SetOb, ThSet
 
 """ Set defined by a predicate (boolean-valued function) on a Julia data type.
 """
@@ -34,7 +34,7 @@ end
 # ThSet implementation 
 ######################
 
-@instance ThSet′ [model::PredicatedSet{T}] where T begin
+@instance ThSet [model::PredicatedSet{T}] where T begin
 
   in′(i::Any)::Bool = i isa T && model(i)
 

@@ -113,7 +113,7 @@ equations(C::FinCatGraphEq) = C.equations
 Edges are presumably morphism generators, and paths are the morphisms.
 """
 
-@instance ThPathCat{V,E,FinSet,Vector{<:Pair}} [model::FinCatGraph{G,V,E}] where {G,V,E} begin
+@instance ThPathCat{V,E,Vector{<:Pair}} [model::FinCatGraph{G,V,E}] where {G,V,E} begin
   function src(f::E) 
     g = getvalue(model)
     e = f isa Int ? f : only(incident(g, f, :ename))

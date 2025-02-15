@@ -45,7 +45,7 @@ PreorderFinCat(p::T, q::T; vals=nothing) where {Ob, T<:AbstractVector{Ob}} =
   PreorderFinCat(collect(zip(p,q)); vals)
 
 @instance ThFinCat{Ob, Pair{Int,Int}, Pair{Int,Int}, Path{Ob,Pair{Int,Int}}, 
-                   FinSet} [model::PreorderFinCat{Ob}] where {Ob} begin
+                  } [model::PreorderFinCat{Ob}] where {Ob} begin
   dom(f::Pair{Int,Int})::Ob = model.gens[first(f)]
 
   codom(f::Pair{Int,Int})::Ob = model.gens[last(f)]

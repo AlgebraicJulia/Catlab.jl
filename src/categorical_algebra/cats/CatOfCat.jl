@@ -56,7 +56,8 @@ between them.
 
   id(c::FinCat)::FinFunctor = FinFunctor(c)
 
-  compose(f::FinFunctor, g::FinFunctor)::FinFunctor = FinFunctor(CompositeFinDomFunctor(f,g)) |> validate
+  compose(f::FinFunctor, g::FinFunctor)::FinFunctor = 
+    FinFunctor(CompositeFinDomFunctor(f,g)) |> validate
 
 end
 

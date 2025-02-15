@@ -48,7 +48,7 @@ The following laws are expected to hold:
   compose(vgen::Path′(a,b))::Hom(a,b) ⊣ [(a,b)::Ob]
   decompose(h::Hom(a,b))::Path′(a,b) ⊣ [(a,b)::Ob]
 
-  Set′::TYPE  # FinSet
+  Set′::TYPE{FinSet}
   ob_set()::Set′
   gen_set()::Set′
 end

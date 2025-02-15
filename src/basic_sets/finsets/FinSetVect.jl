@@ -36,8 +36,7 @@ end
   in′(i::Any)::Bool = i ∈ getvalue(model)
   eltype() = T
   length()::Int = length(getvalue(model))
-  iterate()::Any = iterate(getvalue(model))
-  iterate(x::Any)::Any = iterate(getvalue(model), x)
+  iterator()::Any = getvalue(model)
 end
 
 """ Default model for a finset made out of a Julia `Set` """

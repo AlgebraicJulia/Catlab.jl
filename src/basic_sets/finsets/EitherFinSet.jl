@@ -33,9 +33,8 @@ right(e::EitherFinSet) = e.right
 
   length()::Int = length(left(model)) + length(right(model))
 
-  iterate()::Any = iterate([left(model)...,right(model)...])
+  iterator()::Any = [left(model)...,right(model)...]
 
-  iterate(x::Any)::Any = iterate([left(model)...,right(model)...], x)
 end
 
 # Default constructor

@@ -6,7 +6,7 @@ using StructEquality, MLStyle
 
 using GATlab
 
-using ..Sets: ThSet′, AbsSet
+using ..Sets: ThSet, AbsSet
 
 """ An element tagged by an integer """
 @struct_hash_equal struct TaggedElem{I, T} 
@@ -77,7 +77,7 @@ Base.length(e::SumSet) = length(getvalue(e))
 # ThSet implementation
 ######################
 
-@instance ThSet′ [model::SumSet] begin
+@instance ThSet [model::SumSet] begin
 
   in′(i::Any)::Bool = @match i begin 
     (t::TaggedElem) => let i = getidx(t); 
@@ -92,7 +92,7 @@ end
 # Other helpers
 ###############
 Tagged(vs::Vector{<:Union{Type,TypeVar}}) = 
-  Union{[TaggedElem{Val{i}, v} for (i,v) in zip(1:length(vs), vs)]...}
+  Union{[TaggedElem{Val{i}, v} for (i,v) in enumerate(vs)]...}
 
 ###############
 # NamedSumSet #
@@ -122,7 +122,7 @@ Base.haskey(e::NamedSumSet, k) = haskey(getvalue(e), k)
 # ThSet implementation
 ######################
 
-@instance ThSet′ [model::NamedSumSet] begin
+@instance ThSet [model::NamedSumSet] begin
 
   in′(i::Any)::Bool = @match i begin 
     (t::TaggedElem) => let i = getidx(t); 

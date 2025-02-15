@@ -5,7 +5,7 @@ using StructEquality
 
 using GATlab
 
-using .....BasicSets: AbsSet, SingletonSet
+using .....BasicSets: AbsSet, SingletonSet, SetOb
 using ..Categories: ThCategoryExplicitSets, Category
 import ..Categories: Category
 

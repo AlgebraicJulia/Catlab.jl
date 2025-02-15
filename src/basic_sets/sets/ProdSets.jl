@@ -7,7 +7,7 @@ using StructEquality, MLStyle
 using GATlab
 
 import ....Theories: product
-using ..Sets: ThSet′, AbsSet
+using ..Sets: ThSet, AbsSet
 
 
 """ 
@@ -31,7 +31,7 @@ Base.length(e::ProdSet) = length(getvalue(e))
 # ThSet implementation
 ######################
 
-@instance ThSet′ [model::ProdSet] begin
+@instance ThSet [model::ProdSet] begin
 
   in′(i::Any)::Bool = (i isa Tuple && length(i)==length(model) 
     && all(e ∈ s for (s, e) in zip(model, i)))

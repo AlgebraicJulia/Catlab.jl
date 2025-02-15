@@ -1,4 +1,4 @@
-export SetFunction, ThSetFunction, AbsFunction, dom, codom, show_domains
+export SetFunction, ThSetFunction, AbsFunction, dom, codom, show_domains, specialize
 
 using StructEquality
 
@@ -60,3 +60,11 @@ function show_domains(io::IO, f::SetFunction; domain::Bool=true,
   domain && codomain && print(io, ", ")
   codomain && show(IOContext(io, :compact=>true, :hide_domains=>!recurse), codom(f))
 end
+
+"""
+Any set function may also be thought of as a FinDomFunction (if its domain is 
+finite) or a FinFunction (if both domain and codomain are finite). We can 
+check the domain and codomain and then decide whether to promote the value to a 
+more informative type.
+"""
+function specialize end # implementation must wait until FinFunction is defined

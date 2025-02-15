@@ -17,7 +17,8 @@ The types of the Ob/Hom are tagged SumSets.
 @struct_hash_equal struct CoproductCat{O,H}
   cats::Vector{Category}
   function CoproductCat(cats::Vector{Category})
-    SumO, SumH = [Tagged(Vector{Type}(impl_type.(cats, x))) for x in [:Ob, :Hom]]
+    SumO = eltype[SumSet(ob_set.(cats))]()
+    SumH = eltype[SumSet(hom_set.(cats))]()	
     new{SumO, SumH}(cats)
   end
 end 
@@ -27,7 +28,7 @@ GATlab.getvalue(x::CoproductCat) = x.cats
 Base.getindex(x::CoproductCat, i::Int) = x.cats[i]
 
 @instance ThCategoryExplicitSets{O,H} [model::CoproductCat{O,H}
-                                             ] where {O,H} begin 
+                                      ] where {O,H} begin 
 
   function id(x::O)::H 
     t = gettag(x); 
@@ -44,15 +45,16 @@ Base.getindex(x::CoproductCat, i::Int) = x.cats[i]
     TaggedElem(codom(model[t], getvalue(x)), t)
   end
 
-  ob_set()::AbsSet = SumSet(ob_set.(getvalue(model))) |> SetOb
-
-  hom_set()::AbsSet = SumSet(hom_set.(getvalue(model))) |> SetOb
-
   function compose(x::H,y::H)::H
     tx, ty = gettag.([x,y])
     tx == ty || error("Cannot compose $x $y")
     TaggedElem(compose(model[tx], getvalue(x), getvalue(y)), tx)
   end
+
+  ob_set()::AbsSet = SumSet(ob_set.(getvalue(model))) |> SetOb
+
+  hom_set()::AbsSet = SumSet(hom_set.(getvalue(model))) |> SetOb
+
 end
 
 # NamedCoproductCat #

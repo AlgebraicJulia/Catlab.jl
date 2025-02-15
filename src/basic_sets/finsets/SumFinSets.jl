@@ -47,9 +47,7 @@ Base.length(e::SumFinSet) = length(getvalue(e))
 
   length()::Int = sum(length.(model))
 
-  iterate()::Any = iterate(it(model))
-
-  iterate(x::Any)::Any = iterate(it(model), x)
+  iterator()::Any = it(model)
   
 end
 

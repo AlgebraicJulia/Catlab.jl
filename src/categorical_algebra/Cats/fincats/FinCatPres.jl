@@ -59,8 +59,7 @@ presentation(C::FinCatPresentation) = C.presentation # synonym for getvalue
 ####################################
 # AnyHom = Union{FreeSchema.Hom{:generator}, FreeSchema.Hom{:compose}, FreeSchema.Hom{:id}}
 
-@instance ThFinCat{Ob, Hom, Gen, 
-    Path{<:Ob, <:Gen}, FinSet
+@instance ThFinCat{Ob, Hom, Gen, Path{<:Ob, <:Gen}
                   } [model::FinCatPresentation{T}] where {T} begin
   src(f::Gen)::Ob = dom(f)
 

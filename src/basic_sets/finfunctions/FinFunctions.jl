@@ -7,7 +7,7 @@ using GATlab
 
 using ..FinSets: AbsSet, FinSet, FinSetInt, SetOb
 using ..SetFunctions
-import ..SetFunctions: SetFunction
+import ..SetFunctions: SetFunction, specialize
 import .ThSetFunction: dom, codom, app, postcompose
 
 # Finite functions
@@ -111,12 +111,13 @@ ensure_indexed(f::SetFunction) = f
 # Specializing
 ###############
 specialize(f::FinFunction) = f 
+
 specialize(f::FinDomFunction) = 
   codom(f) isa FinSet ? FinFunction(getvalue(f)) : f
 
-function specialize(f::SetFunction) 
+function specialize(f::SetFunction)::AbsFunction
   if dom(f) isa FinSet 
-    (codom(f) isa FinSet ? FinFunction : FinDomFunction)(getvalue(f)) 
+    (codom(f) isa FinSet ? FinFunction : FinDomFunction)(f) 
   else
     f 
   end

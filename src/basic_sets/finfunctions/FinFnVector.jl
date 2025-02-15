@@ -51,13 +51,7 @@ end
 
 FF(i::Bool) = i ? IndexedFinFunctionVector : FinFunctionVector
 
-# Accessor
-##########
-
 GATlab.getvalue(f::AbsFinFunctionVector) = f.val
-
-# Other methods
-###############
 
 preimage(f::IndexedFinFunctionVector, x) = f.index[x]
 

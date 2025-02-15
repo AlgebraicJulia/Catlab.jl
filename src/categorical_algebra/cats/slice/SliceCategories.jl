@@ -21,37 +21,35 @@ end
 SliceOb(hom; cat=nothing) = 
   SliceOb(isnothing(cat) ? dom(hom) : dom[cat](hom), hom)
 
+# We want to use this for potentially many theories (e.g. the various (co)limit
+# theories) so it doesn't make sense to store a wrapped model. Just store raw 
+# model.
 """
 The data of the morphism of a slice category (call it h, and suppose a category
 C is sliced over an object X in Ob(C)) between objects f and g is a homomorphism
 in the underlying category that makes the following triangle commute.
 
+```
    h
 A --> B
 f ↘ ↙ g
    X
-
-So a slice category has 
+```
 """
-@struct_hash_equal struct SliceC{ObT, HomT, C}
-  cat::C
+@struct_hash_equal struct SliceC{ObT, HomT}
+  cat::Any 
   over::ObT
-  function SliceC(cat::C, over) where C
-    types = try 
-      impl_types(cat, ThCategory)
-    catch e 
-      throw(e)
-    end
-    implements(cat, ThCategoryExplicitSets, types) || error("Bad cat $cat")
-    new{types..., C}(cat, over)
+  function SliceC(cat::Category, over)
+    cat = getvalue(cat) # confirmed our input is *at least* a model of ThCategory
+    new{impl_types(cat, ThCategory)...}(cat, over)
   end
 end
 
 using .ThCategoryExplicitSets
 
 @instance ThCategoryExplicitSets{SliceOb{<:ObT, <:HomT}, HomT
-                                } [model::SliceC{ObT, HomT, C}
-                                  ] where {ObT, HomT, C} begin
+                                } [model::SliceC{ObT, HomT}
+                                  ] where {ObT, HomT} begin
   function Ob(x::SliceOb{<:ObT, <:HomT})
     try
       Ob[model.cat](x.ob)
@@ -92,5 +90,3 @@ using .ThCategoryExplicitSets
   ob_set() = SetOb(SliceOb{ObT, HomT})
   hom_set() = SetOb(HomT)
 end
-
-

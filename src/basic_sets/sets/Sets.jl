@@ -13,7 +13,7 @@ import Base: eltype
 One ought be able to ask of any Set whether something is in it. Also a Julia 
 type should be provided which includes all elements of the set.
 """
-@theory ThSet′ begin
+@theory ThSet begin
   Bool′::TYPE{Bool}
   Any′::TYPE{Any}
   in′(e::Any′)::Bool′ # the order of arguments is reversed, so give a diff name
@@ -24,15 +24,15 @@ end
 abstract type AbsSet end
 
 """ Fix the order of in′ """
-Base.in(x, s::AbsSet) = ThSet′.in′[getvalue(s)](x)
+Base.in(x, s::AbsSet) = ThSet.in′[getvalue(s)](x)
 
-# Wrapper type for Models of ThSet′
+# Wrapper type for Models of ThSet
 ##################################
 """
 Generic type for a set. It has some implementation of the theory of sets and 
 a model which provides the information for how it implements the theory.
 """
-ThSet′.Meta.@wrapper SetOb <: AbsSet
+ThSet.Meta.@wrapper SetOb <: AbsSet
 
 Base.show(io::IO, s::SetOb) = show(io, getvalue(s))
 

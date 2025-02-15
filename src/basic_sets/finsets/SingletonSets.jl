@@ -25,8 +25,7 @@ Base.show(io::IO, ::SingletonSet) = print(io, "Singleton()")
   in′(i::Any)::Bool = isnothing(i)
   eltype()::Any = Nothing
   length()::Int = 1
-  iterate()::Any = iterate([nothing])
-  iterate(x::Any)::Any = iterate([nothing], x)
+  iterator()::Any = [nothing]
 end
 
 """ Default model for a finset made out of a Julia `Int` """

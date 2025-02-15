@@ -16,9 +16,6 @@ import ..SetFunctions: SetFunction
   dom::AbsSet
 end
 
-# Accessor
-##########
-
 GATlab.getvalue(i::IdentityFunction) = i.dom
 
 # Other methods 

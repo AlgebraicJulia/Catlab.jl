@@ -7,7 +7,7 @@ using StructEquality
 
 using GATlab
 
-using ..Sets: ThSet′, AbsSet
+using ..Sets: ThSet, AbsSet
 
 """ Union type """
 @struct_hash_equal struct UnionSet
@@ -26,7 +26,7 @@ right(e::UnionSet) = last(e.sets)
 # ThSet implementation
 ######################
 
-@instance ThSet′ [model::UnionSet] begin
+@instance ThSet [model::UnionSet] begin
 
   in′(i::Any)::Bool = any(s->i ∈ s, model.sets)
 

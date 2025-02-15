@@ -11,7 +11,7 @@ using ..SliceCategories
 # Colimits #
 ############
 
-@instance ThCategoryWithInitial{SliceOb{ObT, HomT}, HomT} [model::SliceC{ObT, HomT, C}] where {ObT, HomT, C} begin 
+@instance ThCategoryWithInitial{SliceOb{ObT, HomT}, HomT} [model::SliceC{ObT, HomT}] where {ObT, HomT} begin 
 
   colimit(::EmptyDiagram)::AbsColimit = 
     InitialColimit{SliceOb{<:ObT, <:HomT}, HomT}(
@@ -21,7 +21,7 @@ using ..SliceCategories
     FinFunction(Int[], FinSet(apex[model](a)))
 end
 
-@instance ThCategoryUnbiasedCoproducts{SliceOb{ObT, HomT}, HomT} [model::SliceC{ObT, HomT, C}] where {ObT, HomT, C} begin 
+@instance ThCategoryUnbiasedCoproducts{SliceOb{ObT, HomT}, HomT} [model::SliceC{ObT, HomT}] where {ObT, HomT} begin 
 
   colimit(d::DiscreteDiagram)::AbsColimit = colimit_slice(model, FreeDiagram(d))
 
@@ -29,7 +29,7 @@ end
     slice_colimit_universal(model, colim, diag, csp)
 end
 
-@instance ThCategoryWithPushouts{SliceOb{ObT, HomT}, HomT} [model::SliceC{ObT, HomT, C}] where {ObT, HomT, C} begin 
+@instance ThCategoryWithPushouts{SliceOb{ObT, HomT}, HomT} [model::SliceC{ObT, HomT}] where {ObT, HomT} begin 
 
   colimit(d::Multispan)::AbsColimit = colimit_slice(model, FreeDiagram(d))
 
@@ -37,7 +37,7 @@ end
     slice_colimit_universal(model, colim, diag, csp)
 end
 
-@instance ThCategoryWithBipartiteColimits{SliceOb{ObT, HomT}, HomT} [model::SliceC{ObT, HomT, C}] where {ObT, HomT, C} begin 
+@instance ThCategoryWithBipartiteColimits{SliceOb{ObT, HomT}, HomT} [model::SliceC{ObT, HomT}] where {ObT, HomT} begin 
 
   colimit(d::BipartiteFreeDiagram)::AbsColimit = colimit_slice(model, FreeDiagram(d))
 
@@ -68,7 +68,7 @@ end
 # Limits #
 ##########
 @instance ThCategoryUnbiasedProducts{SliceOb{ObT, HomT}, HomT
-    } [model::SliceC{ObT, HomT, C}] where {ObT, HomT, C} begin 
+    } [model::SliceC{ObT, HomT}] where {ObT, HomT} begin 
 
   limit(d::DiscreteDiagram)::AbsLimit = limit_slice(model, FreeDiagram(d))
 
@@ -115,7 +115,7 @@ function limit_slice(model, diagram::FreeDiagram)
 end
 
 """ Use the universal property of the underlying category. """
-function slice_limit_universal(model, lim::AbsLimit, diag::FreeDiagram, sp::Multispan)
+function slice_limit_universal(model, lim::AbsLimit, _::FreeDiagram, sp::Multispan)
   𝒞, apx = model.cat, apex(sp)
   universal[𝒞](lim.underlying, Multispan(apx.ob, [apx.hom, sp...]; cat=𝒞))
 end

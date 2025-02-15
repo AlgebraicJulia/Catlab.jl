@@ -5,7 +5,6 @@ export FinSetInt
 using StructEquality
 
 using GATlab
-import GATlab: getvalue
 
 using ..FinSets:ThFinSet
 import ..FinSets: FinSet
@@ -20,7 +19,7 @@ end
 # Accessor
 ###########
 
-getvalue(f::FinSetInt) = f.n
+GATlab.getvalue(f::FinSetInt) = f.n
 
 # Other methods
 ###############
@@ -41,8 +40,7 @@ Base.eltype(::FinSetInt) = Int
   in′(i::Any)::Bool = i isa Int && 0 < i ≤ getvalue(model)
   eltype()::Any = Int
   length()::Int = getvalue(model)
-  iterate()::Any = iterate(1:getvalue(model))
-  iterate(x::Any)::Any = iterate(1:getvalue(model), x)
+  iterator()::Any = 1:getvalue(model)
 end
 
 """ Default model for a finset made out of a Julia `Int` """

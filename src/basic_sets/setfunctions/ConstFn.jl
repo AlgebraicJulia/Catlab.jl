@@ -12,7 +12,7 @@ import ..SetFunctions: SetFunction
 
 """ Function in **Set** taking a constant value.
 """
-@struct_hash_equal struct ConstantFunction#{D<:AbsSet,C<:AbsSet}
+@struct_hash_equal struct ConstantFunction
   value::Any
   dom::AbsSet
   codom::AbsSet
@@ -24,9 +24,6 @@ end
 
 ConstantFunction(value::T, dom::AbsSet) where T = 
   ConstantFunction(value, dom, SetOb(T))
-
-# Accesssor 
-###########
 
 getvalue(c::ConstantFunction) = c.value
 
@@ -41,8 +38,8 @@ getvalue(c::ConstantFunction) = c.value
 
   app(::Any)::Any = getvalue(model)
 
-  postcompose(f::AbsFunction)::AbsFunction = 
-    SetFunction(ConstantFunction(f(getvalue(model)), model.dom, codom(f)))
+  postcompose(f::AbsFunction)::AbsFunction = specialize(SetFunction(
+    ConstantFunction(f(getvalue(model)), model.dom, codom(f))))
 
 end
 

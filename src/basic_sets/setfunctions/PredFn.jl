@@ -17,9 +17,6 @@ Wrapper around `SetFunction` that checks inputs/outputs are compatible with
   val::AbsFunction
 end
 
-# Accessor
-##########
-
 GATlab.getvalue(p::PredicatedFunction) = p.val
 
 # SetFunction Implementation

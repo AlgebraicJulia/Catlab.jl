@@ -14,20 +14,14 @@ using ..IdFunction: IdentityFunction
 
 Not to be confused with `Base.ComposedFunctions` for ordinary Julia functions.
 """
-@struct_hash_equal struct CompositeFunction#{D,C}
-  fst::AbsFunction # SetFunction{Any,SetFunction,D,<:AbsSet}
-  snd::AbsFunction # SetFunction{Any,SetFunction,<:AbsSet,C}
+@struct_hash_equal struct CompositeFunction
+  fst::AbsFunction 
+  snd::AbsFunction
 end
-
-# Accessors 
-###########
 
 Base.first(f::CompositeFunction) = f.fst
 
 Base.last(f::CompositeFunction) = f.snd
-
-# Other methods
-###############
 
 function Base.show(io::IO, f::CompositeFunction)
   print(io, "compose(")
@@ -40,7 +34,7 @@ end
 # SetFunction implementation 
 ############################
 
-@instance ThSetFunction [model::CompositeFunction] begin #{D,C}
+@instance ThSetFunction [model::CompositeFunction] begin
 
   dom()::AbsSet = dom(first(model))
   
