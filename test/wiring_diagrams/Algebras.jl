@@ -1,11 +1,11 @@
 module TestWiringDiagramAlgebras
+
 using Test
 
 using Tables: columns
 using DataFrames
 
-using Catlab.CategoricalAlgebra, Catlab.BasicSets
-using Catlab.Graphs, Catlab.WiringDiagrams, Catlab.Programs.RelationalPrograms
+using Catlab
 
 tuples(args...) = sort!(collect(zip(args...)))
 
@@ -83,7 +83,7 @@ result = query(squares2, paths2)
 @test tuples(columns(result)...) == [(1,4), (1,4), (1,5), (2,6), (2,6), (3,6)]
 @test length(query(squares2, count_paths2)) == 6
 
-result = query(squares2, paths2, (start=1,))
+result = query(squares2, paths2, (start=1,));
 @test tuples(columns(result)...) == [(1,4), (1,4), (1,5)]
 result = query(squares2, paths2, (start=1, stop=4))
 @test result == DataFrame(start=[1,1], stop=[4,4])
@@ -142,4 +142,4 @@ result = query(data, testquery, (attr=:five, ))
 @test result[!,1] == [5]
 @test result[!,2] == [:five]
 
-end
+end # module

@@ -29,7 +29,7 @@ end
 to_graphviz(P)
 
 # It will be convenient to program with our preorders based on the Hasse Diagram
-# represent as a labeled graph so we convert the Presentation{Schema, Symbol} into a FreeDigram.
+# represent as a labeled graph so we convert the Presentation{Schema, Symbol} into a FreeDiagram.
 # FreeDiagrams are implemented as an ACSet which you can think of as an in-memory database.
 # ACSets are a key feature of Catlab that allow you to represent many data structures in a
 # common framework.
@@ -61,11 +61,11 @@ end
 
 # The upset of a preorder element is all the elements that come after it in the preorder.
 
-upset(g,x) = bfs(g,x,children)
+upset(g,x) = bfs(getvalue(g),x,children)
 
 # The downset is the dual notion, which we compute by reversing the role of children and parents.
 
-downset(g,x) = bfs(g,x,parents)
+downset(g::FreeDiagram,x) = bfs(getvalue(g),x,parents)
 
 upset(g, 1)
 
@@ -81,6 +81,7 @@ end
 # Multiple dispatch allows us to overload the leq function with another method for symbols.
 
 function leq(g::FreeDiagram, x::Symbol, y::Symbol)
+  g = getvalue(g)
   leq(g, incident(g, x, :ob), incident(g, y, :ob))
 end
 
@@ -102,7 +103,7 @@ end
 function maxima(g::FreeDiagram, D::Vector{Int})
   X = Set(D)
   M = filter(D) do x
-    Pₓ = children(g, x) ∩ X
+    Pₓ = children(getvalue(g), x) ∩ X
     length(Pₓ) == 0
   end
   return M

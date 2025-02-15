@@ -1,35 +1,42 @@
-module FinSetHash 
-export FinSetCollection
+module FSetHash 
+
+export FinSetHash
 
 using StructEquality
 
-using ..FinSets 
+using GATlab
+import GATlab: getvalue
+
+using ..FinSets: ThFinSet
 import ..FinSets: FinSet
 
+""" Wrapper around a Julia `Set`. """
+@struct_hash_equal struct FinSetHash{T} 
+  set::Set{T}
+end 
 
-""" Finite set given by Julia collection.
+# Accessor
+###########
 
-The underlying collection should be a Julia iterable of definite length. It may
-be, but is not required to be, set-like (a subtype of `AbstractSet`).
-"""
-@struct_hash_equal struct FinSetCollection{S,T} <: FinSet{S,T}
-  collection::S
-end
-FinSetCollection(collection::S) where S =
-  FinSetCollection{S,eltype(collection)}(collection)
+getvalue(f::FinSetHash) = f.set
 
-FinSet(collection::S) where {T, S<:Union{AbstractVector{T},AbstractSet{T}}} =
-  FinSetCollection{S,T}(collection)
-
-Base.iterate(set::FinSetCollection, args...) = iterate(set.collection, args...)
-Base.length(set::FinSetCollection) = length(set.collection)
-Base.in(elem, set::FinSetCollection) = in(elem, set.collection)
-
-function Base.show(io::IO, set::FinSetCollection)
+function Base.show(io::IO, set::FinSetHash)
   print(io, "FinSet(")
-  show(io, set.collection)
+  show(io, set.set)
   print(io, ")")
 end
 
+# FinSet Implementation
+#######################
+
+@instance ThFinSet [model::FinSetHash{T}] where T begin
+  in′(i::Any)::Bool = i ∈ getvalue(model)
+  eltype() = T
+  length()::Int = length(getvalue(model))
+  iterator()::Any = getvalue(model)
+end
+
+""" Default model for a finset made out of a Julia `Set` """
+FinSet(s::Set{T}) where T = FinSet(FinSetHash(s))
 
 end # module

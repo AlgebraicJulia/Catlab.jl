@@ -1,50 +1,82 @@
 module FinFnDict 
-export FinFunctionDict, FinDomFunctionDict
+
+export FinFunctionDict
 
 using StructEquality
 
-import ....Theories: dom, codom
-using ..Sets, ..FinSets, ..FinFunctions, ..SetFunctions
+using GATlab
 
+using ...Sets: AbsSet, SetOb
+using ...SetFunctions: AbsFunction, ThSetFunction, SetFunction, dom, codom
+using ...FinSets: FinSet
+using ..FinFunctions: specialize
+import ..FinFunctions: FinFunction, FinDomFunction
 
-# Dict-based functions
-#---------------------
-
-""" Function in **Set** represented by a dictionary.
-
-The domain is a `FinSet{S}` where `S` is the type of the dictionary's `keys`
-collection.
+""" 
+Valid function when domain is indexed by positive integers less than the 
+vector length.
 """
-@struct_hash_equal struct FinDomFunctionDict{K,D<:AbstractDict{K},Codom<:SetOb} <:
-    SetFunction{FinSetCollection{Base.KeySet{K,D},K},Codom}
-  func::D
-  codom::Codom
+@struct_hash_equal struct FinFunctionDict
+  val::Dict
+  dom::FinSet
+  codom::AbsSet
+  function FinFunctionDict(val::Dict, dom::FinSet, codom::AbsSet)
+    for e in dom 
+      haskey(val, e) || error("Missing key $e ∈ $dom from $val")
+    end
+    new(val, dom, codom)
+  end
 end
 
-FinDomFunctionDict(d::AbstractDict{K,V}) where {K,V} =
-  FinDomFunctionDict(d, TypeSet{V}())
+""" Default assumed domain """
+FinFunctionDict(val::Dict, codom::AbsSet) = 
+  FinFunctionDict(val, FinSet(Set(collect(keys(val)))), codom)
 
-dom(f::FinDomFunctionDict) = FinSet(keys(f.func))
 
-(f::FinDomFunctionDict)(x) = f.func[x]
+GATlab.getvalue(f::FinFunctionDict) = f.val
 
-function Base.show(io::IO, f::F) where F <: FinDomFunctionDict
-  SetFunctions.show_type_constructor(io, F)
-  print(io, "(")
-  show(io, f.func)
-  print(io, ", ")
-  SetFunctions.show_domains(io, f, domain=false)
+function Base.show(io::IO, f::FinFunctionDict)
+  print(io, "Fin")
+  f.codom isa FinSet || print(io, "Dom")  
+  print(io, "Function($(getvalue(f)), ")
+  print(io, f.codom)
   print(io, ")")
 end
 
+# SetFunction implementation
+############################
 
-""" Function in **FinSet** represented by a dictionary.
-"""
-const FinFunctionDict{K,D<:AbstractDict{K},Codom<:FinSet} =
-  FinDomFunctionDict{K,D,Codom}
+@instance ThSetFunction [model::FinFunctionDict] begin
 
-FinFunctionDict(d::AbstractDict, codom::FinSet) = FinDomFunctionDict(d, codom)
-FinFunctionDict(d::AbstractDict{K,V}) where {K,V} =
-  FinDomFunctionDict(d, FinSet(Set(values(d))))
+  dom()::AbsSet = model.dom
+
+  codom()::AbsSet = model.codom
+
+  app(i::Any, )::Any = getvalue(model)[i]
+
+  function postcompose(g::AbsFunction)::AbsFunction 
+    C = codom(g)
+    specialize(SetFunction(
+      FinFunctionDict(Dict(k => g(v) for (k,v) in getvalue(model)), C)))
+  end
+end
+  
+""" Default `FinFunction` from a `AbstractDict`"""
+FinFunction(f::AbstractDict) = FinFunction(f, FinSet(Set(values(f))))
+
+""" Default `FinFunction` from a `AbstractDict` and codom"""
+FinFunction(f::AbstractDict, cod::FinSet) = 
+  FinFunction(SetFunction(FinFunctionDict(f, cod)))
+
+  """ Default `FinFunction` from a `AbstractDict` and codom"""
+FinFunction(f::AbstractDict, dom::FinSet, cod::FinSet) = 
+  FinFunction(SetFunction(FinFunctionDict(f, dom, cod)))
+
+
+FinDomFunction(f::AbstractDict, cod::AbsSet) = 
+  FinDomFunction(SetFunction(FinFunctionDict(f, cod)))
+
+FinDomFunction(f::AbstractDict, dom::FinSet, cod::AbsSet) = 
+  FinDomFunction(SetFunction(FinFunctionDict(f, dom, cod)))
 
 end # module

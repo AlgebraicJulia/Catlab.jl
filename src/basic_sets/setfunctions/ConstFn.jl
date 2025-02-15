@@ -1,22 +1,46 @@
-module ConstFn
+module ConstFn 
+
 export ConstantFunction
 
 using StructEquality
 
+using GATlab
+import GATlab: getvalue
+
 using ..Sets, ..SetFunctions
+import ..SetFunctions: SetFunction
 
 """ Function in **Set** taking a constant value.
 """
-@struct_hash_equal struct ConstantFunction{T,Value<:T,Dom,Codom<:SetOb{T}} <:
-    SetFunction{Dom,Codom}
-  value::Value
-  dom::Dom
-  codom::Codom
+@struct_hash_equal struct ConstantFunction
+  value::Any
+  dom::AbsSet
+  codom::AbsSet
+  function ConstantFunction(v, d::AbsSet, c::AbsSet)
+    v ∈ c || error("Value $v must be element of codom $c")
+    new(v, d, c)
+  end
 end
 
-ConstantFunction(value::T, dom::SetOb) where T =
-  ConstantFunction(value, dom, TypeSet{T}())
+ConstantFunction(value::T, dom::AbsSet) where T = 
+  ConstantFunction(value, dom, SetOb(T))
 
-(f::ConstantFunction)(x) = f.value
+getvalue(c::ConstantFunction) = c.value
+
+# SetFunction implementation
+############################
+
+@instance ThSetFunction [model::ConstantFunction] begin
+
+  dom()::AbsSet = model.dom
+  
+  codom()::AbsSet = model.codom
+
+  app(::Any)::Any = getvalue(model)
+
+  postcompose(f::AbsFunction)::AbsFunction = specialize(SetFunction(
+    ConstantFunction(f(getvalue(model)), model.dom, codom(f))))
+
+end
 
 end # module

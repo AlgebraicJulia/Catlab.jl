@@ -1,6 +1,6 @@
 module TestCatElements
 
-using Test, Catlab 
+using Test, Catlab
 
 arr = path_graph(Graph, 2)
 
@@ -32,12 +32,7 @@ ThBPG, obmap, hommap = CatElements.presentation(elb)
 @test Symbol.(generators(ThBPG)) == [:V_1, :V_2, :E_1, :src_E_1, :tgt_E_1]
 @test inverse_elements(elb, Graph()) == b
 
-p₀ = @acset Graph begin
-  V = 2
-  E = 2
-  src=[1,2]
-  tgt=[2,1]
-end
+p₀ = complete_graph(Graph, 2)
 elpₒ = elements(p₀)
 ThPetri, obmap, hommap = CatElements.presentation(elpₒ)
 @test Symbol.(generators(ThPetri)) ==
