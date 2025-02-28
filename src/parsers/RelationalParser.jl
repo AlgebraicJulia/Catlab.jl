@@ -11,8 +11,9 @@ using Reexport
 using ...ADTs.RelationTerm: Var, Typed, Untyped, Kwarg, Statement, UWDExpr, UWDTerm, construct
 using ...WiringDiagrams.UndirectedWiringDiagrams
 using ...WiringDiagrams.RelationDiagrams
+using ParserCore
 using ..ParserCore: ws, eq, lparen, rparen, comma, EOL, colon, ident, expr, collect_parsing_pattern
-using PEG
+
 
 export @relation_str
 
