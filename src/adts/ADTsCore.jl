@@ -1,8 +1,6 @@
 """ Core components of an ADT
 """
 module ADTsCore
-export AbstractTerm
-
 
 """    AbstractTerm
 

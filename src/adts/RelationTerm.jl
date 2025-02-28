@@ -5,11 +5,10 @@ in text format and a constructor to create an ACSet Representation.
 
 """
 module RelationTerm
-export Var, Typed, Untyped, Kwarg, Statement, UWDExpr, UWDTerm, context
 
 using MLStyle
 using StructTypes
-using ..ADTsCore
+using ..ADTsCore: AbstractTerm
 using ACSets.ACSetInterface
 using ...WiringDiagrams.UndirectedWiringDiagrams
 using ...WiringDiagrams.RelationDiagrams
