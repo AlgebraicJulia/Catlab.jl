@@ -154,8 +154,7 @@ end
 This macro parses a string representation of a UWD into an ACSet representation. It operates by parsing a string input into an UWDExpr object.
 Then it constructs a RelationDiagram object from the UWDExpr object.
 """
-macro relation_str(x::String) begin
-  uwd_exp = parse_whole(uwd, x) end
+macro relation_str(x::String)
   return construct(RelationDiagram, parse_whole(uwd, x))
 end
 
