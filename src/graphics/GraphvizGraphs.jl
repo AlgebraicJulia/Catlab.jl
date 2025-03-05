@@ -121,6 +121,12 @@ function to_graphviz(g::AbstractPropertyGraph)::Graphviz.Graph
     end
   end
 
+  # Add title if it exists.
+  title = gprops(g)[:title]
+  if !isnothing(title)
+    push!(stmts, title)
+  end
+
   attrs = gprops(g)
   Graphviz.Graph(
     name = get(attrs, :name, "G"),
