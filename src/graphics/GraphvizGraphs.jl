@@ -122,7 +122,7 @@ function to_graphviz(g::AbstractPropertyGraph)::Graphviz.Graph
   end
 
   # Add title if it exists.
-  title = gprops(g)[:title]
+  title = get(gprops(g), :title, nothing)
   if !isnothing(title)
     push!(stmts, title)
   end
