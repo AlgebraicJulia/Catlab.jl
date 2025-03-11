@@ -28,7 +28,7 @@ right(e::UnionSet) = last(e.sets)
 
 @instance ThSet [model::UnionSet] begin
 
-  in′(i::Any)::Bool = any(s->i ∈ s, model.sets)
+  contains(i::Any)::Bool = any(s->i ∈ s, model.sets)
 
   eltype()::Any = Union{eltype.(model)...}
 

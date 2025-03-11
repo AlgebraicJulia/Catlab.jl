@@ -27,7 +27,7 @@ right(e::EitherFinSet) = e.right
 
 @instance ThFinSet [model::EitherFinSet] begin
 
-  in′(i::Any)::Bool = i ∈ left(model) || i ∈ right(model)
+  contains(i::Any)::Bool = i ∈ left(model) || i ∈ right(model)
 
   eltype()::Any = Union{eltype(left(model)), eltype(right(model))}
 

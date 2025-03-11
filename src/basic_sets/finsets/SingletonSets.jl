@@ -22,7 +22,7 @@ Base.show(io::IO, ::SingletonSet) = print(io, "Singleton()")
 #######################
 
 @instance ThFinSet [model::SingletonSet] begin
-  in′(i::Any)::Bool = isnothing(i)
+  contains(i::Any)::Bool = isnothing(i)
   eltype()::Any = Nothing
   length()::Int = 1
   iterator()::Any = [nothing]

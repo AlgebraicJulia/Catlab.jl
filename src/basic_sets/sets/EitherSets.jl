@@ -46,7 +46,7 @@ right(e::EitherSet) = e.right
 
 @instance ThSet [model::EitherSet] begin
 
-  in′(i::Any)::Bool = if i isa Left 
+  contains(i::Any)::Bool = if i isa Left 
     getvalue(i) ∈ left(model) 
   elseif i isa Right 
     getvalue(i) ∈ right(model)

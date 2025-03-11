@@ -62,7 +62,7 @@ end
 
 @instance ThFinSet [model::TabularSet] begin
 
-  in′(i::Any)::Bool = i ∈ getvalue(model)
+  contains(i::Any)::Bool = i ∈ getvalue(model)
 
   eltype()::Any = model.T
 

@@ -41,7 +41,7 @@ Base.length(e::SumFinSet) = length(getvalue(e))
 
 @instance ThFinSet [model::SumFinSet] begin
 
-  in′(i::Any)::Bool = ThFinSet.in′[SumSet(model)](i) # reuse implementation
+  contains(i::Any)::Bool = ThFinSet.contains[SumSet(model)](i) # reuse implementation
 
   eltype()::Any = ThFinSet.eltype[SumSet(model)]()
 

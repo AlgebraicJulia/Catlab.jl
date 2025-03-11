@@ -33,7 +33,7 @@ Base.length(e::ProdSet) = length(getvalue(e))
 
 @instance ThSet [model::ProdSet] begin
 
-  in′(i::Any)::Bool = (i isa Tuple && length(i)==length(model) 
+  contains(i::Any)::Bool = (i isa Tuple && length(i)==length(model) 
     && all(e ∈ s for (s, e) in zip(model, i)))
 
   eltype()::Any = Tuple{eltype.(model)...}

@@ -30,7 +30,7 @@ end
 #######################
 
 @instance ThFinSet [model::FinSetHash{T}] where T begin
-  in′(i::Any)::Bool = i ∈ getvalue(model)
+  contains(i::Any)::Bool = i ∈ getvalue(model)
   eltype() = T
   length()::Int = length(getvalue(model))
   iterator()::Any = getvalue(model)

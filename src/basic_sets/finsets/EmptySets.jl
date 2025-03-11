@@ -21,7 +21,7 @@ Base.show(io::IO, ::EmptySet) = print(io, "Empty()")
 #######################
 
 @instance ThFinSet [model::EmptySet] begin
-  in′(i::Any)::Bool = false
+  contains(i::Any)::Bool = false
   eltype()::Any = Union{}
   length()::Int = 0
   iterator()::Any = Union{}[]

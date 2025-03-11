@@ -79,7 +79,7 @@ Base.length(e::SumSet) = length(getvalue(e))
 
 @instance ThSet [model::SumSet] begin
 
-  in′(i::Any)::Bool = @match i begin 
+  contains(i::Any)::Bool = @match i begin 
     (t::TaggedElem) => let i = getidx(t); 
       0 < i ≤ length(model) && getvalue(t) ∈ model[i]
     end
@@ -124,7 +124,7 @@ Base.haskey(e::NamedSumSet, k) = haskey(getvalue(e), k)
 
 @instance ThSet [model::NamedSumSet] begin
 
-  in′(i::Any)::Bool = @match i begin 
+  contains(i::Any)::Bool = @match i begin 
     (t::TaggedElem) => let i = getidx(t); 
       haskey(model, i) && getvalue(t) ∈ model[i]
     end

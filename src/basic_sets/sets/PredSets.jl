@@ -36,7 +36,7 @@ end
 
 @instance ThSet [model::PredicatedSet{T}] where T begin
 
-  in′(i::Any)::Bool = i isa T && model(i)
+  contains(i::Any)::Bool = i isa T && model(i)
 
   eltype()::Any = T
 

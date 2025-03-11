@@ -41,7 +41,7 @@ Base.length(e::ProdFinSet) = length(getvalue(e))
 
 @instance ThFinSet [model::ProdFinSet] begin
 
-  in′(i::Any)::Bool = ThFinSet.in′[ProdSet(model)](i) # reuse implementation
+  contains(i::Any)::Bool = ThFinSet.contains[ProdSet(model)](i) # reuse implementation
 
   eltype()::Any = Tuple{eltype.(model)...}
 

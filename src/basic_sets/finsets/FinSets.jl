@@ -21,6 +21,7 @@ cardinality, i.e. `length`.
 """
 @theory ThFinSet <: ThSet begin
   Int′::TYPE{Int}
+  Any′::TYPE{Any}
   length()::Int′
   iterator()::Any′
 end

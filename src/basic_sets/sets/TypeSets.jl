@@ -21,7 +21,7 @@ Base.show(io::IO, ::TypeSet{T}) where T = print(io, "TypeSet($T)")
 # ThSet implementation 
 
 @instance ThSet [model::TypeSet{T}] where T begin
-  in′(i::Any)::Bool = i isa T
+  contains(i::Any)::Bool = i isa T
   eltype()::Any = T
 end
 

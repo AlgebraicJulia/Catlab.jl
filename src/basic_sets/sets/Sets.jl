@@ -4,7 +4,7 @@ using StructEquality
 
 using GATlab
 
-import Base: eltype
+import Base: eltype, contains
 
 # Theory of Sets
 ################
@@ -15,16 +15,16 @@ type should be provided which includes all elements of the set.
 """
 @theory ThSet begin
   Bool′::TYPE{Bool}
-  Any′::TYPE{Any}
-  in′(e::Any′)::Bool′ # the order of arguments is reversed, so give a diff name
-  eltype()::Any′
+  Type′::TYPE{Type}
+  contains(e::Type′)::Bool′ # the order of arguments is reversed, so give a diff name
+  eltype()::Type′
 end
 
 """ There are two kinds of Abstract Set. `SetOb` and `FinSet`."""
 abstract type AbsSet end
 
-""" Fix the order of in′ """
-Base.in(x, s::AbsSet) = ThSet.in′[getvalue(s)](x)
+""" Fix the order of contains """
+Base.in(x, s::AbsSet) = ThSet.contains[getvalue(s)](x)
 
 # Wrapper type for Models of ThSet
 ##################################
