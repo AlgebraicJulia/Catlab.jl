@@ -151,7 +151,7 @@ bang = FinFunctor(
 Yd = Σbang(X; return_unit=true)
 α = diagram_map(Yd)
 a, l1, l2 = getindex.(Ref(α), [A,L1,L2])
-@test length(unique([a(1:2)...,l1(1),l2(1:2)...])) == 1
+@test length(unique([a.(1:2)...,l1(1),l2.(1:2)...])) == 1
 Y = Initial(diagram(codom[DiagramIdCat()](Yd)))
 @test nparts(Y, :I) == 4
 

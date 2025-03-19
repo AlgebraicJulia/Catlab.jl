@@ -10,7 +10,7 @@ import GATlab: equations, getvalue
 import .....Theories: dom, codom, id, compose, ⋅, ∘
 using .....Graphs
 import .....Graphs: Graph, NamedGraph, src, tgt
-using .....BasicSets: FinSet, AbsSet, SetOb
+using .....BasicSets: FinSet, SetOb
 
 import ..Paths: Path
 

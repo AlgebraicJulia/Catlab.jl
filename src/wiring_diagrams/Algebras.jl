@@ -169,11 +169,11 @@ function query(X::ACSet, diagram::UndirectedWiringDiagram,
     legs = map(subpart(diagram, ports(diagram, b), :port_name)) do port_name
       h = if port_name == :_id 
         name ∈ ob(S) || error("Bad name $name")
-        SetFunction(apex)
+        SetFunction(SetOb(apex))
       elseif port_name ∈ hom(S)
-        get_hom(ACSetCategory(X), X, port_name)
+        SetFunction(get_hom(ACSetCategory(X), X, port_name))
       elseif port_name ∈ attr(S)
-        get_attr(ACSetCategory(X), X, port_name)
+        SetFunction(get_attr(ACSetCategory(X), X, port_name))
       else
         error("Bad port name $port_name")
       end
@@ -196,21 +196,20 @@ function query(X::ACSet, diagram::UndirectedWiringDiagram,
       # Handle possibility of unions in attribute types.
       name = diagram[first(incident(diagram, junction, :junction)), :port_name]
       constant = if name ∈ attrs(acset_schema(X), just_names=true)
-        ConstantFunction(value, FinSet(1), SetOb(subpart_type(X, name)))
+        ConstantFunction(value, SetOb(1), SetOb(subpart_type(X, name)))
       else
-        ConstantFunction(value, FinSet(1))
+        ConstantFunction(value, SetOb(1))
       end
-      ff = SetFunction(constant) |> specialize
-      Multispan{AbsSet, AbsFunction}(AbsFunction[ff])
+      ff = SetFunction(constant)
+      Multispan{SetOb, SetFunction}(SetFunction[ff])
     end)
   end
-
    # Call `oapply` and make a table out of the resulting span.
-  outer_span = oapply(diagram, spans, Ob=AbsSet, Hom=AbsFinDomFunction)
+  outer_span = oapply(diagram, spans, Ob=SetOb, Hom=SetFunction)#FinDomFunction)
   if nparts(diagram, :OuterPort) == 0
     fill((;), length(apex(outer_span)))
   else
-    columns = map(collect, outer_span)
+    columns = collect.(coerce_findom.(outer_span))
     names = has_subpart(diagram, :outer_port_name) ?
       subpart(diagram, :outer_port_name) : fill(nothing, length(columns))
     make_table(table_type, columns, names)

@@ -100,6 +100,7 @@ function pres_to_eds(S::Presentation; types=Dict(), name="", cat)
     if d == cd # not possible if f is an attribute
       uni = ACSetTransformation(unique_l, unique_r;
                                 Dict(f=>[1,1], d=>[rd1, rcd1, rcd1])...)
+                            
       eds["$(f_)_uni"] = uni
     else
       eds["$(f_)_uni"] = homomorphism(unique_l, unique_r; cat)

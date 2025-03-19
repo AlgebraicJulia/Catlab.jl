@@ -35,6 +35,13 @@ end
 
 end
 
+@instance ThCategoryWithMonicsEpics{FinSetInt, FinFunction
+                                } [model::SkelFinSet] begin
+
+  is_monic(f::FinFunction) = is_monic(f)
+  is_epic(f::FinFunction) = is_epic(f)
+end
+
 @instance ThCategoryColimitBase{FinSetInt,FinFunction} [model::SkelFinSet] begin 
 
   ob(t::AbsColimit)::FinSetInt = ob(t)

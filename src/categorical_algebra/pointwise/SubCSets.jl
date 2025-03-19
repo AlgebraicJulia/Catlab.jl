@@ -20,12 +20,10 @@ using Base.Meta: quot
 
 """ assume a VarFunction is secretly a FinFunction """
 function left(f::FinDomFunction)::FinFunction
-  get_left(l::Left) = getvalue(l)
-  get_left(r::Right) = error(
-    "Tried to coerce VarFunction $f to FinFunction, got value $r")
-  lft = SetFunction(SetFunctionCallable(get_left, codom(f), 
-                    left(getvalue(codom(f)))))
-  force(compose[SetC()](f, lft))
+  FinFunction(map(collect(f)) do i
+    i isa Left ? getvalue(i) : error(
+      "Tried to coerce VarFunction $f to FinFunction, got value $i")
+  end, FinSet(codom[SkelKleisli(Any)](f)))
 end
 
 """ Sub-C-set of a C-set.

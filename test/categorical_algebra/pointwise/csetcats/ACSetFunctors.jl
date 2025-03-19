@@ -73,7 +73,7 @@ end
 @withmodel Cat2() (*, ⋅) begin 
   @test is_natural(ϕ)
   @test component(ϕ*F, 1) == hom_map(F, src′)
-  @test component(ϕ*α, 1) == compose[FinSetC()](hom_map(F, src′), α[V])
+  @test force(component(ϕ*α, 1)) == compose[FinSetC()](hom_map(F, src′), α[V])
 end
 
 end # module

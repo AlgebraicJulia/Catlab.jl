@@ -17,7 +17,7 @@ end
 
 
 @test get_attr(𝒱, A, :weight) == FinDomFunction(
-  [Left(1), Right(true)], either(FinSet(2),SetOb(Bool)))
+  [Left(1), Right(true)], either(SetOb(2),SetOb(Bool)))
 
 f = ACSetTransformation(
   Dict(:V=>[1],:E=>[1,2],:Weight=>[AttrVar(2), AttrVar(1)]), A, A

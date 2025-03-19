@@ -15,7 +15,7 @@ Y = @acset LoneAttr begin X = 4 end
 f = ACSetTransformation(X, Y; X=[AttrVar(1), false, AttrVar(3), AttrVar(4)])
 g = ACSetTransformation(X, Y; X=[AttrVar(3), false, true, AttrVar(4)])
 π, = coeq = coequalizer[ℒ](f,g)
-@test π[:X] == FinDomFunction([Right(true), Left(1), Right(true), Left(2)], either(FinSet(2), SetOb(Bool)))
+@test π[:X] == FinDomFunction([Right(true), Left(1), Right(true), Left(2)], either(SetOb(2), SetOb(Bool)))
 
 A = @acset LoneAttr begin X = 3 end
 
@@ -103,7 +103,7 @@ colim = pushout[𝒱](α, β)
 #################
 # WeightedGraph #
 #################
-using Test, Catlab
+
 const WG = WeightedGraph{Bool}
 
 const 𝒞 = ACSetCategory(VarACSetCat(WG()))
@@ -130,7 +130,7 @@ X = @acset WG begin V=1;E=1;Weight=2;src=1;tgt=1;weight=[true] end
 f′ = homomorphism(A, X; initial=(Weight=[true,AttrVar(1)],))
 g′ = homomorphism(A, X; initial=(Weight=[true,AttrVar(2)],))
 
-fg = copair[𝒞](AA, f′,g′) 
+fg = copair[𝒞](AA, f′,g′)
 @test is_natural(fg; cat=𝒞)
 @test collect(fg[:Weight]) == [Right(true), Left(1), Right(true), Left(2)]
 

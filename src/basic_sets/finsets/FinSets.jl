@@ -31,7 +31,7 @@ end
 #####################################
 
 """ Finite set. """
-ThFinSet.Meta.@wrapper FinSet <: AbsSet
+ThFinSet.Meta.@wrapper FinSet
 
 FinSet(set::FinSet) = set # no-op
 
@@ -44,3 +44,5 @@ Base.show(io::IO, mime::MIME"text/html", set::FinSet) =
   show(io, mime, getvalue(set))
 
 Base.iterate(f::FinSet, xs...) = iterate(ThFinSet.iterator(f), xs...)
+
+Base.in(x, set::FinSet) = ThFinSet.contains(set, x)

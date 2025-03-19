@@ -73,7 +73,7 @@ ACSets.acset_schema(c::CSetCat) = acset_schema(c.constructor)
 
   get_set(x::FinSetInt) = FinSet(x)
 
-  get_fn(x::FinFunction, ::FinSetInt, ::FinSetInt)::AbsFinDomFunction = x
+  get_fn(x::FinFunction, ::FinSetInt, ::FinSetInt)::FinDomFunction = FinDomFunction(x)
 
 end
 

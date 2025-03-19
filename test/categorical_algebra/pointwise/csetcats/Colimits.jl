@@ -20,8 +20,8 @@ I = initial[𝒞]()
 g = path_graph(Graph, 4)
 colim = coproduct[𝒞](g, Graph())
 @test ob(colim) == g
-@test coproj1(colim)[:V](1:4) ==  [1,2,3,4]
-@test coproj1(colim)[:E](1:3) ==  [1,2,3]
+@test coproj1(colim)[:V].(1:4) ==  [1,2,3,4]
+@test coproj1(colim)[:E].(1:3) ==  [1,2,3]
 @test collect(coproj2(colim)[:V]) == Int[] == collect(coproj2(colim)[:V]) 
 
 

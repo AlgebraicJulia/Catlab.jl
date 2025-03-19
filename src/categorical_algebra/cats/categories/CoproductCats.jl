@@ -51,9 +51,9 @@ Base.getindex(x::CoproductCat, i::Int) = x.cats[i]
     TaggedElem(compose(model[tx], getvalue(x), getvalue(y)), tx)
   end
 
-  ob_set()::AbsSet = SumSet(ob_set.(getvalue(model))) |> SetOb
+  ob_set()::SetOb = SumSet(ob_set.(getvalue(model))) |> SetOb
 
-  hom_set()::AbsSet = SumSet(hom_set.(getvalue(model))) |> SetOb
+  hom_set()::SetOb = SumSet(hom_set.(getvalue(model))) |> SetOb
 
 end
 
@@ -96,9 +96,9 @@ Base.getindex(x::NamedCoproductCat, i::Int) = x.cats[i]
     TaggedElem(codom(model[t], getvalue(x)), t)
   end
 
-  ob_set()::AbsSet = SumSet(ob_set.(collect(values(getvalue(model))))) |> SetOb
+  ob_set()::SetOb = SumSet(ob_set.(collect(values(getvalue(model))))) |> SetOb
 
-  hom_set()::AbsSet = SumSet(hom_set.(collect(values(getvalue(model))))) |> SetOb
+  hom_set()::SetOb = SumSet(hom_set.(collect(values(getvalue(model))))) |> SetOb
 
   function compose(x::H,y::H)::H
     tx, ty = gettag.([x,y])

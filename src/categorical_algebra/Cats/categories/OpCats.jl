@@ -5,8 +5,7 @@ using StructEquality
 
 using GATlab
 
-using .....BasicSets: AbsSet
-using ..Categories
+using .....BasicSets, ..Categories
 
 """ Opposite category, where morphism are reversed.
 
@@ -37,9 +36,9 @@ GATlab.getvalue(c::OppositeCat) = c.cat
 
   compose(f::Hom,g::Hom) = compose(getvalue(model), g, f)
 
-  ob_set() = ob_set(getvalue(model))
+  ob_set()::SetOb = ob_set(getvalue(model))
 
-  hom_set() = hom_set(getvalue(model))
+  hom_set()::SetOb = hom_set(getvalue(model))
 
 end
 

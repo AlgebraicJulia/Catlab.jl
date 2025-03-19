@@ -30,7 +30,7 @@ category and D is a category with Kleisli composition.
   
   codom(g::FinDomFunction) = codom[SkelKleisli(T)](g)
 
-  pre(f::FinFunction, g::FinDomFunction) = compose[SkelKleisli(T)](pure(f, T), g)
+  pre(f::FinFunction, g::FinDomFunction) = precompose(g, f)
 
   post(f::FinDomFunction, g::FinDomFunction) = compose[SkelKleisli(T)](f, g)
 
@@ -88,7 +88,7 @@ attrtype_type(model::VarACSetCat, T::Symbol) = attrtype_type(model.constructor()
     v = map(x[h]) do elem 
       elem isa AttrVar ? Left(getvalue(elem)) : Right(elem)
     end
-    FinDomFunction(v, either(FinSet(nparts(x, codom(S, h))), SetOb(T)))
+    FinDomFunction(v, either(SetOb(FinSet(nparts(x, codom(S, h)))), SetOb(T)))
   end
 
   get_attrtype(x::ACSet,o::Symbol)::FinSetInt = FinSetInt(nparts(x, o))
@@ -97,13 +97,13 @@ attrtype_type(model::VarACSetCat, T::Symbol) = attrtype_type(model.constructor()
 
   get_set(x::FinSetInt)::FinSet = FinSet(x)
 
-  get_fn(x::FinFunction, ::FinSetInt, ::FinSetInt)::AbsFinDomFunction = x
+  get_fn(x::FinFunction, ::FinSetInt, ::FinSetInt)::FinDomFunction = FinDomFunction(x)
 
   get_attr_set(x::FinSetInt)::FinSet = FinSet(x)
 
-  get_op_fn(x::FinDomFunction, ::FinSetInt, ::FinSetInt)::AbsFinDomFunction = x
+  get_op_fn(x::FinDomFunction, ::FinSetInt, ::FinSetInt)::FinDomFunction = x
 
-  get_attr_fn(x::FinDomFunction, ::FinSetInt, ::FinSetInt)::AbsFinDomFunction = 
+  get_attr_fn(x::FinDomFunction, ::FinSetInt, ::FinSetInt)::FinDomFunction = 
     FinDomFunction(map(dom(x)) do v
       fx = getvalue(x(v))
       x(v) isa Right ? fx : AttrVar(fx)
@@ -120,14 +120,14 @@ end
 
 function coerce_attr_varfun(::Nothing, T::Type, d::FinSet, cd::FinSet) 
   isempty(d) || error("Bad: nonempty domain $d")
-  return FinDomFunction([], either(cd,SetOb(T)))
+  return FinDomFunction([], either(SetOb(cd),SetOb(T)))
 end
 
 """  """
-function coerce_attr_varfun(f::AbsFinDomFunction, T::Type, d::FinSet, cd::FinSet)
+function coerce_attr_varfun(f::FinDomFunction, T::Type, d::FinSet, cd::FinSet)
   sort(collect(dom(f))) == sort(collect(d)) || error("Bad: mismatched dom $d ≠ $(dom(f))")
   # first we optimistically assume that we already have a VarFunction
-  codom(f) == either(cd, SetOb(T)) && return f
+  codom(f) == either(SetOb(cd), SetOb(T)) && return f
   # otherwise Assume this is a function purely on the FinSet component
   codom(f) == cd || error("Bad: mismatched dom $cd ≠ $(codom(f))")
   pure(f, T)
@@ -145,7 +145,7 @@ function coerce_attr_varfun(f::AbstractVector, T::Type, d::FinSet, cd::FinSet)
     else 
       error("Bad::$T value: $v :: $(typeof(v))")
     end
-  end, either(cd, SetOb(T)))
+  end, either(SetOb(cd), SetOb(T)))
 
 end
 

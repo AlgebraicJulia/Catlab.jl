@@ -7,9 +7,10 @@ using StructEquality
 
 using GATlab
 
-using ..Sets: ProdSet
+using ..Sets: SetOb
 using ..FinSets: ThFinSet
 import ..FinSets: FinSet
+import ..Sets: ProdSet
 
 
 """ 
@@ -19,6 +20,8 @@ Unbiased Cartesian product of finite sets.
   sets::Vector{FinSet}
 end
 
+ProdSet(sets::Vector{FinSet}) = ProdFinSet(sets)
+
 GATlab.getvalue(p::ProdFinSet) = p.sets
 
 """ Assuming all sets are finite in a `ProdSet`, convert to `ProdFinSet` """
@@ -26,6 +29,8 @@ FinSet(s::ProdSet) = FinSet(ProdFinSet(getvalue(s)))
 
 """ Relax assumption that all sets are finite """
 ProdSet(f::ProdFinSet) = ProdSet(getvalue(f))
+
+ProdFinSet(f::ProdSet) = ProdFinSet(FinSet.(f))
 
 # Other methods
 ###############
@@ -41,7 +46,7 @@ Base.length(e::ProdFinSet) = length(getvalue(e))
 
 @instance ThFinSet [model::ProdFinSet] begin
 
-  contains(i::Any)::Bool = ThFinSet.contains[ProdSet(model)](i) # reuse implementation
+  contains(i::Any)::Bool = ThFinSet.contains[ProdSet(SetOb.(model))](i) # reuse implementation
 
   eltype()::Any = Tuple{eltype.(model)...}
 

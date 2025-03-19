@@ -16,8 +16,8 @@ The only morphisms in a discrete category are the identities, which are here
 identified with the objects.
 """
 @struct_hash_equal struct DiscreteCat{Ob}
-  set::AbsSet
-  DiscreteCat(s::AbsSet) =new{eltype(s)}(s)
+  set::SetOb
+  DiscreteCat(s::SetOb) =new{eltype(s)}(s)
 end
 
 GATlab.getvalue(d::DiscreteCat) = d.set
@@ -46,6 +46,6 @@ else
   error("Cannot cast $C to a graph")
 end
 
-Category(s::AbsSet) = Category(DiscreteCat(s))
+Category(s::SetOb) = Category(DiscreteCat(s))
 
 end # module

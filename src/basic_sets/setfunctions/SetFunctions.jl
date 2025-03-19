@@ -1,4 +1,4 @@
-export SetFunction, ThSetFunction, AbsFunction, dom, codom, show_domains, specialize
+export SetFunction, ThSetFunction, dom, codom, show_domains, specialize
 
 using StructEquality
 
@@ -11,11 +11,27 @@ using ..FinSets: FinSet, FinSetInt
 # Theory of SetFunctions
 ########################
 
-abstract type AbsFunction end 
+""" This is only subtyped by SetFunction """
+abstract type SetFunction′ end 
+
+""" Common theory to SetFunction/Fin(Dom)Function """ 
+@theory ThFunctionCore begin
+  Dom::TYPE
+  Cod::TYPE
+  app(e::Dom)::Cod
+end
 
 """
-Interface we require any implementation of `SetFunction` to satisfy. We should 
-be able to extract a (co)dom, apply the function to inputs, and postcompose.
+A SetFunction is anything that can play the role of a morphism in the category 
+Set. This means we can pick out a domain and codomain set, we apply the function
+to any domain element to get a codomain element, and we and turn a sequence of 
+SetFunctions into a single one. In principle SetFunctions need not know anything
+about composition: the composite of any two SetFunction is a `CompositeFunction` 
+implementation. However, we often want to simplify a `CompositeFunction` into a 
+more compressed form (which would be more efficient if one were repeatedly 
+calling the function). So implementations are also required to have a method 
+which is used (within `force`) to simplify a `CompositeFunction`. One could 
+demand both pre- and post-composition operations, but just one suffices to 
 
 Often, implementations are naturally postcomposed with another function, because 
 this allows one to keep the same structure but just update the values. However,
@@ -26,16 +42,15 @@ mapping over the structure with the same value but by just replacing the
 function with another `ConstantFunction`. `postcompose` is only ever called when
 using `force` to evaluate a `CompositeFunction`.
 """
-@theory ThSetFunction begin
-  Any′::TYPE{Any}
-  Fun′::TYPE{AbsFunction}
-  DomSet::TYPE{AbsSet}
-  CodSet::TYPE{AbsSet}
-  dom()::DomSet
-  codom()::CodSet
-  app(e::Any′)::Any′
+@theory ThSetFunction <: ThFunctionCore begin
+  Fun′::TYPE{SetFunction′}
+  DomSet::TYPE{SetOb}
+  CodSet::TYPE{SetOb}
+  dom()::DomSet # eltype(dom()) <: Dom
+  codom()::CodSet # eltype(codom()) <: Cod
   postcompose(t::Fun′)::Fun′
 end
+
 
 # Wrapper type for models of ThSetFunction
 ##########################################
@@ -45,15 +60,22 @@ end
 Note: This type would be better called simply `Function` but that name is
 already taken by the base Julia type.
 """
-ThSetFunction.Meta.@wrapper SetFunction <: AbsFunction
+ThSetFunction.Meta.@wrapper SetFunction <: SetFunction′
 
-SetFunction(s::SetFunction) = s
+function validate(s::SetFunction)
+  Dom, Codom = impl_types(s)
+  eltype(dom(s)) <: Dom || error("Bad dom type")
+  eltype(codom(s)) <: Codom || error("Bad cod type")
+end
+
+
+# SetFunction(s::SetFunction) = s
 
 (f::SetFunction)(x) = ThSetFunction.app(f, x)
 
 Base.show(io::IO, f::SetFunction) = show(io, getvalue(f)) 
 
-function show_domains(io::IO, f::SetFunction; domain::Bool=true, 
+function show_domains(io::IO, f; domain::Bool=true, 
     codomain::Bool=true, recurse::Bool=true)
   get(io, :hide_domains, false) && return print(io, "…")
   domain && show(IOContext(io, :compact=>true, :hide_domains=>!recurse), dom(f))
@@ -61,10 +83,3 @@ function show_domains(io::IO, f::SetFunction; domain::Bool=true,
   codomain && show(IOContext(io, :compact=>true, :hide_domains=>!recurse), codom(f))
 end
 
-"""
-Any set function may also be thought of as a FinDomFunction (if its domain is 
-finite) or a FinFunction (if both domain and codomain are finite). We can 
-check the domain and codomain and then decide whether to promote the value to a 
-more informative type.
-"""
-function specialize end # implementation must wait until FinFunction is defined

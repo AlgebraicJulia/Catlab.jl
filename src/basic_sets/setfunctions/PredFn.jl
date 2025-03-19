@@ -7,14 +7,16 @@ using StructEquality
 using GATlab
 
 using ..Sets, ..SetFunctions
-import ..SetFunctions: SetFunction
+import ..SetFunctions: SetFunction, SetFunction′
 
 """ 
 Wrapper around `SetFunction` that checks inputs/outputs are compatible with 
 (co)domain predicates, if any.
 """
-@struct_hash_equal struct PredicatedFunction 
-  val::AbsFunction
+@struct_hash_equal struct PredicatedFunction{D,C}
+  val::SetFunction
+  PredicatedFunction(f::SetFunction) = 
+    new{impl_type(f, :Dom), impl_type(f, :Cod)}(f)
 end
 
 GATlab.getvalue(p::PredicatedFunction) = p.val
@@ -22,13 +24,13 @@ GATlab.getvalue(p::PredicatedFunction) = p.val
 # SetFunction Implementation
 ############################
 
-@instance ThSetFunction [model::PredicatedFunction] begin
+@instance ThSetFunction{D,C} [model::PredicatedFunction{D,C}] where {D,C} begin
 
-  dom()::AbsSet = dom(getvalue(model))
+  dom()::SetOb = dom(getvalue(model))
 
-  codom()::AbsSet = codom(getvalue(model))
+  codom()::SetOb = codom(getvalue(model))
 
-  function app(i::Any)::Any
+  function app(i::D)::C
     f = getvalue(model)
     d, c = dom(f), codom(f)
     getvalue(d) isa PredicatedSet && i ∉ d && error("Bad domain input")
@@ -37,7 +39,7 @@ GATlab.getvalue(p::PredicatedFunction) = p.val
     v
   end
 
-  postcompose(f::AbsFunction)::AbsFunction = PredicatedFunction(
+  postcompose(f::SetFunction′)::SetFunction′ = PredicatedFunction(
     i -> f(getvalue(model)(i)), dom[model](model), codom[model](f)) |> SetFunction
 end
 

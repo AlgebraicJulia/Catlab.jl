@@ -14,4 +14,7 @@ include("setfunctions/module.jl")
 include("finfunctions/module.jl")
 @reexport using .FinFunctions
 
+include("findomfunctions/module.jl")
+@reexport using .FinDomFunctions
+
 end # module

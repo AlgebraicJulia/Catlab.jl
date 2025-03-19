@@ -7,13 +7,14 @@ using GATlab
 import ACSets.Columns: preimage
 
 using ..Sets, ..SetFunctions
-import ..SetFunctions: SetFunction
+import ..SetFunctions: SetFunction, SetFunction′
 
 
 """ Identity morphism in **Set**.
 """
-@struct_hash_equal struct IdentityFunction
-  dom::AbsSet
+@struct_hash_equal struct IdentityFunction{T}
+  dom::SetOb
+  IdentityFunction(d::SetOb) = new{eltype(d)}(d)
 end
 
 GATlab.getvalue(i::IdentityFunction) = i.dom
@@ -33,18 +34,18 @@ end
 # SetFunction implementation 
 ############################
 
-@instance ThSetFunction [model::IdentityFunction] begin
+@instance ThSetFunction{T,T} [model::IdentityFunction{T}] where T begin
 
-  dom()::AbsSet = getvalue(model)
+  dom() = getvalue(model)
 
-  codom()::AbsSet = getvalue(model)
+  codom() = getvalue(model)
 
-  function app(i::Any)::Any 
+  function app(i::T)::T 
     i ∈ dom[model]() || error("$i ∉ $(dom[model]()) for identity function")
     return i
   end
 
-  postcompose(f::AbsFunction)::AbsFunction = f
+  postcompose(f::SetFunction′)::SetFunction′ = f
 
 end
 
@@ -56,8 +57,8 @@ function IdentityFunction(dom::SetOb, codom::SetOb)
   IdentityFunction(dom)
 end
 
-SetFunction(::typeof(identity), arg::AbsSet) = SetFunction(IdentityFunction(arg))
+SetFunction(::typeof(identity), arg::SetOb) = SetFunction(IdentityFunction(arg))
 
-SetFunction(s::AbsSet) = SetFunction(IdentityFunction(s))
+SetFunction(s::SetOb) = SetFunction(IdentityFunction(s))
 
 end # module

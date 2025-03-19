@@ -5,6 +5,13 @@ module FinSets
 using Reexport
 
 include("FinSets.jl")
+
+include("ProdFinSets.jl")
+@reexport using .ProdFinSets
+
+include("FinSetsAsSets.jl")
+@reexport using .FinSetsAsSets
+
 include("FinSetInts.jl")
 @reexport using .FinSetInts
 
@@ -29,7 +36,7 @@ include("FinSetVect.jl")
 include("SumFinSets.jl")
 @reexport using .SumFinSets
 
-include("ProdFinSets.jl")
-@reexport using .ProdFinSets
+include("PredicatedFinsets.jl")
+@reexport using .PredFinSets
 
 end # module

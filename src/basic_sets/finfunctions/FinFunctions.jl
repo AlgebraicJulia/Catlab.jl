@@ -1,172 +1,84 @@
-export FinFunction, FinDomFunction, preimage, is_indexed, specialize,
-       is_monic, is_epic, is_iso, AbsFinDomFunction, ensure_indexed
+export FinFunction, ThFinFunction, preimage, dom, codom, app, postcompose, 
+       is_indexed, is_epic, is_monic, is_iso
 
 using StructEquality
 import ACSets.Columns: preimage, Column
 using GATlab
 
-using ..FinSets: AbsSet, FinSet, FinSetInt, SetOb
+import ....Theories: dom, codom
+using ..FinSets: FinSet, FinSetInt, SetOb
 using ..SetFunctions
-import ..SetFunctions: SetFunction, specialize
+using ..SetFunctions: ThFunctionCore
 import .ThSetFunction: dom, codom, app, postcompose
 
 # Finite functions
 ##################
-""" Common type for `FinFunction` and `FinDomFunction` """
-abstract type AbsFinDomFunction <: AbsFunction end 
+""" This is only subtyped by FinFunction """
+abstract type FinFunction′ end 
 
-GATlab.getvalue(f::AbsFinDomFunction) = f.fun
 
-Base.show(io::IO, f::AbsFinDomFunction) = show(io, getvalue(f))
-
-SetFunction(f::AbsFinDomFunction) = getvalue(f)
-
-""" Function between finite sets.
-
-The function can be defined implicitly by an arbitrary Julia function, in which
-case it is evaluated lazily, or explicitly by a vector of integers. In the vector
-representation, the function (1↦1, 2↦3, 3↦2, 4↦3), for example, is represented
-by the vector [1,3,2,3].
-
-FinFunctions can be constructed with or without an explicitly provided codomain.
-If a codomain is provided, by default the constructor checks it is valid.
-
-This type is mildly generalized by [`FinDomFunction`](@ref).
 """
-@struct_hash_equal struct FinFunction <: AbsFinDomFunction
-  fun::SetFunction 
-  function FinFunction(s::SetFunction)
-    dom(s) isa FinSet || error("Bad dom $(dom(s))")
-    codom(s) isa FinSet || error("Bad codom $(codom(s))")
-    new(s)
-  end
+A FinFunction is anything that can play the role of a morphism in the category 
+FinSet. This means we can pick out a dom and codom set, we apply the function
+to any domain element to get a codomain element, and we and turn a sequence of 
+FinFunctions into a single one. In principle FinFunctions need not know anything
+about composition: the composite of any two FinFunctions is a `CompositeFinFunction` 
+implementation. However, we often want to simplify a `CompositeFunction` into a 
+more compressed form (which would be more efficient if one were repeatedly 
+calling the function). So implementations are also required to have a method 
+which is used (within `force`) to simplify a `CompositeFunction`. One could 
+demand both pre- and post-composition operations, but just one suffices to 
+
+Often, implementations are naturally postcomposed with another function, because 
+this allows one to keep the same structure but just update the values. However,
+there are _some_ function implementations which do fundamentally change upon 
+postcomposition, such as an `IdentityFinFunction`. Also, in the case of  
+`ConstantFinFunction`s, one more efficiently represents a postcomposition not by 
+mapping over the structure with the same value but by just replacing the
+function with another `ConstantFunction`. `postcompose` is only ever called when
+using `force` to evaluate a `CompositeFunction`.
+"""
+@theory ThFinFunction <: ThFunctionCore begin
+  Fun′::TYPE{FinFunction′}
+  DomSet::TYPE{FinSet}
+  CodSet::TYPE{FinSet}
+  dom()::DomSet # eltype(dom()) <: Dom
+  codom()::CodSet # eltype(codom()) <: Cod
+  postcompose(t::Fun′)::Fun′
 end
 
-@struct_hash_equal struct FinDomFunction <: AbsFinDomFunction
-  fun::SetFunction 
-  function FinDomFunction(s::SetFunction)
-    dom(s) isa FinSet || error("Bad dom $(dom(s))")
-    new(s)
-  end
-end
+ThFinFunction.Meta.@wrapper FinFunction <: FinFunction′
 
-dom(model::AbsFinDomFunction)::AbsSet = dom(getvalue(model))
 
-codom(model::AbsFinDomFunction)::AbsSet = codom(getvalue(model))
+Base.show(io::IO, f::FinFunction) = show(io, getvalue(f))
+(f::FinFunction)(i) = app(f, i)
 
-app(model::AbsFinDomFunction,i::Any) = app(getvalue(model), i)
 
-postcompose(model::AbsFinDomFunction,f::AbsFunction)::AbsFunction = 
-  postcompose(getvalue(model), f)
 
-(f::AbsFinDomFunction)(i) = app(f, i)
-
+"""
+Whether something is monic is a holistic property of a morphism in the context 
+of a whole category. Thus an `is_monic` predicate must implicitly interprets 
+FinFunctions as morphisms in a category. We naturally choose FinSet.
+"""
+is_monic(f::FinFunction) = length(dom(f)) == length(Set(values(collect(f))))
 
 # These could be made to fail early if ever used in performance-critical areas
+"""
+Whether something is an epi is a holistic property of a morphism in the context 
+of a whole category. Thus an `is_monic` predicate must implicitly interprets 
+FinFunctions as morphisms in a category. We naturally choose FinSet.
+"""
 is_epic(f::FinFunction) = length(codom(f)) == length(Set(values(collect(f))))
 
-is_monic(f::AbsFinDomFunction) = length(dom(f)) == length(Set(values(collect(f))))
-
-is_iso(f::AbsFinDomFunction) = is_monic(f) && is_epic(f)
-
-""" Iterate over image of function """
-Base.iterate(f::AbsFinDomFunction, xs...) = iterate(f.(dom(f)), xs...)
-
-Base.length(f::AbsFinDomFunction) = length(dom(f))
-
-Base.eltype(f::AbsFinDomFunction) = eltype(codom(f))
-
-# Indexing 
-##########
-
-""" Preimage of a FinDomFunction """
-preimage(f::AbsFinDomFunction, x) = if x ∈ codom(f)
-  is_indexed(f) && return preimage(getvalue(getvalue(f)), x) # use cached value
-  filter(y -> f(y) == x, collect(dom(f)))
-else
-  error("Cannot take preimage: $x not found in codomain of $f") 
-end
-
-""" A SetFunction is indexed iff its implementation is """
-is_indexed(f::SetFunction) = is_indexed(getvalue(f))
-
-is_indexed(f::AbsFinDomFunction) = is_indexed(getvalue(f))
+is_iso(f::FinFunction) = is_monic(f) && is_epic(f)
 
 
-""" If an implementation specifically comes with its own `preimage` method, we 
-consider the SetFunction to be indexed """
-is_indexed(::T) where T = !isempty(methods(preimage, (T, Any)))
+""" A FinFunction is indexed iff its implementation is """
+is_indexed(f::FinFunction) = is_indexed(getvalue(f))
 
-""" Try to index the function, if it isn't already """
-function ensure_indexed(f::T) where {T<:AbsFinDomFunction}
-  is_indexed(f) && return f
-  if getvalue(getvalue(f)) isa FinFunctionVector
-    return T(collect(f), codom(f); index=true)
-  end
-  f # error("Cannot index $(getvalue(f))")
-end
-
-ensure_indexed(f::SetFunction) = f
-
-# Specializing
-###############
-specialize(f::FinFunction) = f 
-
-specialize(f::FinDomFunction) = 
-  codom(f) isa FinSet ? FinFunction(getvalue(f)) : f
-
-function specialize(f::SetFunction)::AbsFunction
-  if dom(f) isa FinSet 
-    (codom(f) isa FinSet ? FinFunction : FinDomFunction)(f) 
-  else
-    f 
-  end
-end 
-
-# Identity 
-##########
-FinFunction(s::FinSet) = FinFunction(SetFunction(s))
-FinDomFunction(s::FinSet) = FinDomFunction(SetFunction(s))
-
-# Const 
-##########
-FinFunction(s::ConstantFunction) = FinFunction(SetFunction(s))
-FinDomFunction(s::ConstantFunction) = FinDomFunction(SetFunction(s))
-
-# Callables
-###########
-FinFunction(s::SetFunctionCallable) = FinFunction(SetFunction(s))
-
-FinDomFunction(s::SetFunctionCallable) = FinDomFunction(SetFunction(s))
-
-FinFunction(f::Function, d::FinSet, c::FinSet) =
-  FinFunction(SetFunction(f,d,c))
-
-FinDomFunction(f::Function, d::FinSet, c::AbsSet) =
-  FinDomFunction(SetFunction(f,d,c))
-
-# Composites
-############
-FinFunction(f::CompositeFunction) = FinFunction(SetFunction(f))
-FinDomFunction(f::CompositeFunction) = FinDomFunction(SetFunction(f))
-
-function FinFunction(f::AbsFunction, g::AbsFunction) 
-  dom(f) isa FinSet || error("Cannot create composite Finfunction $f $g")
-  codom(g) isa FinSet || error("Cannot create composite Finfunction $f $g")
-  FinFunction(SetFunction(SetFunction(f), SetFunction(g)))
-end
-
-function FinDomFunction(f::AbsFunction, g::AbsFunction) 
-  dom(f) isa FinSet || error("Cannot create composite Finfunction $f $g")
-  FinDomFunction(SetFunction(SetFunction(f), SetFunction(g)))
-end
+is_indexed(f) = false # assume not indexed by default
 
 # ACSet Interface
 #################
 FinFunction(c::Column{Int,Int}, dom, codom) =
-  FinFunction(
-    Int[c[i] for i in dom], codom
-  )
-
-FinDomFunction(c::Column{Int,Int}, dom, codom)  =
-  FinDomFunction([c[i] for i in dom], codom)
+  FinFunction(Int[c[i] for i in dom], codom)

@@ -17,13 +17,12 @@ using GATlab
 
 using ....Theories, ....BasicSets
 import ....Theories: id, compose
-import ....BasicSets: SetOb, SetFunction, force
-
-using ...Cats
+import ....BasicSets: SetOb, SetFunction, force, is_monic, is_epic, is_iso
+using ...Cats, ...SetCats
 import ...Cats: FinDomFunctor, obtype, homtype, obtype, homtype, get_ob, 
                 get_hom, is_natural, naturality_failures
 using ..ACSetTransformations, .Heteromorphisms
-using ..ACSetTransformations: _ACSetTransformation
+using ..ACSetTransformations: _ACSetTransformation, functions
 import ..ACSetTransformations: ACSetTransformation, get_fn, get_set, get_op_fn, 
                                get_attrtype, coerce_hom, coerce_op 
 
@@ -52,7 +51,7 @@ We can refer to generators in the schema profunctor with symbols.
   ACS::TYPE{ACSet};     # ACSet
   ACSHom::TYPE{ACSetTransformation};  # ACSetTransformation 
   SetType::TYPE{FinSet}; # FinSet for `add_parts!`
-  FnType::TYPE{AbsFinDomFunction};  # FinDomFunction for `set_subpart!`
+  FnType::TYPE{FinDomFunction};  # FinDomFunction for `set_subpart!`
 
   # Types which vary between different models
   #------------------------------------------
@@ -122,11 +121,11 @@ function coerce_op(C::ACSetCategory, f::ACSetTransformation, x::Symbol)
 end
 
 
-function get_fn(C::ACSetCategory, f::ACSetTransformation, x::Symbol) 
+function get_fn(C::ACSetCategory, f::ACSetTransformation, x::Symbol)::FinDomFunction
   get_fn(C, coerce_hom(C, f, x), get_ob(C, dom(f), x), get_ob(C, codom(f), x))
 end
 
-function get_op_fn(C::ACSetCategory, f::ACSetTransformation, x::Symbol) 
+function get_op_fn(C::ACSetCategory, f::ACSetTransformation, x::Symbol) ::FinDomFunction
   T = (context = (t = attrtype_type(dom(f), x),),)
   d, cd = get_attrtype(C, dom(f), x), get_attrtype(C, codom(f), x)
   get_op_fn(C, coerce_op(C, f, x), d, cd; T...)
@@ -277,9 +276,10 @@ show_naturality_failures(α::ACSetTransformation) =
 
 force(α::ACSetTransformation; cat=nothing) = map_components(force, α; cat)
 
-map_components(f, α::ACSetTransformation; cat=nothing) =
-  ACSetTransformation(map(f, components(α)), dom(α), codom(α); cat)
-
+function map_components(f, α::ACSetTransformation; cat=nothing) 
+  new_comps = map(f, components(α))
+  ACSetTransformation(new_comps, dom(α), codom(α); cat)
+end
 
 # Cartesian morphisms of acsets
 ###############################
@@ -303,3 +303,31 @@ Expects the homs to be given as a list of `Symbol`s.
 """
 is_cartesian(f,hs=homs(acset_schema(dom(f)),just_names=true)) = 
   all(h->is_cartesian_at(f,h),hs)
+
+# Monic and epic morphisms
+##########################
+function is_monic(α::ACSetTransformation; cat=nothing) 
+  cat = isnothing(cat) ? infer_acset_cat(α) : cat
+  S, 𝒞 = acset_schema(cat), entity_cat(cat)
+  all(o->is_monic[𝒞](α[o]), ob(S)) || return false
+  for k in attrtypes(S)
+    𝒞 = attr_cat(cat, k)
+    is_monic[𝒞](α[k]) || return false
+  end
+  return true 
+end
+
+function is_epic(α::ACSetTransformation; cat=nothing)
+  cat = isnothing(cat) ? infer_acset_cat(α) : cat
+  S, 𝒞 = acset_schema(cat), entity_cat(cat)
+  all(o->is_epic[𝒞](α[o]), ob(S)) || return false
+  for k in attrtypes(S)
+    𝒞 = attr_cat(cat, k)
+    is_epic[𝒞](α[k]) || return false
+  end
+  return true 
+end 
+
+is_iso(α::ACSetTransformation; cat=nothing) = is_monic(α; cat) && is_epic(α; cat)
+
+

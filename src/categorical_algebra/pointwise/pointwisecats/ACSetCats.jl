@@ -25,12 +25,12 @@ but the codomain is discrete (only identity morphisms)
 """
 @struct_hash_equal struct TrivialCodom end 
 
-@instance ThHeteroMorphism{FinSetInt, Nothing, FinFunction, Nothing, AbsFinDomFunction
+@instance ThHeteroMorphism{FinSetInt, Nothing, FinFunction, Nothing, FinDomFunction
                           } [model::TrivialCodom] begin
-  dom(h::AbsFinDomFunction)::FinSetInt = getvalue(dom(h))
-  codom(h::AbsFinDomFunction)::Nothing = nothing
-  pre(a::FinFunction, h::AbsFinDomFunction)::AbsFinDomFunction = compose[SetC()](a, h)
-  post(a::AbsFinDomFunction, ::Nothing)::AbsFinDomFunction = a
+  dom(h::FinDomFunction)::FinSetInt = getvalue(dom(h))
+  codom(::FinDomFunction)::Nothing = nothing
+  pre(a::FinFunction, h::FinDomFunction)::FinDomFunction = precompose(h, a)
+  post(a::FinDomFunction, ::Nothing)::FinDomFunction = a
 end 
 
 # ACSetCategory
@@ -57,7 +57,7 @@ codom(c::ACSetCat, x) = codom(acset_schema(c), x)
 
 @instance ThACSetCategory{
     Ob = FinSetInt, Hom = FinFunction, 
-    AttrType = Nothing, Op = Nothing, Attr = AbsFinDomFunction, 
+    AttrType = Nothing, Op = Nothing, Attr = FinDomFunction, 
     EntityCat = SkelFinSet, AttrCat = TerminalModel′, ProfCat = TrivialCodom
   } [model::ACSetCat] begin
 
@@ -101,10 +101,10 @@ codom(c::ACSetCat, x) = codom(acset_schema(c), x)
 
   get_set(x::FinSetInt) = FinSet(x)
 
-  get_fn(x::FinFunction, ::FinSetInt, ::FinSetInt)::AbsFinDomFunction = x
+  get_fn(x::FinFunction, ::FinSetInt, ::FinSetInt)::FinFunction = x
   
-  get_attr_fn(f::AbsFinDomFunction, ::FinSetInt, ::Nothing)::AbsFinDomFunction = f
-  get_op_fn(::Nothing, ::Nothing, ::Nothing)::AbsFinDomFunction = FinFunction([], FinSet(0))
+  get_attr_fn(f::FinDomFunction, ::FinSetInt, ::Nothing)::FinDomFunction = f
+  get_op_fn(::Nothing, ::Nothing, ::Nothing)::FinDomFunction = FinDomFunction(FinFunction([], FinSet(0)))
 
   get_attr_set(::Nothing) = FinSet()
 
@@ -117,9 +117,6 @@ coerce_attr_component_nothing(o::Symbol, f::SetFunction) =
 
 coerce_attr_component_nothing(o::Symbol, f::Vector) = 
   isempty(f) ? nothing : error("Bad $o component: $f")
-
-# """ The *default* category to interpret an ACSet in """
-# ACSetCategory(x::ACSet) = ACSetCategory(ACSetCat(x))
 
 
 end # module

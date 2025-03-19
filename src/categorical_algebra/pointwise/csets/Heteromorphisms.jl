@@ -35,7 +35,7 @@ pre/post composition is just ordinary composition
 """
 @struct_hash_equal struct SetHeteroMorphism end 
 
-@instance ThHeteroMorphism{AbsSet, AbsSet, SetFunction, SetFunction, SetFunction
+@instance ThHeteroMorphism{SetOb, SetOb, SetFunction, SetFunction, SetFunction
                           } [model::SetHeteroMorphism] begin 
   pre(a::SetFunction, h::SetFunction) = compose[SetC()](a, h)
   post(a::SetFunction, h::SetFunction) = compose[SetC()](a, h)

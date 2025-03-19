@@ -33,7 +33,7 @@ fs = [ SetFunction(x -> x+i, SetOb(Int), SetOb(Int)) for i in 1:3 ]
 CMC = TypedCatWithProducts(𝒞)
 @withmodel CMC (⊗, munit, σ, proj1, proj2, Δ, ◊, id) begin
   @test eltype(SetOb(Int) ⊗ SetOb(String)) == Tuple{Int,String}
-  @test munit() == FinSet(nothing)
+  @test munit() == SetOb(FinSet(nothing))
   @test σ(SetOb(Int), SetOb(String))((1,"foo")) == ("foo",1)
   π1 = proj1(SetOb(Int), SetOb(String))
   π2 = proj2(SetOb(Int), SetOb(String))
@@ -47,10 +47,11 @@ end
 # @test eltype(otimes(CMC, fill(SetOb(Int), 3)...)) == Tuple{Int,Int,Int}
 # @test otimes(CMC, fs)((1,5,10)) == (2,7,13)
 
-
+# no we can't actually take pullbacks in Set
+if false 
 # Pullback of a cospan into non-finite set.
-f = FinDomFunction([:a, :a, :c, :b], SetOb(Symbol))
-g = FinDomFunction([:a, :a, :d, :b], SetOb(Symbol))
+f = FinDomFunction([:a, :a, :c, :b], SetOb(Symbol)) |> SetFunction
+g = FinDomFunction([:a, :a, :d, :b], SetOb(Symbol)) |> SetFunction
 π1, π2 = lim = pullback[𝒞](f, g)
 @test ob(lim) == FinSet(5)
 @test force(π1) == FinFunction([1,1,2,2,4], 4)
@@ -84,12 +85,13 @@ lim = (ι,) = limit[𝒞](d)
 # Two pullbacks, which should be reduced to a single pullback by pairing.
 f1, f2 = FinDomFunction.([[1,1,2,2,3,3],[1,2,3]], Ref(SetOb(Int))) 
 g1, g2 = FinDomFunction.([[:a,:a,:a,:b,:b,:b],[:a,:b,:c]], Ref(SetOb(Symbol)))
-d = BipartiteFreeDiagram{AbsSet,AbsFunction}()
+d = BipartiteFreeDiagram{SetOb,SetFunction}()
 add_vertices₁!(d, 2; ob₁=[FinSet(6), FinSet(3)])
 add_vertices₂!(d, 2; ob₂=[SetOb(Int), SetOb(Symbol)])
 add_edges!(d, [1,1,2,2], [1,2,1,2], hom=[f1,g1,f2,g2])
 lim = π1, π2 = limit[𝒞](d)
 @test π1 == FinFunction([1,2,4], 6)
 @test π2 == FinFunction([1,1,2], 3)
+end # false 
 
 end # module

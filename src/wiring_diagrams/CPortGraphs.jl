@@ -192,7 +192,7 @@ function ocompose(g::AbstractBundledCPG, xs::Vector)
   for op in parts(g, :OuterPort)
     i = g[op, [:con, :box]]
     localport = only(findall(op .== incident(g, i, :box)))
-    newop = legs(u.cocone)[i][:Port](incident(xs[i], localport, :bun))
+    newop = legs(u.cocone)[i][:Port].(incident(xs[i], localport, :bun))
     add_parts!(xsum, :OuterPort, length(newop), con=newop, bun=op)
   end
   return xsum

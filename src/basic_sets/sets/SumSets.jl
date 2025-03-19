@@ -6,7 +6,7 @@ using StructEquality, MLStyle
 
 using GATlab
 
-using ..Sets: ThSet, AbsSet
+using ..Sets: ThSet, SetOb
 
 """ An element tagged by an integer """
 @struct_hash_equal struct TaggedElem{I, T} 
@@ -60,7 +60,7 @@ Unbiased disjoint union type. In order to not conflate values, we need to wrap
 them in `TaggedElem` which adds an integer type parameter.
 """
 @struct_hash_equal struct SumSet
-  sets::Vector{AbsSet}
+  sets::Vector{SetOb}
 end
 
 GATlab.getvalue(s::SumSet) = s.sets
@@ -103,7 +103,7 @@ Unbiased disjoint union type. In order to not conflate values, we need to wrap
 them in `TaggedElem` which adds an integer type parameter.
 """
 @struct_hash_equal struct NamedSumSet
-  sets::Dict{Any, AbsSet}
+  sets::Dict{Any, SetOb}
 end
 
 GATlab.getvalue(s::NamedSumSet) = s.sets

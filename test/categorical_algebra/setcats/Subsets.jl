@@ -5,16 +5,10 @@ using Test, Catlab
 X = FinSet(10)
 A, B = SubFinSet(X, [1,2,5,6,8,9]), SubFinSet(X, [2,3,5,7,8])
 
-m = SubOpCatLimits(FinSetC())
-meet[m](A, B)
-
-
 @test ob(A) == X
 A_pred = SubFinSet(Bool[1,1,0,0,1,1,0,1,1,0])
 @test hom(A) == hom(A_pred)
 @test predicate(A) == predicate(A_pred)
-
-
 
 # Lattice of subsets.
 @withmodel SubobjectElementWise()  (∧, ∨, ⊤, ⊥) begin 

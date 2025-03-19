@@ -6,7 +6,7 @@ using StructEquality
 
 using GATlab
 
-using ..Sets: ThSet, AbsSet, SetOb
+using ..Sets: ThSet, SetOb
 import ..UnionSets: left, right
 
 # Should this really be exported by GATlab?
@@ -30,8 +30,8 @@ Disjoint union type. In order to not conflate values, we need to wrap one
 of the sets in `Left` and one in `Right`. 
 """
 @struct_hash_equal struct EitherSet
-  left::AbsSet
-  right::AbsSet
+  left::SetOb
+  right::SetOb
 end
 
 # Accessors
@@ -62,7 +62,6 @@ end
 # Constructors
 ##############
 
-either(a::AbsSet, b::AbsSet) = 
-  SetOb(EitherSet(a,b))
+either(a::SetOb, b::SetOb) = SetOb(EitherSet(a,b))
 
 end # module

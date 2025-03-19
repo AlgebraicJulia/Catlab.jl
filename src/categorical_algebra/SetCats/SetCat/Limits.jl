@@ -5,18 +5,18 @@ using GATlab, ACSets
 
 using .....Theories, .....Graphs, .....BasicSets
 using ....Cats
-using ... SetCats: FinSetIndexedLimit, FinSetC
+using ...SetCats: FinSetIndexedLimit, FinSetC
 using ..SetCat: SetC
 
 ############
 # Terminal #
 ############
 
-@instance ThCategoryWithTerminal{AbsSet,AbsFunction} [model::SetC] begin 
+@instance ThCategoryWithTerminal{SetOb,SetFunction} [model::SetC] begin 
 
-  limit(d::EmptyDiagram)::AbsLimit = limit[FinSetC()](d)
+  limit(::EmptyDiagram)::AbsLimit = TerminalLimit{SetOb,SetFunction}(SetOb(nothing))
   function universal(::AbsLimit, ::EmptyDiagram, a::Multispan)
-    SetFunction(ConstantFunction(nothing, apex(a), FinSet(nothing))) |> specialize
+    SetFunction(ConstantFunction(nothing, apex(a), SetOb(nothing)))
   end
                                   
 end
@@ -25,29 +25,29 @@ end
 # Products #
 ############
 
-@instance ThCategoryUnbiasedProducts{AbsSet,SetFunction} [model::SetC] begin 
+@instance ThCategoryUnbiasedProducts{SetOb,SetFunction} [model::SetC] begin 
 
   function limit(a::DiscreteDiagram)::AbsLimit
-    all(s -> s isa FinSet, a) && return limit[FinSetC()](a)
+    # all(s -> s isa FinSet, a) && return limit[FinSetC()](a) # TODO make a FinSetLimitAsSetLimit wrapper?
     X = SetOb(ProdSet(collect(a)))
     πs = [ SetFunction(x -> getindex(x, i), X, Xi) for (i, Xi) in enumerate(a)]
     LimitCone(Multispan(X, πs), FreeDiagram(a))
   end  
 
   function universal(res::AbsLimit, ::DiscreteDiagram, span::Multispan) 
-    Xs = feet(res)
-    if !all(X -> X isa FinSet, Xs)
+    # Xs = feet(res)
+    # if !all(X -> X isa FinSet, Xs)
       @assert length(cone(res)) == length(span)
       fs = Tuple(legs(span))
-      SetFunction(x -> map(f -> f(x), fs), apex(span), ob(res)) |> specialize
-    else
-      ns = length.(codom.(span))
-      indices = LinearIndices(Tuple(ns))
-      v = map(apex(cone)) do i 
-        indices[(f(i) for f in span)...]
-      end
-      FinFunction(v, apex(res))  
-    end
+      SetFunction(x -> map(f -> f(x), fs), apex(span), ob(res))
+    # else TODO?
+    #   ns = length.(codom.(span))
+    #   indices = LinearIndices(Tuple(ns))
+    #   v = map(apex(cone)) do i 
+    #     indices[(f(i) for f in span)...]
+    #   end
+    #   FinFunction(v, apex(res))  
+    # end
   end
 end
 
@@ -55,32 +55,29 @@ end
 # Equalizers #
 ##############
 
-@instance ThCategoryWithEqualizers{FinSet, FinFunction} [model::SetC] begin 
+@instance ThCategoryWithEqualizers{SetOb, SetFunction} [model::SetC] begin 
 
-  function limit(para::ParallelMorphisms)::AbsLimit
+  function limit(para::ParallelMorphisms)::AbsLimit  
     @assert !isempty(para)
-    d = dom(para)
-    eq_test(i) = allequal([f(i) for f in para])
-    eq = if d isa FinSet 
-      FinFunction(Dict(x=>x for x in collect(d) if eq_test(x)), d)
-    else 
-      SetFunction(SetFunctionCallable(identity, 
-                                      PredicatedSet(eltype(d), eq_test), d)) 
-    end
-    LimitCone(Multispan(dom(eq), [eq]), FreeDiagram(para))
-
+    f1, frest = coerce_findom(para[1]), coerce_findom.(para[2:end])
+    domset = collect(FinSet(dom(para)))
+    eq = SetFunction(identity, SetOb(FinSet(Set(filter(i -> all(f->f1(i) == f(i), frest), domset)))), dom(para))
+    LimitCone(Multispan(dom[model](eq), [eq]; cat=model), FreeDiagram(para))
   end
 
   function universal(res::AbsLimit, ::ParallelMorphisms, x::Multispan) 
-    error("TODO")
+    ι = collect(only(cone(res)))
+    h = only(x)
+    SetFunction(FinFunction(Int[only(searchsorted(ι, h(i))) for i in dom(h)], length(ι)))
   end  
 end
+
 
 #############
 # Pullbacks #
 #############
-
-@instance ThCategoryWithPullbacks{AbsSet, SetFunction} [model::SetC] begin 
+# THIS CODE SEEMS TO RELY ON SOME OF THE FUNCTIONS BEING FINDOMFUNCTIONS
+@instance ThCategoryWithPullbacks{SetOb, SetFunction} [model::SetC] begin 
   function limit(cospan::Multicospan)::AbsLimit 
     # Handle the important special case where one of the legs is a constant
     # (function out of a singleton set). In this case, we just need to take a
@@ -90,7 +87,7 @@ end
     if !isnothing(i)
       c = funcs[i](1)
       ιs = map(deleteat′(funcs, i)) do f
-        FinFunction(preimage(f, c), dom(f))
+        SetFunction(FinFunction(preimage(coerce_findom(f), c), FinSet(dom(f))))
       end
       x, πs = if length(ιs) == 1
         dom(only(ιs)), ιs
@@ -98,7 +95,7 @@ end
         prod = limit[model](DiscreteDiagram(map(dom, ιs)))
         ob[model](prod), map(compose[model], legs(prod), ιs)
       end
-      πs = insert′(πs, i, FinFunction(ConstantFunction(1, x, FinSet(1))))
+      πs = insert′(πs, i, SetFunction(ConstantFunction(1, x, SetOb(1))))
       return FinSetIndexedLimit(FreeDiagram(cospan), Multispan(x, πs))
     end
     # In the general case, for now we always just do a hash join, although
@@ -120,7 +117,7 @@ function hash_join(cospan::Multicospan{Ob, Hom}, model) where {Ob,Hom}
   # We choose as probe the unindexed function with largest domain. If all
   # functions are already indexed, we arbitrarily choose the first one.
   i = argmax(map(legs(cospan)) do f
-    is_indexed(f) ? -1 : length(dom[model](f))
+    is_indexed(f) ? -1 : length(dom(f))
   end)
   probe = legs(cospan)[i]
   builds = map(ensure_indexed, deleteat′(legs(cospan), i))
@@ -138,11 +135,11 @@ insert′(vec::Vector{T}, i, x::S) where {T,S} =
 insert′(vec::StaticVector{N,T}, i, x::S) where {N,T,S} =
   StaticArrays.insert(similar_type(vec, typejoin(T,S))(vec), i, x)
 
-function hash_join(builds::AbstractVector, probe::AbsFinDomFunction)
+function hash_join(builds::AbstractVector, probe::SetFunction)
   π_builds, πp = map(_ -> Int[], builds), Int[]
   for y in dom(probe)
     val = probe(y)
-    preimages = map(build -> preimage(build, val), builds)
+    preimages = map(build -> preimage(coerce_findom(build), val), builds)
     n_preimages = Tuple(map(length, preimages))
     n = prod(n_preimages)
     if n > 0
@@ -154,7 +151,8 @@ function hash_join(builds::AbstractVector, probe::AbsFinDomFunction)
       append!(πp, (y for i in 1:n))
     end
   end
-  (map(FinFunction, π_builds, map(dom, builds)), FinFunction(πp, dom(probe)))
+  to_probe = SetFunction(FinFunction(πp, FinSet(dom(probe))))
+  (SetFunction.(FinFunction.(π_builds, FinSet.(dom.(builds)))), to_probe)
 end
 
 function hash_join(build::FinDomFunction, probe::FinDomFunction)
@@ -174,7 +172,7 @@ end
 # Bipartite #
 #############
 
-@instance ThCategoryWithBipartiteLimits{AbsSet, SetFunction} [model::SetC] begin 
+@instance ThCategoryWithBipartiteLimits{SetOb, SetFunction} [model::SetC] begin 
   function limit(d::BipartiteFreeDiagram)::AbsLimit  
     # As in a pullback, this method assumes that all objects in layer 2 have
     # incoming morphisms.
@@ -222,7 +220,7 @@ end
       pb = pullback[model](SVector(hom(d, join_edges)...))
 
       # Create a new bipartite diagram with joined vertices.
-      d_joined = BipartiteFreeDiagram{AbsSet,AbsFunction}()
+      d_joined = BipartiteFreeDiagram{SetOb,SetFunction}()
       copy_parts!(d_joined, d, V₁=to_keep, V₂=setdiff(vertices₂(d),v), E=edges(d))
       joined = add_vertex₁!(d_joined, ob₁=apex(pb))
       for (u, π) in zip(to_join, legs(pb))
@@ -236,7 +234,7 @@ end
       lim = limit[model](d_joined)
 
       # Assemble limit cone from cones for pullback and reduced limit.
-      πs = Vector{FinFunction}(undef, nv₁(d))
+      πs = Vector{SetFunction}(undef, nv₁(d))
       for (i, u) in enumerate(to_join)
         πs[u] = compose[model](last(legs(lim)), compose[model](legs(pb)[i], ιs[u]))
       end

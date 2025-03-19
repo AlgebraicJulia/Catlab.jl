@@ -1,4 +1,4 @@
-export AbsSet, SetOb
+export SetOb
 
 using StructEquality
 
@@ -20,19 +20,15 @@ type should be provided which includes all elements of the set.
   eltype()::Type′
 end
 
-""" There are two kinds of Abstract Set. `SetOb` and `FinSet`."""
-abstract type AbsSet end
-
-""" Fix the order of contains """
-Base.in(x, s::AbsSet) = ThSet.contains[getvalue(s)](x)
-
 # Wrapper type for Models of ThSet
 ##################################
 """
 Generic type for a set. It has some implementation of the theory of sets and 
 a model which provides the information for how it implements the theory.
 """
-ThSet.Meta.@wrapper SetOb <: AbsSet
+ThSet.Meta.@wrapper SetOb
 
 Base.show(io::IO, s::SetOb) = show(io, getvalue(s))
 
+""" Fix the order of contains """
+Base.in(x, s::SetOb) = ThSet.contains[getvalue(s)](x)

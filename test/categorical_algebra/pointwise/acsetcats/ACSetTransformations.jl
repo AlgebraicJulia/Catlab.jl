@@ -25,4 +25,7 @@ uns = naturality_failures(β)
 @test collect(uns[:tgt]) == [(1,2,3)] 
 @test collect(uns[:weight]) == [(1, 1.,2.)]
 
+# Monic / epic
+@test is_epic(id[𝒞](g))
+
 end # module

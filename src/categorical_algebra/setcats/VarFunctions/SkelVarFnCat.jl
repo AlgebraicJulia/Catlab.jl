@@ -21,13 +21,13 @@ end
 
   dom(f::FinDomFunction)::FinSetInt = getvalue(dom(f))
 
-  codom(f::FinDomFunction)::FinSetInt = getvalue(left(getvalue(codom(f))))
+  codom(f::FinDomFunction)::FinSetInt = getvalue(getvalue(getvalue(left(getvalue(codom(f))))))
   
   """ 
   Because Union{} subtypes all other types, this can compose with any other 
   morphism 
   """
-  id(x::FinSetInt)::FinDomFunction = pure(FinDomFunction(FinSet(x)), T)
+  id(x::FinSetInt)::FinDomFunction = pure(FinFunction(FinSet(x)), T)
 
   """
   f: o -> n + T
@@ -41,7 +41,9 @@ end
   """
   function compose(f::FinDomFunction, g::FinDomFunction)
     NT, MT, N′ = getvalue.([codom(f), codom(g), dom(g)])
-    N,  M, = getvalue.([NT.left, MT.left])
+    NM = getvalue.([NT.left, MT.left])
+    all(T -> T isa FinSetAsSet, NM)
+    N, M = getvalue.(getvalue.(NM))
 
     # Validate
     N isa FinSetInt || error("Bad N $N")
@@ -50,15 +52,23 @@ end
 
     kl(x::Left) = g(getvalue(x))
     kl(x::Right) = x
-
-    FinDomFunction(SetFunction(f, SetFunction(SetFunctionCallable(
-      kl, FinSet(N), SetOb(MT))))) # compose
+    ThFinDomFunction.postcompose(f, SetFunction(SetFunctionCallable(
+      kl, codom(f), codom(g)))) # compose
   end
 end
 
 """ Convert a function n->m into a function n->m+T """
-function pure(f::AbsFunction, T::Type)
-  SetFunction(f, SetFunction(SetFunctionCallable(
-    Left, codom(f), either(codom(f), SetOb(T))))) |> specialize
+function pure(f::FinFunction, T::Type)::FinDomFunction
+  precompose(FinDomFunction(
+    x->Left(x), dom(f), either(SetOb(codom(f)), SetOb(T))), f)
 end
 
+
+@instance ThCategoryWithMonicsEpics{FinSetInt, FinDomFunction
+                                } [model::SkelKleisli{T}] where T begin
+
+  is_monic(f::FinDomFunction) = all(x->x isa Left, collect(f)) && is_monic(f)
+  function is_epic(f::FinDomFunction) 
+    collect(codom[model](f)) ⊆ getvalue.(collect(f))
+  end
+end

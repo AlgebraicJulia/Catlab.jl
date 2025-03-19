@@ -7,11 +7,11 @@ using StructEquality
 
 using GATlab
 
-using ..Sets: ThSet, AbsSet
+using ..Sets: ThSet, SetOb
 
 """ Union type """
 @struct_hash_equal struct UnionSet
-  sets::AbstractVector{AbsSet}
+  sets::AbstractVector{SetOb}
 end
 
 # Accessors

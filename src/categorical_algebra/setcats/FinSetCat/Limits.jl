@@ -33,13 +33,12 @@ end
   function limit(d::DiscreteDiagram)::AbsLimit  
     Xs = collect(d)
     P = ProdSet(Xs) |> FinSet
-    πs = [FinFunction(SetFunctionCallable(tup -> tup[j], P, X)) 
-          for (j, X) in enumerate(Xs)]
+    πs = [FinFunction(tup -> tup[j], P, X) for (j, X) in enumerate(Xs)]
     LimitCone(Multispan(P, πs, Xs), FreeDiagram(d))
   end
 
   universal(lim::AbsLimit, ::DiscreteDiagram, fs::Multispan) = 
-    FinFunction(SetFunctionCallable(i -> tuple([f(i) for f in fs]...), apex(fs), ob(lim)))
+    FinFunction(i -> tuple([f(i) for f in fs]...), apex(fs), ob(lim))
 
 end
 
@@ -47,6 +46,25 @@ end
 ##############
 # Equalizers #
 ##############
+
+# @instance ThCategoryWithEqualizers{FinSet, FinFunction} [model::FinSetC] begin 
+#   function limit(para::ParallelMorphisms)::AbsLimit
+#     @assert !isempty(para)
+#     d = dom(para)
+#     eq_test(i) = allequal([f(i) for f in para])
+#     eq = if d isa FinSet 
+#       FinFunction(Dict(x=>x for x in collect(d) if eq_test(x)), d)
+#     else 
+#       SetFunction(SetFunctionCallable(identity, 
+#                                       PredicatedSet(eltype(d), eq_test), d)) 
+#     end
+#     LimitCone(Multispan(dom(eq), [eq]), FreeDiagram(para))
+#   end
+#   function universal(res::AbsLimit, ::ParallelMorphisms, x::Multispan) 
+#     error("TODO")
+#   end  
+# end
+
 
 
 @instance ThCategoryWithEqualizers{FinSet, FinFunction} [model::FinSetC] begin 
@@ -246,7 +264,11 @@ insert(vec::Vector{T}, i, x::S) where {T,S} =
 insert(vec::StaticVector{N,T}, i, x::S) where {N,T,S} =
   StaticArrays.insert(similar_type(vec, typejoin(T,S))(vec), i, x)
 
-function hash_join(builds::AbstractVector, probe::AbsFinDomFunction)
+""" Coerce probe to a FinDomFunction """
+hash_join(builds::AbstractVector, probe::FinFunction) = 
+  hash_join(builds, FinDomFunction(probe))
+
+function hash_join(builds::AbstractVector, probe::FinDomFunction)
   π_builds, πp = map(_ -> Int[], builds), Int[]
   for y in dom(probe)
     val = probe(y)

@@ -7,14 +7,14 @@ using StructEquality, MLStyle
 using GATlab
 
 import ....Theories: product
-using ..Sets: ThSet, AbsSet
+using ..Sets: ThSet, SetOb
 
 
 """ 
 Unbiased Cartesian product.
 """
 @struct_hash_equal struct ProdSet
-  sets::Vector{AbsSet}
+  sets::Vector{SetOb}
 end
 
 GATlab.getvalue(s::ProdSet) = s.sets
@@ -43,6 +43,6 @@ end
 # constructors
 ###############
 
-product(xs::AbsSet...) = SetOb(ProdSet(xs))
+product(xs::SetOb...) = SetOb(ProdSet(xs))
 
 end # module

@@ -12,7 +12,7 @@ g = FinFunction([1,1,2,2,3], 3)
 h = FinFunction([3,1,2], 3)
 k = FinFunction([1,3,4],3,5)
 @test f isa FinFunction
-@test getvalue(getvalue(f)) isa FinFunctionVector
+@test getvalue(f) isa FinFunctionVector
 @test (dom(f), codom(f)) == (FinSet(3), FinSet(5))
 @test force(f) === f
 @test codom(FinFunction([1,3,4], 4)) == FinSet(4)
@@ -21,7 +21,7 @@ k = FinFunction([1,3,4],3,5)
 X = FinSet(Set([:w,:x,:y,:z]))
 k = FinFunction(Dict(:a => :x, :b => :y, :c => :z), X)
 ℓ = FinFunction(Dict(:w => 2, :x => 1, :y => 1, :z => 4), FinSet(4))
-@test getvalue(getvalue(ℓ)) isa FinFunctionDict
+@test getvalue(ℓ) isa FinFunctionDict
 @test getvalue(dom(ℓ)) isa FinSetHash{Symbol}
 @test (dom(k), codom(k)) == (FinSet(Set([:a, :b, :c])), X)
 @test (dom(ℓ), codom(ℓ)) == (X, FinSet(4))
@@ -34,22 +34,22 @@ rot3(x) = (x % 3) + 1
 @test map(f, 1:3) == [1,3,4]
 @test map(k, [:a,:b,:c]) == [:x,:y,:z]
 @test map(FinFunction(rot3, FinSet(3), FinSet(3)), 1:3) == [2,3,1]
-@test map(SetFunction(FinSet(3)), 1:3) == [1,2,3]
+@test map(FinFunction(FinSet(3)), 1:3) == [1,2,3]
 
 # Composition.
-force_compose(x...) = force(SetFunction(x...))
+force_compose(x...) = force(FinFunction(x...))
 @test force_compose(f,g) == FinFunction([1,2,2], 3)
 @test force_compose(g,h) == FinFunction([3,3,1,1,2], 3)
 @test force_compose(k,ℓ) == FinFunction(Dict(:a => 1, :b => 1, :c => 4), FinSet(4))
 @test force_compose(force_compose(f,g),h) == force_compose(f,force_compose(g,h))
-@test force_compose(SetFunction(dom(f)), f) == f
-@test force_compose(f, SetFunction(codom(f))) == f
+@test force_compose(FinFunction(dom(f)), f) == f
+@test force_compose(f, FinFunction(codom(f))) == f
 
 
 # Indexing.
 f = FinFunction([1,3,4], 5)
 @test !is_indexed(f)
-@test is_indexed(SetFunction(FinSet(3)))
+@test is_indexed(FinFunction(FinSet(3)))
 @test preimage(FinFunction(FinSet(3)), 2) == [2]
 
 f = FinFunction([1,2,1,3], 5, index=true)
@@ -68,8 +68,8 @@ g = FinFunction(5:-1:1, 5)
 
 # Pretty-print.
 @test sshow(FinFunction(rot3, FinSet(3), FinSet(3))) ==
-  "SetFunction(rot3, FinSet(3), FinSet(3))"
-@test sshow(SetFunction(FinSet(3))) == "id(FinSet(3))"
+  "FinFunction(rot3, FinSet(3), FinSet(3))"
+@test sshow(FinFunction(FinSet(3))) == "id(FinSet(3))"
 @test sshow(FinFunction([1,3,4], 5)) == "FinFunction($([1,3,4]), FinSet(5))"
 @test sshow(FinFunction([1,3,4], 5, index=true)) ==
   "FinFunction($([1,3,4]), FinSet(5), index=true)"
@@ -102,13 +102,13 @@ k = FinDomFunction([:a,:b,:c,:d,:e], SetOb(Symbol))
   "FinDomFunction($([:a,:b,:c,:d,:e]), TypeSet(Symbol))"
 
 f = FinFunction([1,3,4], 5)
-@test force_compose(f,k) == FinDomFunction([:a,:c,:d], SetOb(Symbol))
+@test force(FinDomFunction(f, k)) == FinDomFunction([:a,:c,:d], SetOb(Symbol))
 
 # Indexing.
 @test !is_indexed(k)
 @test preimage(k, :c) == [3]
 
-k = FinDomFunction(5:10, 10)
+k = FinFunction(5:10, 10)
 @test !is_indexed(k) # why would this have been indexed before?
 @test preimage(k, 6) == [2]
 @test isempty(preimage(k, 4))
@@ -124,7 +124,7 @@ k = FinDomFunction([:a,:b,:a,:c], SetOb(Symbol), index=true)
   "FinDomFunction($([:a,:b,:a,:c]), TypeSet(Symbol), index=true)"
 
 f = FinFunction([1,3,2], 4)
-@test force_compose(f,k) == FinDomFunction([:a,:a,:b], SetOb(Symbol))
+@test force(FinDomFunction(f,k)) == FinDomFunction([:a,:a,:b], SetOb(Symbol))
 
 # Codomain checks
 #################
@@ -142,5 +142,13 @@ h = FinDomFunction(strfunc,strings,index=true,check=true) #known_correct does no
 @test_throws ErrorException h = FinFunction(badfunc,four,index=true, check=true)
 @test_throws ErrorException l = FinFunction(badfunc,four; check=true)
 @test_throws ErrorException m = FinFunction(badfunc,four,index=true, check=true)
+
+# Casting Fin(Dom)Functions
+############################
+f = FinFunction([1,3,4], 5)
+f′ = FinDomFunction(f)
+f′′ = SetFunction(f′)
+f′′′ = SetFunction(f)
+@test f′′ == f′′′
 
 end # module

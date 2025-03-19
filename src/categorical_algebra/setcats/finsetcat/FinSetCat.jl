@@ -27,7 +27,7 @@ using .ThCategory
   function compose(f::FinFunction, g::FinFunction)::FinFunction
     codom[model](f) == dom[model](g) ||
       error("Domain mismatch in composition: $(codom(f)) != $(dom(g))")
-    FinFunction(SetFunction(getvalue(f), getvalue(g)))
+    postcompose(f,g)
   end
 
 end
@@ -39,6 +39,13 @@ end
 
   hom_set() = SetOb(FinFunction)
 
+end
+
+@instance ThCategoryWithMonicsEpics{FinSet, FinFunction
+                                } [model::FinSetC] begin
+
+  is_monic(f::FinFunction) = is_monic(f)
+  is_epic(f::FinFunction) = is_epic(f)
 end
 
 @instance ThCategoryColimitBase{FinSet,FinFunction} [model::FinSetC] begin 

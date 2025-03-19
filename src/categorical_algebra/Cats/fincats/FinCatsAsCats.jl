@@ -1,9 +1,11 @@
 module FinCatsAsCats
 
+export FinCatAsCat
+
 using StructEquality
 using GATlab 
 
-using .....BasicSets: AbsSet
+using .....BasicSets: SetOb
 using ...Categories: ThCategoryExplicitSets
 import ...Categories: Category
 
@@ -36,9 +38,9 @@ GATlab.getvalue(f::FinCatAsCat) = f.val
     compose(c, vcat(decompose(c, f), decompose(c, g)))
   end
 
-  ob_set() = ob_set(getvalue(model))
+  ob_set()::SetOb = SetOb(ob_set(getvalue(model)))
 
-  hom_set() = hom_set(getvalue(model))
+  hom_set()::SetOb = hom_set(getvalue(model))
 end
 
 

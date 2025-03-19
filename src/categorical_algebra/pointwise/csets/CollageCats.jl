@@ -40,9 +40,9 @@ end
                                 } [model::CollageCat{DO,CO,DH,CH,Het}
                                   ] where {DO,CO,DH,CH,Het} begin
 
-  ob_set()::AbsSet = UnionSet(ob_set.([model.domcat,model.codcat])) |> SetOb
+  ob_set()::SetOb = UnionSet(ob_set.([model.domcat,model.codcat])) |> SetOb
 
-  function hom_set()::AbsSet
+  function hom_set()::SetOb
     UnionSet([hom_set.([model.domcat,model.codcat])..., 
             SetOb(impl_type(model.hetero, :Het))]) |> SetOb
   end

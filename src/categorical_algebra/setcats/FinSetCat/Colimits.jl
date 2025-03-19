@@ -30,15 +30,14 @@ end
   function colimit(d::DiscreteDiagram)::AbsColimit
     Xs = collect(d)
     S = SumSet(Xs) |> FinSet
-    ιs = [FinFunction(SetFunctionCallable(i->TaggedElem(i, j), X, S)) 
-          for (j, X) in enumerate(Xs)]
+    ιs = [FinFunction(i->TaggedElem(i, j), X, S) for (j, X) in enumerate(Xs)]
     csp = Multicospan{FinSet, FinFunction, FinSet}(S, ιs, Xs)
     ColimitCocone(csp, FreeDiagram(d))
   end
 
   function universal(lim::AbsColimit,::DiscreteDiagram, cocone::Multicospan)
     fun(t::TaggedElem) = cocone[getidx(t)](getvalue(t))
-    FinFunction(SetFunctionCallable(fun, ob(lim), FinSet(apex(cocone))))  
+    FinFunction(fun, ob(lim), FinSet(apex(cocone)))
   end
 end
 

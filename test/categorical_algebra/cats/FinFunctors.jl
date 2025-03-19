@@ -64,14 +64,14 @@ end
 C = FinCat(parallel_arrows(Graph, 2))
 f, g = FinFunction([1,3], 3), FinFunction([2,3], 3)
 𝒞 = Cat(TypeCat(SetC()))
-F = FinDomFunctor([FinSet(2), FinSet(3)], [f,g], C, 𝒞)
+F = FinDomFunctor(SetOb.(FinSet.(2:3)), SetFunction.([f,g]), C, 𝒞)
 @test is_functorial(F)
 @test dom(F) == C
 @test codom(F) == 𝒞
 # @test startswith(sprint(show, F), "FinDomFunctor(")
 
-@test ob_map(F, 1) == FinSet(2)
-@test gen_map(F, 2) == g
+@test ob_map(F, 1) == SetOb(FinSet(2))
+@test gen_map(F, 2) == SetFunction(g)
 
 
 # Initial functors

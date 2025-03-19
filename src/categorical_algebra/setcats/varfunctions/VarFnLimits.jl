@@ -16,7 +16,7 @@ using ..VarFunctions
   end  
   function universal(::AbsColimit,::DiscreteDiagram, cocone::Multicospan)
     v = mapreduce(collect, vcat, cocone, init=Union{Left{Int},Right{T}}[])
-    FinDomFunction(v, either(FinSet(apex(cocone)), SetOb(T)))  
+    FinDomFunction(v, either(SetOb(FinSet(apex(cocone))), SetOb(T)))  
   end
 end
 
@@ -69,7 +69,7 @@ function quotient_projection(sets::DisjointSets, nₓ::Int, T::Type)
   left_elems = sort(collect(filter(x -> x isa Left, unique(vec))))
   left_elem_dict = Dict(y =>Left(x) for (x,y) in enumerate(left_elems))
   FinDomFunction([v isa Right ? v : left_elem_dict[v] for v in vec], 
-                 either(FinSet(length(left_elems)), SetOb(T)))
+                 either(SetOb(length(left_elems)), SetOb(T)))
 end
 
 
@@ -77,8 +77,8 @@ end
 
 Left values are variables. Quotient is only ill-defined if Right values conflict.
 """
-function pass_to_quotient(π::AbsFinDomFunction, h::AbsFinDomFunction)
-  q = Vector{eltype(codom(h))}(fill(Left(0), length(left(getvalue(codom(π))))))
+function pass_to_quotient(π::FinDomFunction, h::FinDomFunction)
+  q = Vector{eltype(codom(h))}(fill(Left(0), length(getvalue(getvalue(left(getvalue(codom(π))))))))
   for i in dom(h)
     j = π(i)
     j isa Right && continue

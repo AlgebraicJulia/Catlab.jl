@@ -5,7 +5,7 @@ using ACSets, GATlab
 import ACSets: acset_schema
 using ACSets.DenseACSets: attrtype_type
 
-using .....BasicSets: AbsSet, SetOb
+using .....BasicSets: SetOb
 using ....Cats: Category, ThCategoryExplicitSets, dom, codom, compose, id, ThCategory
 using ...ACSetTransformations: ACSetTransformation
 using ...CSets

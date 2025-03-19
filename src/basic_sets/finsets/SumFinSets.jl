@@ -6,10 +6,10 @@ using StructEquality, MLStyle
 
 using GATlab
 
-using ..Sets: TaggedElem
+using ..Sets: TaggedElem, Tagged, SetOb
 import ..Sets: SumSet
 
-using ..FinSets: ThFinSet
+using ..FinSets: ThFinSet, FinSetAsSet
 import ..FinSets: FinSet
 
 
@@ -20,6 +20,8 @@ them in `TaggedElem` which adds an integer type parameter.
 @struct_hash_equal struct SumFinSet
   sets::Vector{FinSet}
 end
+
+SumSet(sets::Vector{FinSet}) = SumFinSet(sets)
 
 GATlab.getvalue(s::SumFinSet) = s.sets
 
@@ -41,9 +43,10 @@ Base.length(e::SumFinSet) = length(getvalue(e))
 
 @instance ThFinSet [model::SumFinSet] begin
 
-  contains(i::Any)::Bool = ThFinSet.contains[SumSet(model)](i) # reuse implementation
+  # reuse implementation defined for `SumSet` by casting to a `SumSet`
+  contains(i::Any)::Bool = ThFinSet.contains[SumSet(SetOb.(model))](i)
 
-  eltype()::Any = ThFinSet.eltype[SumSet(model)]()
+  eltype()::Any = Tagged(eltype.(model))
 
   length()::Int = sum(length.(model))
 

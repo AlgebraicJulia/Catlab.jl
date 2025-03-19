@@ -7,7 +7,7 @@ module FinForce
 
 using GATlab: getvalue
 
-using ...FinSets: FinSetInt, FinSet, AbsSet
+using ...FinSets: FinSetInt, FinSet
 using ...SetFunctions: SetFunction, dom, codom
 import ...SetFunctions: force
 
@@ -17,15 +17,14 @@ using ..FinFunctions, ..FinFnVector, ..FinFnDict
 Special `force` method for FinDomFunction - we know we can normalize to a 
 FinFunctionDict or FinFunctionVect
 """
-function force(s::AbsFinDomFunction)
-  i = getvalue(getvalue(s))
-  F = s isa FinFunction ? FinFunction : FinDomFunction
+function force(s::FinFunction)::FinFunction
+  i = getvalue(s)
   if getvalue(dom(s)) isa FinSetInt
     i isa AbsFinFunctionVector && return s
-    return F([s(elem) for elem in dom(s)], dom(s), codom(s); index=is_indexed(i))
+    return FinFunction([s(elem) for elem in dom(s)], dom(s), codom(s); index=is_indexed(s))
   else
     i isa FinFunctionDict && return s 
-    return F(Dict(k => s(k) for k in dom(s)), dom(s), codom(s))
+    return FinFunction(Dict(k => s(k) for k in dom(s)), dom(s), codom(s))
   end
 end
 

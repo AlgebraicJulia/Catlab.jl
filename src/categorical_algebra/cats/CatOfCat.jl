@@ -7,7 +7,7 @@ using StructEquality
 using GATlab
 
 using ....Theories: @default_model, dom, codom, id, compose
-using ....BasicSets: AbsSet, SetOb
+using ....BasicSets: SetOb
 using ...Cats
 
 """ 2-category of categories, functors, and natural transformations.

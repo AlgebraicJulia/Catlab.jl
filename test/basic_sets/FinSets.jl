@@ -36,10 +36,11 @@ set = FinSet((x=[1,3,5], y=["a","b","c"]))
 # SumFinSet
 ###########
 @test_throws MethodError FinSet(SumSet([SetOb(Bool), SetOb(Symbol)])) # Not finite
-s = FinSet(SumSet([FinSet(2), FinSet([true,false])]))
+s = FinSet(SumFinSet([FinSet(2), FinSet([true,false])]))
 
 @test eltype(s) == Union{TaggedElem{Val{1}, Int}, TaggedElem{Val{2}, Bool}}
 @test length(s) == 4
+@test length(collect(s)) == 4
 
 @test TaggedElem(true, 2) ∈ s
 @test TaggedElem(true, 1) ∉ s
@@ -52,7 +53,7 @@ s = FinSet(SumSet([FinSet(2), FinSet([true,false])]))
 # ProdFinSet
 ############
 @test_throws MethodError FinSet(ProdSet([SetOb(Bool), SetOb(Symbol)])) # Not finite
-s =  FinSet(ProdSet([FinSet(2), FinSet([true,false])]))
+s =  FinSet(ProdFinSet([FinSet(2), FinSet([true,false])]))
 
 @test eltype(s) == Tuple{Int,Bool}
 @test length(s) == 4

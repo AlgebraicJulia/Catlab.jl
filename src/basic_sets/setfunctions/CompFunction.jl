@@ -7,16 +7,18 @@ using StructEquality
 using GATlab
 
 using ..Sets, ..SetFunctions
-import ..SetFunctions: SetFunction
+import ..SetFunctions: SetFunction, SetFunction′
 using ..IdFunction: IdentityFunction
 
 """ Composite of functions in **Set**.
 
 Not to be confused with `Base.ComposedFunctions` for ordinary Julia functions.
 """
-@struct_hash_equal struct CompositeFunction
-  fst::AbsFunction 
-  snd::AbsFunction
+@struct_hash_equal struct CompositeFunction{D,C}
+  fst::SetFunction 
+  snd::SetFunction
+  CompositeFunction(fst::SetFunction, snd::SetFunction) = 
+    new{impl_type(fst,:Dom), impl_type(snd, :Cod)}(fst, snd)
 end
 
 Base.first(f::CompositeFunction) = f.fst
@@ -34,16 +36,16 @@ end
 # SetFunction implementation 
 ############################
 
-@instance ThSetFunction [model::CompositeFunction] begin
+@instance ThSetFunction{D,C} [model::CompositeFunction{D,C}] where {D,C} begin
 
-  dom()::AbsSet = dom(first(model))
+  dom()::SetOb = dom(first(model))
   
-  codom()::AbsSet = codom(last(model))
+  codom()::SetOb = codom(last(model))
 
-  app(i::Any)::Any = last(model)(first(model)(i))
+  app(i::D)::C = last(model)(first(model)(i))
 
   # Create a (biased) nested composite function using constructor below
-  postcompose(f::AbsFunction)::AbsFunction = SetFunction(SetFunction(model), f) 
+  postcompose(f::SetFunction′)::SetFunction′ = SetFunction(SetFunction(model), f) 
 end
 
 
@@ -53,7 +55,7 @@ end
 """
 Automatically remove identity functions when creating a composite.
 """
-function SetFunction(f::AbsFunction, g::AbsFunction)
+function SetFunction(f::SetFunction, g::SetFunction)
   getvalue(f) isa IdentityFunction && return g 
   getvalue(g) isa IdentityFunction && return f
   SetFunction(CompositeFunction(f,g))

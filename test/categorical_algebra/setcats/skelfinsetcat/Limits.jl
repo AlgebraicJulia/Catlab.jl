@@ -24,7 +24,7 @@ sp = Span(FinFunction.([[1,2,2],[1,2,1]], 2)...)
 
 
 P = product[𝒞](FinSetInt(2), FinSetInt(3))
-@test ob[𝒞](P) == FinSetInt(6) # really should be a FinSetInt
+@test ob[𝒞](P) == FinSetInt(6)
 
 
 @test force(proj1(P)) == FinFunction([1,2,1,2,1,2], 2)
@@ -115,7 +115,7 @@ tuples(lim::AbsLimit) =
 # Pullback involving a constant, which should be handled specially.
 lim = pullback[𝒞](FinFunction([3], 4), FinFunction([1,3,4,2,3,3], 4))
 @test ob(lim)== FinSetInt(3)
-@test getvalue(getvalue(proj1(lim))) == ConstantFunction(1, FinSet(3), FinSet(1)) 
+@test getvalue(proj1(lim)) == ConstantFunction(1, FinSet(3), FinSet(1)) 
 @test proj2(lim) == FinFunction([2,5,6], 6)
 
 # Pullback as limit of free diagram.

@@ -3,7 +3,7 @@ export TypeCat
 
 using GATlab
 
-using .....BasicSets: SetOb, AbsSet
+using .....BasicSets: SetOb
 using ..Categories: ThCategoryExplicitSets, ThCategory
 
 using .ThCategory

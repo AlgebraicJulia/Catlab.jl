@@ -36,9 +36,8 @@ using ACSets.DenseACSets: attrtype_type
 
 using ....BasicSets, ...Cats, ...SetCats
 import ....Theories: dom, codom
-import ....BasicSets: is_monic, is_epic, preimage
+import ....BasicSets:  preimage
 import ...Cats: components
-
 
 """ Transformation between attributed C-sets.
 
@@ -105,25 +104,9 @@ function get_op_fn end # define in CSets
 function coerce_hom end # define in Csets
 function coerce_op end # define in CSets
 
-is_monic(α::ACSetTransformation; cat=nothing) =
-all(functions(α; cat = isnothing(cat) ? infer_acset_cat(α) : cat)) do f 
-  f isa FinFunction && return is_monic(f)
-  # otherwise let's assume it's a kleisli map. We just care if monic on Left
-  vals = collect(f)
-  all(x -> x isa Left, vals) || return false 
-  length(unique(vals)) == length(vals)
-end
-
-is_epic(α::ACSetTransformation; cat=nothing) =
-  all(functions(α; cat = isnothing(cat) ? infer_acset_cat(α) : cat)) do f 
-    f isa FinFunction && return is_epic(f)
-    # otherwise let's assume it's a kleisli map. We just care if epic on Left
-    collect(left(getvalue(codom(f)))) ⊆ [getvalue(v) for v in f if v isa Left]
-  end
-
 ACSets.acset_schema(α::ACSetTransformation) = acset_schema(dom(α))
 
-""" Coerce the component data to be Fin(Dom)Functions """
+""" Coerce the component data to be FinDomFunctions """
 function functions(α::ACSetTransformation; cat=nothing)
   cat = isnothing(cat) ? infer_acset_cat(α) : cat
   ent = Dict(map(ob(acset_schema(cat))) do o 
@@ -132,7 +115,7 @@ function functions(α::ACSetTransformation; cat=nothing)
   atr = Dict(map(attrtypes(acset_schema(cat))) do o 
     o => get_op_fn(cat, α, o)
   end)
-  NamedTuple(merge(ent, atr))
+  NamedTuple.([ent, atr])
 end
 
 

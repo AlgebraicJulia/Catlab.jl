@@ -7,7 +7,7 @@ using StructEquality
 using GATlab
 
 using ..Sets, ..SetFunctions
-import ..SetFunctions: SetFunction
+import ..SetFunctions: SetFunction, SetFunction′
 using ..PredFn: PredicatedFunction
 
 # Callable 
@@ -15,13 +15,13 @@ using ..PredFn: PredicatedFunction
 
 """ Function in **Set** defined by a callable Julia object.
 """
-@struct_hash_equal struct SetFunctionCallable
+@struct_hash_equal struct SetFunctionCallable{D,C}
   func::Any   # usually a `Function` but can be any Julia callable.
-  dom::AbsSet
-  codom::AbsSet
-  function SetFunctionCallable(f, dom::AbsSet, codom::AbsSet) 
+  dom::SetOb
+  codom::SetOb
+  function SetFunctionCallable(f, dom::SetOb, codom::SetOb) 
     !isempty(methods(f)) || error("$f must be callable")
-    new(f, dom, codom)
+    new{eltype(dom), eltype(codom)}(f, dom, codom)
   end
 end
 
@@ -37,15 +37,15 @@ end
 # SetFunction implementation
 ############################
 
-@instance ThSetFunction [model::SetFunctionCallable] begin
+@instance ThSetFunction{D,C} [model::SetFunctionCallable{D,C}] where {D,C} begin
 
-  dom()::AbsSet = model.dom
+  dom()::SetOb = model.dom
 
-  codom()::AbsSet = model.codom
+  codom()::SetOb = model.codom
 
-  app(i::Any)::Any = getvalue(model)(i)
+  app(i::D)::C = getvalue(model)(i)
 
-  postcompose(f::AbsFunction)::AbsFunction = 
+  postcompose(f::SetFunction′)::SetFunction′ = 
     SetFunction(SetFunctionCallable(  
       i -> f(getvalue(model.func)(i)), model.dom, codom(f)))
 
@@ -54,7 +54,7 @@ end
 # Default constructors 
 ######################
 
-function SetFunction(f::Function, d::AbsSet, c::AbsSet) 
+function SetFunction(f::Function, d::SetOb, c::SetOb) 
   s = SetFunctionCallable(f, d, c)  |> SetFunction
   pred = getvalue(d) isa PredicatedSet || getvalue(c) isa PredicatedSet
   pred ? SetFunction(PredicatedFunction(s)) : s
