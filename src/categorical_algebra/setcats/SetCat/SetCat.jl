@@ -6,7 +6,7 @@ using GATlab
 
 using ....Theories
 using ....BasicSets: FinSet, ConstantFunction, SetFunction, ProdSet, 
-  SetOb, FinDomFunction, ProdFinSet, FinFunction, FinSetInt
+  SetOb, FinDomFunction, FinFunction, FinSetInt
 using ...Cats
 
 
@@ -18,7 +18,7 @@ using ...Cats
   
   codom(f::SetFunction)::SetOb = codom(f)
 
-  id(A::SetOb)::SetFunction = (A isa FinSet ? FinFunction : SetFunction)(A)
+  id(A::SetOb)::SetFunction = SetFunction(A)
 
   function compose(f::SetFunction, g::SetFunction)::SetFunction
     codom(f) == dom(g) ||

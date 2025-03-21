@@ -15,7 +15,7 @@ startswith(sprint(show, i), "id(")
 
 f = SetFunction(x -> 2x, SetOb(Int), SetOb(Int))
 g = SetFunction(x -> 3x, SetOb(Int), SetOb(Int))
-@test getvalue(f) isa SetFunctionCallable
+@test getvalue(f) isa CallableFunction
 @test dom(f) == SetOb(Int)
 @test codom(f) == SetOb(Int)
 @test f(1) == 2
@@ -46,8 +46,6 @@ evens = PredicatedSet(Int, iseven)  |> SetOb
 
 plus_one_to_odd = SetFunction(x -> x+1, odds, evens)
 plus_one_to_even = SetFunction(x -> x+1, evens, odds)
-
-@test getvalue(plus_one_to_odd) isa PredicatedFunction
 
 @test plus_one_to_odd(1) == 2
 @test_throws ErrorException plus_one_to_odd(2) == 3

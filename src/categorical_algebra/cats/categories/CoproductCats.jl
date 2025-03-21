@@ -98,7 +98,10 @@ Base.getindex(x::NamedCoproductCat, i::Int) = x.cats[i]
 
   ob_set()::SetOb = SumSet(ob_set.(collect(values(getvalue(model))))) |> SetOb
 
-  hom_set()::SetOb = SumSet(hom_set.(collect(values(getvalue(model))))) |> SetOb
+  function hom_set()::SetOb 
+    hs = Vector{SetOb}(hom_set.(collect(values(getvalue(model)))))
+    SumSet(hs) |> SetOb
+  end
 
   function compose(x::H,y::H)::H
     tx, ty = gettag.([x,y])

@@ -124,7 +124,7 @@ k = FinDomFunction([:a,:b,:a,:c], SetOb(Symbol), index=true)
   "FinDomFunction($([:a,:b,:a,:c]), TypeSet(Symbol), index=true)"
 
 f = FinFunction([1,3,2], 4)
-@test force(FinDomFunction(f,k)) == FinDomFunction([:a,:a,:b], SetOb(Symbol))
+@test force(FinDomFunction(f,k)) == FinDomFunction([:a,:a,:b], SetOb(Symbol); index=true)
 
 # Codomain checks
 #################

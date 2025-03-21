@@ -52,7 +52,7 @@ end
 
     kl(x::Left) = g(getvalue(x))
     kl(x::Right) = x
-    ThFinDomFunction.postcompose(f, SetFunction(SetFunctionCallable(
+    ThFinDomFunction.postcompose(f, SetFunction(CallableFunction(
       kl, codom(f), codom(g)))) # compose
   end
 end

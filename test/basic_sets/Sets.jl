@@ -27,7 +27,7 @@ strings = SetOb(String)
 
 odds = PredicatedSet(Int, isodd) |> SetOb
 evens = PredicatedSet(Int, iseven)  |> SetOb
-@test sprint(show, getvalue(odds)) == "PredicatedSet($(Int), isodd)"
+@test sprint(show, getvalue(odds)) == "PredicatedSet(TypeSet($(Int)), isodd)"
 
 @test 1 ∈ odds
 @test 2 ∉ odds

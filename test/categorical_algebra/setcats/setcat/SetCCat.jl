@@ -4,7 +4,7 @@ using Catlab, Test
 
 f = SetFunction(x -> 2x, SetOb(Int), SetOb(Int))
 g = SetFunction(x -> 3x, SetOb(Int), SetOb(Int))
-@test getvalue(f) isa SetFunctionCallable
+@test getvalue(f) isa CallableFunction
 @test dom[SetC()](f) == SetOb(Int) == dom(f)
 @test codom[SetC()](f) == SetOb(Int) == codom(f)
 @test f(1) == 2

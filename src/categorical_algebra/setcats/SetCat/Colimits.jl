@@ -31,7 +31,7 @@ end
     all(x -> x isa FinSet, d) && return colimit[FinSetC()](d)
     Xs = collect(d)
     S = SumSet(Xs) |> SetOb
-    ιs = [SetFunction(SetFunctionCallable(i->TaggedElem(i, j), X, S)) 
+    ιs = [SetFunction(CallableFunction(i->TaggedElem(i, j), X, S)) 
           for (j, X) in enumerate(Xs)]
     csp = Multicospan{SetOb, SetFunction, SetOb}(S, ιs, Xs)
     ColimitCocone(csp, FreeDiagram(d))
@@ -39,7 +39,7 @@ end
 
   function universal(lim::AbsColimit,::DiscreteDiagram, cocone::Multicospan)
     fun(t::TaggedElem) = cocone[getidx(t)](getvalue(t))
-    SetFunction(SetFunctionCallable(fun, ob(lim), SetOb(apex(cocone))))
+    SetFunction(CallableFunction(fun, ob(lim), SetOb(apex(cocone))))
   end
 end
 

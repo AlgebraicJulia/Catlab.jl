@@ -37,7 +37,7 @@ FVectPushforward = Functor(identity, # identity on objects
 @instance ThCategoryExplicitSets{Int, AbstractMatrix{T}
                                 } [model::MatC{T}] where T begin 
 
-  ob_set() = SetOb(PredicatedSet{Int}(i -> i≥0))
+  ob_set() = SetOb(PredicatedSet(Int, i -> i≥0))
   hom_set() = SetOb(AbstractMatrix{T})
 end
 

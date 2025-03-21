@@ -40,7 +40,6 @@ const CM = CocartesianMonoidal(TypedCatWithCoproducts(𝒞))
   @test ι2 == FinFunction([3,4,5], 5)  
 end
 
-
 # Coequalizers
 ###############
 
@@ -142,4 +141,5 @@ colim = ι1, ι2 = colimit[𝒞](bdiagram)
 @test ob(colim) == FinSetInt(3)
 @test force(ι1) == FinFunction([1,2], 3)
 @test force(ι2) == FinFunction([1,1,3], 3)
+
 end # module
