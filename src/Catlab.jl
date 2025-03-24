@@ -18,7 +18,6 @@ include("sheaves/Sheaves.jl")
 @reexport using .CategoricalAlgebra
 @reexport using .WiringDiagrams
 @reexport using .Graphics
-@reexport using .ADTs
 @reexport using .Programs
 @reexport using .Parsers
 @reexport using .Sheaves
