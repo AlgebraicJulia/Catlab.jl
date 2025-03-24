@@ -32,14 +32,14 @@ basic grammatical rules are followed.
 export expr
 
 # Exports Generic Syntactical Helper Functions
-export parse_identifier, collect
+export parse_identifier, collect_parsing_pattern
 
 # Defines Generic Syntactical Rules
 
 # Rules for parsing Julia Expressions
 @rule expr = ident & lparen & ws & expr_args & ws & rparen |> v -> Expr(Symbol(v[1]), v[4]...),
   ident |> v -> parse_identifier(v)
-@rule expr_args = (expr & (ws & comma & ws & expr)[*])[:?] |> v -> collect(v)
+@rule expr_args = (expr & (ws & comma & ws & expr)[*])[:?] |> v -> collect_parsing_pattern(v)
 
 # Syntactical Helper Functions
 ##############################
@@ -57,12 +57,12 @@ function parse_identifier(v)
   end
 end
 
-""" Collect
+""" Collect Parsing Pattern
 
 This function collects and flattens arguments of the PEG.jl rule format "(arg & (ws & comma & ws & arg)[*])[:?]" only.
 It supports lists such as "()" and "(a)" and "(a,b,c)"
 """
-function collect(v::Vector{Any})
+function collect_parsing_pattern(v::Vector{Any})
   if isempty(v)
     return []
   else

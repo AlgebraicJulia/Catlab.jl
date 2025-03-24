@@ -8,18 +8,14 @@ module RelationalParser
 using MLStyle
 using Base.Iterators
 using Reexport
-using ...ADTs.RelationTerm
+using ...ADTs.RelationTerm: Var, Typed, Untyped, Kwarg, Statement, UWDExpr, construct
 using ...WiringDiagrams.UndirectedWiringDiagrams
 using ...WiringDiagrams.RelationDiagrams
-using ..ParserCore: ws, eq, lparen, rparen, comma, EOL, colon, ident, expr, collect
+using ..ParserCore
+using ..ParserCore: ws, eq, lparen, rparen, comma, EOL, colon, ident, expr, collect_parsing_pattern
 
-
-@reexport using PEG
 
 export @relation_str
-
-# export the UWD rules
-export judgements, judgement, args, arg, outerPorts, context, statement, body, uwd, line
 
 
 """ UWD Parsing Expression Grammar
@@ -75,7 +71,7 @@ All four types of diagram are subtypes of [`RelationDiagram`](@ref).
 # Judgements consists of a list of judgements separated by commas. There can be 0 or more judgements.
 # A typed judgement is of the form (x:X) while an untyped judgement is of the form (x).
 # A type is an expression as we want to allow for complex types.
-@rule judgements = (judgement & (ws & comma & ws & judgement)[*])[:?] |> v -> collect(v)
+@rule judgements = (judgement & (ws & comma & ws & judgement)[*])[:?] |> v -> collect_parsing_pattern(v)
 @rule judgement = ident & colon & expr |> v -> Typed(Symbol(v[1]), v[3]),
       ident |> v -> Untyped(Symbol(v))
 
@@ -89,7 +85,7 @@ All four types of diagram are subtypes of [`RelationDiagram`](@ref).
 
 # Arguments consists of a list of arguments separated by commas. There can be 0 or more arguments.
 # An argument is a var that may be a keyword argument.
-@rule args = (arg & (ws & comma & ws & arg)[*])[:?]  |> v -> collect(v)
+@rule args = (arg & (ws & comma & ws & arg)[*])[:?]  |> v -> collect_parsing_pattern(v)
 @rule arg = ident & eq & ident |> v -> Kwarg(Symbol(v[1]), Untyped(Symbol(v[3]))),
   ident |> v -> Untyped(Symbol(v))
 
@@ -159,9 +155,8 @@ end
 This macro parses a string representation of a UWD into an ACSet representation. It operates by parsing a string input into an UWDExpr object.
 Then it constructs a RelationDiagram object from the UWDExpr object.
 """
-macro relation_str(x::String) begin
-  uwd_exp = parse_whole(uwd, x) end
-  return RelationTerm.construct(RelationDiagram, parse_whole(uwd, x))
+macro relation_str(x::String)
+  return construct(RelationDiagram, parse_whole(uwd, x))
 end
 
 end
