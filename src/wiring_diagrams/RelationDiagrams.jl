@@ -9,7 +9,7 @@ export RelationDiagram, UntypedRelationDiagram, TypedRelationDiagram,
   SchNamedRelationDiagram, SchTypedNamedRelationDiagram
 
 using GATlab
-using ...CategoricalAlgebra.CSets
+using ...CategoricalAlgebra.Pointwise
 using ..UndirectedWiringDiagrams
 
 # Data types

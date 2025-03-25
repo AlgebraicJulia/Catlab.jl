@@ -1,37 +1,43 @@
 using Test
 
+include("ACSetsGATsInterop.jl")
+
 @testset "Theories" begin
-  include("theories/Theories.jl")
+  include("theories/runtests.jl")
+end
+
+@testset "BasicSets" begin
+  include("basic_sets/runtests.jl")
 end
 
 @testset "CategoricalAlgebra" begin
-  include("categorical_algebra/CategoricalAlgebra.jl")
+  include("categorical_algebra/runtests.jl")
 end
 
 @testset "Graphs" begin
-  include("graphs/Graphs.jl")
+  include("graphs/runtests.jl")
 end
 
 @testset "WiringDiagrams" begin
-  include("wiring_diagrams/WiringDiagrams.jl")
+  include("wiring_diagrams/runtests.jl")
 end
 
 @testset "Graphics" begin
-  include("graphics/Graphics.jl")
+  include("graphics/runtests.jl")
 end
 
 @testset "ADTs" begin
-  include("adts/ADTs.jl")
+  include("adts/runtests.jl")
 end
 
 @testset "Programs" begin
-  include("programs/Programs.jl")
+  include("programs/runtests.jl")
 end
 
 @testset "Parsers" begin
-  include("parsers/Parsers.jl")
+  include("parsers/runtests.jl")
 end
 
 @testset "Sheaves" begin
-  include("sheaves/sheaves.jl")
+  include("sheaves/runtests.jl")
 end

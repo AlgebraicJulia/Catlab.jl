@@ -4,11 +4,11 @@
 # to illustrate this process.
 
 using Test
-using Catlab.CategoricalAlgebra
+using Catlab.CategoricalAlgebra, Catlab.BasicSets
 using Catlab.CategoricalAlgebra.Categories
 using Catlab.Sheaves
 import Catlab.CategoricalAlgebra.Categories: do_ob_map, do_hom_map
-using Catlab.CategoricalAlgebra.Matrices: MatrixDom
+using Catlab.CategoricalAlgebra.Misc.Matrices: MatrixDom
 import Catlab.Sheaves: pullback_matrix, FinSetCat
 
 # The Topology that we are using is the `DiagramTopology`, which says that a cover of an object `c` is any diagram with `c` as its colimit.
