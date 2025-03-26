@@ -36,9 +36,8 @@ Base.eltype(::FinSetInt) = Int
 # FinSet Implementation
 #######################
 
-@instance ThFinSet [model::FinSetInt] begin
-  contains(i::Any)::Bool = i isa Int && 0 < i ≤ getvalue(model)
-  eltype()::Any = Int
+@instance ThFinSet{Int} [model::FinSetInt] begin
+  contains(i::Int)::Bool = 0 < i ≤ getvalue(model)
   length()::Int = getvalue(model)
   iterator()::Any = 1:getvalue(model)
 end

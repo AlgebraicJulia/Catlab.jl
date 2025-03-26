@@ -13,12 +13,12 @@ import ..BasicSets:  FinFunction, FinDomFunction, is_indexed
 using .ThFinDomFunction
 
 # treat indexed and non-indexed cases alike
-abstract type AbsFinFunctionVector{C,T} end 
+abstract type AbsFinFunctionVector{C<:AbsSet,T} end 
 
 GATlab.getvalue(v::AbsFinFunctionVector) = v.val 
 
 """ Implicitly domain is `FinSet(length(v))` Codomain is SetOb."""
-@struct_hash_equal struct FinFunctionVector{C,T} <: AbsFinFunctionVector{C,T}
+@struct_hash_equal struct FinFunctionVector{C<:AbsSet,T} <: AbsFinFunctionVector{C,T}
   val::AbstractVector
   codom::C
   function FinFunctionVector(val::AbstractVector,codom::C; check=false) where {C<:AbsSet}

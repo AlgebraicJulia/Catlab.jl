@@ -17,8 +17,8 @@ The types of the Ob/Hom are tagged SumSets.
 @struct_hash_equal struct CoproductCat{O,H}
   cats::Vector{Category}
   function CoproductCat(cats::Vector{Category})
-    SumO = eltype[SumSet(ob_set.(cats))]()
-    SumH = eltype[SumSet(hom_set.(cats))]()	
+    SumO = eltype(SetOb(SumSet(ob_set.(cats))))
+    SumH = eltype(SetOb(SumSet(hom_set.(cats))))
     new{SumO, SumH}(cats)
   end
 end 

@@ -26,9 +26,11 @@ Base.isless(x::Right, y::Right) = isless(getvalue(x), getvalue(y))
 Disjoint union type. In order to not conflate values, we need to wrap one 
 of the sets in `Left` and one in `Right`. 
 """
-@struct_hash_equal struct EitherSet{L<:AbsSet, R<:AbsSet}
+@struct_hash_equal struct EitherSet{L<:AbsSet, R<:AbsSet, T}
   left::L
   right::R
+  EitherSet(l::L,r::R) where {L<:AbsSet, R<:AbsSet} =   
+    new{L, R, Union{Left{eltype(l)}, Right{eltype(r)}}}(l, r)
 end
 
 # Accessors
@@ -45,42 +47,31 @@ set_contains(model::EitherSet, i::Any)::Bool = if i isa Left
 elseif i isa Right 
   getvalue(i) ∈ right(model)
 else 
-  false 
+  error("Impossible") 
 end
 
-set_eltype(model::EitherSet) = 
-  Union{Left{eltype(left(model))}, Right{eltype(right(model))}}
+@instance ThSet{T} [model::EitherSet{FinSet,SetOb,T}] where T begin
 
-@instance ThSet [model::EitherSet{FinSet,SetOb}] begin
-
-  contains(i::Any)::Bool = set_contains(model, i)
-
-  eltype()::Any = set_eltype(model)
+  contains(i::T)::Bool = set_contains(model, i)
 
 end
 
-@instance ThSet [model::EitherSet{SetOb,FinSet}] begin
+@instance ThSet{T} [model::EitherSet{SetOb,FinSet,T}] where T begin
 
-  contains(i::Any)::Bool = set_contains(model, i)
-
-  eltype()::Any = set_eltype(model)
+  contains(i::T)::Bool = set_contains(model, i)
 
 end
 
-@instance ThSet [model::EitherSet{SetOb,SetOb}] begin
+@instance ThSet{T} [model::EitherSet{SetOb,SetOb,T}] where T begin
 
   contains(i::Any)::Bool = set_contains(model, i)
-
-  eltype()::Any = set_eltype(model)
 
 end
 
 
-@instance ThFinSet [model::EitherSet{FinSet,FinSet}] begin
+@instance ThFinSet{T} [model::EitherSet{FinSet,FinSet,T}] where T begin
 
-  contains(i::Any)::Bool = set_contains(model, i)
-
-  eltype()::Any = set_eltype(model)
+  contains(i::T)::Bool = set_contains(model, i)
 
   length()::Int = length(left(model)) + length(right(model))
 

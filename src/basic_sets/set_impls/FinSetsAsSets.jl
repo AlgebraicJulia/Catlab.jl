@@ -12,15 +12,15 @@ import ..Sets: SetOb
 Interpret a FinSet as a Set. This can be alternatively handled by doing a Δ
 migration along the inclusion of theories ThSet ↣ ThFinSet
 """
-@struct_hash_equal struct FinSetAsSet 
+@struct_hash_equal struct FinSetAsSet{T}
   val::FinSet
+  FinSetAsSet(f::FinSet) = new{eltype(f)}(f)
 end 
 
 GATlab.getvalue(f::FinSetAsSet) = f.val
 
-@instance ThSet [model::FinSetAsSet] begin 
-  contains(i::Any) = contains(getvalue(model), i)
-  eltype()::Type = eltype(getvalue(model))
+@instance ThSet{T} [model::FinSetAsSet{T}] where T begin 
+  contains(i::T) = contains(getvalue(model), i)
 end
 
 SetOb(f::FinSet) = SetOb(FinSetAsSet(f))

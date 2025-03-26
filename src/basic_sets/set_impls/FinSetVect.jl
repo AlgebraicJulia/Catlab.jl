@@ -31,14 +31,13 @@ end
 # FinSet Implementation
 #######################
 
-@instance ThFinSet [model::FinSetVect{T}] where T begin
-  contains(i::Any)::Bool = i ∈ getvalue(model)
-  eltype() = eltype(getvalue(model))
+@instance ThFinSet{T} [model::FinSetVect{T}] where T begin
+  contains(i::T)::Bool = i ∈ getvalue(model)
   length()::Int = length(getvalue(model))
   iterator()::Any = getvalue(model)
 end
 
 """ Default model for a finset made out of a Julia `Set` """
-FinSet(s::AbstractVector{T}) where T = FinSet(FinSetVect(s))
+FinSet(s::AbstractVector) = FinSet(FinSetVect(s))
 
 end # module

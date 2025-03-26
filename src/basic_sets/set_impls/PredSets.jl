@@ -35,20 +35,16 @@ end
 # ThSet implementation 
 ######################
 
-@instance ThSet [model::PredicatedSet{SetOb, T}] where T begin
+@instance ThSet{T} [model::PredicatedSet{SetOb, T}] where T begin
 
-  contains(i::Any)::Bool = i ∈ getvalue(model) && model(i)
-
-  eltype()::Any = T
+  contains(i::T)::Bool = i ∈ getvalue(model) && model(i)
 
 end
 
 
-@instance ThFinSet [model::PredicatedSet{FinSet}] begin
+@instance ThFinSet{T} [model::PredicatedSet{FinSet}] where T begin
 
-  contains(i::Any)::Bool = i ∈ getvalue(model) && model(i)
-
-  eltype()::Any = T
+  contains(i::T)::Bool = i ∈ getvalue(model) && model(i)
 
   length()::Int = length(collect(model))
 

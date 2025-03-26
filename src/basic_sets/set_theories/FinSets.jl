@@ -41,7 +41,14 @@ Base.show(io::IO, mime::MIME"text/html", set::AbsSet) =
 
 Base.iterate(f::FinSet, xs...) = iterate(ThFinSet.iterator(f), xs...)
 
-Base.in(x, set::AbsSet) = ThFinSet.contains(set, x)
+Base.in(x, set::AbsSet) = try 
+  ThFinSet.contains(set, x)
+catch e 
+  e isa MethodError || throw(e)
+  false
+end
+
+Base.eltype(set::AbsSet)::Type = impl_type(set, :X)
 
 """ For implementations of ThFinSet which are like 1:n """
 abstract type UnitRangeLike end

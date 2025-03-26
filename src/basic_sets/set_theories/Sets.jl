@@ -16,10 +16,9 @@ One ought be able to ask of any Set whether something is in it. Also a Julia
 type should be provided which includes all elements of the set.
 """
 @theory ThSet begin
+  X::TYPE
   Bool′::TYPE{Bool}
-  Type′::TYPE{Type}
-  contains(e::Type′)::Bool′ # the order of arguments is reversed, so give a diff name
-  eltype()::Type′
+  contains(e::X)::Bool′
 end
 
 # Wrapper type for Models of ThSet

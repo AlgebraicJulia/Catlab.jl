@@ -62,8 +62,10 @@ force(t::TaggedElem) = TaggedElem(force(getvalue(t)), gettag(t))
 Unbiased disjoint union type. In order to not conflate values, we need to wrap 
 them in `TaggedElem` which adds an integer type parameter.
 """
-@struct_hash_equal struct SumSet{T<:AbsSet}
+@struct_hash_equal struct SumSet{T<:AbsSet, El}
   sets::Vector{T}
+  SumSet(sets::Vector{T}) where {T<:AbsSet} = 
+    new{T, Tagged(eltype.(sets))}(sets)
 end
 
 GATlab.getvalue(s::SumSet) = s.sets
@@ -87,18 +89,15 @@ contains_set(model::SumSet, i) = @match i begin
   _ => false 
 end
 
-@instance ThSet [model::SumSet{SetOb}] begin
+@instance ThSet{T} [model::SumSet{SetOb,T}] where T begin
 
-  contains(i::Any)::Bool = contains_set(model, i)
+  contains(i::T)::Bool = contains_set(model, i)
 
-  eltype()::Any = Tagged(eltype.(model))
 end
 
-@instance ThFinSet [model::SumSet{FinSet}] begin
+@instance ThFinSet{T} [model::SumSet{FinSet,T}] where T begin
 
-  contains(i::Any)::Bool = contains_set(model, i)
-
-  eltype()::Any = Tagged(eltype.(model))
+  contains(i::T)::Bool = contains_set(model, i)
 
   length()::Int = sum(length.(model))
 
@@ -113,7 +112,7 @@ end
 
 # Other helpers
 ###############
-Tagged(vs::Vector{<:Union{Type,TypeVar}}) = 
+Tagged(vs::AbstractVector) = #{<:Union{Type,TypeVar}}) = 
   Union{[TaggedElem{Val{i}, v} for (i,v) in enumerate(vs)]...}
 
 ###############
@@ -124,8 +123,10 @@ Tagged(vs::Vector{<:Union{Type,TypeVar}}) =
 Unbiased disjoint union type. In order to not conflate values, we need to wrap 
 them in `TaggedElem` which adds an integer type parameter.
 """
-@struct_hash_equal struct NamedSumSet{T<:AbsSet}
+@struct_hash_equal struct NamedSumSet{T<:AbsSet, El}
   sets::Dict{Any, T}
+  NamedSumSet(sets::Dict{Any,T}) where T<:AbsSet = 
+    new{T, Tagged(Dict(k=>eltype(v) for (k,v) in sets))}(sets)
 end
 
 GATlab.getvalue(s::NamedSumSet) = s.sets
@@ -149,22 +150,18 @@ contains_set(model::NamedSumSet, i) = @match i begin
   (t::TaggedElem) => let i = getidx(t); 
     haskey(model, i) && getvalue(t) ∈ model[i]
   end
-  _ => false 
+  _ => error("Impossible $i") 
 end
 
-@instance ThSet [model::NamedSumSet{SetOb}] begin
+@instance ThSet{T} [model::NamedSumSet{SetOb}] where T begin
 
-  contains(i::Any)::Bool = contains_set(model, i)
-
-  eltype()::Any = Tagged(Dict(k=>eltype(v) for (k,v) in getvalue(model)))
+  contains(i::T)::Bool = contains_set(model, i)
 
 end
 
-@instance ThFinSet [model::NamedSumSet{FinSet}] begin
+@instance ThFinSet{T} [model::NamedSumSet{FinSet}] where T begin
 
-  contains(i::Any)::Bool = contains_set(model, i)
-
-  eltype()::Any = Tagged(Dict(k=>eltype(v) for (k,v) in getvalue(model)))
+  contains(i::T)::Bool = contains_set(model, i)
 
   length()::Int = sum(length.(values(getvalue(model))))
 

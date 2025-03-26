@@ -17,12 +17,11 @@ uniformity, the rows are provided as named tuples, which assumes that the table
 is not "extremely wide". This should not be a major limitation in practice but
 see the Tables.jl documentation for further discussion.
 """
-@struct_hash_equal struct TabularSet
+@struct_hash_equal struct TabularSet{T}
   table::Any
-  T::Type
   function TabularSet(table::Any)
     schema = Tables.schema(table)
-    new(table, NamedTuple{schema.names, Tuple{schema.types...}})
+    new{NamedTuple{schema.names, Tuple{schema.types...}}}(table)
   end
 end
 
@@ -59,11 +58,9 @@ end
 # FinSet Implementation
 #######################
 
-@instance ThFinSet [model::TabularSet] begin
+@instance ThFinSet{T} [model::TabularSet{T}] where T begin
 
-  contains(i::Any)::Bool = i ∈ getvalue(model)
-
-  eltype()::Any = model.T
+  contains(i::T)::Bool = i ∈ getvalue(model)
 
   length()::Int = Tables.rowcount(getvalue(model))
 

@@ -10,8 +10,10 @@ using GATlab
 using ..BasicSets: ThSet, ThFinSet, AbsSet, SetOb, FinSet
 
 """ Union type for Sets or FinSets """
-@struct_hash_equal struct UnionSet{T<:AbsSet}
+@struct_hash_equal struct UnionSet{T<:AbsSet, Ty}
   sets::AbstractVector{T}
+  UnionSet(sets::AbstractVector{T}) where {T<:AbsSet} = 
+    new{T, Union{eltype.(sets)...}}(sets)
 end
 
 # Accessors
@@ -26,25 +28,20 @@ right(e::UnionSet) = last(e.sets)
 # ThSet implementation
 ######################
 
-@instance ThSet [model::UnionSet{SetOb}] begin
+@instance ThSet{T} [model::UnionSet{SetOb, T}] where T begin
 
-  contains(i::Any)::Bool = any(s->i ∈ s, model.sets)
-
-  eltype()::Any = Union{eltype.(model)...}
+  contains(i::T)::Bool = any(s->i ∈ s, model.sets)
 
 end
 
-@instance ThFinSet [model::UnionSet{FinSet}] begin
+@instance ThFinSet{T} [model::UnionSet{FinSet, T}] where T begin
 
-  contains(i::Any)::Bool = any(s->i ∈ s, model.sets)
-
-  eltype()::Any = Union{eltype.(model)...}
+  contains(i::T)::Bool = any(s->i ∈ s, model.sets)
 
   length()::Int = length(iterator[model]())
 
   iterator()::Any = union(collect.(model)...)
 
 end
-
 
 end # module

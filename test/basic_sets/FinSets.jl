@@ -63,4 +63,34 @@ s =  FinSet(ProdSet([FinSet(2), FinSet([true,false])]))
 
 @test collect(s) == [(1, true), (2, true), (1, false) , (2, false)]
 
+
+# Empty
+###########
+s = FinSet()
+
+@test nothing ∉ s
+@test 3 ∉ s
+@test collect(s) == Union{}[]
+@test length(s) == 0
+
+# Singleton
+###########
+s = FinSet(nothing)
+
+@test nothing ∈ s
+@test 3 ∉ s
+@test collect(s) == [nothing]
+@test length(s) == 1
+
+# Enum
+######
+@enum MyEnum X Y
+
+s = FinSet(MyEnum) #FinSet(EnumSet{MyEnum}())
+
+@test X ∈ s
+@test 3 ∉ s
+@test collect(s) == [X, Y]
+@test length(s) == 2
+
 end # module

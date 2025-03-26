@@ -39,6 +39,13 @@ is_indexed(f::CompositeFunction) = is_indexed(first(f)) || is_indexed(last(f))
 # SetFunction implementation 
 ############################
 
+# The `postcompose` method here is a bit superfluous. We only use `postcompose` 
+# in `force`, which takes a `CompositeFunction` to something which is not a 
+# composite function. The only kinds of functions which are `postcomposed` have 
+# had `force` called on them already, so these methods are unlikely to ever be 
+# called. Nevertheless, the implementation given is reasonable if one really 
+# wanted to postcompose a `CompositeFunction` with another function.
+
 @instance ThSetFunction{D,C} [model::CompositeFunction{SetFunction, D, C}
                              ] where {D,C} begin
 

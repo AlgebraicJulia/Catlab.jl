@@ -20,9 +20,8 @@ Base.show(io::IO, ::EmptySet) = print(io, "Empty()")
 # FinSet Implementation
 #######################
 
-@instance ThFinSet [model::EmptySet] begin
-  contains(i::Any)::Bool = false
-  eltype()::Any = Union{}
+@instance ThFinSet{Union{}} [model::EmptySet] begin
+  contains(::Union{})::Bool = false
   length()::Int = 0
   iterator()::Any = Union{}[]
 end
