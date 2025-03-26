@@ -1,7 +1,14 @@
+# you may replace the default AlgebraicJulia pipeline with your own. Just move
+# your pipeline into the .buildkite directory and rename the file being checked
+# below to your pipeline. More documentation to come.
 steps:
 
   - label: ":arrow_down: Load AlgebraicJulia pipeline"
     command: |
-      curl -s https://raw.githubusercontent.com/AlgebraicJulia/.github/main/buildkite/pipeline.yml | buildkite-agent pipeline upload
-
+      if [ -f ".buildkite/example.yml.bak" ]; then
+        buildkite-agent pipeline upload .buildkite/example.yml
+      else
+        curl -s https://raw.githubusercontent.com/AlgebraicJulia/.github/main/buildkite/pipeline.yml | buildkite-agent pipeline upload
+      fi
+        
   - wait
