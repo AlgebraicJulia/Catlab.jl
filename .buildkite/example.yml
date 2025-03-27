@@ -1,0 +1,5 @@
+steps:
+
+  - label: ":wave: hello!"
+    command: |
+      echo "hello"
