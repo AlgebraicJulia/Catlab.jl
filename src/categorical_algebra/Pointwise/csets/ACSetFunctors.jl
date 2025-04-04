@@ -63,7 +63,7 @@ ACSet(X::ACSetFunctor) = X.acset # synonym for getvalue
     if f ∈ homs(S; just_names=true)
       get_hom(model.cod, getvalue(model), f)
     else 
-      TaggedElem{impl_type(model.cod, :Attr)}(get_attr(model.cod, getvalue(model), f), codom(S, f))
+      TaggedElem(get_attr(model.cod, getvalue(model), f), codom(S, f))
     end
 
   end

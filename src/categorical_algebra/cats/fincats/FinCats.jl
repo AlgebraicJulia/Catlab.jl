@@ -1,6 +1,6 @@
 export FinCat, ob_generator, hom_generator,
   ob_generator_name, hom_generator_name, ob_generators, hom_generators,
-  equations, is_discrete, is_free, edges, src, tgt, gentype, decompose
+  equations, is_discrete, is_free, edges, src, tgt, gentype, decompose, AbsCat
 
 using StructEquality
 
@@ -53,7 +53,13 @@ The following laws are expected to hold:
   gen_set()::Set′
 end
   
-ThFinCat.Meta.@wrapper FinCat <: AbsCat
+ThFinCat.Meta.@wrapper FinCat
+
+""" 
+Common type for Categories and FinCats to be used by methods which only use 
+their common interface. 
+""" 
+const AbsCat=Union{Cat, FinCat}
 
 
 # Other methods

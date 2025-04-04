@@ -12,7 +12,7 @@ using ..BasicSets: ThFinSet, ThSet, AbsSet, SetOb, FinSet
 #################
 
 """ An element tagged by an integer """
-@struct_hash_equal struct TaggedElem{I, T} 
+@struct_hash_equal struct TaggedElem{I<:Val, T} 
   val::T
   tag::I
   TaggedElem(t::T, tag) where T = new{Val{tag}, T}(t, Val(tag))

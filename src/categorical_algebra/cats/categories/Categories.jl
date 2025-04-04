@@ -23,13 +23,11 @@ extend the interface to require explicitly providing these sets.
   hom_set()::Set′
 end
 
-""" Subtyped by wrappers by Cat and FinCat """
-abstract type AbsCat end 
 """
 A (possibly) large category with ob/hom given by SetObs with element types
 Ob/Hom.
 """
-ThCategoryExplicitSets.Meta.@wrapper Category <: AbsCat
+ThCategoryExplicitSets.Meta.@wrapper Category
 
 """ Coerce something to a category, no-op on actual categories """
 Category(c::Category) = c 

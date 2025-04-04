@@ -80,7 +80,7 @@ Base.getindex(c::CoproductHeteroMorphism, i) = c.val[i]
                                         ] where {DO,CO,D,C,H} begin
   dom(h::H) = dom(model[gettag(h)], getvalue(h))
   codom(h::H) = TaggedElem(codom(model[gettag(h)], getvalue(h)), gettag(h))
-  pre(a::D, h::H) = TaggedElem{tag_T(h)}(pre(model[gettag(h)], a, getvalue(h)), gettag(h))
+  pre(a::D, h::H) = TaggedElem(pre(model[gettag(h)], a, getvalue(h)), gettag(h))
   post(a::H, h::C) = TaggedElem(post(model[gettag(h)], a, getvalue(h)), gettag(h))
 end 
 
