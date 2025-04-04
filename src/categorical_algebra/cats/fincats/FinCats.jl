@@ -14,7 +14,7 @@ using .....BasicSets: FinSet, SetOb
 
 import ..Paths: Path
 
-using ..Categories: ThCategoryExplicitSets, Cat, AbsCat
+using ..Categories: ThCategoryExplicitSets, Cat
 import ..Categories: ob_set, hom_set, obtype, homtype
 
 
