@@ -47,6 +47,14 @@ end
 
 """ Parse a wiring diagram from a Julia function expression.
 
+The first parse_wiring_diagram accepts a Presentation and a Julia expression, which must be a
+function("() begin ... end") or lambda("() -> ()") expression. It uses pattern matching to 
+determine the type of the expression and calls a following `parse_wiring_diagram` function.
+
+The following parse_wiring_diagram function matches arguments and types from the call expression,
+and parses them into argument type pairs. It then compiles the wiring diagram using the body of the function,
+stores, creates a lookup table for symbols, and rewrites the function body to record function calls. 
+
 For more information, see the corresponding macro [`@program`](@ref).
 """
 function parse_wiring_diagram(pres::Presentation, expr::Expr)::WiringDiagram
@@ -107,6 +115,15 @@ function parse_wiring_diagram(pres::Presentation, call::Expr0, body::Expr)::Wiri
 end
 
 """ Make a lookup table assigning names to generators or term constructors.
+
+The lookup table creates a dictionary mapping symbols to either a generator (from the presentation) 
+or terms (reserved words from theory).
+
+For presentation we have the following terms:
+[:dom, :braid, :mcopy, :Hom, :create, :coproj1,
+:codom, :delete, :copair, :Ob, :otimes, :id, 
+:compose, :mmerge, :coproj2, :proj1, :proj2, :munit, :pair]
+
 """
 function make_lookup_table(pres::Presentation, syntax_module::Module, names)
   theory = syntax_module.Meta.theory
@@ -145,6 +162,19 @@ Rewrites the function body so that:
      `f(x,y)` becomes `recorder(f,x,y)`
   2. "Curly" function calls are mapped to ordinary function calls, e.g.,
      `f{X,Y}` becomes `f(X,Y)`
+
+Takes args input "x" and Body Input:
+    y = f(x)
+    z = g(y)
+    return z
+  
+Rewrites and returns function definition as an AST:
+  
+function (var"##recorder", x; f = nothing, g = nothing)
+    y = (var"##recorder"(f))(x)
+    z = (var"##recorder"(g))(y)
+    return z
+end
 """
 function compile_recording_expr(body::Expr, args::Vector{Symbol};
     kwargs::Vector{Symbol}=Symbol[],
