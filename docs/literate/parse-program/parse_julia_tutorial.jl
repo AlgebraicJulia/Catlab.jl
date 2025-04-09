@@ -1,9 +1,9 @@
-## Parse Julia Programs 
+# ## Parse Julia Programs 
 # The purpose of this documentation is to provide a tutorial on the functionality of the ParseJuliaPrograms file.
 # This tutorial will provide a brief overview on each of the functions and how a wiring diagram is parsed from
 # a Julia function expression.
 
-## Required Libraries to Import
+# ## Required Libraries to Import
 using GeneralizedGenerated: mk_function
 using MLStyle: @match
 
@@ -98,13 +98,22 @@ end
 # The function first matches call expressions to output the arguments of a function call and matches the output into name type pairs, 
 # validating that arguments have a name and type using eval_type_expr.  
 
-# Case for standard function declarations ex: f(x::T, y::U)  Expr(:call, name, args...) => args 
-
-# Case for when the function call is a tuple ex: (x::T, y::U)    Expr(:tuple, args...) => args 
-
-# Case for a single argument ex: :(x::T)  Expr(:(::), _...) => [call]  
-
-# Case for a single symbol ex: :x  _::Symbol => [call]) 
+# Case for standard function declarations ex: f(x::T, y::U)  
+"""
+Expr(:call, name, args...) => args 
+"""
+# Case for when the function call is a tuple ex: (x::T, y::U)    
+"""
+Expr(:tuple, args...) => args 
+"""
+# Case for a single argument ex: :(x::T)  
+"""
+Expr(:(::), _...) => [call]  
+"""
+# Case for a single symbol ex: :x  
+"""
+_::Symbol => [call]) 
+"""
 
 
 
@@ -191,9 +200,10 @@ end
 
 # Afterwards parse_wiring_diagram then creates a diagram to record function calls
 # and sets up the input and output ports for the wiring diagram.
-
-#recorder = f -> (args...) -> record_call!(diagram, f, args...)  
-#value = func(recorder, arg_ports...; kwargs...)
+"""
+recorder = f -> (args...) -> record_call!(diagram, f, args...)  
+value = func(recorder, arg_ports...; kwargs...)
+"""
 
 # Record_call! is the function called that records the function calls in the wiring diagram
 # and adds wires and output ports to the box recorded in the diagram.
