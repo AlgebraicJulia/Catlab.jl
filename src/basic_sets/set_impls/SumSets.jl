@@ -153,13 +153,13 @@ contains_set(model::NamedSumSet, i) = @match i begin
   _ => error("Impossible $i") 
 end
 
-@instance ThSet{T} [model::NamedSumSet{SetOb}] where T begin
+@instance ThSet{T} [model::NamedSumSet{SetOb, T}] where T begin
 
   contains(i::T)::Bool = contains_set(model, i)
 
 end
 
-@instance ThFinSet{T} [model::NamedSumSet{FinSet}] where T begin
+@instance ThFinSet{T} [model::NamedSumSet{FinSet, T}] where T begin
 
   contains(i::T)::Bool = contains_set(model, i)
 

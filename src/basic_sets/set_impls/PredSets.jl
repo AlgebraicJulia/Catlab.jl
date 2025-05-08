@@ -42,7 +42,7 @@ end
 end
 
 
-@instance ThFinSet{T} [model::PredicatedSet{FinSet}] where T begin
+@instance ThFinSet{T} [model::PredicatedSet{FinSet, T}] where T begin
 
   contains(i::T)::Bool = i ∈ getvalue(model) && model(i)
 

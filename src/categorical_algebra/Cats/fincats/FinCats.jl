@@ -34,7 +34,6 @@ should specify `equations`.
 
 The following laws are expected to hold:
   compose(emptyPath(a)) == id(a) ⊣ [a::Ob]
-  compose(decompose(h)) == h ⊣ [(x,y)::Ob, a::Hom(x,y)]
   compose(a ++ b) = compose(compose(a), compose(b)) ⊣ [a::Path(x,y), b::Path(y,z)]
 """
 @theory ThFinCat begin
@@ -47,6 +46,8 @@ The following laws are expected to hold:
   Path′(p_src::Ob, p_tgt::Ob)::TYPE;
   compose(vgen::Path′(a,b))::Hom(a,b) ⊣ [(a,b)::Ob]
   decompose(h::Hom(a,b))::Path′(a,b) ⊣ [(a,b)::Ob]
+
+  compose(decompose(h)) == h ⊣ [(x,y)::Ob, h::Hom(x,y)]
 
   Set′::TYPE{FinSet}
   ob_set()::Set′
