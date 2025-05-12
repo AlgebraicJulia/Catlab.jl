@@ -39,7 +39,7 @@ section_data = [Float64[1,2,3],
    Float64[1,2],
    Float64[1,2,5]]
 
-v = extend(VectSheaf, K, section_data; debug=true)
+v = extend(VectSheaf, K, section_data; debug=false)
 
 global_section = extend(VectSheafMat, K, section_data)
 @test v == global_section
