@@ -25,6 +25,8 @@ Legs should be sent to Vector{Hom} for whatever Hom is.
 
   MCospan::TYPE{Multicospan} # type of (multi)cospans
   apex(s::MCospan)::Ob # apex of the cospan
+  cocone(l::Colimit)::MCospan
+  apex(cocone(l)) == ob(l) ⊣ [l::Colimit]
 end
 
 apex(::WithModel, m::Multicospan; context=nothing) = 
@@ -39,6 +41,8 @@ abstract type AbsColimit end
 
 
 cocone(lim::AbsColimit) = lim.cocone # by default, assume AbsColimit has `cocone` field
+""" We assume *every model* is going to implement `cone` the following way """
+cocone(::WithModel, lim::AbsColimit; context=nothing) = cocone(lim)
 
 ob(lim::AbsColimit) = apex(lim)
 

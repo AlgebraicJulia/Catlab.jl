@@ -20,7 +20,9 @@ using ...FinFunctors: FinDomFunctor
   ob(lim::Limit)::Ob
 
   MSpan::TYPE{Multispan} # type of (multi)spans
-  apex(s::MSpan)::Ob # apex of the span
+  apex(s::MSpan)::Ob 
+  cone(l::Limit)::MSpan
+  apex(cone(l)) == ob(l) ⊣ [l::Limit]
 end
 
 apex(::WithModel, m::Multispan; context=nothing) = apex(m) # always use dispatch
@@ -39,6 +41,9 @@ methods or the methods below which are derived from these.
 abstract type AbsLimit end
 
 cone(lim::AbsLimit) = lim.cone # by default, assume AbsLimit has a `cone` field
+""" We assume *every model* is going to implement `cone` the following way """
+cone(::WithModel, lim::AbsLimit; context=nothing) = cone(lim)
+
 diagram(lim::AbsLimit) = lim.diagram # by default, assume a `diagram` field
 
 apex(lim::AbsLimit) = apex(cone(lim))

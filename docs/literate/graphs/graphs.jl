@@ -123,9 +123,9 @@ is_natural(ϕᵦ′)
 ϕ[:E]
 # We can check the  naturality squares ourselves
 # The sources are preserved: `src ⋅ ϕᵥ == ϕₑ ⋅ src`
-ϕ[:V](dom(ϕ)[:,:src]) == codom(ϕ)[collect(ϕ[:E]), :src]
+ϕ[:V].(dom(ϕ)[:,:src]) == codom(ϕ)[collect(ϕ[:E]), :src]
 # The targets are preserved: `tgt ⋅ ϕᵥ == ϕₑ ⋅ tgt`
-ϕ[:V](dom(ϕ)[:,:tgt]) == codom(ϕ)[collect(ϕ[:E]), :tgt]
+ϕ[:V].(dom(ϕ)[:,:tgt]) == codom(ϕ)[collect(ϕ[:E]), :tgt]
 
 # This approach generalizes to the following: 
 #
