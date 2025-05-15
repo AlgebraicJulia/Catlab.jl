@@ -7,9 +7,9 @@ using GATlab
 
 using ...Paths: Path
 using ...Categories: Cat, obtype, homtype
-using ..FinCats: Cat, ThFinCat, obtype, homtype, FinCat, gentype
+using ..FinCats: Cat, ThFinCat, obtype, homtype, FinCat, gentype, to_hom
 
-using ..FinFunctors: ThFinDomFunctor
+using ..FinFunctors: ThFinDomFunctor, to_hom
 import ..FinFunctors: FinDomFunctor, FinFunctor
 
 using .ThFinCat: compose, dom, codom, src, tgt
@@ -29,7 +29,7 @@ function Base.show(io::IO, ::IdentityFinDomFunctor)
   print(io, ")")
 end
 
-@instance ThFinDomFunctor{O,O,H,H,G,FinCat,FinCat} [
+@instance ThFinDomFunctor{O,O,H,H,FinCat,FinCat,G} [
     model::IdentityFinDomFunctor{O,H,G}] where {O,H,G} begin 
 
   dom()::FinCat = getvalue(model)
@@ -38,10 +38,9 @@ end
 
   ob_map(x::O)::O = x
 
-  function gen_map(x::G)::H
-    C = dom[model]()
-    compose(C, Path([x], src(C, x), tgt(C,x)))
-  end
+  hom_map(x::H)::H = x
+
+  gen_map(x::G)::H = to_hom(dom[model](), x)
 end
 
 # Convenience constructors

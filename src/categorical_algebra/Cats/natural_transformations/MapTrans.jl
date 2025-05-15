@@ -27,12 +27,12 @@ for all f: X → Y in 𝒞, the diagram commutes:
     G                       αᵧ       
 ```
 """
-@struct_hash_equal struct FinTransformationMap{DO, CH, Func<:AbsFunctor}
+@struct_hash_equal struct FinTransformationMap{DO, CH, DomFunc<:FunctorFinDom, CodFunc<:AbsFunctor}
   components::Union{AbstractVector,AbstractDict}
-  dom::FinDomFunctor
-  codom::Func
-  function FinTransformationMap(comps, F::FinDomFunctor, G::Fun; check=true
-                               ) where {Fun<:AbsFunctor}
+  dom::DomFunc
+  codom::CodFunc
+  function FinTransformationMap(comps, F::DomFun, G::CodFun; check=true
+                               ) where {DomFun<:FunctorFinDom,CodFun<:AbsFunctor}
     O, H = impl_type.([F,F], [:DomOb,:CodomHom])
     C, D = check_transformation_domains(F, G)
     DO = impl_type(C, :Ob)
@@ -44,23 +44,23 @@ for all f: X → Y in 𝒞, the diagram commutes:
         comps[o] ∈ hom_set(D) || error("Bad hom $o ↦ $(comps[o]) ∉ $(hom_set(D))")
       end
     end
-    new{O,H,Fun}(comps, F, G)
+    new{O, H, DomFun, CodFun}(comps, F, G)
   end
 end
 
-@instance ThTransformation{DO, CH, FinDomFunctor, F
-                          } [model::FinTransformationMap{DO,CH,F} 
-                            ] where {DO,CH,F} begin
+@instance ThTransformation{DO, CH, DF, CF
+                          } [model::FinTransformationMap{DO,CH,DF,CF} 
+                            ] where {DO,CH,DF,CF} begin
 
-  dom()::FinDomFunctor = model.dom
+  dom()::DF = model.dom
 
-  codom()::F = model.codom
+  codom()::CF = model.codom
 
   component(x::DO)::CH = model.components[x]
 end 
 
 Transformation(components::Union{AbstractVector,AbstractDict}, 
-               F::FinDomFunctor, G::AbsFunctor) =
+               F::FunctorFinDom, G::AbsFunctor) =
   Transformation(FinTransformationMap(components, F, G)) |> validate
 
 

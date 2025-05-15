@@ -65,12 +65,12 @@ end
 """ Interpret a presented hom as a hom in the codomain category """
 function coerce_hom(cod::FinCat, f; homtype=:path)
   homtype == :hom && return f 
-  homtype == :generator && return compose(cod, Path(cod, [f]))
-  homtype == :list && return compose(
-    cod, Path(cod, Vector{impl_type(cod, :Gen)}(f)))
+  homtype == :generator && return to_hom(cod, f)
+  homtype == :list && return foldl(compose[getvalue(cod)], to_hom.(Ref(cod), f))
   homtype == :path || error("Bad homtype $homtype")
   f isa Path || error("Bad path $f")
-  return compose(cod, f)
+  isempty(f) && return id(cod, src(f))
+  coerce_hom(cod, collect(f); homtype=:list)
 end
 
 function coerce_hom(::Cat, f; homtype=:path)
@@ -81,18 +81,26 @@ end
 # FinDomFunctor instance
 ########################
 
-@instance ThFinDomFunctor{DO,CO,DH,CH,DG, FinCat, C
+
+"""
+Note: in order to implement the findomfunctor interface, we need a 
+way to decompose a 
+"""
+@instance ThFinDomFunctor{DO, CO, DH, CH, FinCat, C, DG
                           } [model::FinDomFunctorMap{DO,CO,DH,CH,DG,OM,HM,C}
                             ] where {DO,CO,DH,CH,DG,OM,HM,C} begin 
   dom() = model.dom
 
   codom() = model.codom
 
-  ob_map(x::DO)::CO = model.ob_map[x]  
+  ob_map(x::DO)::CO = model.ob_map[x]
 
-  function gen_map(f::DG)::CH 
-    model.hom_map[f]
+  function hom_map(x::DH)::CH 
+    pth = decompose(getvalue(model.dom), x)
+    isempty(pth) && return id(codom[model](), ob_map[model](src(pth)))
+    foldl(compose[getvalue(model.codom)], gen_map[model].(pth))
   end
+  gen_map(f::DG)::CH = model.hom_map[f]
 
 end
 
@@ -114,7 +122,7 @@ FinFunctor(maps::NamedTuple{(:V,:E)}, dom::FinCat, cod::FinCat; kw...) =
 
 function FinDomFunctor(maps::NamedTuple{(:V,:E)}, dom::FinCat, cod::AbsCat; kw...)
   D = getvalue(dom)
-  if D isa PathCatAsFinCat && getvalue(D) isa FinCatGraph 
+  if getvalue(D) isa FinCatGraph 
     FinDomFunctor(maps.V, maps.E, dom, cod; kw...)
   else 
     error("bad maps $maps for dom $(typeof(D))")

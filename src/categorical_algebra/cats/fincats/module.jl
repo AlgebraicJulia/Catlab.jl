@@ -29,8 +29,8 @@ include("FinCatGraphs.jl")
 include("FinCatPres.jl")
 @reexport using .FinCatPres
 
-include("FinCatsAsCats.jl")
-@reexport using .FinCatsAsCats
+# include("FinCatsAsCats.jl")
+# @reexport using .FinCatsAsCats
 
 include("DiscreteFinCats.jl")
 @reexport using .DiscreteFinCats

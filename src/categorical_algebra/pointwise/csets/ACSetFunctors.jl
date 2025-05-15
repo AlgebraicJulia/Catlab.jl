@@ -39,7 +39,7 @@ ACSet(X::ACSetFunctor) = X.acset # synonym for getvalue
 #########################
 
 @instance ThFinDomFunctor{FinCatPres.Ob, Ob, FinCatPres.Hom, Hom,
-                          FinCatPres.Gen, FinCat, Category
+                           FinCat, Category, FinCatPres.Gen,
                           } [model::ACSetFunctor{ACS, Ob, Hom} 
                             ] where {ACS, Ob, Hom} begin 
 
@@ -56,6 +56,14 @@ ACSet(X::ACSetFunctor) = X.acset # synonym for getvalue
       TaggedElem(get_attrtype(model.cod, getvalue(model), x), x)
     end
   end 
+
+  hom_map(f::GATExpr)::Hom = if f isa GATExpr{:generator}
+    gen_map[model](f)
+  elseif f isa GATExpr{:id}
+    id(codom[model](), ob_map[model](only(f.args)))
+  else 
+    error("TODO $f")
+  end
 
   function gen_map(f::GATExpr{:generator})::Hom 
     S = acset_schema(model.cod)

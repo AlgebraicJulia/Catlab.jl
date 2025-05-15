@@ -14,12 +14,12 @@ import ..FinFunctors: FinDomFunctor
 """ Composite of functors with a finitely presented domain.
 """
 @struct_hash_equal struct CompositeFinDomFunctor{AO,CO,AH,CH,AG,C}
-  fst::FinDomFunctor
+  fst::FunctorFinDom
   snd::AbsFunctor
-  function CompositeFinDomFunctor(fst::FinDomFunctor,snd::AbsFunctor)
+  function CompositeFinDomFunctor(fst::FunctorFinDom,snd::AbsFunctor)
     dom(snd) == codom(fst) || error("Cannot compose")
     AO,  AH,  AG = impl_type.(Ref(fst), [:DomOb, :DomHom, :DomGen])
-    CO,CH,C = impl_type.(Ref(snd), [:CodomOb, :CodomHom, :Cat′])
+    CO,CH,C = impl_type.(Ref(snd), [:CodomOb, :CodomHom, :CodCat])
     new{AO,CO,AH,CH,AG,C}(fst, snd)
   end
 end
@@ -47,7 +47,7 @@ end
 """
 A composite of functors A -> B and B -> C
 """
-@instance ThFinDomFunctor{A_Ob,C_Ob,A_Hom,C_Hom,A_Gen,FinCat,C} [
+@instance ThFinDomFunctor{A_Ob,C_Ob,A_Hom,C_Hom,FinCat,C,A_Gen} [
     model::CompositeFinDomFunctor{A_Ob,C_Ob,A_Hom,C_Hom,A_Gen,C}
     ] where {A_Ob,C_Ob,A_Hom,C_Hom,A_Gen,C} begin
 
@@ -56,10 +56,10 @@ A composite of functors A -> B and B -> C
   codom()::C = codom(last(model))
 
   ob_map(x::A_Ob)::C_Ob = ob_map(last(model), ob_map(first(model), x))
+  
+  hom_map(x::A_Hom)::C_Hom = hom_map(last(model), hom_map(first(model), x))
 
-  function gen_map(x::A_Gen)::C_Hom 
-    hom_map(last(model), gen_map(first(model), x))
-  end
+  gen_map(x::A_Gen)::C_Hom = hom_map(last(model), gen_map(first(model), x))
 end
 
 

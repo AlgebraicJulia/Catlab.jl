@@ -12,7 +12,7 @@ F = Functor(C)
 @test getvalue(F) isa IdentityFunctor
 
 @test (dom(F), codom(F)) == (C, C)
-# @test startswith(sprint(show, F), "id(TypeCat(")
+@test startswith(sprint(show, F), "id(TypeCat(")
 @test ob_map(F,x) == x
 @test hom_map(F,f) == f
 

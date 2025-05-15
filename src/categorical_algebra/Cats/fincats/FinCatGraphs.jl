@@ -11,7 +11,7 @@ import GATlab: equations, getvalue
 using ......Graphs: HasGraph, NamedGraph, src, tgt, nv, ne
 using ......BasicSets: FinSet
 using ...Paths: Path, coerce_path
-using ..PathCats: PathCat, PathCatAsFinCat, ThPathCat
+using ..PathCats: PathCat, ThPathCat
 import ..FinCats: FinCat
 
 
@@ -126,9 +126,9 @@ Edges are presumably morphism generators, and paths are the morphisms.
     get_ob(g, tgt(g, e))
   end
 
-  ob_set() = get_ob_set(getvalue(model))
+  ob_set()::FinSet = get_ob_set(getvalue(model))
 
-  gen_set() = get_hom_set(getvalue(model))
+  gen_set()::FinSet = get_hom_set(getvalue(model))
 
   eqs() = model.equations
 end
@@ -164,6 +164,6 @@ get_hom_set(g::HasGraph) = FinSet(ne(g))
 # Alternate constructors
 ########################
 
-FinCat(g::FinCatGraph) = FinCat(PathCatAsFinCat(PathCat(g)))
+FinCat(g::FinCatGraph) = FinCat(PathCat(g))
 
 end # module

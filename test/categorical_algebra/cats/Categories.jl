@@ -18,7 +18,7 @@ Co = op(C)
 
 # Coproduct Categories
 #######################
-C2 = FinCatAsCat(FinCat(DiscreteFinCat(FinSet(2))))
+C2 = Category(DiscreteFinCat(FinSet(2)))
 cats = Category.([TrivialCat(), C2])
 cp = CoproductCat(cats) |> Category
 

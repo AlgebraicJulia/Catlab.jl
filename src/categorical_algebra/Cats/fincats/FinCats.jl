@@ -1,6 +1,6 @@
-export FinCat, ob_generator, hom_generator,
+export FinCat, ob_generator, hom_generator, decompose,
   ob_generator_name, hom_generator_name, ob_generators, hom_generators,
-  equations, is_discrete, is_free, edges, src, tgt, gentype, decompose, AbsCat
+  equations, is_discrete, is_free, edges, src, tgt, gentype, AbsCat, to_hom
 
 using StructEquality
 
@@ -22,36 +22,14 @@ import ..Categories: ob_set, hom_set, obtype, homtype
 #############################
 
 """
-A FinCat has an unbiased `compose` method which must convert a path of 
-generators into a Hom. (It is ok for Hom=Path, in which case this is a no-op).
-One should also be able to express a hom in terms of generators (though this 
-need not be unique, so `decompose` is a one-sided inverse).
-
-This interface does NOT specify the fact that any implementation of FinCat 
-should specify `equations`.
-
-`Path` and `Set′` types are expected to be sent to Catlab's `Path` and `FinSet`.
-
-The following laws are expected to hold:
-  compose(emptyPath(a)) == id(a) ⊣ [a::Ob]
-  compose(a ++ b) = compose(compose(a), compose(b)) ⊣ [a::Path(x,y), b::Path(y,z)]
+A FinCat extends a category by having a finite set of Hom generators. Each one 
+can be interpreted as a Hom.
 """
-@theory ThFinCat begin
-  Ob::TYPE
-  Hom(dom::Ob,codom::Ob)::TYPE; 
-  id(a::Ob)::Hom(a,a)
-
+@theory ThFinCat <: ThCategoryExplicitSets begin
   Gen(src::Ob,tgt::Ob)::TYPE; 
-  
-  Path′(p_src::Ob, p_tgt::Ob)::TYPE;
-  compose(vgen::Path′(a,b))::Hom(a,b) ⊣ [(a,b)::Ob]
-  decompose(h::Hom(a,b))::Path′(a,b) ⊣ [(a,b)::Ob]
-
-  compose(decompose(h)) == h ⊣ [(x,y)::Ob, h::Hom(x,y)]
-
-  Set′::TYPE{FinSet}
-  ob_set()::Set′
-  gen_set()::Set′
+  to_hom(f::Gen(a,b))::Hom(a,b) ⊣ [(a,b)::Ob]
+  FSet′::TYPE{FinSet}
+  gen_set()::FSet′
 end
   
 ThFinCat.Meta.@wrapper FinCat
@@ -69,7 +47,7 @@ const AbsCat=Union{Cat, FinCat}
 Base.show(io::IO, C::FinCat) = show(io, getvalue(C))
 
 """ synonym for `ob_set` """
-ob_generators(f::FinCat)::FinSet = ob_set(f)
+ob_generators(f::FinCat)::SetOb = ob_set(f)
 
 """ synonym for `gen_set` """
 hom_generators(f::FinCat)::FinSet = gen_set(f)
@@ -80,9 +58,8 @@ homtype(c::FinCat)::Type = impl_type(c, :Hom)
 
 gentype(f::FinCat) = eltype(hom_generators(f))
 
-hom_set(f::FinCat) = SetOb(impl_type(f, :Hom))
-
-compose(c::FinCat, f, g) = compose(c, vcat(decompose(c, f), decompose(c, g)))
+""" To be implemented on a case-by-case basis """
+function decompose end 
 
 """ 
 Create path from a vector of generators. If no s/t provided, then the list 

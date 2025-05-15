@@ -45,7 +45,7 @@ const DeltaSchemaMigration = ContravariantMigration
 # This only exists for the acset to acset migrate! method which is 
 # performance-optimized for the easy Delta case
 struct DeltaMigration <: DeltaSchemaMigration
-  functor::FinDomFunctor
+  functor::FunctorFinDom
 end
 """ Sigma or left pushforward functorial data migration between acsets.
 
@@ -87,7 +87,7 @@ end
 """
 Apply a ``Δ`` migration by simple precomposition.
 """
-migrate(X::FinDomFunctor,M::DeltaSchemaMigration) = X∘functor(M)
+migrate(X::FunctorFinDom,M::DeltaSchemaMigration) = X∘functor(M)
 migrate(::Type{T}, X::ACSet, M::DeltaMigration) where T <: ACSet =
   migrate!(T(), X, M)
 
@@ -188,7 +188,7 @@ struct SigmaMigrationFunctor <: AbstractMigrationFunctor
   migration::SigmaMigration
   dom_constructor
   codom_constructor
-  SigmaMigrationFunctor(f::FinDomFunctor,d::ACSet,c::ACSet) = 
+  SigmaMigrationFunctor(f::FunctorFinDom,d::ACSet,c::ACSet) = 
     new(SigmaMigration(f),constructor(d),constructor(c))
 end 
 migration(F::SigmaMigrationFunctor) = F.migration

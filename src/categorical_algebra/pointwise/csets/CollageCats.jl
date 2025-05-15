@@ -102,7 +102,7 @@ end
 
 GATlab.getvalue(c::CollageDomIncl) = c.c
 
-@instance ThFunctor{DO,Tagged([DO,CO]),DH,Tagged([DH,CH,Het]), Category} [
+@instance ThFunctor{DO,Tagged([DO,CO]),DH,Tagged([DH,CH,Het]), Cat, Cat} [
   model::CollageDomIncl{DO,DH,CO,CH,Het}] where {DO,DH,CO,CH,Het} begin 
 
   dom() = getvalue(model).domcat
@@ -119,7 +119,7 @@ end
 
 GATlab.getvalue(c::CollageCodomIncl) = c.c
 
-@instance ThFunctor{DO,Tagged([DO,CO]),DH,Tagged([DH,CH,Het]), Category} [
+@instance ThFunctor{DO,Tagged([DO,CO]),DH,Tagged([DH,CH,Het]), Cat, Cat} [
   model::CollageCodomIncl{DO,DH,CO,CH,Het}] where {DO,DH,CO,CH,Het} begin 
 
   dom() = getvalue(model).codcat

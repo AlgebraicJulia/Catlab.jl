@@ -31,8 +31,7 @@ end
 
 ThTransformation.Meta.@typed_wrapper Transformation
 
-const FinTransformation{DO,CH,CodFun} = Transformation{DO,CH,FinDomFunctor, CodFun}
-# const Transformation{DO,CH,CodFun} = Transformation′{DO,CH,FinDomFunctor}
+const FinTransformation{DO,CH,CodFun} = Transformation{DO,CH,<:FunctorFinDom, CodFun}
 
 
 function validate(i::Transformation)
@@ -80,7 +79,7 @@ end
 function naturality_failures(α::Transformation; check_equations::Bool=true)
   failures = []
   F, G = dom(α), codom(α)
-  F isa FinDomFunctor || error(
+  F isa FunctorFinDom || error(
     "Can only check naturality for finitely presented domains: $F")
 
   C, D = dom(F), codom(F) # == dom(G), codom(G)

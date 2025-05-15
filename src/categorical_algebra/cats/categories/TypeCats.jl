@@ -16,6 +16,9 @@ the Julia type parameter, `Hom`.
 """
 ThCategory.Meta.@typed_wrapper TypeCat
 
+Base.show(io::IO, ::TypeCat{Ob,Hom}) where {Ob,Hom} = 
+  print(io, "TypeCat($Ob,$Hom)")
+
 # ThCategoryExplicitSets Implementation
 ######################################
 

@@ -4,7 +4,7 @@ export FinSetAsSet
 
 using StructEquality
 using GATlab 
-using ..BasicSets: ThSet, FinSet
+using ..BasicSets: ThSet, FinSet, ThFinSet
 using ..ProdSets: ProdSet
 import ..Sets: SetOb
 
@@ -35,6 +35,7 @@ Base.iterate(s::SetOb, xs...) = iterate(FinSet(s), xs...)
 
 function FinSet(s::SetOb)
   i = getvalue(s)
+  implements(i, ThFinSet) && return FinSet(i)
   i isa FinSetAsSet && return getvalue(i)
   i isa ProdSet && return FinSet(ProdSet(FinSet.(i)))
   error("Cannot convert SetOb $s into a FinSet")

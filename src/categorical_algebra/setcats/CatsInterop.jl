@@ -14,8 +14,7 @@ end
 
 Sends a category to its set of objects and a functor to its object map. 
 """
-U_CatSet = 
-  Functor(o -> ob_set(o), hom_comp, Category(CatC()), Category(SetC()))
+U_CatSet = Functor(o -> ob_set(o), hom_comp, Category(CatC()), Category(SetC()))
 
 # This was formerly called `Ob`
 

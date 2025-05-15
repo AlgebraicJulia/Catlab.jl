@@ -10,7 +10,7 @@ import .....Graphs: Graph
 using .....BasicSets 
 using ...Paths: Path
 using ..FinCats: ThFinCat, src
-import ..FinCats: FinCat
+import ..FinCats: FinCat, decompose
 
 """ Discrete category on a finite set.
 
@@ -28,8 +28,9 @@ DiscreteFinCat(n::Integer) = DiscreteFinCat(FinSet(n))
 
 Base.show(io::IO, C::DiscreteFinCat) = print(io, "FinCat($(length(C.set)))")
 
-@instance ThFinCat{Ob,Ob,Union{},Path{Ob,Union{}}
-                  } [model::DiscreteFinCat{Ob}] where {Ob} begin
+decompose(::DiscreteFinCat, h) = Path([], h, h)
+
+@instance ThFinCat{Ob,Ob,Union{}} [model::DiscreteFinCat{Ob}] where {Ob} begin
 
   Ob(x::Ob) = x ∈ model.set ? x : error("$x not an object of $model")
 
@@ -41,15 +42,15 @@ Base.show(io::IO, C::DiscreteFinCat) = print(io, "FinCat($(length(C.set)))")
 
   codom(x::Ob) = x 
 
-  ob_set() = model.set 
+  ob_set()::SetOb = SetOb(getvalue(model.set))
 
-  gen_set() = FinSet(EmptySet())
+  gen_set()::FinSet = FinSet(EmptySet())
 
-  decompose(x::Ob) = Path{Int}(x,Union{})
+  hom_set()::SetOb = ThFinCat.ob_set[model]()
 
-  function compose(x::Path{Ob,Union{}})
-    isempty(x) || error("Discrete Cat has only empty ")
-    src(x)
+  function compose(x::Ob, y::Ob)
+    x == y || error("Cannot compose $x and $y")
+    x
   end
   
 end

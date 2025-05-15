@@ -349,7 +349,7 @@ inclusion of schemas ``C₀ → C`` must satisfy the property described in
 struct DiscreteACSet{A <: StructACSet, X} <: AbstractDiscreteACSet{X} end
 
 dom(::Type{<:DiscreteACSet{A}}) where {S, A<:StructACSet{S}} =
-  (A, StructTightACSetTransformation{S})
+  (A, StructACSetTransformation{S})
 
 function StructuredMulticospan{L}(x::StructACSet,
                                   cospan::Multicospan{<:FinSet}) where

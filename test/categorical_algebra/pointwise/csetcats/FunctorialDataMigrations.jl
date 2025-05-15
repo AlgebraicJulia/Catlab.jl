@@ -50,7 +50,6 @@ migrate!(h2, dds, FOb, FHom; homtype=:path)
 
 # Migrate DDS → DDS by advancing four steps.
 @test dds == migrate(DDS, dds, Dict(Xdds => Xdds),
-
                      Dict(Φ => Path(𝒞DDS, [Φ, Φ, Φ, Φ])); homtype=:path)
 # Using the equations of cyclic schema to prevent infinite loop
 ###############################################################

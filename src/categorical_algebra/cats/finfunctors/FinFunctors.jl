@@ -17,7 +17,6 @@ import ..Functors: ob_map, hom_map, show_type_constructor, validate
 import ..FreeDiagrams: FreeDiagram, FreeGraph
 using ..Paths: Path
 
-
 # Dict utilities
 ################
 
@@ -95,12 +94,8 @@ Theory of functors with a finitely-presented domain (ob and hom generators). The
 functor assigns codom homs to dom *generators*. This theory itself is ambivalent
 to whether the codomain category is finitely presented.
 """
-@theory ThFinDomFunctor begin
-  DomOb::TYPE; CodomOb::TYPE; DomHom::TYPE; CodomHom::TYPE; DomGen::TYPE; 
-  FCat::TYPE; Cat′::TYPE;
-  dom()::FCat
-  codom()::Cat′
-  ob_map(o::DomOb)::CodomOb
+@theory ThFinDomFunctor <: ThFunctor begin
+  DomGen::TYPE;
   gen_map(o::DomGen)::CodomHom
 end
 
@@ -113,26 +108,23 @@ Wrapper type for models of `ThFinDomFunctor`.
 """
 ThFinDomFunctor.Meta.@typed_wrapper FinDomFunctor′ <: AbsFunctor
 
-const FinDomFunctor{A,B,C,D,E,F} = FinDomFunctor′{A,B,C,D,E,FinCat,F}
+
+const FinFunctor{A,B,C,D,E} = FinDomFunctor′{A,B,C,D,FinCat,FinCat,E}
+const FinDomFunctor{A,B,C,D,E} = FinDomFunctor′{A,B,C,D,FinCat,Cat,E}
+const FunctorFinDom = Union{FinFunctor, FinDomFunctor}
 
 FinDomFunctor(impl) = 
   FinDomFunctor{impl_type.(Ref(impl), Ref(ThFinDomFunctor), 
-                           [:DomOb,:CodomOb,:DomHom,:CodomHom,:DomGen,:Cat′]
-                          )...}(impl)
-
-const FinFunctor{A,B,C,D,E} = FinDomFunctor{A,B,C,D,E,FinCat}
-
-const FunctorFinDom = Union{Functor, FinDomFunctor}
-
+                [:DomOb,:CodomOb,:DomHom,:CodomHom,:DomGen])...}(impl)
 """
 If we want this partially specified type to act as a constructor, we 
 need to fill in the other type parameters.
 """
 FinFunctor(impl) = 
   FinFunctor{impl_type.(Ref(impl), Ref(ThFinDomFunctor), 
-                        [:DomOb,:CodomOb,:DomHom,:CodomHom,:DomGen])...}(impl)
+             [:DomOb,:CodomOb,:DomHom,:CodomHom,:DomGen])...}(impl)
 
-function validate(i::Union{FinFunctor,FinDomFunctor})
+function validate(i::FinDomFunctor′)
   DO, CO, DH, CH, DG = impl_type.(Ref(i),[:DomOb,:CodomOb,:DomHom, :CodomHom, :DomGen])
   𝒞, 𝒟 = ThFinDomFunctor.dom(i), ThFinDomFunctor.codom(i)
   𝒞O,𝒞H,𝒞G,𝒟O,𝒟H = impl_type.([𝒞,𝒞,𝒞,𝒟,𝒟],[:Ob,:Hom,:Gen,:Ob,:Hom])
@@ -155,60 +147,50 @@ We need a new model struct for this because `dom` must return a `FinCat` in the
 case of implementing `ThFinDomFunctor` but a `Category` in the case of
 implementing `ThCategory`.
 """
-@struct_hash_equal struct FinFunctorAsFunctor{DO, CO, DH, CH, C}
-  val::FinDomFunctor′{DO, CO, DH, CH, <:Any, FinCat, C}
+@struct_hash_equal struct FinFunctorAsFunctor{DO, CO, DH, CH}
+  val::FinDomFunctor′{DO, CO, DH, CH}
 end 
 
 GATlab.getvalue(f::FinFunctorAsFunctor) = f.val
 
-@instance ThFunctor{DO,CO,DH,CH,Category} [
-    model::FinFunctorAsFunctor{DO, CO, DH, CH, C}] where {DO, CO, DH, CH, C} begin
+@instance ThFunctor{DO,CO,DH,CH,Cat,Cat} [
+    model::FinFunctorAsFunctor{DO, CO, DH, CH}] where {DO, CO, DH, CH} begin
 
   dom() = Category(dom(getvalue(model))) # coerce to Cat
 
   codom() = Category(codom(getvalue(model))) # coerce to Cat, if not already
 
-  ob_map(x::DO)::CO = ob_map(getvalue(model), x)
+  ob_map(x::DO)::CO = ob_map(model, x)
 
-  hom_map(x::DH)::CH = path_map(getvalue(model), 
-                                decompose(dom(getvalue(model)), x))
+  hom_map(x::DH)::CH = hom_map(model, x)
 end
 
 # Other methods
 ###############
 
-""" Apply a FinDomFunctor to a path of generators """
-function path_map(F::FinDomFunctor, path::Path)
-  D = codom(F)
-  init = id(D, ob_map(F, src(path)))
-  mapreduce(e -> gen_map(F, e), (gs...) -> compose(D, gs...), edges(path); init)
-end
-
-""" Apply a FinDomFunctor defined on generators by decompose the hom into a path of generators """
-function hom_map(F::FinDomFunctor, h)
-  path_map(F, decompose(dom(F), h))
-end
-
 Base.show(io::IO, s::FinDomFunctor) = show(io, getvalue(s))
+
+show_type_constructor(io::IO, ::Type{<:FinFunctor}) =
+  print(io, "FinFunctor")
 
 show_type_constructor(io::IO, ::Type{<:FinDomFunctor}) =
   print(io, "FinDomFunctor")
 
 """ Collect assignments of functor's object map as a vector.
 """
-collect_ob(F::FinDomFunctor) = map(x -> ob_map(F, x), ob_generators(dom(F)))
+collect_ob(F::FunctorFinDom) = map(x -> ob_map(F, x), ob_generators(dom(F)))
 
 """ Collect assignments of functor's object map as a dictionary.
 """
-ob_map(F::FinDomFunctor) = Dict(x=>ob_map(F, x) for x in  ob_generators(dom(F)))
+ob_map(F::FunctorFinDom) = Dict(x=>ob_map(F, x) for x in  ob_generators(dom(F)))
 
 """ Collect assignments of functor's morphism map as a vector.
 """
-collect_hom(F::FinDomFunctor) = map(f -> gen_map(F, f), hom_generators(dom(F)))
+collect_hom(F::FunctorFinDom) = map(f -> gen_map(F, f), hom_generators(dom(F)))
 
 """ Collect assignments of functor's morphism map as a dictionary.
 """
-hom_map(F::FinDomFunctor) = 
+hom_map(F::FunctorFinDom) = 
   Dict(f => gen_map(F, f) for f in hom_generators(dom(F)))
 
 """ Is the purported functor on a presented category functorial?
@@ -220,7 +202,7 @@ checks are currently implemented, so this only functions for identity functors.
 
 See also: [`functoriality_failures'](@ref) and [`is_natural`](@ref).
 """
-function is_functorial(F::FinDomFunctor; kw...)
+function is_functorial(F::FunctorFinDom; kw...)
   failures = functoriality_failures(F; kw...)
   all(isempty, failures)
 end
@@ -231,7 +213,7 @@ Similar to [`is_functorial`](@ref) (and with the same caveats) but returns
 iterators of functoriality failures: one for domain incompatibilities, one for
 codomain incompatibilities, and one for equations that are not satisfied.
 """
-function functoriality_failures(F::FinDomFunctor; check_equations::Bool=false)
+function functoriality_failures(F::FunctorFinDom; check_equations::Bool=false)
   C, D = dom(F), codom(F)
   bad_dom = Iterators.filter(hom_generators(C)) do f 
     dom(D, gen_map(F, f)) != ob_map(F, src(C,f))
@@ -262,7 +244,7 @@ The resulting ob_map and hom_map are guaranteed to have
 valtype or eltype, as appropriate, equal to Ob and Hom,
 respectively. 
 """
-function force(F::FinDomFunctor, Obtype::Type=Any, Homtype::Type=Any)
+function force(F::FunctorFinDom, Obtype::Type=Any, Homtype::Type=Any)
   C = dom(F)
   FinDomFunctor(
     make_map(x -> ob_map(F, x), ob_generators(C), Obtype),
@@ -271,7 +253,7 @@ function force(F::FinDomFunctor, Obtype::Type=Any, Homtype::Type=Any)
 end
 
 """ Obtain a FreeDiagram from a FinDomFunctor """
-function FreeDiagram(f::FinDomFunctor)
+function FreeDiagram(f::FunctorFinDom)
   obs = collect_ob(f)
   obdict = Dict(o => i for (i, o) in enumerate(obs))
   D = codom(f)
@@ -290,13 +272,16 @@ function codom_cat(F::FinDomFunctor)::Category
   error("Bad codom to $F: $𝒞 ")
 end
 
-function compose_abs_functor(F::FinDomFunctor, G::AbsFunctor)
-  C = dom(F)
-  FinDomFunctor(mapvals(fx -> ob_map(G, fx), ob_map(F)),
-                mapvals(fx -> hom_map(G, fx), hom_map(F)), C, codom(G); 
+""" Create a composite FinDomFunctorMap """
+function compose_abs_functor(F::FunctorFinDom, G::AbsFunctor)
+  C, D = dom(F), codom(G)
+  FF = D isa FinCat ? FinFunctor : FinDomFunctor
+  FF(mapvals(fx -> ob_map(G, fx), ob_map(F)),
+                mapvals(fx -> hom_map(G, fx), hom_map(F)), C, D; 
                 homtype=:hom)
 end
 
+""" Create a composite FunctorCallable """
 function compose_abs_functor(F::AbsFunctor, G::AbsFunctor)
   Functor(x -> ob_map(G,  ob_map(F, x)),
           x -> hom_map(G, hom_map(F, x)), dom(F), codom(G))
@@ -314,7 +299,7 @@ change the limits of these diagrams.
 This amounts to checking, for a functor C->D, that, for every object d in
 Ob(D), the comma category (F/d) is connected.
 """
-function is_initial(F::FinDomFunctor)::Bool
+function is_initial(F::FunctorFinDom)::Bool
   cod = codom(F)
   cod isa FinCat || error("Can only check initiality for functors with f.p. codom")
   Gₛ, Gₜ = Graph(dom(F)), Graph(cod)

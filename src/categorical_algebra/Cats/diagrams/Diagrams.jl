@@ -40,19 +40,19 @@ collect_hom(d::Diagram) = collect_hom(diagram(d))
 """
 """
 @struct_hash_equal struct DiagramId <: Diagram 
-  fun::FinDomFunctor 
+  fun::FunctorFinDom 
 end
 
 DiagramId(d::Diagram) = DiagramId(diagram(d))
 
-Diagram(f::FinDomFunctor) = DiagramId(f) # default
+Diagram(f::FunctorFinDom) = DiagramId(f) # default
 
 op(d::DiagramId) = DiagramOp(op(diagram(d)))
 
 """
 """
 @struct_hash_equal struct DiagramOp <: Diagram 
-  fun::FinDomFunctor 
+  fun::FunctorFinDom 
 end
 
 DiagramOp(d::Diagram) = DiagramOp(diagram(d))
@@ -62,7 +62,7 @@ op(d::DiagramOp) = DiagramId(op(diagram(d)))
 """
 """
 @struct_hash_equal struct DiagramCo <: Diagram 
-  fun::FinDomFunctor 
+  fun::FunctorFinDom 
 end
 
 DiagramCo(d::Diagram) = DiagramCo(diagram(d))
@@ -88,7 +88,7 @@ between limits of the diagrams, respectively, whereas morphisms of type
 
 """
 @struct_hash_equal struct DiagramHom 
-  shape_map::FinDomFunctor
+  shape_map::FinFunctor
   diagram_map::Transformation
   precomposed_diagram::Diagram
 end

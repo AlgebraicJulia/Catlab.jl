@@ -40,7 +40,7 @@ end
 # ThFunctor interface
 ####################
 
-@instance ThFunctor{AO,CO,AH,CH,Cat} [model::CompositeFunctor{AO,CO,AH,CH}
+@instance ThFunctor{AO,CO,AH,CH,Cat,Cat} [model::CompositeFunctor{AO,CO,AH,CH}
                                      ] where {AO,CO,AH,CH} begin 
   dom() = dom(first(model))
 

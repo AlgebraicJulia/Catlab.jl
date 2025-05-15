@@ -1,5 +1,5 @@
 module FinSets
-export FinSet, AbsSet, ThFinSet, UnitRangeLike
+export FinSet, AbsSet, ThFinSet, UnitRangeLike, coerce_setob
 
 using GATlab
 using ..Sets: ThSet, SetOb
@@ -27,6 +27,10 @@ end
 ThFinSet.Meta.@wrapper FinSet
 
 const AbsSet = Union{FinSet, SetOb}
+
+""" Interpret an AbsSet as a SetOb """
+coerce_setob(f::FinSet) = SetOb(getvalue(f))
+coerce_setob(s::SetOb) = s
 
 # We shouldn't have this - TODO fix code that breaks when this is removed
 FinSet(f::FinSet) = f 

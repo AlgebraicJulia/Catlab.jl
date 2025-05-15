@@ -12,7 +12,7 @@ po2 = PreorderFinCat([(1,2),(2,3)]) |> FinCat
 F = FinFunctor(Dict(:a=>1,:b=>2),
   Dict(x=>x for x in hom_generators(po1)), po1, po2; homtype=:hom)
 
-@test id(Cat(po1), :a) == (1=>1)
+@test id(po1, :a) == (1=>1)
 
 @test hom_map(F, 1=>1) == (1=>1)
   
@@ -124,6 +124,9 @@ F5 = FinFunctor([1,2,3], [1,2,3], T, T2; gen...)
 # Test ACSets as FinDomFunctors into Set
 V, E, src′, tgt′ = generators(SchGraph)
 # Graph as set-valued functor on a free category.
+acs = path_graph(Graph, 3)
+FinDomFunctor(ACSetFunctor(acs,infer_acset_cat(acs)))
+
 F = FinDomFunctor(path_graph(Graph, 3))
 𝒞 = dom(F)
 @test 𝒞 == FinCat(SchGraph)

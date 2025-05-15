@@ -7,10 +7,10 @@ using StructEquality
 using GATlab 
 
 using ......Graphs
-using ......BasicSets: FinSet
+using ......BasicSets: FinSet, SetOb
 using ...Paths: Path
 using ..FinCats: ThFinCat
-import ..FinCats: FinCat
+import ..FinCats: FinCat, decompose
 
 """
 A case where generators and morphisms share the same Julia type, and where morphisms are not mere paths of generators.
@@ -44,23 +44,29 @@ PreorderFinCat(p::AbstractVector{Tuple{Ob,Ob}}; vals=nothing) where Ob =
 PreorderFinCat(p::T, q::T; vals=nothing) where {Ob, T<:AbstractVector{Ob}} = 
   PreorderFinCat(collect(zip(p,q)); vals)
 
-@instance ThFinCat{Ob, Pair{Int,Int}, Pair{Int,Int}, Path{Ob,Pair{Int,Int}}, 
+@instance ThFinCat{Ob, Pair{Int,Int}, Pair{Int,Int}, 
                   } [model::PreorderFinCat{Ob}] where {Ob} begin
   dom(f::Pair{Int,Int})::Ob = model.gens[first(f)]
 
   codom(f::Pair{Int,Int})::Ob = model.gens[last(f)]
 
+  src(f::Pair{Int,Int})::Ob = model.gens[first(f)]
+
+  tgt(f::Pair{Int,Int})::Ob = model.gens[last(f)]
+
   id(x::Ob) = (model.gendict[x] => model.gendict[x])
   
-  compose(f::Path{Ob,Pair{Int,Int}})::Pair{Int,Int} = 
-    (model.gendict[src(f)] => model.gendict[tgt(f)])
+  compose(f::Pair{Int,Int}, g::Pair{Int,Int})::Pair{Int,Int} = first(f) => last(g)
 
-  decompose(f::Pair{Int,Int})::Path{Ob,Pair{Int,Int}} = 
-    Path([f], model.genvec[first(f)], model.genvec[last(f)])
+  ob_set()::SetOb = SetOb(getvalue(model.gens))
 
-  ob_set() = model.gens
+  gen_set()::FinSet = FinSet(model.rel)
+  
+  hom_set()::SetOb = SetOb(model.rel)
 
-  gen_set() = FinSet(model.rel)
+  to_hom(gen::Pair{Int,Int})::Pair{Int,Int} = gen
 end
+
+decompose(::PreorderFinCat, f::Pair{Int,Int}) = Path([f], f[1], f[2])
 
 end # module

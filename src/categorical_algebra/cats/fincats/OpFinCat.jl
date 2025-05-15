@@ -7,7 +7,7 @@ using StructEquality
 using GATlab 
 import GATlab: getvalue, equations
 
-using ......BasicSets: FinSet
+using ......BasicSets: FinSet, SetOb
 using ...Paths: Path
 using ...Categories: obtype, homtype, ob_set, hom_set
 import ...Categories: op
@@ -26,7 +26,7 @@ end
 
 getvalue(o::OppositeFinCat) = o.val
 
-@instance ThFinCat{Ob, Hom, Gen, Path{<:Ob,<:Gen}} [model::OppositeFinCat{Ob,Hom,Gen}
+@instance ThFinCat{Ob, Hom, Gen} [model::OppositeFinCat{Ob,Hom,Gen}
                                       ] where {Ob,Hom,Gen} begin
   src(g::Gen)::Ob = tgt(getvalue(model), g)
 
@@ -38,13 +38,15 @@ getvalue(o::OppositeFinCat) = o.val
 
   id(x::Ob)::Hom = id(getvalue(model), x)
 
-  compose(f::Path{<:Ob,<:Gen})::Hom = compose(getvalue(model), reverse(f))
+  compose(f::Hom, g::Hom)::Hom = compose(getvalue(model), g, f)
 
-  decompose(f::Hom)::Path{<:Ob,<:Gen} = reverse(decompose(getvalue(model), f))
+  ob_set()::SetOb = ob_set(getvalue(model))
 
-  ob_set()::FinSet = ob_set(getvalue(model))
+  hom_set()::SetOb = hom_set(getvalue(model))
 
   gen_set()::FinSet = gen_set(getvalue(model))
+
+  to_hom(g::Gen)::Gen = to_hom(getvalue(model), g)
 end
 
 equations(C::OppositeFinCat) = map(equations(getvalue(C))) do x 

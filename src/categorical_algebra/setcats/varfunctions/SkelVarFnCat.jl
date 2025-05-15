@@ -42,7 +42,6 @@ end
   function compose(f::FinDomFunction, g::FinDomFunction)
     NT, MT, N′ = getvalue.([codom(f), codom(g), dom(g)])
     NM = getvalue.([NT.left, MT.left])
-    all(T -> T isa FinSetAsSet, NM)
     N, M = getvalue.(getvalue.(NM))
 
     # Validate

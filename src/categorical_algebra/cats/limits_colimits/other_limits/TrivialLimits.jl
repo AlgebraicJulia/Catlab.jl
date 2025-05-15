@@ -76,4 +76,16 @@ end
   universal(::AbsLimit, ::Multicospan, ::Multispan) = nothing
 end
 
+
+@instance ThCategoryWithBipartiteColimits{Nothing, Nothing} [model::TrivialCat]  begin 
+
+  colimit(d::BipartiteFreeDiagram)::AbsColimit = let ns=fill(nothing, nv₂(d));
+    ColimitCocone(Multicospan(nothing, ns, ns), FreeDiagram(d))
+  end
+
+  universal(::AbsColimit, ::BipartiteFreeDiagram, ::Multicospan) = nothing
+end
+
+
+
 end # module

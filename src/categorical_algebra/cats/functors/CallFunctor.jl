@@ -26,7 +26,7 @@ end
 # ThFunctor implementation
 ##########################
 
-@instance ThFunctor{DO,CO,DH,CH,Cat} [model::FunctorCallable{DO,CO,DH,CH} 
+@instance ThFunctor{DO,CO,DH,CH,Cat,Cat} [model::FunctorCallable{DO,CO,DH,CH} 
                                      ] where {DO,CO,DH,CH} begin 
   dom()::Cat = model.dom
 

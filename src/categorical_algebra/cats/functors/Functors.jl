@@ -13,9 +13,9 @@ import ..Categories: dom, codom, validate
 # of GATs are a thing. We also wouldn't need a "Cat" type.
 @theory ThFunctor begin
   DomOb::TYPE; CodomOb::TYPE; DomHom::TYPE; CodomHom::TYPE;
-  Cat::TYPE;
-  dom()::Cat
-  codom()::Cat
+  DomCat::TYPE; CodCat::TYPE;
+  dom()::DomCat
+  codom()::CodCat
   ob_map(o::DomOb)::CodomOb
   hom_map(o::DomHom)::CodomHom
 end
@@ -32,7 +32,11 @@ directly when the objects and morphisms have distinct Julia types. This is
 sometimes but not always the case (see [`Category`](@ref)), so when writing
 generic code one should prefer the `ob_map` and `hom_map` functions.
 """
-ThFunctor.Meta.@wrapper Functor <: AbsFunctor
+ThFunctor.Meta.@typed_wrapper Functor′ <: AbsFunctor
+
+const Functor{A,B,C,D} = Functor′{A,B,C,D,Cat,Cat}
+
+Functor(x) = Functor′(x)
 
 """
 Wrapper of an implementation of ThFunctor

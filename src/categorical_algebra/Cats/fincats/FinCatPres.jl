@@ -10,10 +10,10 @@ import GATlab: equations, getvalue
 using ......Theories: ThSchema, ThPointedSetSchema, AttrTypeExpr, FreeSchema
 import ......Theories: id, compose, dom, codom
                       
-using ......BasicSets: FinSet
+using ......BasicSets: FinSet, SetOb
 using ...Paths: Path, src, tgt
 using ..FinCats: ThFinCat
-import ..FinCats: FinCat
+import ..FinCats: FinCat, decompose
 
 
 const Ob = Union{FreeSchema.Ob{:generator},FreeSchema.AttrType{:generator}}
@@ -51,6 +51,20 @@ end
 # Other methods
 #-------------
 
+function decompose(::FinCatPresentation, f::Union{FreeSchema.Attr{:generator},FreeSchema.Hom{:generator}}) 
+  Path([f], f.type_args...)
+end
+
+decompose(::FinCatPresentation, f::FreeSchema.Hom{:id}) = let x = only(f.args);
+  Path([], x, x)
+end
+
+function decompose(C::FinCatPresentation, f::Union{FreeSchema.Attr{:compose},FreeSchema.Hom{:compose}}) 
+  S = Schema(getvalue(C))
+  Path(f.args, dom(S, nameof(first(f.args))), codom(S, nameof(last(f.args))))
+end
+
+
 equations(C::FinCatPresentation) = equations(presentation(C))
 
 presentation(C::FinCatPresentation) = C.presentation # synonym for getvalue
@@ -59,8 +73,7 @@ presentation(C::FinCatPresentation) = C.presentation # synonym for getvalue
 ####################################
 # AnyHom = Union{FreeSchema.Hom{:generator}, FreeSchema.Hom{:compose}, FreeSchema.Hom{:id}}
 
-@instance ThFinCat{Ob, Hom, Gen, Path{<:Ob, <:Gen}
-                  } [model::FinCatPresentation{T}] where {T} begin
+@instance ThFinCat{Ob, Hom, Gen} [model::FinCatPresentation{T}] where {T} begin
   src(f::Gen)::Ob = dom(f)
 
   tgt(f::Gen)::Ob = codom(f)
@@ -71,28 +84,15 @@ presentation(C::FinCatPresentation) = C.presentation # synonym for getvalue
   
   id(x::Ob)::Hom = id(x)
 
-  function compose(f::Path{<:Ob, <:Gen})::Hom 
-    length(f) == 0 && return id(src(f))
-    length(f) == 1 && return only(f)
-    compose(collect(f)...)
-  end
+  compose(f::Hom, g::Hom)::Hom = compose(f, g)
 
-  function decompose(f::Hom)::Path{<:Ob, <:Gen}
-    args = if f isa Gen
-      Gen[f]
-    elseif f isa GATExpr{:id}
-      Gen[]
-    elseif f isa GATExpr{:compose}
-      f.args
-    end
-    Path(Vector{Gen}(args), dom(f), codom(f))  #{Ob,Gen,Vector{Gen}} 
-  end
+  to_hom(g::Gen)::Hom = g
   
-  function ob_set()::FinSet
+  function ob_set()::SetOb
     P = getvalue(model)
     v = Ob[generators(P, :Ob); 
            haskey(P.generators, :AttrType) ? generators(P, :AttrType) : []]
-    FinSet(v)
+    SetOb(getvalue(FinSet(v)))
   end
 
   function gen_set()::FinSet
@@ -101,6 +101,9 @@ presentation(C::FinCatPresentation) = C.presentation # synonym for getvalue
     v = Gen[generators(P, :Hom); generators(P, :Attr)]
     FinSet(v)
   end
+
+  hom_set()::SetOb = SetOb(Hom)
+
 end
 
 id(::Union{FinCatPresentation{ThSchema.Meta.T},
@@ -123,8 +126,6 @@ hom_key(::FinCatPresentation, f) = presentation_key(f)
 presentation_key(name::Union{AbstractString,Symbol}) = name
 
 presentation_key(expr::GATExpr{:generator}) = first(expr)
-
-decompose(::FinCatPresentation, f::GATExpr{:compose}) = args(f)
 
 function Base.show(io::IO, C::FinCatPresentation)
   print(io, "FinCat(")

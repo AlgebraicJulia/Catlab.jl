@@ -20,11 +20,11 @@ GATlab.getvalue(i::IdentityFunctor) = i.dom
 
 function Base.show(io::IO, F::IdentityFunctor)
   print(io, "id(")
-  #show_domains(io, F, codomain=false) #TODO
+  show(io, F.dom)
   print(io, ")")
 end
 
-@instance ThFunctor{O,O,H,H,Cat} [model::IdentityFunctor{O,H}] where {O,H} begin 
+@instance ThFunctor{O,O,H,H,Cat,Cat} [model::IdentityFunctor{O,H}] where {O,H} begin 
   dom() = getvalue(model)
 
   codom() = getvalue(model)

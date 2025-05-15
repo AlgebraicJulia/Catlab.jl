@@ -27,7 +27,7 @@ else
   Functor(OppositeFunctor(f))
 end
 
-@instance ThFunctor{DO,CO,DH,CH,Cat} [model::OppositeFunctor{DO,CO,DH,CH}
+@instance ThFunctor{DO,CO,DH,CH,Cat,Cat} [model::OppositeFunctor{DO,CO,DH,CH}
                                      ] where {DO,CO,DH,CH} begin 
   dom() = op(dom(getvalue(model)))
 

@@ -18,11 +18,11 @@ g = parallel_arrows(Graph, 3)
 C = FinCat(g)
 
 @test Graph(C) == g
-@test ob_generators(C) == FinSet(2) # Replaced "Ob"
+@test ob_generators(C) == SetOb(FinSetInt(2)) # Replaced "Ob"
 @test !is_discrete(C)
 @test is_free(C)
 # @test (hom(C, 1), hom_generator(C, 1)) == (Path(g, 1), 1)
-@test ob_generators(C) == FinSet(2)
+@test ob_generators(C) == SetOb(FinSetInt(2))
 @test hom_generators(C) == FinSet(3)
 # @test startswith(sprint(show, C), "FinCat($(Graph)") # TODO?
 @test equations(C) == []
@@ -32,7 +32,7 @@ C_op = op(C)
 @test C_op isa FinCat
 # @test (ob(C_op, 1), ob_generator(C_op, 1)) == (1, 1)
 # @test (hom(C_op, 1), hom_generator(C_op, 1)) == (Path(g, 1), 1)
-@test ob_generators(C_op) == FinSet(2)
+@test ob_generators(C_op) == SetOb(FinSetInt(2))
 @test hom_generators(C_op) == FinSet(3)
 @test op(C_op) == C
 @test equations(C_op) == []
@@ -44,14 +44,14 @@ f = id(D, 2)
 @test (src(f), tgt(f)) == (2, 2)
 @test isempty(edges(f))
 @test reverse(f) == f
-g13 = compose(D, Path(h, [1, 3])) # changed, and renamed `g`
+g13 = compose(D, to_hom(D,1), to_hom(D,3)) # changed, and renamed `g`
 @test edges(g13) == [1,3]
 
 D_op = op(D)
 @test src(D_op, 1) == 2 # dom/src
 @test tgt(D_op, 1) == 1 # codom/tgt
 @test id(D_op, 2) == f
-@test compose(D_op, Path(reverse(h), [3, 1])) == g13
+@test compose(D_op, to_hom(D,3), to_hom(D,1)) == g13
 
 # Path equations
 #---------------

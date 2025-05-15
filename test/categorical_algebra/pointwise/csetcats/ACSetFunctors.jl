@@ -1,7 +1,6 @@
 module TestCSetFunctors 
 
 using Catlab, Test
-CollageCat(infer_acset_cat(Graph()))
 
 V,E,src′,tgt′ = generators(SchGraph)
 
