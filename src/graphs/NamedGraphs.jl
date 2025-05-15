@@ -23,7 +23,7 @@ has_vertex_names(::Type{<:HasVertices}) = false
 
 """ Whether a graph has edge names distinct from its edge IDs.
 """
-has_edge_names(g::T) where {T<:HasGraph} = has_edge_names(T)
+has_edge_names(::T) where {T<:HasGraph} = has_edge_names(T)
 has_edge_names(::Type{<:HasGraph}) = false
 
 """ Name of a vertex in a graph.

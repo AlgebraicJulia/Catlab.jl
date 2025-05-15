@@ -9,8 +9,9 @@ export ThCategory, FreeCategory, Ob, Hom, dom, codom, id, compose, ⋅,
 ##########
 
 # Convenience constructors
-compose(fs::AbstractVector) = foldl(compose, fs)
-compose(f, g, h, fs...) = compose([f, g, h, fs...])
+compose(f::GATExpr, g::GATExpr, h::GATExpr, fs...) =
+  compose(GATExpr[f, g, h, fs...])
+compose(fs::AbstractVector{<:GATExpr}) = foldl(compose, fs)
 
 @symbolic_model FreeCategory{ObExpr,HomExpr} ThCategory begin
   compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)

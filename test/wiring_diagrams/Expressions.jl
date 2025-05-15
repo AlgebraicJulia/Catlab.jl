@@ -219,4 +219,4 @@ graph = Graph(13)
 add_edges!(graph, [5,8,9,11,12], [6,9,10,12,13])
 @test Set(find_series(graph)) == Set([[5,6],[8,9,10],[11,12,13]])
 
-end
+end # module

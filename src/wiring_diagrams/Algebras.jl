@@ -3,8 +3,8 @@
 module WiringDiagramAlgebras
 export oapply, query
 
-using ...Theories, ...Graphs, ...BasicSets
-using ...CategoricalAlgebra
+using ...Theories
+using ...Graphs, ...BasicSets, ...CategoricalAlgebra
 import ...CategoricalAlgebra.HomSearch: homomorphisms, homomorphism, is_homomorphic
 using ..UndirectedWiringDiagrams
 
@@ -32,6 +32,7 @@ function oapply(composite::UndirectedWiringDiagram,
                 spans::AbstractVector{<:Multispan};
                 Ob=nothing, Hom=nothing, return_limit::Bool=false)
   @assert nboxes(composite) == length(spans)
+
   # FIXME: This manual type inference is hacky and bad. The right solution is to
   # extend `Multi(co)span` with type parameters that allow abstract types.
   if isnothing(Ob); Ob = typejoin(mapreduce(typeof∘apex, typejoin, spans),
@@ -61,12 +62,14 @@ function oapply(composite::UndirectedWiringDiagram,
     error("Limits with isolated junctions are not supported")
   diagram[:ob₂] = map(something, junction_feet)
 
+  𝒞 = SetC()
   # The composite multispan is given by the limit of this diagram.
-  lim = limit(diagram)
+  lim = limit[𝒞](diagram)
   outer_legs = map(junction(composite, outer=true)) do j
     e = first(incident(diagram, j, :tgt))
-    legs(lim)[src(diagram, e)] ⋅ hom(diagram, e)
+    compose[𝒞](legs(lim)[src(diagram, e)], hom(diagram, e))
   end
+
   span = Multispan(ob(lim), outer_legs)
   return_limit ? (span, lim) : span
 end
@@ -104,6 +107,8 @@ function oapply(composite::UndirectedWiringDiagram,
     diagram[j, :ob₁] = L(foot)
   end
 
+  𝒞 = infer_acset_cat(first(codom(L))())
+
   # Find, or if necessary create, an outgoing edge for each junction. The
   # existence of such edges is an assumption for colimits of bipartite diagrams.
   # The edges are also needed to construct inclusions for the outer junctions.
@@ -112,17 +117,17 @@ function oapply(composite::UndirectedWiringDiagram,
     if isempty(out_edges)
       x = ob₁(diagram, j)
       v = add_vertex₂!(diagram, ob₂=x)
-      add_edge!(diagram, j, v, hom=id(x))
+      add_edge!(diagram, j, v, hom=id[𝒞](x))
     else
       first(out_edges)
     end
   end
 
   # The composite multicospan is given by the colimit of this diagram.
-  colim = colimit(diagram)
+  colim = colimit[𝒞](diagram)
   outer_js = junction(composite, outer=true)
   outer_legs = map(junction_edges[outer_js]) do e
-    hom(diagram, e) ⋅ legs(colim)[tgt(diagram, e)]
+    compose[𝒞](hom(diagram, e), legs(colim)[tgt(diagram, e)])
   end
   outer_feet = junction_feet[outer_js]
   cospan = StructuredMulticospan{L}(Multicospan(ob(colim), outer_legs), outer_feet)
@@ -157,13 +162,26 @@ multispans, which defines the UWD algebra of multispans.
 """
 function query(X::ACSet, diagram::UndirectedWiringDiagram,
                params=(;); table_type=MaybeDataFrame)
+  S = acset_schema(X)
   # For each box in the diagram, extract span from ACSet.
   spans = map(boxes(diagram), subpart(diagram, :name)) do b, name
     apex = FinSet(nparts(X, name))
     legs = map(subpart(diagram, ports(diagram, b), :port_name)) do port_name
-      FinDomFunction(X, port_name == :_id ? name : port_name)
+      h = if port_name == :_id 
+        name ∈ ob(S) || error("Bad name $name")
+        SetFunction(SetOb(apex))
+      elseif port_name ∈ hom(S)
+        SetFunction(get_hom(ACSetCategory(X), X, port_name))
+      elseif port_name ∈ attr(S)
+        SetFunction(get_attr(ACSetCategory(X), X, port_name))
+      else
+        error("Bad port name $port_name")
+      end
+      ch = codom(h)
+      compose[SetC()](h, SetFunction(identity, ch, SetOb(eltype(ch))))
     end
-    Multispan(apex, legs)
+
+    Multispan(legs; cat=SetC())
   end
 
   # Add an extra box and corresponding span for each parameter.
@@ -178,21 +196,20 @@ function query(X::ACSet, diagram::UndirectedWiringDiagram,
       # Handle possibility of unions in attribute types.
       name = diagram[first(incident(diagram, junction, :junction)), :port_name]
       constant = if name ∈ attrs(acset_schema(X), just_names=true)
-        ConstantFunction(value, FinSet(1), TypeSet(subpart_type(X, name)))
+        ConstantFunction(value, SetOb(1), SetOb(subpart_type(X, name)))
       else
-        ConstantFunction(value, FinSet(1))
+        ConstantFunction(value, SetOb(1))
       end
-
-      SMultispan{1}(constant)
+      ff = SetFunction(constant)
+      Multispan{SetOb, SetFunction}(SetFunction[ff])
     end)
   end
-
-  # Call `oapply` and make a table out of the resulting span.
-  outer_span = oapply(diagram, spans, Ob=SetOb, Hom=FinDomFunction{Int})
+   # Call `oapply` and make a table out of the resulting span.
+  outer_span = oapply(diagram, spans, Ob=SetOb, Hom=SetFunction)#FinDomFunction)
   if nparts(diagram, :OuterPort) == 0
     fill((;), length(apex(outer_span)))
   else
-    columns = map(collect, outer_span)
+    columns = collect.(coerce_findom.(outer_span))
     names = has_subpart(diagram, :outer_port_name) ?
       subpart(diagram, :outer_port_name) : fill(nothing, length(columns))
     make_table(table_type, columns, names)

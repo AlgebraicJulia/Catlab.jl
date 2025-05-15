@@ -10,6 +10,8 @@ using LinearAlgebra: normalize
 using MLStyle: @match
 using StaticArrays
 
+using GATlab: generators
+
 import ...Theories: HomExpr
 using ...WiringDiagrams, ...WiringDiagrams.WiringDiagramSerialization
 using ...CategoricalAlgebra.CSets, ...Graphs, ..GraphvizGraphs
@@ -659,6 +661,9 @@ function to_graphviz(cp::CPortGraph; kw...)::Graphviz.Graph
   to_graphviz(to_graphviz_property_graph(cp; kw...))
 end
 
+V, E, src′, tgt′ = generators(SchGraph)
+Box′, Port′, Wire′, src′′, tgt′′, box′ = generators(SchCPortGraph)
+
 function to_graphviz_property_graph(cp::CPortGraph;
     graph_name::String="G", prog::String="neato",
     box_labels::Bool=false, port_labels::Bool=false,
@@ -671,8 +676,8 @@ function to_graphviz_property_graph(cp::CPortGraph;
   end
 
   g′ = Graphs.Graph()
-  migrate!(g′, cp, Dict(:V=>:Box, :E=>:Wire),
-                   Dict(:src => [:src, :box], :tgt => [:tgt, :box]))
+  migrate!(g′, cp, Dict(V=>Box′, E=>Wire′),
+                   Dict(src′ => [src′′, box′], tgt′ => [tgt′′, box′]); homtype=:list)
 
   node_labeler(v) = box_labels ? Dict(:id => "box$v", :label => string(v)) :
                                  Dict(:id => "box$v")

@@ -1,6 +1,6 @@
-module TestACSetStructuredCospans 
+module TestACSetStructuredCospans
 
-using Catlab, Test
+using Test, Catlab
 
 # Interface schema: one object, no attributes
 #--------------------------------------------

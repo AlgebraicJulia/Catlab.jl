@@ -7,7 +7,6 @@ using Test
 using Catlab.CategoricalAlgebra, Catlab.BasicSets
 using Catlab.CategoricalAlgebra.Categories
 using Catlab.Sheaves
-import Catlab.CategoricalAlgebra.Categories: do_ob_map, do_hom_map
 using Catlab.CategoricalAlgebra.Misc.Matrices: MatrixDom
 import Catlab.Sheaves: pullback_matrix, FinSetCat
 
@@ -19,14 +18,14 @@ import Catlab.Sheaves: pullback_matrix, FinSetCat
 # We have two different implementations of equivalent sheaves.
 # The `VectSheaf` implementation uses julia functions and the `VectSheafMat` implementation uses sparse matrices.
 
-VectSheaf = Sheaf(DiagramTopology(), FVectPullback())
-VectSheafMat = Sheaf(DiagramTopology(), FMatPullback())
+VectSheaf = Sheaf(DiagramTopology(), FVectPullback)
+VectSheafMat = Sheaf(DiagramTopology(), FMatPullback)
 
 # We want to introduce a cover of the set ${1...4}$ with two open sets ${1,2,3}$ and ${1,2,4}$.
 # To do that, we will construct a pushout.
 f = FinFunction([1,2], 3)
 g = FinFunction([1,2], 3)
-S = ColimCover(pushout(f,g))
+S = ColimCover(pushout[SkelFinSet()](f,g))
 
 # The main API of a sheaf is that you can:
 # 1. restrict sections along a morphism,
@@ -64,13 +63,13 @@ extend(VectSheaf, S, [[1.0, 2,3], [1,2.0,6]])
 
 # Pushouts are the covers with only two subobjects, but the sheaf works on diagrams of any size.
 
-D = FreeDiagram(FinSet.([3,2,3,3]), # list of objects
+D = FreeDiagram(FreeGraph(FinSet.([3,2,3,3]), # list of objects
  [ # list of (hom, src, tgt) tuples
   (FinFunction([1,2], 3), 2,1),
   (FinFunction([1,2], 3), 2,3),
   (FinFunction([1,2], 3), 2,4)
   ]
-)
+))
 
 K = ColimCover(D)
 
@@ -79,7 +78,7 @@ section_data = [Float64[1,2,3],
    Float64[1,2,5],
    Float64[1,2,6]]
 
-v = extend(VectSheaf, K, section_data; debug=true)
+v = extend(VectSheaf, K, section_data)
 
 # Our two sheaves should agree, because they are just two different implementations of the same sheaf.
 

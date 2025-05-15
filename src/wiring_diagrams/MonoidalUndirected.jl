@@ -141,7 +141,6 @@ The objects are lists of port types and morphisms are undirected wiring diagrams
 whose outer ports are partitioned into domain and codomain.
 """
 @instance ThHypergraphCategory{ObUWD, HomUWD} begin
-  @import dom, codom
 
   function compose(f::HomUWD, g::HomUWD)
     k, ℓ = sum(dom_mask(f)), sum(codom_mask(g))
@@ -192,4 +191,4 @@ singleton_diagram(A::ObUWD{UWD}; data...) where UWD =
 junction_diagram(A::ObUWD{UWD}, outer) where UWD =
   junction_diagram(UWD, outer, A.types)
 
-end
+end # module

@@ -2,10 +2,20 @@ module TestCategoricalAlgebra
 
 using Test
 
-include("cats/runtests.jl")
-include("setcats/runtests.jl")
-include("pointwise/runtests.jl")
-include("misc/runtests.jl")
+@testset "Cats" begin
+  include("cats/runtests.jl")
+end 
 
+@testset "SetCats" begin
+  include("setcats/runtests.jl")
+end 
+
+@testset "Pointwise" begin
+  include("pointwise/runtests.jl")
+end
+
+@testset "MiscCategoricalAlgebra" begin
+  include("misc/runtests.jl")
+end 
 
 end # module

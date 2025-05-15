@@ -269,4 +269,4 @@ d = compose(f(1),f(2))
   1, compose(g(1),g(2))
 )
 
-end
+end # module

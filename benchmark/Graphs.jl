@@ -119,6 +119,8 @@ end
 # Graphs
 ########
 
+Grph = ACSetCategory(Graph())
+
 bench = SUITE["Graph"] = BenchmarkGroup()
 clbench = bench["Catlab"] = BenchmarkGroup()
 clvecbench = bench["Catlab-vectorized"] = BenchmarkGroup()
@@ -155,7 +157,7 @@ lgbench = bench["LightGraphs"] = BenchmarkGroup()
 
 n₀ = 2000
 g₀ = path_graph(Graph, n₀)
-g = ob(coproduct(fill(g₀, 5)))
+g = ob(coproduct[Grph](fill(g₀, 5)...))
 lg = LG.DiGraph(g)
 clbench["path-graph"] =
   @benchmarkable connected_component_projection_bfs($g)
@@ -163,7 +165,7 @@ lgbench["path-graph"] =
   @benchmarkable connected_component_projection($lg)
 
 g₀ = star_graph(Graph, n₀)
-g = ob(coproduct(fill(g₀, 5)))
+g = ob(coproduct[Grph](fill(g₀, 5)...))
 lg = LG.DiGraph(g)
 clbench["star-graph"] =
   @benchmarkable connected_component_projection_bfs($g)
@@ -225,7 +227,7 @@ lgbench = bench["LightGraphs"] = BenchmarkGroup()
 
 n₀ = 2000
 g₀ = path_graph(SymmetricGraph, n₀)
-g = ob(coproduct(fill(g₀, 5)))
+g = ob(coproduct[Grph](fill(g₀, 5)...))
 lg = LG.Graph(g)
 clbench["path-graph-components"] =
   @benchmarkable connected_component_projection($g)
@@ -233,7 +235,7 @@ lgbench["path-graph-components"] =
   @benchmarkable connected_component_projection($lg)
 
 g₀ = star_graph(SymmetricGraph, n₀)
-g = ob(coproduct(fill(g₀, 5)))
+g = ob(coproduct[Grph](fill(g₀, 5)...))
 lg = LG.Graph(g)
 clbench["star-graph-components"] =
   @benchmarkable connected_component_projection($g)

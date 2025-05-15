@@ -1,22 +1,47 @@
-include("ACSetTransformations.jl")
+using Test 
 
-include("HomSearch.jl")
+@testset "ACSetTransformations" begin
+  include("ACSetTransformations.jl")
+end
 
-include("VMSearch.jl")
+@testset "ACSetFunctors" begin
+  include("ACSetFunctors.jl")
+end
 
-include("Limits.jl")
-
-include("Colimits.jl")
-
-include("SubCSets.jl")
-
-include("CatElements.jl")
-
-include("StructuredCospans.jl")
-
-include("Chase.jl")
-
-include("FunctorialDataMigrations.jl")
-
-include("Yoneda.jl")
+@testset "Limits" begin
+  include("Limits.jl")
+end
+@testset "Colimits" begin
+  include("Colimits.jl")
+end
+@testset "HomSearch" begin
+  include("HomSearch.jl")
+end
+@testset "MCO" begin
+  include("MCO.jl")
+end
+@testset "VMSearch" begin
+  include("VMSearch.jl")
+end
+@testset "CatElements" begin
+  include("CatElements.jl")
+end
+@testset "Subobjects" begin
+  include("Subobjects.jl")
+end
+@testset "Chase" begin
+  include("Chase.jl")
+end
+@testset "FunctorialDataMigrations" begin
+  include("FunctorialDataMigrations.jl")
+end
+@testset "Yoneda" begin
+  include("Yoneda.jl")
+end
+@testset "Dynamic" begin
+  include("Dynamic.jl")
+end
+@testset "StructuredCospans" begin
+  include("StructuredCospans.jl")
+end
 
