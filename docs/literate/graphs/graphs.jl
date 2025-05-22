@@ -123,9 +123,9 @@ is_natural(ϕᵦ′)
 ϕ[:E]
 # We can check the  naturality squares ourselves
 # The sources are preserved: `src ⋅ ϕᵥ == ϕₑ ⋅ src`
-ϕ[:V](dom(ϕ)[:,:src]) == codom(ϕ)[collect(ϕ[:E]), :src]
+ϕ[:V].(dom(ϕ)[:,:src]) == codom(ϕ)[collect(ϕ[:E]), :src]
 # The targets are preserved: `tgt ⋅ ϕᵥ == ϕₑ ⋅ tgt`
-ϕ[:V](dom(ϕ)[:,:tgt]) == codom(ϕ)[collect(ϕ[:E]), :tgt]
+ϕ[:V].(dom(ϕ)[:,:tgt]) == codom(ϕ)[collect(ϕ[:E]), :tgt]
 
 # This approach generalizes to the following: 
 #
@@ -210,7 +210,8 @@ length(homomorphisms(T,add_loops(t)))
 # Many computer science problems involve graphs that have two types of vertices. For example, when matching students to classes, you might represent the students as one type of vertex and the classes as another type of vertex. Then the edges (s,c) represent "student s is enrolled in class c". In this scenario there can be no edges from a class vertex to another class vertex, or from a student vertex to a student vertex. Graphs for which there exists such a classification are called bipartite graphs. In Category Theory, we shift from thinking about graphs with properties to graph homomorphisms that witness that property and think of bipartitioned graphs.
 
 # First we construct a bipartite graph:
-sq = apex(product(add_loops(e), add_loops(e)))
+Grph = ACSetCategory(Graph())
+sq = apex(product[Grph](add_loops(e), add_loops(e)))
 rem_parts!(sq, :E, [1,5,6,8,9])
 draw(sq)
 
@@ -222,7 +223,7 @@ esym = @acset Graph begin
     tgt = [2,1]
 end
 
-draw(id(esym))
+draw(id[Grph](esym))
 # There are two ways to bipartition sq.
 graphhoms(sq, esym)
 
@@ -254,7 +255,7 @@ clique(k::Int) = begin
 end
 
 K₃ = clique(3)
-draw(id(K₃))
+draw(id[Grph](K₃))
 
 # Our graph T is not 2-colorable,
 length(homomorphisms(T, esym))
@@ -276,7 +277,7 @@ triloop = @acset Graph begin
     tgt = [2,3,1]
 end
 
-draw(id(triloop))
+draw(id[Grph](triloop))
 
 # With this graph, we can pick out directed 3-cycles in a graph like T2,
 T2 = @acset Graph begin
@@ -299,7 +300,7 @@ end
 graphhoms(T3, triloop)
 
 # Using the colors as shown:
-draw(id(triloop))
+draw(id[Grph](triloop))
 
 # We can see our coloring of T3:
 draw(homomorphisms(T3, triloop)[1])

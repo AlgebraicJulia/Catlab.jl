@@ -160,4 +160,4 @@ graph = to_graphviz(d2, port_labels=true, box_labels=true)
 @test stmts(graph, Graphviz.Edge, :headlabel) == ["1", "1", "1"]
 @test stmts(graph, Graphviz.Node, :label) == ["1", "2", "3" ,"4"]
 
-end
+end # module

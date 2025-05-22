@@ -61,4 +61,4 @@ f = compose(mcopy(ℝ), otimes(cos_hom, sin_hom), plus_hom)
 @test ev(f, 1) == cos(1) + sin(1)
 @test ev(f, x; broadcast=true) == cos.(x) + sin.(x)
 
-end
+end # module

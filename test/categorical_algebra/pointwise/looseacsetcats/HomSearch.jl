@@ -1,11 +1,6 @@
-module TestLooseHomSearch
+module TestLooseACSetHomSearch 
 
-using Catlab, Test
-
-@present SchSetAttr(FreeSchema) begin
-  X::Ob; D::AttrType; f::Attr(X,D)
-end
-@acset_type SetAttr(SchSetAttr)
+using Catlab, Test 
 
 # Loose
 s1 = SetAttr{Int}()

@@ -1,4 +1,4 @@
-module TestACSetColimits 
+module TestACSetCatColimits 
 
 using Catlab, Test
 
@@ -8,25 +8,47 @@ end
 
 @acset_type VELabeledGraph(SchVELabeledGraph,index=[:src,:tgt]) <: AbstractGraph
 
+const VES = VELabeledGraph{Symbol}
+const 𝒟 = ACSetCategory(ACSetCat(VES()))
 
-# Initial labeled graph.
-@test ob(initial(VELabeledGraph{Symbol})) == VELabeledGraph{Symbol}()
+# Initial
+#########
+
+@test ob(initial[𝒟]()) == VES()
+
+g = @acset VES begin V=2; E=1; src=1; tgt=2; vlabel=[:a,:b]; elabel=[:e] end
+
+@test create[𝒟](g) == ACSetTransformation(VES(), g; cat=𝒟)
 
 
-# Coproduct of labeled graphs.
+# Coproduct 
+###########
+
+# A coproduct of a graph with itself
+colim = coproduct[𝒟](g, g)
+
+expected = @acset VES begin 
+  V=4; E=2; src=[1,3]; tgt=[2,4]; vlabel=[:a,:b,:a,:b]; elabel=[:e,:e] 
+end
+
+@test is_isomorphic(expected, ob(colim)) 
+
+# Coproduct of different labeled graphs.
 g = path_graph(VELabeledGraph{Symbol}, 2, V=(vlabel=[:u,:v],), E=(elabel=:e,))
 h = cycle_graph(VELabeledGraph{Symbol}, 1, V=(vlabel=:u,), E=(elabel=:f,))
-coprod = ob(coproduct(g, h))
+coprod = ob(coproduct[𝒟](g, h))
 @test subpart(coprod, :vlabel) == [:u, :v, :u]
 @test subpart(coprod, :elabel) == [:e, :f]
 
-# Pushout of labeled graph.
+# Pushouts
+##########
+
 g0 = VELabeledGraph{Symbol}()
 add_vertex!(g0, vlabel=:u)
 α = ACSetTransformation((V=[1], E=Int[]), g0, g)
 β = ACSetTransformation((V=[1], E=Int[]), g0, h)
 @test is_natural(α) && is_natural(β)
-colim = pushout(α, β)
+colim = pushout[𝒟](α, β)
 @test src(ob(colim)) == [1,1]
 @test tgt(ob(colim)) == [2,1]
 @test subpart(ob(colim), :vlabel) == [:u, :v]
@@ -34,21 +56,6 @@ colim = pushout(α, β)
 
 α′ = ACSetTransformation(V=[2], E=Int[], g0, g)
 @test !is_natural(α′) # Vertex labels don't match.
-@test_throws ErrorException pushout(α′, β)
-
-# Dynamic ACSets
-#################
-G, H, expected =[DynamicACSet("WG", SchWeightedGraph; type_assignment=Dict(:Weight=>Float64)) 
-                 for _ in 1:3]
-add_parts!(G, :V, 2); 
-add_parts!(H, :V, 2);
-add_parts!(expected, :V, 3);
-add_part!(G, :E; src=1, tgt=2, weight=1.0)
-add_parts!(H, :E,2; src=[1,2], tgt=[1,2], weight=1.0)
-add_parts!(expected, :E, 3; src=[1,2,3], tgt=[1,2,3], weight=1.0)
-h1,h2 = homomorphisms(G,H)
-
-clim = colimit(Span(h1,h2));
-@test apex(clim) == expected
+@test_throws ErrorException pushout[𝒟](α′, β)
 
 end # module

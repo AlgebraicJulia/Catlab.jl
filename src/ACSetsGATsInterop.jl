@@ -1,7 +1,7 @@
 """ Compatibility module that integrates ACSets with GATs.
 """
 module ACSetsGATsInterop
-export ThSchema, FreeSchema, Presentation, @present
+export ThSchema, FreeSchema, Presentation, @present, getvalue
 
 using DataStructures: OrderedDict
 
