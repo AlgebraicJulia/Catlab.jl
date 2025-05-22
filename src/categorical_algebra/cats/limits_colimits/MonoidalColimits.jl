@@ -64,7 +64,8 @@ end
 
 
 bundle_leg(cospan::Multicospan, is::AbstractVector{Int}, m  
-          )  = copair(CocartesianMonoidal(TypedCatWithCoproducts(m)), 
+          )  = copair(WithModel(
+                      TypedCatWithCoproducts(m)), 
                       legs(cospan)[is])
 
 end # module

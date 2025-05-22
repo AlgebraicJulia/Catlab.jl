@@ -101,11 +101,11 @@ end
 
   length()::Int = sum(length.(model))
 
-  iterator()::Any = Iterators.flatten(map(enumerate(model)) do (i, xs)
+  collect()::Any = vcat(map(enumerate(model)) do (i, xs)
     map(xs) do x 
       TaggedElem(x, i)
     end
-  end)
+  end...)
 
 end
 
@@ -165,11 +165,11 @@ end
 
   length()::Int = sum(length.(values(getvalue(model))))
 
-  iterator()::Any = Iterators.flatten(map(enumerate(model)) do (i, xs)
+  collect()::Any = vcat(map(enumerate(model)) do (i, xs)
     map(xs) do x 
       TaggedElem(x, i)
     end
-  end)
+  end...)
 
 end
 

@@ -131,6 +131,7 @@ function pointwise_colimit_apex(C::ACSetCategory, Xs,
     entity_colimits::NamedTuple, attr_colimits::NamedTuple, entity_ιs::NamedTuple)
   Y, S = constructor(C), acset_schema(C)
   𝒞 = entity_cat(C)
+  W𝒞 = GATlab.WithModel(𝒞)
   for c in objects(S)
     add_parts!(Y, c, length(get_set(C, ob[𝒞](entity_colimits[c]))))
   end
@@ -139,9 +140,14 @@ function pointwise_colimit_apex(C::ACSetCategory, Xs,
     add_parts!(Y, d, length(get_attr_set(C, ob[𝒟](attr_colimits[d]))))
   end
   for (f, c, d) in homs(S)
-    Yfs = map((ι, X) -> compose[𝒞](get_hom(C, X, f), ι), legs(entity_colimits[d]), Xs)
-    Yf = universal[𝒞](entity_colimits[c], Multicospan(ob(entity_colimits[d]), Yfs; cat=𝒞))
-    set_subpart!(Y, f, collect(get_fn(C, Yf, get_ob(C, Y, c), get_ob(C, Y, d))))
+    Yfs = map((ι, X) -> compose(W𝒞, get_hom(C, X, f), ι), 
+              legs(entity_colimits[d]), Xs)
+    Yf = universal(W𝒞, entity_colimits[c], 
+                   Multicospan(ob(entity_colimits[d]), Yfs; cat=𝒞))
+    fn = get_fn(C, Yf, get_ob(C, Y, c), get_ob(C, Y, d)) |> getvalue |> WithModel
+    for pᶜ in parts(Y,c)
+      set_subpart!(Y, pᶜ, f, app(fn,pᶜ)) 
+    end 
   end
 
   for (f, c, d) in attrs(S)

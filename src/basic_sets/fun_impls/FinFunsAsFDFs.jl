@@ -10,10 +10,12 @@ using ..BasicSets: FinFunction, SetFunction, FinSet, SetOb, FinDomFunction′, T
 import ..FinDomFunctions: FinDomFunction
 using .ThFinDomFunction
 
-@struct_hash_equal struct FinFunAsFinDomFunction{C,D}
-  val::FinFunction
-  FinFunAsFinDomFunction(f::FinFunction) = 
-    new{impl_type.(Ref(f), [:Dom,:Cod])...}(f)
+@struct_hash_equal struct FinFunAsFinDomFunction{C,D,I}
+  val::WithModel{I}
+  function FinFunAsFinDomFunction(f::FinFunction) 
+    m = getvalue(f)
+    new{impl_type.(Ref(f), [:Dom,:Cod])..., typeof(m)}(WithModel(m))
+  end
 end 
 
 GATlab.getvalue(f::FinFunAsFinDomFunction) = f.val

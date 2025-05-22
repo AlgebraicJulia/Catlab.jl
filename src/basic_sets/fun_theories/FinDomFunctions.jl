@@ -56,9 +56,13 @@ is_monic(f::Union{FinFunction, FinDomFunction}) =
 
 is_iso(f::Union{FinFunction, FinDomFunction}) = is_monic(f) && is_epic(f)
 
-""" Iterate over image of function """
-Base.iterate(f::Union{FinFunction, FinDomFunction}, xs...) = 
-  iterate(f.(dom(f)), xs...)
+function Base.collect(f::Union{FinDomFunction,FinFunction}) 
+  res = eltype(codom(f))[]
+  for i in collect(dom(f))
+    push!(res, app(f, i))
+  end
+  res
+end
 
 Base.length(f::Union{FinFunction, FinDomFunction}) = length(dom(f))
 
@@ -70,7 +74,7 @@ Base.eltype(f::Union{FinFunction, FinDomFunction}) = eltype(codom(f))
 """ Preimage of a FinDomFunction """
 preimage(f::Union{FinFunction, FinDomFunction}, x) = if x ∈ codom(f)
   is_indexed(f) && return preimage(getvalue(f), x) # use cached value
-  filter(y -> f(y) == x, collect(dom(f)))
+  filter(y -> app(f,y) == x, collect(dom(f)))
 else
   error("Cannot take preimage: $x not found in codomain of $f") 
 end

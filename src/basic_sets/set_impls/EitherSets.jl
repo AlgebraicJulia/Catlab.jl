@@ -75,7 +75,7 @@ end
 
   length()::Int = length(left(model)) + length(right(model))
 
-  iterator()::Any = [left(model)...,right(model)...]
+  collect()::Vector{T} = [left(model)...,right(model)...]
 
 end
 

@@ -40,7 +40,7 @@ end
 
   length()::Int = length(iterator[model]())
 
-  iterator()::Any = union(collect.(model)...)
+  collect()::Vector{T} = union(collect.(model)...)
 
 end
 

@@ -212,10 +212,12 @@ Assume that the category this span lives in has `codom` given by type dispatch.
 In this setting, we can check whether or not this is a valid cospan. 
 """
 function Multicospan{Ob,Hom}(apex::Ob,legs::AbstractVector{<:Hom}; cat=nothing) where {Ob,Hom} 
-    𝒞 = isnothing(cat) ? Dispatch(ThCategory, [Ob,Hom]) : cat
-  badcods = [codom[𝒞](l) for l in legs if codom[𝒞](l) != apex]
+  𝒞 = WithModel(isnothing(cat) ? Dispatch(ThCategory, [Ob,Hom]) : cat)
+  badcods = [codom(𝒞,l) for l in legs if codom(𝒞,l) != apex]
   isempty(badcods) || error("Bad cospan $badcods != $apex")
-  feet = dom[𝒞].(legs)
+  feet = map(legs) do l 
+    dom(𝒞,l)
+  end
   Multicospan{Ob,Hom, eltype(feet)}(apex, legs, feet)
 end
 

@@ -13,13 +13,14 @@ import ..BasicSets:  FinFunction, FinDomFunction, is_indexed
 using .ThFinDomFunction
 
 # treat indexed and non-indexed cases alike
-abstract type AbsFinFunctionVector{C<:AbsSet,T} end 
+abstract type AbsFinFunctionVector{C<:AbsSet,T,V} end 
 
 GATlab.getvalue(v::AbsFinFunctionVector) = v.val 
 
 """ Implicitly domain is `FinSet(length(v))` Codomain is SetOb."""
-@struct_hash_equal struct FinFunctionVector{C<:AbsSet,T} <: AbsFinFunctionVector{C,T}
-  val::AbstractVector
+@struct_hash_equal struct FinFunctionVector{C<:AbsSet,T,V<:AbstractVector} <: AbsFinFunctionVector{C,T,V}
+  val::V
+  dom::FinSet
   codom::C
   function FinFunctionVector(val::AbstractVector,codom::C; check=false) where {C<:AbsSet}
     if check 
@@ -27,13 +28,14 @@ GATlab.getvalue(v::AbsFinFunctionVector) = v.val
         v ∈ codom || error("Bad FinFunctionVector value #$i: $v not in $codom")
       end
     end 
-    new{C,eltype(codom)}(val, codom)
+    new{C,eltype(codom),typeof(val)}(val, FinSet(length(val)), codom)
   end
 end
 
 """  Implicitly domain is `FinSet(length(v))` """
-@struct_hash_equal struct IndexedFinFunctionVector{C,T} <: AbsFinFunctionVector{C,T}
-  val::AbstractVector
+@struct_hash_equal struct IndexedFinFunctionVector{C,T,V<:AbstractVector} <: AbsFinFunctionVector{C,T,V}
+  val::V
+  dom::FinSet
   codom::C
   index::DefaultDict
   """ Create the index cache upon creating the vector """
@@ -44,7 +46,7 @@ end
       push!(index[x], i)
     end
 
-    new{C,eltype(c)}(v, c, index)
+    new{C,eltype(c),typeof(v)}(v, FinSet(length(v)), c, index)
   end
 end
 
@@ -54,13 +56,13 @@ preimage(f::IndexedFinFunctionVector, x) = f.index[x]
 
 FF(i::Bool) = i ? IndexedFinFunctionVector : FinFunctionVector
 
-@instance ThFinFunction{Int,C} [model::AbsFinFunctionVector{FinSet,C}] where {C} begin
+@instance ThFinFunction{Int,C} [model::AbsFinFunctionVector{FinSet,C,V}] where {C,V} begin
 
-  dom()::FinSet = FinSet(length(getvalue(model)))
+  dom()::FinSet = model.dom
 
   codom()::FinSet = model.codom
 
-  app(i::Int)::C = getvalue(model)[i]
+  app(i::Int)::C = model.val[i]
 
   function postcompose(f::FinFunction′)::FinFunction′
     FinFunction(FF(is_indexed(model))(f.(getvalue(model)), codom(f)))

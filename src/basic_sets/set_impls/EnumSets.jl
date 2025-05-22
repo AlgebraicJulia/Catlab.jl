@@ -12,8 +12,8 @@ using .ThFinSet
 
 @instance ThFinSet{T} [model::EnumSet{T}] where T begin
   contains(i::T)::Bool = true
-  length()::Int = length(iterator[model]())
-  iterator()::Any = instances(T)
+  length()::Int = length(instances(T))
+  collect()::Vector{T} = collect(instances(T))
 end
 
 FinSet(::Type{T}) where {T<:Enum} = FinSet(EnumSet{T}())

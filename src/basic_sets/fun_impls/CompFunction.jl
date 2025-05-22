@@ -15,11 +15,14 @@ using .ThFinFunction
 
 Not to be confused with `Base.ComposedFunctions` for ordinary Julia functions.
 """
-@struct_hash_equal struct CompositeFunction{F<:AbstractFunction,D,C}
-  fst::F 
-  snd::F
-  CompositeFunction(fst::F, snd::F) where F <: AbstractFunction = 
-    new{F, impl_type(fst,:Dom), impl_type(snd, :Cod)}(fst, snd)
+@struct_hash_equal struct CompositeFunction{F<:AbstractFunction,D,C,DM,CM}
+  fst::WithModel{DM} 
+  snd::WithModel{CM}
+  function CompositeFunction(fst::F, snd::F) where F <: AbstractFunction 
+    ms = getvalue.([fst, snd])
+    new{F, impl_type(fst,:Dom), impl_type(snd, :Cod), typeof(ms[1]), typeof(ms[2])
+       }(WithModel.(ms)...)
+  end
 end
 
 Base.first(f::CompositeFunction) = f.fst
@@ -34,7 +37,7 @@ function Base.show(io::IO, f::CompositeFunction)
   print(io, ")")
 end
 
-is_indexed(f::CompositeFunction) = is_indexed(first(f)) || is_indexed(last(f))
+is_indexed(f::CompositeFunction) = is_indexed(getvalue(first(f))) || is_indexed(getvalue(last(f)))
 
 # SetFunction implementation 
 ############################
@@ -46,27 +49,28 @@ is_indexed(f::CompositeFunction) = is_indexed(first(f)) || is_indexed(last(f))
 # called. Nevertheless, the implementation given is reasonable if one really 
 # wanted to postcompose a `CompositeFunction` with another function.
 
-@instance ThSetFunction{D,C} [model::CompositeFunction{SetFunction, D, C}
-                             ] where {D,C} begin
+@instance ThSetFunction{D,C} [model::CompositeFunction{SetFunction, D, C, DM,CM}
+                             ] where {D,C,DM,CM} begin
 
   dom()::SetOb = dom(first(model))
   
   codom()::SetOb = codom(last(model))
 
-  app(i::D)::C = last(model)(first(model)(i))
+  app(i::D)::C = app(last(model), app(first(model),i))
 
   # Create a (biased) nested composite function using constructor below
   postcompose(f::SetFunction′)::SetFunction′ = SetFunction(SetFunction(model), f) 
 end
 
-@instance ThFinFunction{D,C} [model::CompositeFunction{FinFunction, D, C}
-                             ] where {D,C} begin
+@instance ThFinFunction{D,C} [model::CompositeFunction{FinFunction, D, C, DM, CM}
+                             ] where {D,C, DM, CM} begin
 
   dom()::FinSet = dom(first(model))
   
   codom()::FinSet = codom(last(model))
 
-  app(i::D)::C = last(model)(first(model)(i))
+  app(i::D)::C = 
+    app(last(model),app(first(model),i))
 
   # Create a (biased) nested composite function using constructor below
   postcompose(f::FinFunction′)::FinFunction′ = FinFunction(FinFunction(model), f) 

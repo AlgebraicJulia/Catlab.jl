@@ -19,7 +19,7 @@ function force(s::SetFunction)::SetFunction
   i isa CompositeFunction || return s 
 
   # Recursively simplify the components
-  f, g = force.([first(i), last(i)]) 
+  f, g = force.(SetFunction.(getvalue.([first(i), last(i)])))
   
   # Optimization: we want to precompose w/ `f` rather than postcompose w/ `g`
   getvalue(g) isa ConstantFunction && return SetFunction(

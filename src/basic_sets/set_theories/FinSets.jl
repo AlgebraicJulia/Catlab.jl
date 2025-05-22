@@ -3,21 +3,24 @@ export FinSet, AbsSet, ThFinSet, UnitRangeLike, coerce_setob
 
 using GATlab
 using ..Sets: ThSet, SetOb
-import Base: length, iterate
+import Base: length, collect
 
 # Theory of FinSets
 ###################
 
 """
 Any finite set must satisfy the interface of `ThSet` in addition to providing 
-something which implements Julia's iterator interface and having a integer 
+something which can result in a vector (of arbitrary order) and having a integer 
 cardinality, i.e. `length`.
+
+Morally, VX=Vector{X}. But this is a type dependent on a type, rather than on a 
+term, so it is not expressible.
 """
 @theory ThFinSet <: ThSet begin
   Int′::TYPE{Int}
-  Any′::TYPE{Any}
+  VX::TYPE{Any} 
   length()::Int′
-  iterator()::Any′
+  collect()::VX
 end
 
 # Wrapper type for Models of ThFinSet
@@ -43,7 +46,7 @@ Base.show(io::IO, mime::MIME"text/plain", set::AbsSet) =
 Base.show(io::IO, mime::MIME"text/html", set::AbsSet) = 
   show(io, mime, getvalue(set))
 
-Base.iterate(f::FinSet, xs...) = iterate(ThFinSet.iterator(f), xs...)
+Base.iterate(f::FinSet, xs...) = iterate(ThFinSet.collect(f), xs...)
 
 Base.in(x, set::AbsSet) = try 
   ThFinSet.contains(set, x)

@@ -24,7 +24,7 @@ Base.show(io::IO, ::SingletonSet) = print(io, "Singleton()")
 @instance ThFinSet{Nothing} [model::SingletonSet] begin
   contains(::Nothing)::Bool = true
   length()::Int = 1
-  iterator()::Any = [nothing]
+  collect()::Vector{Nothing} = [nothing]
 end
 
 """ Default model for a finset made out of a Julia `Int` """

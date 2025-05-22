@@ -48,7 +48,7 @@ end
 
   length()::Int = prod(length.(model))
 
-  iterator()::Any = Iterators.product(model...)
+  collect()::AbstractVector{T} = vec(collect(Iterators.product(model...)))
 
 end
 

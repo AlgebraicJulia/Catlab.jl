@@ -34,7 +34,7 @@ end
 @instance ThFinSet{T} [model::FinSetVect{T}] where T begin
   contains(i::T)::Bool = i ∈ getvalue(model)
   length()::Int = length(getvalue(model))
-  iterator()::Any = getvalue(model)
+  collect()::AbstractVector{T} = getvalue(model)
 end
 
 """ Default model for a finset made out of a Julia `Set` """

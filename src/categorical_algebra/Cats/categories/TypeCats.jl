@@ -25,9 +25,9 @@ Base.show(io::IO, ::TypeCat{Ob,Hom}) where {Ob,Hom} =
 @instance ThCategoryExplicitSets{Ob,Hom
                                 } [model::TypeCat{Ob,Hom}] where {Ob,Hom} begin
 
-  dom(f::Hom) = dom(model, f)
+  dom(f::Hom) = dom(WithModel(getvalue(model)), f)
 
-  codom(f::Hom) = codom(model, f)
+  codom(f::Hom) = codom(WithModel(getvalue(model)), f)
 
   id(x::Ob) = id(model, x)
 

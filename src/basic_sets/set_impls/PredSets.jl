@@ -48,7 +48,7 @@ end
 
   length()::Int = length(collect(model))
 
-  iterator()::Any = filter(contains[model], getvalue(model))
+  collect()::Vector{T} = filter(contains[model], getvalue(model))
 
 end
 

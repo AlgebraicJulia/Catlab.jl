@@ -23,7 +23,7 @@ Base.show(io::IO, ::EmptySet) = print(io, "Empty()")
 @instance ThFinSet{Union{}} [model::EmptySet] begin
   contains(::Union{})::Bool = false
   length()::Int = 0
-  iterator()::Any = Union{}[]
+  collect()::Vector{Union{}} = Union{}[]
 end
 
 end # module

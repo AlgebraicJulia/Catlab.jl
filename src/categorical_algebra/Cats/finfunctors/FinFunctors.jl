@@ -120,9 +120,12 @@ FinDomFunctor(impl) =
 If we want this partially specified type to act as a constructor, we 
 need to fill in the other type parameters.
 """
-FinFunctor(impl) = 
-  FinFunctor{impl_type.(Ref(impl), Ref(ThFinDomFunctor), 
-             [:DomOb,:CodomOb,:DomHom,:CodomHom,:DomGen])...}(impl)
+function FinFunctor(impl) 
+  DO, CO, DH, CH, DG = impl_type.(Ref(impl), Ref(ThFinDomFunctor), 
+                                  [:DomOb,:CodomOb,:DomHom,:CodomHom,:DomGen])
+
+  FinFunctor{DO, CO, DH, CH, DG}(impl)
+end 
 
 function validate(i::FinDomFunctor′)
   DO, CO, DH, CH, DG = impl_type.(Ref(i),[:DomOb,:CodomOb,:DomHom, :CodomHom, :DomGen])

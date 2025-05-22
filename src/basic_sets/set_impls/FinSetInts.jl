@@ -39,7 +39,7 @@ Base.eltype(::FinSetInt) = Int
 @instance ThFinSet{Int} [model::FinSetInt] begin
   contains(i::Int)::Bool = 0 < i ≤ getvalue(model)
   length()::Int = getvalue(model)
-  iterator()::Any = 1:getvalue(model)
+  collect()::UnitRange{Int} =1:getvalue(model)
 end
 
 """ Default model for a finset made out of a Julia `Int` """
