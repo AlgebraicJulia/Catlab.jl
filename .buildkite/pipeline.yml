@@ -1,24 +1,14 @@
-env:
-  JULIA_VERSION: "1.10.2"
-  GATAS_HOME: "~/.gatas/buildkite/agents/$BUILDKITE_AGENT_NAME"
-
+# you may replace the default AlgebraicJulia pipeline with your own. Just move
+# your pipeline into the .buildkite directory and rename the file being checked
+# below to your pipeline. More documentation to come.
 steps:
 
-  - label: ":hammer: Build Project"
-    env:
-      JULIA_DEPOT_PATH: "$GATAS_HOME"
-    command: 
-      - "module load julia"
-      - "julia --project=docs --color=yes -e 'using Pkg; Pkg.update(); Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate(); Pkg.precompile()'"
-         
-  - wait 
-
-  - label: ":scroll: Build docs and run tests"
-    env:
-      JULIA_DEPOT_PATH: "$GATAS_HOME"
-      JULIA_PROJECT: "docs/"
-    command:
-      - "srun --cpus-per-task=16 --mem=64G --time=1:00:00 --output=.buildkite/log_%j.log --unbuffered .buildkite/jobscript.sh"
-
+  - label: ":arrow_down: Load AlgebraicJulia pipeline"
+    command: |
+      if [ -f ".buildkite/example.yml.bak" ]; then
+        buildkite-agent pipeline upload .buildkite/example.yml
+      else
+        curl -s https://raw.githubusercontent.com/AlgebraicJulia/.github/main/buildkite/pipeline.yml | buildkite-agent pipeline upload
+      fi
+        
   - wait
-
