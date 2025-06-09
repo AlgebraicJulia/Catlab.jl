@@ -251,7 +251,7 @@ function add_edges₂₁!(g::HasBipartiteGraph, srcs::AbstractVector{Int},
   add_parts!(g, :E₂₁, n; src₂=srcs, tgt₁=tgts, kw...)
 end
 
-function rem_vertices₁!(g::AbstractBipartiteGraph, vs; keep_edges::Bool=false)
+function rem_vertices₁!(g::HasBipartiteGraph, vs; keep_edges::Bool=false)
   if !keep_edges
     rem_parts!(g, :E₁₂, unique!(sort!(flatten(incident(g, vs, :src₁)))))
     rem_parts!(g, :E₂₁, unique!(sort!(flatten(incident(g, vs, :tgt₁)))))
@@ -259,7 +259,7 @@ function rem_vertices₁!(g::AbstractBipartiteGraph, vs; keep_edges::Bool=false)
   rem_parts!(g, :V₁, vs)
 end
 
-function rem_vertices₂!(g::AbstractBipartiteGraph, vs; keep_edges::Bool=false)
+function rem_vertices₂!(g::HasBipartiteGraph, vs; keep_edges::Bool=false)
   if !keep_edges
     rem_parts!(g, :E₂₁, unique!(sort!(flatten(incident(g, vs, :src₂)))))
     rem_parts!(g, :E₁₂, unique!(sort!(flatten(incident(g, vs, :tgt₂)))))
@@ -269,22 +269,22 @@ end
 
 """ Remove edge from V₁ to V₂ in a bipartite graph.
 """
-rem_edge₁₂!(g::AbstractBipartiteGraph, e::Int) = rem_part!(g, :E₁₂, e)
-rem_edge₁₂!(g::AbstractBipartiteGraph, src::Int, tgt::Int) =
+rem_edge₁₂!(g::HasBipartiteGraph, e::Int) = rem_part!(g, :E₁₂, e)
+rem_edge₁₂!(g::HasBipartiteGraph, src::Int, tgt::Int) =
   rem_edge₁₂!(g, first(edges₁₂(g, src, tgt)))
 
 """ Remove edge from V₁ to V₂ in a bipartite graph.
 """
-rem_edge₂₁!(g::AbstractBipartiteGraph, e::Int) = rem_part!(g, :E₂₁, e)
-rem_edge₂₁!(g::AbstractBipartiteGraph, src::Int, tgt::Int) =
+rem_edge₂₁!(g::HasBipartiteGraph, e::Int) = rem_part!(g, :E₂₁, e)
+rem_edge₂₁!(g::HasBipartiteGraph, src::Int, tgt::Int) =
   rem_edge₂₁!(g, first(edges₂₁(g, src, tgt)))
 
 """ Remove edges from V₁ to V₂ in a bipartite graph.
 """
-rem_edges₁₂!(g::AbstractBipartiteGraph, es) = rem_parts!(g, :E₁₂, es)
+rem_edges₁₂!(g::HasBipartiteGraph, es) = rem_parts!(g, :E₁₂, es)
 
 """ Remove edges from V₂ to V₁ in a bipartite graph.
 """
-rem_edges₂₁!(g::AbstractBipartiteGraph, es) = rem_parts!(g, :E₂₁, es)
+rem_edges₂₁!(g::HasBipartiteGraph, es) = rem_parts!(g, :E₂₁, es)
 
 end

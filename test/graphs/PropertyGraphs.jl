@@ -1,7 +1,7 @@
 module TestPropertyGraphs
 using Test
 
-using Catlab.Graphs.BasicGraphs, Catlab.Graphs.PropertyGraphs
+using Catlab.Graphs.BasicGraphs, Catlab.Graphs.PropertyGraphs, Catlab.Graphs.BipartiteGraphs
 
 # Property graphs
 #################
@@ -46,5 +46,113 @@ add_edge!(g, 1, 2, c="car")
 @test ne(g) == 2
 @test eprops(g, 1) == Dict(:c => "car")
 @test eprops(g, 1) === eprops(g, 2)
+
+# Bipartite property graphs
+###########################
+
+bg = BipartitePropertyGraph{String}()
+add_vertex₁!(bg, a="alphonse", b="elric")
+add_vertices₁!(bg, 1, a="ed", b="elric")
+add_vertices₁!(bg, 2, f="rei", l="ayanami")
+add_vertex₂!(bg, a="trisha", b="elric")
+add_vertex₂!(bg, a="rurouni", b="kenshin")
+add_vertices₂!(bg, 1, a="van", b="hohenheim")
+
+@test_throws Exception add_edges₁₂!(bg, [1,1], [1,3,5], rel="childof")
+add_edges₁₂!(bg, [1,1], [1,3], rel="childof")
+@test_throws Exception add_edges₂₁!(bg, [1,3], [1,1,5], rel="parentof")
+add_edges₂₁!(bg, [1,3], [1,1], rel="parentof")
+add_edge₂₁!(bg, 3, 2, rel="parentof")
+
+@test nv₁(bg) == 4
+@test nv₂(bg) == 3
+@test nv(bg) == (4,3)
+@test vertices₁(bg) == 1:4
+@test vertices₂(bg) == 1:3
+@test vertices(bg) == (vertices₁(bg), vertices₂(bg))
+@test ne(bg) == (2,3)
+@test edges(bg) == (1:2, 1:3)
+
+e = add_edge₁₂!(bg, 1, 2, a="mistake")
+rem_edge₁₂!(bg, e)
+@test e ∉ edges₁₂(bg)
+e = add_edges₁₂!(bg, [1,1], [2,2], a="mistake")
+rem_edges₁₂!(bg, e)
+@test e ∉ edges₁₂(bg)
+
+e = add_edge₂₁!(bg, 1, 2, a="mistake")
+rem_edge₂₁!(bg, e)
+@test e ∉ edges₂₁(bg)
+e = add_edges₂₁!(bg, [1,1], [2,2], a="mistake")
+rem_edges₂₁!(bg, e)
+@test e ∉ edges₂₁(bg)
+@test edges(bg) == (1:2, 1:3)
+
+@test gprops(bg) isa Dict
+@test v₁props(bg, 1) == Dict(:a=>"alphonse", :b=>"elric")
+@test v₂props(bg, 1) == Dict(:a=>"trisha", :b=>"elric")
+@test e₁₂props(bg, 1) == Dict(:rel=>"childof")
+@test e₂₁props(bg, 1) == Dict(:rel=>"parentof")
+@test get_v₁prop(bg, 1, :a) == "alphonse"
+@test get_v₂prop(bg, 1, :a) == "trisha"
+@test get_e₁₂prop(bg, 1, :rel) == "childof"
+@test get_e₂₁prop(bg, 1, :rel) == "parentof"
+
+set_v₁prop!(bg, 4, :f, "rei1")
+@test get_v₁prop(bg, 4, :f) == "rei1"
+
+set_v₂prop!(bg, 2, :a, "himura")
+@test get_v₂prop(bg, 2, :a) == "himura"
+
+set_e₁₂prop!(bg, 1, :rel, "childof1")
+@test get_e₁₂prop(bg, 1, :rel) == "childof1"
+
+set_e₂₁prop!(bg, 1, :rel, "parentof1")
+@test get_e₂₁prop(bg, 1, :rel) == "parentof1"
+
+set_v₁prop!(bg, 3:4, :f, "rei")
+get_v₁prop(bg, 3:4, :f) == ["rei", "rei"]
+
+set_v₂prop!(bg, 2, :a, "kenshin")
+get_v₂prop(bg, 2, :a) == "kenshin"
+
+set_e₁₂props!(bg, 1, rel="childof")
+@test get_e₁₂prop(bg, 1:2, :rel) == ["childof", "childof"]
+
+set_e₂₁props!(bg, 1, rel="parentof")
+@test get_e₂₁prop(bg, 1:3, :rel) == ["parentof", "parentof", "parentof"]
+
+# constructors from graphs
+g = BipartiteGraph(2, 3)
+add_edge₁₂!(g, 1, 2)
+add_edge₂₁!(g, 1, 1)
+add_edges₁₂!(g, [2,2], [3,3])
+add_edges₂₁!(g, [2,3], [1,1])
+
+pg = BipartitePropertyGraph{String}(g, a="test")
+@test gprops(pg) == Dict{Symbol,String}(:a=>"test")
+
+@test nv(pg) == (2, 3)
+@test (ne₁₂(pg), ne₂₁(pg)) == (3,3)
+@test (edges₁₂(pg), edges₂₁(pg)) == (1:3, 1:3)
+@test ne(pg) == (3,3)
+@test edges(pg) == (1:3, 1:3)
+
+g = UndirectedBipartiteGraph()
+add_vertices₁!(g, 2)
+add_vertices₂!(g, 3)
+add_edge!(g, 1, 1)
+add_edges!(g, [2,2], [2,3])
+
+pg = BipartitePropertyGraph{String}(g, a="test")
+@test gprops(pg) == Dict{Symbol,String}(:a=>"test")
+
+@test (nv₁(pg), nv₂(pg)) == (2,3)
+@test (vertices₁(pg), vertices₂(pg)) == (1:2, 1:3)
+@test nv(pg) == (2,3)
+@test vertices(pg) == (1:2, 1:3)
+@test ne(pg) == (3,0)
+@test edges₁₂(pg) == (1:3)
+@test (src₁(pg), tgt₂(pg)) == ([1,2,2], [1,2,3])
 
 end
