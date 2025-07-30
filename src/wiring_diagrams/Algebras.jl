@@ -3,7 +3,7 @@
 module WiringDiagramAlgebras
 export oapply, query
 
-using ...Theories
+using ...Theories, ...Graphs, ...BasicSets
 using ...CategoricalAlgebra
 import ...CategoricalAlgebra.HomSearch: homomorphisms, homomorphism, is_homomorphic
 using ..UndirectedWiringDiagrams

@@ -1,7 +1,7 @@
 module TestUndirectedWiringDiagrams
 using Test
 
-using Catlab.CategoricalAlgebra.FinSets: FinFunction
+using Catlab.BasicSets: FinFunction
 using Catlab.WiringDiagrams.UndirectedWiringDiagrams
 
 const UWD = UndirectedWiringDiagram

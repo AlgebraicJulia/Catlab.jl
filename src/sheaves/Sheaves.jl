@@ -1,15 +1,4 @@
 module Sheaves
-using LinearAlgebra
-using SparseArrays
-using ...CategoricalAlgebra
-using ...CategoricalAlgebra.Categories
-using ...CategoricalAlgebra.FinSets
-using ...CategoricalAlgebra.Matrices
-using ...Theories
-import ..CategoricalAlgebra.Categories: CatSize
-import ...Theories: dom, codom, id, ob, hom
-import ...CategoricalAlgebra: legs, apex
-import ...CategoricalAlgebra.Categories: do_ob_map, do_hom_map
 
 export AbstractSheaf, AbstractFunctor, AbstractCover, AbstractCoverage,
   FinSetCat, FinVect, FinSetOp, FinSetOpT,
@@ -17,6 +6,20 @@ export AbstractSheaf, AbstractFunctor, AbstractCover, AbstractCoverage,
   FMatPullback, FMatPushforward,
   ColimCover, DiagramTopology, is_coverage,
   Sheaf, diagnose_match, extend, restrict, MatchingError, MatchingFailure
+
+using LinearAlgebra
+using SparseArrays
+
+using ...Theories
+import ...Theories: dom, codom, id, ob, hom
+
+using ...BasicSets
+using ...CategoricalAlgebra
+using ...CategoricalAlgebra.Categories
+using ...CategoricalAlgebra.Misc.Matrices
+import ..CategoricalAlgebra.Categories: CatSize
+import ...CategoricalAlgebra: legs, apex
+import ...CategoricalAlgebra.Cats.Functors: do_ob_map, do_hom_map
 
 
 abstract type SmallCatSize <: CatSize end

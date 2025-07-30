@@ -7,7 +7,7 @@ import Graphs as SimpleGraphs
 import MetaGraphs
 const LG, MG = SimpleGraphs, MetaGraphs
 
-using GATlab, Catlab.CategoricalAlgebra, Catlab.Graphs
+using GATlab, Catlab.CategoricalAlgebra, Catlab.Graphs, Catlab.BasicSets
 using Catlab.WiringDiagrams: query
 using Catlab.Programs: @relation
 

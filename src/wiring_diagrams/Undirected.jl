@@ -10,8 +10,8 @@ export UndirectedWiringDiagram, HasUWD,
   ocompose, substitute
 
 using GATlab
-using ...CategoricalAlgebra.CSets, ...CategoricalAlgebra.Limits
-using ...CategoricalAlgebra.FinSets: FinSet, FinFunction
+using ...CategoricalAlgebra.Pointwise, ...CategoricalAlgebra.LimitsColimits
+using ...BasicSets: FinSet, FinFunction
 using ...Theories: dom, codom, compose, ⋅, id, oplus
 import ..DirectedWiringDiagrams: box, boxes, nboxes, add_box!, add_wire!,
   add_wires!, singleton_diagram, ocompose, substitute

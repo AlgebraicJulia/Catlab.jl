@@ -6,8 +6,8 @@ The following APIs implement FinSet, the category of Finite Sets (actually the s
 
 ```@autodocs
 Modules = [
-  CategoricalAlgebra.Sets,
-  CategoricalAlgebra.FinSets,
+  BasicSets.Sets,
+  BasicSets.FinSets,
   CategoricalAlgebra.FinRelations,
   ]
 Private = false

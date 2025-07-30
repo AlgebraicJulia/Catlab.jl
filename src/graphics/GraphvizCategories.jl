@@ -3,7 +3,7 @@
 module GraphvizCategories
 export to_graphviz, to_graphviz_property_graph
 
-using ...Theories, ...CategoricalAlgebra, ...Graphs, ..GraphvizGraphs
+using ...Theories, ...BasicSets, ...CategoricalAlgebra, ...Graphs, ..GraphvizGraphs
 import ..Graphviz
 import ..GraphvizGraphs: to_graphviz, to_graphviz_property_graph
 
