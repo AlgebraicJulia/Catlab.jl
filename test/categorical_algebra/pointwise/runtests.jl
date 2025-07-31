@@ -22,7 +22,7 @@ end
 end
 
 @testset "MADVarACSetCats" begin
-  include("madvaracsetcats/HomSearch.jl")
+  include("madvaracsetcats/runtests.jl")
 end
 
 
