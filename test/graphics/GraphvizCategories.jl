@@ -1,7 +1,8 @@
 module TestGraphvizCategories
+
 using Test
 
-using Catlab.Theories, Catlab.CategoricalAlgebra, Catlab.Graphs, Catlab.BasicSets
+using Catlab
 using Catlab.Graphics.GraphvizCategories
 using Catlab.Graphics: Graphviz
 
@@ -72,6 +73,8 @@ gv = to_graphviz(f)
 # Diagrams
 ##########
 
+V, E, src, tgt = generators(SchGraph)
+
 # Diagram with anonymous objects in J
 C = FinCat(@acset Graph begin
   V = 3
@@ -79,29 +82,24 @@ C = FinCat(@acset Graph begin
   src = [1,2]
   tgt = [3,3]
 end)
-D = FinDomFunctor([:E,:E,:V], [:tgt,:src], C, FinCat(SchSymmetricGraph))
-d = Diagram{id}(D)
+D = FinDomFunctor([E,E,V], [tgt,src], C, FinCat(SchSymmetricGraph); homtype=:generator)
 
-gv = to_graphviz(d, node_labels=true)
+gv = to_graphviz(D, node_labels=true)
 
 @test stmts(gv, Graphviz.Node, :label) == ["E","E","V"]
 @test stmts(gv, Graphviz.Edge, :label) == ["tgt","src"]
 
 # Diagram with named objects in J
 C = FinCat(@acset NamedGraph{Symbol,Symbol} begin
-  V = 3
-  E = 2
-  src = [1,2]
-  tgt = [3,3]
-  vname = [:e1,:e2,:v]
-  ename = [:t,:s]
+  V = 3; E = 2; src = [1,2]; tgt = [3,3]
+  vname = [:e1,:e2,:v]; ename = [:t,:s]
 end)
-D = FinDomFunctor([:E,:E,:V], [:tgt,:src], C, FinCat(SchSymmetricGraph))
-d = Diagram{id}(D)
-
-gv = to_graphviz(d, node_labels=true)
+D = FinDomFunctor(Dict(:e1=>E,:e2=>E,:v=>V), Dict(:t=>tgt,:s=>src), 
+                  C, FinCat(SchSymmetricGraph); homtype=:generator)
+impl_type(D, :DomOb)
+gv = to_graphviz(D, node_labels=true)
 
 @test stmts(gv, Graphviz.Node, :label) == ["e1:E","e2:E","v:V"]
-@test stmts(gv, Graphviz.Edge, :label) == ["tgt","src"]
+@test stmts(gv, Graphviz.Edge, :label) == ["src","tgt"]
 
-end
+end # module

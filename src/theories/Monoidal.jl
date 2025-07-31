@@ -53,9 +53,11 @@ might add a theory for weak monoidal categories later.
 end
 
 # Convenience constructors
-otimes(xs::AbstractVector{T}) where T =
+otimes(xs::AbstractVector{T})where {T} = #{T<:GATExpr} =
   isempty(xs) ? munit(T) : foldl(otimes, xs)
-otimes(x, y, z, xs...) = otimes([x, y, z, xs...])
+  
+otimes(x::GATExpr, y::GATExpr, z::GATExpr, xs...) = 
+  otimes(GATExpr[x, y, z, xs...])
 
 """ Collect generators of object in monoidal category as a vector.
 """

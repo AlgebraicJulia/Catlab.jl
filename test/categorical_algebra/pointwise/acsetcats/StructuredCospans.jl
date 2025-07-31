@@ -1,6 +1,6 @@
-module TestACSetStructuredCospans 
+module TestACSetStructuredCospans
 
-using Catlab, Test
+using Test, Catlab
 
 # Interface schema: one object, no attributes
 #--------------------------------------------
@@ -99,7 +99,7 @@ end
 g = OpenWLGraph{Float64,Symbol}(g0, FinFunction([1],5), FinFunction([3,4],5))
 g′ = OpenWLGraph{Float64,Symbol}(g0, FinFunction([1],5),
                                FinFunction([3],5), FinFunction([4],5))
-@test bundle_legs(g′, [1, (2,3)]) == g
+@test bundle_legs(g′, [1, (2,3)]) ≃ g
 
 # Interface schema: many objects, with attributes
 #------------------------------------------------

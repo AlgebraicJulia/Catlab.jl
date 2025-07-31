@@ -78,7 +78,6 @@ different ways, but wiring diagrams always form a symmetric monoidal category in
 the same way.
 """
 @instance ThSymmetricMonoidalCategory{Ports, WiringDiagram} begin
-  @import dom, codom
 
   function id(A::Ports)
     f = WiringDiagram(A, A)
@@ -102,6 +101,7 @@ the same way.
   end
 
   otimes(A::Ports, B::Ports) = cat(A, B)
+  
   munit(::Type{Ports}) = Ports([])
 
   function otimes(f::WiringDiagram, g::WiringDiagram; unsubstituted::Bool=false)
@@ -127,6 +127,15 @@ end
 
 munit(::Type{Ports{T}}) where T = Ports{T}([])
 munit(::Type{Ports{T,V}}) where {T,V} = Ports{T}(V[])
+
+compose(init::WiringDiagram, xs::WiringDiagram...) = foldl(compose, xs; init)
+
+otimes(xs::Ports...) =
+  isempty(xs) ? munit(Ports) : foldl(otimes, xs)
+
+otimes(xs::WiringDiagram...) =
+  isempty(xs) ? munit(WiringDiagram) : foldl(otimes, xs)
+
 
 # Unbiased version of braiding (permutation).
 

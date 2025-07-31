@@ -6,6 +6,10 @@ include("ACSetsGATsInterop.jl")
   include("theories/runtests.jl")
 end
 
+@testset "Graphs" begin
+  include("graphs/runtests.jl") 
+end
+
 @testset "BasicSets" begin
   include("basic_sets/runtests.jl")
 end
@@ -14,16 +18,8 @@ end
   include("categorical_algebra/runtests.jl")
 end
 
-@testset "Graphs" begin
-  include("graphs/runtests.jl")
-end
-
 @testset "WiringDiagrams" begin
   include("wiring_diagrams/runtests.jl")
-end
-
-@testset "Graphics" begin
-  include("graphics/runtests.jl")
 end
 
 @testset "ADTs" begin

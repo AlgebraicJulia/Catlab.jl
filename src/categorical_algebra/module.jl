@@ -2,16 +2,17 @@ module CategoricalAlgebra
 
 using Reexport
 
-include("Cats/module.jl")
+include("cats/module.jl") 
 @reexport using .Cats
 
-include("SetCats/module.jl")
+include("setcats/module.jl") # depends on Cats
 @reexport using .SetCats
 
-include("Pointwise/module.jl")
+include("pointwise/module.jl") # depends on Cats, SetCats
 @reexport using .Pointwise
 
-include("Misc/module.jl")
+include("misc/module.jl") # doesn't depend on the other three
+
 @reexport using .Misc
 
 end # module

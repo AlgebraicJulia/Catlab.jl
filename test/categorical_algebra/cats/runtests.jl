@@ -1,44 +1,23 @@
+include("Paths.jl")
 
-@testset "Categories" begin
-  include("Categories.jl")
-end
+include("Categories.jl")
 
-@testset "FinCats" begin
-  include("FinCats.jl")
-end 
+include("FinCats.jl")
 
-@testset "DiscreteCats" begin
-  include("DiscreteCats.jl")
-end 
+include("Functors.jl")
 
-@testset "Functors" begin
-  include("Functors.jl")
-end 
+include("FinFunctors.jl")
 
-@testset "FinFunctors" begin
-  include("FinFunctors.jl")
-end 
+include("FreeDiagrams.jl")
 
-@testset "Transformations" begin
-  include("Transformations.jl")
-end 
+include("CommutativeDiagrams.jl")
 
-@testset "FreeDiagrams" begin
-  include("FreeDiagrams.jl")
-end
+include("Limits.jl")
 
-@testset "Limits" begin
-  include("Limits.jl")
-end
+include("DiscreteCats.jl")
 
-@testset "Diagrams" begin
-  include("CommutativeDiagrams.jl")
-end 
+include("Transformations.jl")
 
-@testset "Diagrams" begin
-  include("Diagrams.jl")
-end
+include("Diagrams.jl")
 
-@testset "SliceCategories" begin
-  include("SliceCategories.jl")
-end
+include("SliceCategories.jl")

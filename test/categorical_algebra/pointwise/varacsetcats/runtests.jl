@@ -1,13 +1,24 @@
-include("ACSetTransformations.jl")
+using Test
 
-include("Limits.jl")
+@testset "ACSetTransformations" begin
+  include("ACSetTransformations.jl") 
+end 
 
-include("Colimits.jl")
+@testset "Colimits" begin
+  include("Colimits.jl") 
+end
 
-include("Subobjects.jl")
+@testset "HomSearch" begin
+  include("HomSearch.jl")
+end
 
-include("HomSearch.jl")
+@testset "DataMigrations" begin
+  include("DataMigrations.jl")
+end
 
-include("MCO.jl")
-
-include("FunctorialDataMigrations.jl")
+@testset "Subobjects" begin
+  include("Subobjects.jl")
+end
+@testset "MCO" begin
+  include("MCO.jl")
+end 

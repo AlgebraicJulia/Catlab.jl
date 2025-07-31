@@ -4,9 +4,11 @@ using GATlab, Catlab.CategoricalAlgebra, Catlab.Graphs, Catlab.Graphics
 using Colors
 
 # Let's tell Catlab how to draw categories of elements.
+V, E, src, tgt = generators(SchGraph)
+El, Arr, _, _, src′, tgt′, _ = generators(SchElements)
 function graph(el::Elements)
-  F = FinFunctor(Dict(:V => :El, :E => :Arr), Dict(:src => :src, :tgt => :tgt),
-                 SchGraph, SchElements)
+  F = FinFunctor(Dict(V => El, E => Arr), Dict(src => src′, tgt => tgt′),
+                 FinCat(SchGraph), FinCat(SchElements); homtype=:generator)
   ΔF = DataMigrationFunctor(F, Elements{Symbol}, Graph)
   return ΔF(el)
 end

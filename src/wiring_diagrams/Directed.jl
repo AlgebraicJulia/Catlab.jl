@@ -32,8 +32,7 @@ using StructEquality
 
 using GATlab
 using ...Graphs.BasicGraphs, ...CategoricalAlgebra.CSets
-import ...CategoricalAlgebra.HomSearch: is_isomorphic
-import ...CategoricalAlgebra.FinCats: graph
+import ...CategoricalAlgebra: is_isomorphic
 import ...Graphs: all_neighbors, neighbors, outneighbors, inneighbors
 
 # Data types
@@ -759,15 +758,10 @@ function ocompose(f::WiringDiagram, gs::Vector{<:WiringDiagram})
   @assert length(gs) == nboxes(f)
   substitute(f, box_ids(f), gs)
 end
-
-(f::WiringDiagram)(gs::Vector{<:WiringDiagram}) = ocompose(f, gs)
-
 function ocompose(f::WiringDiagram, i::Int, g::WiringDiagram)
   @assert 1 <= i <= nboxes(f)
   substitute(f, box_ids(f)[i], g)
 end
-
-(f::WiringDiagram)(i::Int, g::WiringDiagram) = ocompose(f, i, g)
 
 # Substitution
 ##############

@@ -84,6 +84,7 @@ makedocs(
       "apis/sheaves.md",
     ],
     "Developer Docs" => Any[
+      "devdocs/release.md",
       "devdocs/style.md",
       "generated/peg-parser/dsl_peg_tutorial.md",
     ],

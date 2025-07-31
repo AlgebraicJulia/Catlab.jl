@@ -23,9 +23,9 @@ notation.
   mzero()::Ob
 end
 
-# Convenience constructors
-oplus(xs::AbstractVector{T}) where T = isempty(xs) ? mzero(T) : foldl(oplus, xs)
-oplus(x, y, z, xs...) = oplus([x, y, z, xs...])
+# Convenience constructors TODO FIX THIS
+oplus(xs::AbstractVector{T}) where {T<:GATExpr} = isempty(xs) ? mzero(T) : foldl(oplus, xs)
+oplus(x::GATExpr, y::GATExpr, z::GATExpr, xs...) = oplus(GATExpr[x, y, z, xs...])
 
 # Overload `collect` and `ndims` as for multiplicative monoidal categories.
 collect(expr::ObExpr{:oplus}) = vcat(map(collect, args(expr))...)

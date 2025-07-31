@@ -3,6 +3,7 @@ export SchCPortGraph, SchOpenCPortGraph, SchSymCPortGraph, SchOpenSymCPortGraph,
   CPortGraph, OpenCPortGraph, SymCPortGraph, OpenSymCPortGraph,
   ThBundledCPG, BundledCPG
 
+using GATlab: generators
 using ...Theories, ...CategoricalAlgebra, ...Graphs
 import ...CategoricalAlgebra: migrate!
 import ..DirectedWiringDiagrams: ocompose
@@ -72,58 +73,56 @@ function OpenCPortGraph(g::AbstractCPortGraph)
   return x
 end
 
+
+# Generators
+#############
+V, E, src, tgt, inv = generators(SchSymmetricGraph)
+Box, Port, Wire, OuterPort, src′, tgt′, box, inv′, con = generators(SchOpenSymCPortGraph)
+# con = SchSymCPortGraph[:con]
+
+# Canonical migration maps
+##########################
+
 function migrate!(g::AbstractGraph, cpg::AbstractCPortGraph)
   migrate!(g, cpg,
-    Dict(:E=>:Wire, :V=>:Box),
-    Dict(:src=>compose(SchCPortGraph[:src], SchCPortGraph[:box]),
-         :tgt=>compose(SchCPortGraph[:tgt], SchCPortGraph[:box])))
+    Dict(E=>Wire, V=>Box),
+    Dict(src=>compose(src′, box), tgt=>compose(tgt′, box)); homtype=:hom)
 end
 
 function migrate!(pg::AbstractCPortGraph, opg::AbstractOpenCPortGraph)
   migrate!(pg, opg,
-    Dict(:Box=>:Box, :Port=>:Port, :Wire=>:Wire),
-    Dict(:src=>:src, :tgt=>:tgt, :box=>:box))
+    Dict(Box=>Box, Port=>Port, Wire=>Wire),
+    Dict(src′=>src′, tgt′=>tgt′, box=>box))
 end
 
 function migrate!(pg::AbstractCPortGraph, g::AbstractGraph)
   migrate!(pg, g,
-    Dict(:Box=>:V, :Port=>:V, :Wire=>:E),
-    Dict(
-      :box=>id(SchGraph[:V]),
-      :src=>SchGraph[:src],
-      :tgt=>SchGraph[:tgt],
-    )
+    Dict(Box=>V, Port=>V, Wire=>E),
+    Dict(box=>id(V), src′=>src, tgt′=>tgt); homtype=:hom
   )
 end
 
 function migrate!(og::AbstractOpenCPortGraph, g::AbstractCPortGraph)
   migrate!(og, g,
-    Dict(:Box=>:Box, :Port=>:Port, :Wire=>:Wire, :OuterPort=>:Port),
-    Dict(
-      :src=>:src,
-      :tgt=>:tgt,
-      :box=>:box,
-      :con=>id(SchCPortGraph[:Port]),
-    )
+    Dict(Box=>Box, Port=>Port, Wire=>Wire, OuterPort=>Port),
+    Dict(src′=>src′, tgt′=>tgt′, box=>box, con=>id(Port)
+    ); homtype=:hom
   )
 end
+
 migrate!(og::AbstractOpenCPortGraph, g::AbstractGraph) =
   migrate!(og, migrate!(CPortGraph(),g))
 
 function migrate!(pg::AbstractSymCPortGraph, g::AbstractSymmetricGraph)
   migrate!(pg, g,
-    Dict(:Box=>:V, :Port=>:V, :Wire=>:E),
-    Dict(
-      :box=>id(SchSymmetricGraph[:V]),
-      :src=>id(SchSymmetricGraph[:src]),
-      :tgt=>id(SchSymmetricGraph[:tgt]),
-      :inv=>SchSymmetricGraph[:inv],
-    )
+    Dict(Box=>V, Port=>V, Wire=>E),
+    Dict(box=>id(V),src′=>id(src),tgt′=>id(tgt),inv′=>inv)
   )
 end
 
 function ocompose(g::AbstractOpenCPortGraph, xs::Vector)
-  u = coproduct(xs)
+  𝒞 = infer_acset_cat(first(xs))
+  u = coproduct[𝒞](xs...)
   sum = apex(u)
   for e in parts(g, :Wire)
     s, t = g[e, :src], g[e, :tgt]
@@ -145,22 +144,22 @@ function ocompose(g::AbstractOpenCPortGraph, xs::Vector)
   return sum
 end
 
-(g::AbstractOpenCPortGraph)(xs::Vector) = ocompose(g, xs)
-
 @present ThBundledCPG <: SchOpenCPortGraph begin
   Bundle::Ob
   bun::Hom(OuterPort, Bundle)
 end
+
+Bundle, bun = ThBundledCPG[:Bundle], ThBundledCPG[:bun]
 
 @abstract_acset_type AbstractBundledCPG <: AbstractOpenCPortGraph
 @acset_type BundledCPG(ThBundledCPG, index=[:box, :src, :tgt, :bun]) <: AbstractBundledCPG
 
 function migrate!(b::AbstractBundledCPG, g::AbstractOpenCPortGraph)
   migrate!(b,g,
-    Dict(:Box=>:Box, :Port=>:Port, :Wire=>:Wire, :OuterPort=>:OuterPort,
-         :Bundle=>:OuterPort),
-    Dict(:src=>:src, :tgt=>:tgt, :box=>:box,
-         :con=>:con, :bun=>id(SchOpenCPortGraph[:OuterPort])))
+    Dict(Box=>Box, Port=>Port, Wire=>Wire, OuterPort=>OuterPort,
+         Bundle=>OuterPort),
+    Dict(src′=>src′, tgt′=>tgt′, box=>box,
+         con=>con, bun=>id(OuterPort)); homtype=:hom)
 end
 
 function BundledCPG(g::AbstractOpenCPortGraph)
@@ -170,8 +169,9 @@ function BundledCPG(g::AbstractOpenCPortGraph)
 end
 
 function ocompose(g::AbstractBundledCPG, xs::Vector)
-  u = coproduct(xs)
-  xsum=apex(u)
+  𝒞 = infer_acset_cat(first(xs))
+  u = coproduct[𝒞](xs...)
+  xsum = apex(u)
   for e in parts(g, :Wire)
     s, t = g[e,:src], g[e,:tgt]
     sbox, tbox = g[s, :box], g[t, :box]
@@ -192,7 +192,7 @@ function ocompose(g::AbstractBundledCPG, xs::Vector)
   for op in parts(g, :OuterPort)
     i = g[op, [:con, :box]]
     localport = only(findall(op .== incident(g, i, :box)))
-    newop = legs(u.cocone)[i][:Port](incident(xs[i], localport, :bun))
+    newop = legs(u.cocone)[i][:Port].(incident(xs[i], localport, :bun))
     add_parts!(xsum, :OuterPort, length(newop), con=newop, bun=op)
   end
   return xsum

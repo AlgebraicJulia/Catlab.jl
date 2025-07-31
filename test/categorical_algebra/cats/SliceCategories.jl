@@ -1,8 +1,41 @@
 module TestSliceCategories
-using Test
 
-using Catlab.Theories, Catlab.CategoricalAlgebra, Catlab.Graphs
+using Test, Catlab
 
+𝒞 = ACSetCategory(Graph())
+𝒞′ = Category(𝒞)
+
+############
+# Colimits #
+############
+G = complete_graph(Graph, 2)
+Bipartite = SliceC(𝒞′, G)
+
+# Initial 
+#########
+i = initial[Bipartite]()
+@test ob(i).hom ≃ ACSetTransformation(Graph(), G)
+
+# Pushout in Petri, computed as slice in Grph
+#############################################
+a,b,c = Graph(1), path_graph(Graph, 2), path_graph(Graph, 2)
+d = path_graph(Graph, 3)
+A = SliceOb(ACSetTransformation(a, G, V=[2])) # □
+B = SliceOb(ACSetTransformation(b, G, V=[2,1], E=[2])) # □→⊚
+C = SliceOb(ACSetTransformation(b, G, V=[1,2], E=[1])) # ⊚→□
+D = SliceOb(ACSetTransformation(d, G, V=[1,2,1], E=[1,2])) # ⊚→□→⊚
+f = SliceHom(A,B, ACSetTransformation(a,b,V=[1]); cat=𝒞)
+g = SliceHom(A,C, ACSetTransformation(a,c,V=[2]); cat=𝒞)
+
+s = Multispan(A, [f,g], [B, C])
+clim = colimit[Bipartite](s)
+# the slice map itself is good too but we don't test that yet
+@test is_isomorphic(apex(clim).ob, d) 
+
+
+##########
+# Limits #
+##########
 """
 A product in a slice category is equivalent to a pullback. Here we work with
 discrete graphs:
@@ -21,42 +54,21 @@ which forces its map to A to point to a₂ and its map to B to point to b₁), t
 universal property gives a map into the limit object, so it picks the element
 that maps to (a₂,b₁).
 """
-# create limit
 G2,G1,G3 = Graph.([2,1,3])
-A, B = Slice.([ACSetTransformation(G2, G3;V=x) for x in [[1,2],[2,1]]])
-@test force(id(A)) == force(SliceHom(A,A,id(G2)))
-slice_dia = FreeDiagram(DiscreteDiagram([A,B], SliceHom))
-slice_lim = limit(slice_dia)
+𝒞3 = SliceC(𝒞′, G3) # objects are sets with labels {1,2,3}
+
+A, B = SliceOb.([ACSetTransformation(G2, G3;V=x) for x in [[1,2],[2,1]]])
+slic = SliceHom(A,A,id[𝒞](G2); cat=𝒞)
+@test is_monic[𝒞3](slic)
+@test is_epic[𝒞3](slic)
+@test id[𝒞3](A) == slic
+slice_lim = π₁, π₂ = product[𝒞3](A,B);
 
 # test universal property
 mA, mB = [ACSetTransformation(G1,G2;V=x) for x in [[1],[2]]]
-map_to_base = Slice(ACSetTransformation(G1,G3;V=[1]))
-toA = SliceHom(map_to_base, A, mA)
-toB = SliceHom(map_to_base, B, mB)
-u = universal(slice_lim, Span(toA, toB))
-@test dom(u) == map_to_base
-@test codom(u) == apex(slice_lim)
-@test force(compose(u, legs(slice_lim)[1]).f) == force(toA.f)
-
-
-# Colimit: a pushout of slices
-#------------------------------
-
-# Pushout in Petri, computed as slice in Grph
-two = @acset Graph begin V=2; E=2; src=[1,2]; tgt=[2,1] end
-a,b,c = Graph(1), path_graph(Graph, 2), path_graph(Graph, 2)
-d = path_graph(Graph, 3)
-A = Slice(ACSetTransformation(a, two, V=[2])) # □
-B = Slice(ACSetTransformation(b, two, V=[2,1], E=[2])) # □→⊚
-C = Slice(ACSetTransformation(b, two, V=[1,2], E=[1])) # ⊚→□
-D = Slice(ACSetTransformation(d, two, V=[1,2,1], E=[1,2])) # ⊚→□→⊚
-ff = ACSetTransformation(a,b,V=[1])
-gg = ACSetTransformation(a,c,V=[2])
-f = SliceHom(A,B,ff)
-g = SliceHom(A,C,gg)
-
-slice_dia = FreeDiagram{Slice,SliceHom}(Multispan(A, [f, g]))
-clim = colimit(slice_dia)
-@test is_isomorphic(dom(apex(clim)), d)
+sp = Multispan(SliceOb(ACSetTransformation(G1, G3; V=[2])), [mA, mB], [A,B])
+u = universal[𝒞3](slice_lim, sp)
+@test force(compose[𝒞](u, π₁)) == mA
+@test force(compose[𝒞](u, π₂)) == mB
 
 end # module

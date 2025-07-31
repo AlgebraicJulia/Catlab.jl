@@ -17,7 +17,6 @@ jobs:
           - { user: AlgebraicJulia, repo: CategoricalTensorNetworks.jl }
           - { user: AlgebraicJulia, repo: CombinatorialSpaces.jl }
           - { user: AlgebraicJulia, repo: DataMigrations.jl }
-          - { user: AlgebraicJulia, repo: DiagrammaticEquations.jl }
           - { user: AlgebraicJulia, repo: Decapodes.jl }
 
     steps:

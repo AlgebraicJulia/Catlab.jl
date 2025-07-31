@@ -1,16 +1,24 @@
-struct FinVect <: Category{FinSet, Function, SmallCatSize} end
+using GATlab
+
+@struct_hash_equal struct FinVect end
+
+# The tests do not currently use the category structure of FinVect
+@instance ThCategoryExplicitSets{FinSet, Function} [model::FinVect] begin
+  dom(f::FinSet) = error()
+  codom(f::FinSet) = error()
+  id(f::FinSet) = error()
+  compose(f::Function, g::Function) = error()
+  ob_set() = SetOb(FinSet)
+  hom_set() = SetOb(Function)
+end
 
 """    FVectPullback{T} where T <: Number
 
 The contravariant free vector space functor. 
 The returned function f✶ restricts via precomposition.
 """
-struct FVectPullback <: Functor{FinSetOpT, FinVect} end
-dom(::FVectPullback) = FinSetOpT
-codom(::FVectPullback) = FinVect
-do_ob_map(::FVectPullback, n::FinSet) = n
-do_hom_map(::FVectPullback, f::FinFunction) = (v->v[f.(dom(f))])
-# as a callable functor this would be: FVectPullback = Functor(identity, f->(v->v[f.(dom(f))]), OppositeCat(FinSetCat()), FinVect())
+FVectPullback = Functor(identity, f->(v->v[f.(dom(f))]),
+   op(Category(FinSetC())), Category(FinVect()))  # end {FinSetOpT, FinVect} end
 
 """    FreeVect{T} where T <: Number
 
@@ -23,11 +31,15 @@ FVectPushforward = Functor(identity, # identity on objects
     sum(v[j] for j in preimage(f,i))
   end),
   # covariant functor from FinSetCat to FinVect
-  FinSetCat(), FinVect()
+  Category(FinSetC()), Category(FinVect())
 )
 
-const FinMat = TypeCat(MatrixDom, Matrix)
-const FinMatT = typeof(FinMat)
+@instance ThCategoryExplicitSets{Int, AbstractMatrix{T}
+                                } [model::MatC{T}] where T begin 
+
+  ob_set() = SetOb(PredicatedSet(Int, i -> i≥0))
+  hom_set() = SetOb(AbstractMatrix{T})
+end
 
 # call a matrix on a vector multiplies by it.
 function (M::SparseArrays.SparseMatrixCSC{Int64, Int64})(x::AbstractVector)
@@ -35,35 +47,46 @@ function (M::SparseArrays.SparseMatrixCSC{Int64, Int64})(x::AbstractVector)
 end
 
 function pullback_matrix(f::FinFunction)
-    n = length(dom(f))
-    sparse(1:n, f.(dom(f)), ones(Int,n), dom(f).n, codom(f).n)
+  n = length(dom(f))
+  sparse(1:n, f.(dom(f)), ones(Int,n), length(dom(f)), length(codom(f)))
 end
 
 function pushforward_matrix(f::FinFunction)
   pullback_matrix(f)'
 end
 
-struct FMatPullback <: Functor{FinSetOpT, FinMatT} end
-dom(::FMatPullback) = FinSetOpT
-codom(::FMatPullback) = FinMat
-do_ob_map(::FMatPullback, n::FinSet) = MatrixDom{AbstractMatrix}(n.n)
-do_hom_map(::FMatPullback, f::FinFunction) = pullback_matrix(f)
+FMatPullback = Functor(n -> length(n), f->pullback_matrix(f), 
+  Category(SkelFinSet()), Category(MatC{Number}()))
+
 
 FMatPushforward = Functor(n->MatrixDom(n.n),
   pushforward_matrix,
-  FinSetCat(), FinVect()
+  Category(FinSetC()), Category(FinVect())
 )
 
-"""    extend(X::Sheaf{T, FVectPullback}, cover::ColimCover, sections::Vector{Vector{R}}; check=true, debug=false) where {T<:DiagramTopology, R}
+# The better way to do this is to make a ThSheaf and have different models 
+# which implement `extend`
+extend(X::Sheaf, cover, sections; kw...) = if functor(X) == FMatPullback 
+  extend_mat(X,cover,sections; kw...)
+elseif functor(X) == FVectPullback 
+  extend_vect(X,cover,sections; kw...)
+else 
+  error("Cannot extend $X")
+end
+
+"""    extend(X::Sheaf{T}, cover::ColimCover, sections::Vector{Vector{R}}; check=true) where {T<:DiagramTopology, R}
 
 This method implements the extension operation for the diagram topology on FinSet for the Free Vector Space functor.
 The implementation does copies the value of the ith section into the jth spot as indicated by the legs of the cocone.
 """
-function extend(X::Sheaf{T, FVectPullback}, cover::ColimCover, sections::Vector{Vector{R}}; check=true, debug=false) where {T<:DiagramTopology, R}
-  length(sections) == length(legs(cover)) || throw(ArgumentError("There are $(length(sections)) but only $(length(legs(cover))) legs in the cover"))
-  v = zeros(R, apex(cover))
+function extend_vect(X::Sheaf{T}, cover::ColimCover, 
+                    sections::Vector{Vector{R}}; check=true
+                    ) where {T<:DiagramTopology, R}
+  length(sections) == length(legs(cover)) || throw(ArgumentError(
+    "There are $(length(sections)) but only $(length(legs(cover))) legs in the cover"))
+  v = zeros(R, length(apex(cover)))
   if check
-    match_errors = diagnose_match(X, cover, sections; debug=debug)
+    match_errors = diagnose_match(X, cover, sections)
     length(match_errors) == 0 || throw(MatchingError(match_errors))
   end
   for (i, l) in enumerate(legs(cover))
@@ -77,14 +100,18 @@ function extend(X::Sheaf{T, FVectPullback}, cover::ColimCover, sections::Vector{
   return v
 end
 
-function extend(X::Sheaf{T, FMatPullback}, cover::ColimCover, sections::Vector{Vector{R}};check=true, debug=false) where {T<:DiagramTopology, R}
-  length(sections) == length(legs(cover)) || throw(ArgumentError("There are $(length(sections)) but only $(length(legs(cover))) legs in the cover"))
-  v = zeros(R, apex(cover))
+
+function extend_mat(X::Sheaf{T}, cover::ColimCover, 
+                    sections::Vector{Vector{R}};check=true
+                    ) where {T<:DiagramTopology, R}
+  length(sections) == length(legs(cover)) || throw(ArgumentError(
+    "There are $(length(sections)) but only $(length(legs(cover))) legs in the cover"))
+  v = zeros(R, length(apex(cover)))
   if check
-    match_errors = diagnose_match(X, cover, sections; debug=debug)
+    match_errors = diagnose_match(X, cover, sections)
     length(match_errors) == 0 || throw(MatchingError(match_errors))
   end
-  f = copair(legs(cover))
-  M = do_hom_map(functor(X), f)
+  f = copair[TypedCatWithCoproducts(SkelFinSet())](legs(cover))
+  M = hom_map(functor(X), f)
   return Float64.(M) \ direct_sum(sections)
 end

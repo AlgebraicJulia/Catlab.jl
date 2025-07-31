@@ -10,6 +10,8 @@ using LinearAlgebra: normalize
 using MLStyle: @match
 using StaticArrays
 
+using GATlab: generators
+
 import ...Theories: HomExpr
 using ...WiringDiagrams, ...WiringDiagrams.WiringDiagramSerialization
 using ...CategoricalAlgebra.CSets, ...Graphs, ..GraphvizGraphs
@@ -73,7 +75,6 @@ into a wiring diagram. This function requires Graphviz v2.42 or higher.
   If disabled, no incoming or outgoing wires will be shown either!
 - `anchor_outer_ports=true`: whether to enforce ordering of the outer box's
   input and output, i.e., ordering of the incoming and outgoing wires
-- `title::Union{Nothing, Graphviz.Label}=nothing: title of diagram
 - `graph_attrs=Dict()`: top-level graph attributes
 - `node_attrs=Dict()`: top-level node attributes
 - `edge_attrs=Dict()`: top-level edge attributes
@@ -402,7 +403,6 @@ becoming nodes of the second kind.
 - `junction_size="0.075"`: size of junction nodes, in inches
 - `implicit_junctions=false`: whether to represent a junction implicity as a
   wire when it has exactly two incident ports
-- `title::Union{Nothing, Graphviz.Label}=nothing: title of diagram
 - `graph_attrs=Dict()`: top-level graph attributes
 - `node_attrs=Dict()`: top-level node attributes
 - `edge_attrs=Dict()`: top-level edge attributes
@@ -416,12 +416,11 @@ function to_graphviz_property_graph(d::UndirectedWiringDiagram;
     box_labels::Union{Bool,Symbol}=false, port_labels::Bool=false,
     junction_labels::Union{Bool,Symbol}=false,
     junction_size::String="0.075", implicit_junctions::Bool=false,
-    title::Union{Nothing, Graphviz.Label}=nothing,
     graph_attrs::AbstractDict=Dict(), node_attrs::AbstractDict=Dict(),
     edge_attrs::AbstractDict=Dict())::SymmetricPropertyGraph
   default_attrs = default_undirected_graphviz_attrs
   graph = SymmetricPropertyGraph{Any}(
-    name = graph_name, prog = prog, title=title,
+    name = graph_name, prog = prog,
     graph = merge(default_attrs.graph, Graphviz.as_attributes(graph_attrs)),
     node = merge(default_attrs.node, Graphviz.as_attributes(node_attrs)),
     edge = merge(default_attrs.edge, Graphviz.as_attributes(edge_attrs)),
@@ -662,6 +661,9 @@ function to_graphviz(cp::CPortGraph; kw...)::Graphviz.Graph
   to_graphviz(to_graphviz_property_graph(cp; kw...))
 end
 
+V, E, src′, tgt′ = generators(SchGraph)
+Box′, Port′, Wire′, src′′, tgt′′, box′ = generators(SchCPortGraph)
+
 function to_graphviz_property_graph(cp::CPortGraph;
     graph_name::String="G", prog::String="neato",
     box_labels::Bool=false, port_labels::Bool=false,
@@ -674,8 +676,8 @@ function to_graphviz_property_graph(cp::CPortGraph;
   end
 
   g′ = Graphs.Graph()
-  migrate!(g′, cp, Dict(:V=>:Box, :E=>:Wire),
-                   Dict(:src => [:src, :box], :tgt => [:tgt, :box]))
+  migrate!(g′, cp, Dict(V=>Box′, E=>Wire′),
+                   Dict(src′ => [src′′, box′], tgt′ => [tgt′′, box′]); homtype=:list)
 
   node_labeler(v) = box_labels ? Dict(:id => "box$v", :label => string(v)) :
                                  Dict(:id => "box$v")

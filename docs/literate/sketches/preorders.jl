@@ -85,7 +85,7 @@ the theory of preorders. Show that they have the same models.
 # and term constructors that you can use to write expressions. A presentation uses
 # those expressions to create a specific example of the theory. We define `P` to be a preorder
 # with 3 elements and 2 ≤ relationships.
-@present P(FreeThinCategory) begin
+@present P(FreeSchema) begin
   (X,Y,Z)::Ob
   f::Hom(X,Y)
   g::Hom(Y,Z)
@@ -93,7 +93,7 @@ end
 
 # another example
 
-@present Q(FreeThinCategory) begin
+@present Q(FreeSchema) begin
   (X,Y,Z)::Ob
   f::Hom(X,Y)
   g::Hom(Y,Z)
@@ -114,7 +114,7 @@ end
 # expressions are represented at expression trees
 ex = compose(P, [:f, :g])
 # the head of an expression is the root of the expression tree
-head(ex)
+GATlab.head(ex)
 # the julia type of the expression
 typeof(ex)
 # the GAT type of the expression
@@ -125,7 +125,7 @@ gat_type_args(ex)
 # in any thin category there is at most one morphism between any pair of objects.
 # In symbols: ex₁::Hom(X,Y) ∧ ex₂::Hom(X,Y) ⟹ ex₁ == ex₂
 
-function thinequal(ex₁::FreeThinCategory.Hom, ex₂::FreeThinCategory.Hom)
+function thinequal(ex₁::FreeSchema.Hom, ex₂::FreeSchema.Hom)
   dom(ex₁) == dom(ex₂) && codom(ex₁) == codom(ex₂)
 end
 
@@ -140,7 +140,7 @@ end
 # in programming, the way that you hold onto things is putting data into data structures.
 # While computers can access things by offset or addresses, programmers want to use names
 # so when we prove in P that X≤Z, we name that proof by adding it as a generator
-@present P₂(FreeThinCategory) begin
+@present P₂(FreeSchema) begin
   (X,Y,Z)::Ob
   f::Hom(X,Y)
   g::Hom(Y,Z)
@@ -163,7 +163,7 @@ generators(P₂′)
 # We could avoid this naming the homs situation by giving all the homs the same name
 # however, then when you tried to write down a morphism, you wouldn't be able to refer
 # to a specific one by name, because they are all named ≤.
-@present R(FreeThinCategory) begin
+@present R(FreeSchema) begin
   (x,y,z)::Ob
   (≤)::Hom(x,y)
 end
@@ -174,7 +174,7 @@ Catlab won't let you make a presentation where the homs have the same exact name
 So, this will error:
 
 ```julia
-@present Q(FreeThinCategory) begin
+@present Q(FreeSchema) begin
   (x,y,z)::Ob
   (≤)::Hom(x,y)
   (≤)::Hom(y,z)
@@ -185,7 +185,7 @@ end
 However, you can omit the names for homs with the following syntax, which is useful for thin categories.
   
 ```julia
-@present Q(FreeThinCategory) begin
+@present Q(FreeSchema) begin
   (x,y,z)::Ob
   ::Hom(x,y)
   ::Hom(y,z)
@@ -199,7 +199,7 @@ end
 # that any two homs with the same name are the same to encode the thinness. This is what
 # the Hasse diagram representation does for us. The edges in the diagram are encoding the
 # presentation data into a combinatorial object that we can visualize. There are many
-# reasons to encode a logical structure into a combinatorial strucuture, one is that 
+# reasons to encode a logical structure into a combinatorial structure, one is that 
 # we generally have ways of drawing combinatorial objects that convey their saliant structure
 # and enable visual reasoning. Another is algorithms, isomorphism between the combinatorial representations
 # provide some of the isomorphisms between the logical structures. in this case, a graph homomorphism between Hasse Diagrams
@@ -209,11 +209,11 @@ end
 # # Monotone Maps
 
 # a generator is in the set of homs if it is in the list of generators
-in_homs(f::FreeThinCategory.Hom{:generator}, C::FinCat) =
+in_homs(f::FreeSchema.Hom{:generator}, C::FinCat) =
   f in hom_generators(C)
 
 # a composite hom is in the list set of homs if all of its components are.
-in_homs(f::FreeThinCategory.Hom{:compose}, C::FinCat) =
+in_homs(f::FreeSchema.Hom{:compose}, C::FinCat) =
   all(fᵢ->in_homs(fᵢ, C), args(f))
 
 
@@ -223,23 +223,23 @@ in_homs(f::FreeThinCategory.Hom{:compose}, C::FinCat) =
 # 3. check that the domains and codomainss of the homs match
 function is_functorial(F::FinFunctor)
   pₒ = map(ob_generators(dom(F))) do X
-    F(X) in ob_generators(codom(F))
+    ob_map(F,X) in ob_generators(codom(F))
   end |> all
 
   pₕ = map(hom_generators(dom(F))) do f
-    in_homs(F(f), codom(F))
+    in_homs(gen_map(F,f), codom(F))
   end |> all
 
   pᵩ = map(hom_generators(dom(F))) do f
-    FX = F(dom(f))
-    FY = F(codom(f))
-    Ff = F(f)
+    FX = ob_map(F,dom(f))
+    FY = ob_map(F,codom(f))
+    Ff = gen_map(F,f)
     dom(Ff) == FX && codom(Ff) == FY
   end |> all
   return pₒ && pₕ && pᵩ
 end
 
-@present Q(FreeThinCategory) begin
+@present Q(FreeSchema) begin
   (a,b,c,d)::Ob
   ab::Hom(a,b)
   bc::Hom(b,c)
@@ -247,20 +247,23 @@ end
 end
 generators(Q)
 
-Fₒ = Dict(:X=>:a, :Y=>:b, :Z=>:c)
-Fₕ = Dict(:f=>:ab, :g=>:bc)
-F = FinFunctor(Fₒ, Fₕ, P, Q)
+X,Y,Z,f,g = generators(P)
+a,b,c,d,ab,bc,cd = generators(Q)
+𝒫, 𝒬 = FinCat(P), FinCat(Q)
+Fₒ = Dict(X=>a, Y=>b, Z=>c)
+Fₕ = Dict(f=>ab, g=>bc)
+F = FinFunctor(Fₒ, Fₕ, 𝒫, 𝒬; homtype=:generator)
 @test is_functorial(F)
 
-Fₒ = Dict(:X=>:a, :Y=>:b, :Z=>:d)
-Fₕ = Dict(:f=>:ab, :g=>[:bc, :cd])
-F = FinFunctor(Fₒ, Fₕ, P, Q)
+Fₒ = Dict(X=>a, Y=>b, Z=>d)
+Fₕ = Dict(f=>[ab], g=>[bc, cd])
+F = FinFunctor(Fₒ, Fₕ, 𝒫, 𝒬; homtype=:list)
 @test is_functorial(F)
 
 
-Fₒ = Dict(:X=>:a, :Y=>:b, :Z=>:c)
-Fₕ = Dict(:f=>:ab, :g=>[:bc, :cd])
-F = FinFunctor(Fₒ, Fₕ, P, Q)
+Fₒ = Dict(X=>a, Y=>b, Z=>c)
+Fₕ = Dict(f=>[ab], g=>[bc, cd])
+F = FinFunctor(Fₒ, Fₕ, 𝒫, 𝒬; homtype=:list)
 @test !is_functorial(F)
 
 #=

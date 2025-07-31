@@ -1,8 +1,8 @@
 module TestFinRelations
+
 using Test
 
-using Catlab.Theories, Catlab.CategoricalAlgebra.Misc.FinRelations
-using Catlab.CategoricalAlgebra.Misc.Matrices: MatrixDom
+using Catlab.Theories, Catlab.CategoricalAlgebra.Misc.Matrices, Catlab.CategoricalAlgebra.Misc.FinRelations
 
 # Category of finite ordinals and relations
 ###########################################
@@ -22,7 +22,12 @@ S = FinRelation((x,y) -> (x+y) % 2 == 0, 5, 10)
 A, B = dom(R), dom(S)
 m, n = length(A), length(B)
 R_mat, S_mat = force(R), force(S)
-A_mat, B_mat = MatrixDom{Matrix{BoolRig}}(m), MatrixDom{Matrix{BoolRig}}(n)
+A_mat, B_mat = m, n
+
+using .ThDistributiveBicategoryRelations
+ThCategory.:(⋅)(args...) = compose(args...)
+ThDistributiveBicategoryRelations.:(⊗)(args...) = otimes(args...)
+ThDistributiveBicategoryRelations.:(⊕)(args...) = oplus(args...)
 
 @test force(R ⋅ S) == R_mat ⋅ S_mat
 @test force(R ⋅ id(codom(R))) == R_mat
@@ -30,10 +35,10 @@ A_mat, B_mat = MatrixDom{Matrix{BoolRig}}(m), MatrixDom{Matrix{BoolRig}}(n)
 @test force(dagger(R)) == dagger(R_mat)
 
 @test force(R ⊗ S) == R_mat ⊗ S_mat
-@test force(braid(A, B)) == FinRelation(braid(A_mat, B_mat))
+@test force(braid(A, B)) == FinRelation(braid[MatC{BoolRig}()](A_mat, B_mat))
 
 @test force(R ⊕ S) == R_mat ⊕ S_mat
-@test force(swap(A, B)) == FinRelation(swap(A_mat, B_mat))
+@test force(swap(A, B)) == FinRelation(swap[MatC{BoolRig}()](A_mat, B_mat))
 
 S = FinRelation((x,y) -> (x+y) % 2 == 0, 10, 5)
 S_mat = force(S)
@@ -50,4 +55,4 @@ S_mat = force(S)
 @test force(pair(R, S)) == pair(R_mat, S_mat)
 @test force(copair(R, S)) == copair(R_mat, S_mat)
 
-end
+end # module

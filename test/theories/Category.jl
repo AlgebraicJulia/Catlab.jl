@@ -24,8 +24,8 @@ f, g = Hom(:f, A, B), Hom(:g, B, A)
 @test compose(f, id(B)) == f
 
 # Extra syntax
-@test compose(f,g,f) == compose(compose(f,g),f)
-@test compose([f,g,f]) == compose(compose(f,g),f)
+@test compose(f,g,f) == compose(compose(f,g),f) 
+@test compose([f,g,f]) == compose(compose(f,g),f) 
 @test f⋅g == compose(f,g)
 @test f⋅g⋅f⋅g == compose(f,g,f,g)
 
