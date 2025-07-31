@@ -21,14 +21,14 @@ end
   include("madcats/runtests.jl")
 end
 
-@testset "MADVarACats" begin
+@testset "MADVarACSetCats" begin
   include("madvaracsetcats/HomSearch.jl")
 end
 
 
-# @testset "LooseACSetCats" begin
-  # include("LooseACSetCats/HomSearch.jl")
-# end
+@testset "LooseACSetCats" begin
+  include("looseacsetcats/runtests.jl")
+end
 
 # @testset "LooseVarACSetCats" begin
   # include("LooseVarACSetCats/ACSetTransformations.jl")
