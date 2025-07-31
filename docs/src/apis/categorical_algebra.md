@@ -6,9 +6,7 @@ The following APIs implement FinSet, the category of Finite Sets (actually the s
 
 ```@autodocs
 Modules = [
-  BasicSets.Sets,
-  BasicSets.FinSets,
-  CategoricalAlgebra.FinRelations,
+  BasicSets,
   ]
 Private = false
 ```
@@ -19,8 +17,8 @@ The following modules define free diagrams in an arbitrary category and specify 
 
 ```@autodocs
 Modules = [
-  CategoricalAlgebra.FreeDiagrams,
-  CategoricalAlgebra.Limits,
+  CategoricalAlgebra.Cats.FreeDiagrams,
+  CategoricalAlgebra.Cats.LimitsColimits,
   ]
 Private = false
 ```
@@ -29,8 +27,8 @@ Private = false
 
 ```@autodocs
 Modules = [
-   CategoricalAlgebra.Categories,
-   CategoricalAlgebra.FinCats,
+   CategoricalAlgebra.Cats.Categories,
+   CategoricalAlgebra.Cats.FinCats,
 ]
 ```
 

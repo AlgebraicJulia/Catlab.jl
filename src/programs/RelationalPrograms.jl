@@ -6,7 +6,6 @@ export @relation, parse_relation_diagram
 using MLStyle: @match
 
 using ...ADTs.RelationTerm
-using ...ADTs.RelationTerm: Var, Typed, Untyped, Kwarg, Statement, UWDExpr
 using ...WiringDiagrams.RelationDiagrams
 
 

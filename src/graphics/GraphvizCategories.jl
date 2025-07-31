@@ -3,7 +3,7 @@
 module GraphvizCategories
 export to_graphviz, to_graphviz_property_graph
 
-using ...Theories, ...BasicSets, ...CategoricalAlgebra, ...Graphs, ..GraphvizGraphs
+using ...Theories, ...CategoricalAlgebra, ...Graphs, ...BasicSets, ..GraphvizGraphs
 import ..Graphviz
 import ..GraphvizGraphs: to_graphviz, to_graphviz_property_graph
 
@@ -84,20 +84,21 @@ end
 # Diagrams
 ##########
 
-to_graphviz(d::Diagram; kw...) =
+to_graphviz(d::FinDomFunctor; kw...) =
   to_graphviz(to_graphviz_property_graph(d; kw...))
 
-function to_graphviz_property_graph(d::Diagram; kw...)
-  g = graph(shape(d))
-  d = dom_to_graph(diagram(d))
+function to_graphviz_property_graph(d::FinDomFunctor; kw...)
+  lab = impl_type(dom(d), :Ob) == Symbol
+  g = (lab ? NamedGraph : Graph)(dom(d))
   pg = to_graphviz_property_graph(g; kw...)
   for v in vertices(g)
-    tᵥ = ob_map(d, v)
-    labels = has_vertex_names(g) ? [vertex_name(g,v), tᵥ] : [tᵥ]
+    vname = vertex_name(g, v) 
+    tᵥ = ob_map(d, lab ? vname : v)
+    labels = lab ? [vname, tᵥ] : [tᵥ]
     set_vprop!(pg, v, :label, join(labels, ":"))
   end
   for e in edges(g)
-    tₑ = hom_map(d, e)
+    tₑ = gen_map(d, lab ? edge_name(g, e) : e)
     set_eprop!(pg, e, :label, string(tₑ))
   end
   pg
@@ -135,7 +136,7 @@ end
 Visualize a function (`FinFunction`) between two finite sets (`FinSet`s).
 Reduces to drawing an undirected bipartite graph; see that method for more.
 """
-function to_graphviz(f::FinFunction{Int,Int}; kw...)
+function to_graphviz(f::FinFunction; kw...)
   g = UndirectedBipartiteGraph(length(dom(f)), length(codom(f)))
   for i in dom(f)
     add_edge!(g, i, f(i))
@@ -143,4 +144,4 @@ function to_graphviz(f::FinFunction{Int,Int}; kw...)
   to_graphviz(g; kw...)
 end
 
-end
+end # module

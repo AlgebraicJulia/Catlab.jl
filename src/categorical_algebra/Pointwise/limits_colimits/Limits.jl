@@ -1,168 +1,208 @@
-using ..PointwiseCats: var_reference
+module Limits 
 
-""" Limit of attributed C-sets that stores the pointwise limits in Set.
+export ACSetLimit
+
+using StructEquality
+
+using GATlab, ACSets
+
+import .....Theories: ob
+using .....BasicSets
+using ....Cats, ....SetCats
+import ....Cats: cone, cocone
+using ...ACSetTransformations, ...CSets
+using ...ACSetCats
+
+using ..LimitsColimits: unpack, pack_components
+
+using .ThHeteroMorphism: post
+
+
+""" Limit of attributed C-sets that stores the pointwise limits in Set in 
+addition to the usual data of the limit cone + original input diagram.
 """
-@struct_hash_equal struct ACSetLimit{Ob <: ACSet, Diagram,
-    Cone <: Multispan{Ob}, Limits <: NamedTuple} <: AbstractLimit{Ob,Diagram}
-  diagram::Diagram
-  cone::Cone
-  limits::Limits
+@struct_hash_equal struct ACSetLimit <: AbsLimit
+  cone::Multispan
+  limits::NamedTuple
+  diagram::FreeDiagram
 end
 
-⊗(xs::AbstractVector{T}) where {S, T<:StructACSet{S}} = 
-  foldl(⊗, xs; init=apex(terminal(T)))
+cone(c::ACSetLimit) = c.cone
 
-terminal(::Type{T}; loose=false, cset=false, kw...) where T <: ACSet =
-  limit(EmptyDiagram{T}(kw_type(;loose, cset)); kw...)
+ob(c::ACSetLimit) = apex(cone(c))
 
-product(X::ACSet, Y::ACSet; loose=false, cset=false,kw...) =
-  limit(ObjectPair(X, Y, kw_type(;loose, cset)); kw...)
+@instance ThCategoryWithTerminal{ACSet,ACSetTransformation}  [model::ACSetCategory] begin 
+
+  limit(d::EmptyDiagram) = pointwise_limit(model, d)
+
+  universal(lim::AbsLimit, ::EmptyDiagram, cone::Multispan) = 
+    pointwise_universal(model, lim, cone)
+
+end
+
+@instance ThCategoryUnbiasedProducts{ACSet,ACSetTransformation}  [model::ACSetCategory] begin 
+
+  limit(d::DiscreteDiagram) = pointwise_limit(model, d)
+
+  universal(lim::AbsLimit, ::DiscreteDiagram, cone::Multispan) = 
+    pointwise_universal(model, lim, cone)
+
+end 
+
+
+@instance ThCategoryWithEqualizers{ACSet,ACSetTransformation}  [model::ACSetCategory] begin 
+
+  limit(d::ParallelMorphisms) = pointwise_limit(model, d)
+
+  universal(lim::AbsLimit, ::ParallelMorphisms, cone::Multispan) = 
+    pointwise_universal(model, lim, cone)
   
-product(Xs::AbstractVector{<:ACSet}; loose=false, cset=false, kw...) =
-  limit(DiscreteDiagram(Xs, kw_type(;loose, cset)); kw...)
+end 
+
+@instance ThCategoryWithPullbacks{ACSet,ACSetTransformation}  [model::ACSetCategory] begin 
+
+  limit(d::Multicospan) = pointwise_limit(model, d)
+
+  universal(lim::AbsLimit, ::Multicospan, cone::Multispan) = 
+    pointwise_universal(model, lim, cone)
+  
+end 
+
+@instance ThCategoryWithBipartiteLimits{ACSet,ACSetTransformation}  [model::ACSetCategory] begin 
+
+  limit(d::BipartiteFreeDiagram) = pointwise_limit(model, d)
+
+  universal(lim::AbsLimit, ::BipartiteFreeDiagram, cone::Multispan) = 
+    pointwise_universal(model, lim, cone)
+end 
+
+@instance ThCategoryWithLimits{ACSet,ACSetTransformation}  [model::ACSetCategory] begin 
+
+  limit(d::FreeGraph) = pointwise_limit(model, d)
+
+  universal(lim::AbsLimit, ::FreeGraph, cone::Multispan) = 
+    pointwise_universal(model, lim, cone)
+end 
 
 
-# Compute limits and colimits in C-Set by reducing to those in Set using the
-# "pointwise" formula for (co)limits in functor categories.
-
-function limit(::Type{<:Tuple{ACS,<:TightACSetTransformation}}, diagram) where
-    {S, ACS <: StructACSet{S}}
-  isempty(attrtypes(S)) || error("Cannot take limit of ACSets with ACSetTransformations")
-  limits = map(limit, unpack_diagram(diagram; S=S))
-  Xs = cone_objects(diagram)
-  pack_limit(ACS, diagram, Xs, limits)
+"""
+Apply limit cone's universal property to some cone.
+"""
+function pointwise_universal(model::ACSetCategory, lim::AbsLimit, cone::Multispan)
+  S= acset_schema(model)
+  𝒞 = entity_cat(model)
+  upe, upa = unpack(model, FreeDiagram(cone))
+  comps = Dict(map(ob(S)) do o
+    o => universal[𝒞](lim.limits[o], getvalue(upe[o]))
+  end)
+  acomps = Dict(map(attrtype(S)) do o 
+    𝒟 = attr_cat(model, o)
+    o => universal[𝒟](lim.limits[o], getvalue(upa[o]))
+  end)
+  ACSetTransformation(merge(comps, acomps), apex(cone), ob(lim); cat=model)
 end
 
 """
-Variables are used for the attributes in the apex of limit of CSetTransformations
-when there happen to be attributes. However, a commutative monoid on the 
-attribute type may be provided in order to avoid introducing variables.
+Compute a limit in an ACSet category by pointwise limits for each object 
+(in the entity category) and attrtype in the (in the attribute category).
 """
-function limit(::Type{<:Tuple{ACS,CSetTransformation}}, diagram; attrfun=(;)) where
-  {S, ACS <: StructACSet{S}}
-  limits = map(limit, unpack_diagram(diagram; S=S))
-  Xs = cone_objects(diagram)
-  pack_limit(ACS, diagram, Xs, limits; abstract_product=true, attrfun)
+function pointwise_limit(model, d)
+  Fd = FreeDiagram(d)
+  𝒞 = entity_cat(model)
+  upe, upa = unpack(model, Fd)
+  limits_e = NamedTuple(map(collect(pairs(upe))) do (k, v)
+    k => limit[𝒞](getvalue(v))
+  end)
+  limits_a = NamedTuple(map(collect(pairs(upa))) do (k, v)
+    k => limit[attr_cat(model, k)](getvalue(v))
+  end)
+  Xs = cone_objects(d)
+  πs_e = map(legs, limits_e)
+  πs_a = map(legs, limits_a)
+  Y = pointwise_limit_apex(model, Xs, limits_e, limits_a, πs_e)
+  πs = pack_components(model, merge(πs_e, πs_a), map(X -> Y, Xs), Xs)
+  ACSetLimit(Multispan(Y, Vector{ACSetTransformation}(πs)), merge(limits_e, limits_a), Fd)
 end
 
-
 """
-A limit of a diagram of ACSets with LooseACSetTransformations.
-
-For general diagram shapes, the apex of the categorical limit will not have
-clean Julia types for its attributes, i.e. predicates will be needed to further 
-constrain them. `product_attrs` must be turned on in order to avoid an error in 
-cases where predicates would be needed. 
-
-`product_attrs=true` will take a limit of the purely combinatorial data, and 
-the attribute data of the apex is dictated purely by the ACSets that are have 
-explicit cone legs: the value of an attribute (e.g. `f`) for the i'th part in  
-the apex is the product `(f(π₁(i)), ..., f(πₙ(i)))` where π maps come from 
-the combinatorial part of the limit legs. The type components of the j'th leg of 
-the limit is just the j'th cartesian projection.
+Given limits for each component, construct an ACSet that is the apex of the 
+limit cone in the relevant category of ACSets and ACSet transformations.
 """
-function limit(::Type{Tuple{ACS,Hom}}, diagram; product_attrs::Bool=false) where
-    {S, ACS <: StructACSet{S}, Hom <: LooseACSetTransformation}
-  limits = map(limit, unpack_diagram(diagram, S=S, all=!product_attrs))
-  Xs = cone_objects(diagram)
+function pointwise_limit_apex(C::ACSetCategory, Xs, entity_limits::NamedTuple, 
+                              attr_limits::NamedTuple, ιs::NamedTuple)
+  S = acset_schema(C)
+  type_assignment = map(attrtypes(S)) do at 
+    e_set = getvalue(ob_map[attr_cat(C, at)](ob(attr_limits[at])))
+    e_set isa EitherSet || error(
+      "Expect underlying sets of attrtypes to be either, not $e_set")
+    eltype(right(e_set))
+  end
 
-  attr_lims = (product_attrs ?
-    map(limit, unpack_diagram(DiscreteDiagram(Xs, Hom), S=S, all=true)) : limits )
-
-  LimitACS = if isempty(attrtypes(S)); ACS
+  # The type components need to be different for the apex
+  ACS = typeof(constructor(C))
+  Y = if isempty(attrtypes(S)); 
+    ACS()
   else
     ACSUnionAll = Base.typename(ACS).wrapper
-    ACSUnionAll{(eltype(ob(attr_lims[d])) for d in attrtypes(S))...}
+    ACSUnionAll{type_assignment...}()
   end
 
-  type_components = [
-    Dict(d=>legs(attr_lims[d])[i] for d in attrtypes(S)) for i in eachindex(Xs)]
-
-  limits = NamedTuple(k=>v for (k,v) in pairs(limits) if k ∈ objects(S))
-  lim = pack_limit(LimitACS, diagram, Xs, limits;
-                   type_components=type_components)
-  Y = ob(lim)
-  for (f, c, d) in attrs(S)
-    Yfs = map((π, X) -> π ⋅ FinDomFunction(X, f), legs(limits[c]), Xs)
-    Yf = universal(attr_lims[d], Multispan(ob(limits[c]), Yfs))
-    set_subpart!(Y, f, collect(Yf))
-  end
-  lim
-end
-
-""" Make limit of acsets from limits of underlying sets, ignoring attributes.
-
-If one wants to consider the attributes of the apex, the following 
-`type_components` - TBD
-`abstract_product` - places attribute variables in the apex
-`attrfun` - allows one to, instead of placing an attribute in the apex, apply 
-            a function to the values of the projections. Can be applied to an
-            AttrType or an Attr (which takes precedence).
-"""
-function pack_limit(::Type{ACS}, diagram, Xs, limits; abstract_product=false, 
-                    attrfun=(;), type_components=nothing
-                   ) where {S, ACS <: StructACSet{S}}
-  Y = ACS()
+  𝒞 = CatWithProducts(entity_cat(C))
   for c in objects(S)
-    add_parts!(Y, c, length(ob(limits[c])))
+    add_parts!(Y, c, length(ob(𝒞, entity_limits[c])))
   end
   for (f, c, d) in homs(S)
-    Yfs = map((π, X) -> π ⋅ FinFunction(X, f), legs(limits[c]), Xs)
-    Yf = universal(limits[d], Multispan(ob(limits[c]), Yfs))
+    Yfs = map((π, X) -> compose(𝒞, π,  get_hom(C, X, f)), legs(entity_limits[c]), Xs
+             ) |> Vector{impl_type(𝒞, :Hom)}
+    sp = Multispan(ob(𝒞, entity_limits[c]), Yfs; cat=getvalue(𝒞))
+    Yf = universal(𝒞, entity_limits[d], sp)
     set_subpart!(Y, f, collect(Yf))
   end
-  if abstract_product 
-    # Create attrvars for each distinct combination of projection values
-    for c in objects(S)
-      seen = Dict()
-      for part in parts(Y, c)
-        for (f, _, d) in attrs(S; from=c)
-          monoid = haskey(attrfun, f) ? attrfun[f] : get(attrfun, d, nothing)
-          vals = [X[l(part),f] for (l,X) in zip(legs(limits[c]),cone_objects(diagram))]
-          if isnothing(monoid)
-            if !haskey(seen, vals)
-              seen[vals] = add_part!(Y,d)
-            end
-            set_subpart!(Y, part, f, AttrVar(seen[vals]))
-          else 
-            set_subpart!(Y, part, f, monoid(vals))
-          end
-        end
-      end
+  for (f, c, d) in attrs(S)
+    𝒟, 𝒫 = attr_cat(C, d), prof_cat(C, d)
+    O, H = impl_type.(Ref(𝒟), Ref(ThCategory), [:Ob, :Hom])
+    Yfs = map(zip(legs(entity_limits[c]), Xs)) do (π, X)
+      ThHeteroMorphism.pre[𝒫](π, get_attr(C, X, f)
+                ) |> interpret_heteromorphisms_as_codhoms
+    end |> Vector{H}
+    feet = Vector{O}(codom[𝒟].(Yfs))
+    sp = Multispan{O, H, O}(Int, Yfs, feet)
+    Yf = universal[𝒟](attr_limits[d], sp)
+    for pᶜ in parts(Y, c)
+      Y[pᶜ, f] = Yf(pᶜ)
     end
-    # Handle attribute components
-    alim = NamedTuple(Dict(map(attrtypes(S)) do at 
-      T = attrtype_type(Y, at)
-      apx = VarSet{T}(nparts(Y, at))
-      at => begin 
-        vfs = VarFunction{T}[]
-        for (i,X) in enumerate(cone_objects(diagram))
-          v = map(parts(Y,at)) do p 
-            f, c, j = var_reference(Y, at, p)
-            X[legs(limits[c])[i](j), f]
-          end
-          push!(vfs,VarFunction{T}(v, FinSet(nparts(X, at))))
-        end
-        Multispan(apx,vfs)
-      end
-    end))
-  else
-    alim = NamedTuple()
-  end 
-  πs = pack_components(map(legs, merge(limits,alim)), map(X -> Y, Xs), Xs; 
-                       type_components=type_components)
-  ACSetLimit(diagram, Multispan(Y, πs), limits)
+  end
+  return Y
 end
 
-function universal(lim::ACSetLimit, cone::Multispan)
-  X = apex(cone)
-  S, Ts = acset_schema(X), datatypes(X)
-  components = map(universal, lim.limits, unpack_diagram(cone; S=S, Ts=Ts))
-  acomps = Dict(map(filter(a->nparts(X,a)>0,attrtypes(S))) do at 
-    at => map(parts(X,at)) do p 
-      f, c, i = var_reference(X, at, p)
-      ob(lim)[components[c](i), f]
-    end
-  end)
-  ACSetTransformation(merge(components,acomps), apex(cone), ob(lim))
-end
+""" 
+In our profunctor category 𝒞→Σᵢ𝒟ᵢ, when we have a pointwise limit and are trying
+to compute an attribute heteromorphism h: a -> x
+
+```
+ lim(a)  -----> lim(x)
+π₁↙ ↘π₂      Π₁↙  ↘Π₂
+a₁   a₂      x₁   x₂ 
+↓    ↓        ↑    ↑
+↓    ↘------------↗  
+↘-------------↑
+      h₁
+```
+
+In order to get the heteromorphism lim(a)→lim(x) via the universal property of 
+lim(x) as a product, we need to interpret the heteromorphisms πᵢ⋅hᵢ as morphisms 
+in 𝒟 (because this is where the universal property of lim(x) is defined.)
+
+It seems plausible we can expect this because the objects and morphisms of 𝒞 are 
+generally finite things while things in 𝒟 are infinite.
+
+We should eventually make this explicit in the interface for ACSetCategories.
+This is an ad hoc solution originally designed for LooseACSet categories which 
+are the only instance of limits of attributes supported in Catlab 0.16.
+"""
+function interpret_heteromorphisms_as_codhoms(f::FinDomFunction)
+  SetFunction(f)
+end 
+
+
+end # module

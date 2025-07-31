@@ -1,18 +1,14 @@
-module MCO 
+module MCO
+
 export subobject_graph, partial_overlaps, maximum_common_subobject
 
-using DataStructures: BinaryHeap, DefaultDict
+using DataStructures: DefaultDict, BinaryHeap
 
 using ACSets
 using ACSets.DenseACSets: delete_subobj!
 
-using .....Theories: ⋅
-using .....Graphs, ....Cats, ...ACSetTransformations
-using ...PointwiseCats: abstract_attributes
-using ..HomSearch 
-
-# Maximum Common C-Set
-######################
+using .....Graphs, ....Cats
+using ...Pointwise
 
 """ Compute the size of a C-Set
 
@@ -22,9 +18,7 @@ Defintion: let 𝐺: C → 𝐒et be a C-set, we define the _size_ of 𝐺 to be
   * a Petri net P is |PT| + |PS| + |PI| + |PO| (num transitions + num species +
     num input arcs + num output arcs).
 """
-total_parts(X::ACSet) = 
-  mapreduce(oₛ -> nparts(X, oₛ), +, objects(acset_schema(X)); init=0)
-
+total_parts(X::ACSet) = mapreduce(oₛ -> nparts(X, oₛ), +, objects(acset_schema(X)); init=0)
 total_parts(X::ACSetTransformation) = total_parts(dom(X)) 
 
 """
@@ -33,6 +27,11 @@ Enumerate subobjects of an ACSet in order of largest to smallest
 """
 struct SubobjectIterator
   top::ACSet
+  cat::ACSetCategory
+  function SubobjectIterator(top::ACSet, cat=nothing)
+    cat = isnothing(cat) ? infer_acset_cat(top) : cat
+    new(top, cat)
+  end
 end
 
 Base.eltype(::Type{SubobjectIterator}) = Subobject
@@ -79,10 +78,11 @@ function Base.push!(S::SubobjectIteratorState,h::ACSetTransformation)
 end
 
 """This would be much more efficient with canonical isomorph"""
-function is_seen(S::SubobjectIteratorState, f::ACSetTransformation)
-  for h in S.seen 
-    if any(σ -> force(σ⋅h) == force(f), isomorphisms(dom(f),dom(h)))
-      return true 
+function is_seen(cat, S::SubobjectIteratorState, f::ACSetTransformation)
+  for h in S.seen
+    for σ in isomorphisms(dom(f),dom(h); cat) 
+      σ = force(σ; cat) # TODO this should be done automatically in homsearch 
+      force(compose[cat](σ,h); cat) == force(f; cat) && return true
     end
   end
   return false
@@ -98,7 +98,7 @@ should_yield(S::SubobjectIteratorState) = !isempty(S.to_yield) && (
 
 function Base.iterate(Sub::SubobjectIterator, state=SubobjectIteratorState())
   S = acset_schema(Sub.top)
-  T = id(Sub.top)
+  T = id[Sub.cat](Sub.top)
   if isempty(state) # first time
     push!(state.seen, T); push!(state.to_recurse, T)
     return (Subobject(T), state)
@@ -129,10 +129,8 @@ function Base.iterate(Sub::SubobjectIterator, state=SubobjectIteratorState())
           end
         end
       end
-      h = ACSetTransformation(rem, dX; comps...) ⋅ X
-      if !is_seen(state, h)
-        push!(state, h)
-      end
+      h = compose[Sub.cat](ACSetTransformation(rem, dX; comps...), X)
+      is_seen(Sub.cat, state, h) || push!(state, h)
     end
   end
 
@@ -149,14 +147,16 @@ struct OverlapIterator
   acsets::Vector{ACSet}
   top::Int
   abstract::Vector{Symbol}
-  function OverlapIterator(Xs::Vector{T}; abstract=true) where T<:ACSet
+  cat::ACSetCategory
+  function OverlapIterator(Xs::Vector{T}; abstract=true, cat=nothing) where T<:ACSet
     S = acset_schema(first(Xs))
+    cat = isnothing(cat) ? infer_acset_cat(first(Xs)) : cat
     abstract_attrs = if abstract isa Bool 
       abstract ? attrtypes(S) : Symbol[]
     else 
       abstract 
     end
-    new(Xs, argmin(total_parts.(Xs)), abstract_attrs)
+    new(Xs, argmin(total_parts.(Xs)), abstract_attrs, cat)
   end
 end
 Base.eltype(::Type{OverlapIterator}) = Multispan
@@ -197,14 +197,14 @@ function Base.iterate(Sub::OverlapIterator, state=nothing)
     end
   elseif isnothing(state.maps) # compute all the maps out of curr subobj
     subobj = state.curr_subobj
-    abs_subobj = abstract_attributes(dom(subobj), Sub.abstract) ⋅ subobj
+    abs_subobj = compose[Sub.cat](abstract_attributes(dom(subobj), Sub.abstract), subobj)
     Y = dom(abs_subobj)
     # don't repeat work if already computed syms/maps for something iso to Y
     for res in state.seen
       σ = isomorphism(Y, apex(res))
       if !isnothing(σ)
         state.subobj = nothing
-        return (Multispan(map(m->σ⋅m, res)), state)
+        return (Multispan(map(m->compose[Sub.cat](σ,m), res)), state)
       end
     end
     # Compute the automorphisms so that we can remove spurious symmetries
@@ -218,7 +218,7 @@ function Base.iterate(Sub::OverlapIterator, state=nothing)
         fs = homomorphisms(Y, X; monic=ob(acset_schema(Y)))
         real_fs = Set() # quotient fs via automorphisms of Y
         for f in fs 
-          if all(rf->all(σ -> force(σ⋅f) != force(rf),  syms), real_fs)  
+          if all(rf->all(σ -> force(compose[Sub.cat](σ,f)) != force(rf),  syms), real_fs)  
             push!(real_fs, f)
           end
         end
@@ -243,8 +243,11 @@ function Base.iterate(Sub::OverlapIterator, state=nothing)
   end
 end
 
-partial_overlaps(Xs::Vector{T}; abstract=true) where T<:ACSet = OverlapIterator(Xs; abstract)
-partial_overlaps(Xs::ACSet...; abstract=true) = partial_overlaps(collect(Xs); abstract)
+partial_overlaps(Xs::Vector{T}; abstract=true, kw...) where T<:ACSet = 
+  OverlapIterator(Xs; abstract, kw...)
+
+partial_overlaps(Xs::ACSet...; abstract=true, kw...) = 
+  partial_overlaps(collect(Xs); abstract, kw...)
 
 """ Compute the Maximimum Common C-Sets from a vector of C-Sets.
 
@@ -258,8 +261,8 @@ these are all returned.
 If there are attributes, we ignore these and use variables in the apex of the 
 overlap.
 """
-function maximum_common_subobject(Xs::Vector{T}; abstract=true) where T <: ACSet
-  it = partial_overlaps(Xs; abstract)
+function maximum_common_subobject(Xs::Vector{T}; abstract=true, kw...) where T <: ACSet
+  it = partial_overlaps(Xs; abstract, kw...)
   osize = -1
   res = DefaultDict(()->[])
   for overlap in it 
@@ -272,7 +275,7 @@ function maximum_common_subobject(Xs::Vector{T}; abstract=true) where T <: ACSet
   return res
 end
 
-maximum_common_subobject(Xs::T...; abstract=true) where T <: ACSet = 
-  maximum_common_subobject(collect(Xs); abstract)
+maximum_common_subobject(Xs::ACSet...; abstract=true, kw...) = 
+  maximum_common_subobject(collect(Xs); abstract, kw...)
 
 end # module

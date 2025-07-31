@@ -1,66 +1,112 @@
-module Pullbacks 
-export Pullback, pullback, BinaryEqualizer, ComposeProductEqualizer
+module Pullbacks
+export AbsPullbackLimit, NestedLoopJoin, SortMergeJoin, HashJoin, SmartJoin, pullback, pullback_pair, ThCategoryWithPullbacks, CatWithPullbacks
 
-import .....Theories: proj1, proj2, pair, ⋅, compose
-using ...FreeDiagrams
+using StructEquality
+using GATlab
 
-using ..Limits, ..Products, ..Equalizers
-import ..Limits: limit, universal
+import .....Theories: universal, ob
+using ...Cats: Category, Multispan, Multicospan, FreeDiagram
 
-const BinaryPullback{Ob} = AbstractLimit{Ob,<:Cospan}
-const Pullback{Ob} = AbstractLimit{Ob,<:Multicospan}
+using ..LimitsColimits: AbsLimit, ThCategoryLimitBase, JoinAlgorithm, LimitCone,    
+                        CatWithEqualizers
+import ..Limits: limit, diagram
 
 
-""" Compute pullback by composing a product with an equalizer.
+@theory ThCategoryWithPullbacks <: ThCategoryLimitBase begin
+  MCSpan::TYPE{Multicospan}
 
-See also: [`ComposeCoproductCoequalizer`](@ref).
-"""
-struct ComposeProductEqualizer <: LimitAlgorithm end
-
-""" Pullback formed as composite of product and equalizer.
-
-The fields of this struct are an implementation detail; accessing them directly
-violates the abstraction. Everything that you can do with a pullback, including
-invoking its universal property, should be done through the generic interface
-for limits.
-
-See also: [`CompositePushout`](@ref).
-"""
-struct CompositePullback{Ob, Diagram<:Multicospan, Cone<:Multispan{Ob},
-    Prod<:Product, Eq<:Equalizer} <: AbstractLimit{Ob,Diagram}
-  diagram::Diagram
-  cone::Cone
-  prod::Prod
-  eq::Eq
+  limit(d::MCSpan)::Limit
+  universal(lim::Limit, d::MCSpan, sp::MSpan)::(apex(sp) → ob(lim))
 end
 
-function limit(cospan::Multicospan, ::ComposeProductEqualizer)
-  prod = product(feet(cospan))
-  (ι,) = eq = equalizer(map(compose, legs(prod), legs(cospan)))
-  cone = Multispan(map(π -> ι⋅π, legs(prod)))
-  CompositePullback(cospan, cone, prod, eq)
-end
+ThCategoryWithPullbacks.Meta.@wrapper CatWithPullbacks
 
+# Algorithms
+#############
 
-""" Pullback of a pair of morphisms with common codomain.
+""" This is the naive algorithm for computing joins. """
+@struct_hash_equal struct NestedLoopJoin <: JoinAlgorithm end 
 
-To implement for a type `T`, define the method `limit(::Cospan{T})` and/or
-`limit(::Multicospan{T})` or, if you have already implemented products and
-equalizers, rely on the default implementation.
+""" [Sort-merge join](https://en.wikipedia.org/wiki/Sort-merge_join) algorithm.
 """
-pullback(f, g; kw...) = limit(Cospan(f, g); kw...)
-pullback(fs::AbstractVector; kw...) = limit(Multicospan(fs); kw...)
+@struct_hash_equal struct SortMergeJoin <: JoinAlgorithm end 
 
-function universal(lim::CompositePullback, cone::Multispan)
-  factorize(lim.eq, universal(lim.prod, cone))
-end
+""" [Hash join](https://en.wikipedia.org/wiki/Hash_join) algorithm.
+"""
+@struct_hash_equal struct HashJoin <: JoinAlgorithm end
 
-proj1(lim::BinaryPullback) = first(legs(lim))
-proj2(lim::BinaryPullback) = last(legs(lim))
+""" Meta-algorithm for joins that attempts to pick an appropriate algorithm. """
+@struct_hash_equal struct SmartJoin <: JoinAlgorithm end
 
-pair(lim::BinaryPullback, f, g) =
-  universal(lim, Span(f, g))
-pair(lim::Pullback, fs::AbstractVector) =
-  universal(lim, Multispan(fs))
+
+
+# Limit data structures 
+#######################
+
+# """ Pullback formed as composite of product and equalizer.
+
+# The fields of this struct are an implementation detail; accessing them directly
+# violates the abstraction. Everything that you can do with a pullback, including
+# invoking its universal property, should be done through the generic interface
+# for limits.
+
+# See also: [`CompositePushout`](@ref).
+# """
+# struct CompositePullback{Hom} <: AbsLimit
+#   cone::Multispan
+#   prod::LimitCone
+#   eq::Hom
+# end
+
+# ob(c::CompositePullback) = ob(c.cone)
+
+
+# """
+# `CompositePullback` is constructed via applying the `ComposeProductEqualizer` 
+# algorithm to a cospan.
+# """
+# function composite_pullback(C::CatWithEqualizers, cospan::Multicospan)
+#   prod = product(C, feet(cospan))
+#   (ι,) = eq = equalizer(C, map(compose[getvalue(m)], legs(prod), legs(cospan)))
+#   cone = Multispan(map(π -> compose(C, ι,π), legs(prod)))
+#   Limit(CompositePullback(cone, prod, eq), FreeDiagram(cospan))
+# end
+
+# function universal(C::CatWithEqualizers, lim::CompositePullback, cone::Multispan; context=nothing)
+#   factorize(C, lim.eq, universal(C, lim.prod, cone))
+# end
+
+# Named limits / universal properties
+#####################################
+
+@model_method pullback
+
+pullback(C::CatWithPullbacks, fs::AbstractVector) = 
+  limit[getvalue(C)](Multicospan(fs; cat=getvalue(C)))
+
+pullback(C::CatWithPullbacks, f, g, fs...) = pullback(C, [f, g, fs...])
+
+pullback(C::WithModel, fs::AbstractVector; context=nothing) = 
+  limit(C, Multicospan(fs; cat=getvalue(C)); context)
+
+pullback(C::WithModel, f, g, fs...; context=nothing) = 
+  pullback(C, [f, g, fs...]; context)
+
+
+@model_method pullback_pair
+
+""" Pairing of morphisms: universal property of products/pullbacks.
+"""
+pullback_pair(C::CatWithPullbacks, lim::AbsLimit, fs::AbstractVector) = 
+  pullback_pair[getvalue(C)](lim, fs)
+
+pullback_pair(C::CatWithPullbacks, lim::AbsLimit, f1::T, f2::T) where {T} = 
+  pullback_pair(C, lim, [f1, f2])
+
+pullback_pair(m::WithModel, lim::AbsLimit, f1::T, f2::T; context=nothing) where T =
+  pullback_pair(m, lim, [f1, f2]; context) 
+
+pullback_pair(m::WithModel, lim::AbsLimit, fs::AbstractVector; context=nothing) = 
+  universal(m, lim, Multispan(fs); context)
 
 end # module

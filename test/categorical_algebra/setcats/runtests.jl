@@ -1,26 +1,10 @@
 
-using Test
+include("skelfinsetcat/runtests.jl")
 
-@testset "SetsInterop" begin
-  include("SetsInterop.jl")
-end
+include("finsetcat/runtests.jl")
 
-@testset "SkelFinSet" begin
-  include("skelfinset/runtests.jl")
-end
+include("setcat/runtests.jl")
 
-@testset "SetC" begin
-  include("setcats/runtests.jl")
-end
+include("SetsInterop.jl")
 
-@testset "FinSetC" begin
-  include("finsetcat/runtests.jl")
-end
-
-@testset "VarFunctions" begin
-  include("varfunctions/runtests.jl")
-end
-
-@testset "SubSets" begin
-  include("SubSets.jl")
-end
+include("Subsets.jl")

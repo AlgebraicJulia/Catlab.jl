@@ -1,38 +1,50 @@
-module OpCats
-export OppositeCat, op
+module OpCats 
+export OpCat, op
 
 using StructEquality
 
-import GATlab: op
+using GATlab
 
-using ..Categories
-import ..Categories: ob, hom, dom, codom, id, compose
+using .....BasicSets, ..Categories
 
 """ Opposite category, where morphism are reversed.
 
 Call `op(::Cat)` instead of directly instantiating this type.
 """
-@struct_hash_equal struct OppositeCat{Ob,Hom,Size<:CatSize,C<:Cat{Ob,Hom,Size}} <:
-    Cat{Ob,Hom,Size}
-  cat::C
+@struct_hash_equal struct OppositeCat{Ob,Hom}
+  cat::Category
+  function OppositeCat(c::Category)
+    new{impl_type(c, :Ob), impl_type(c, :Hom)}(c)
+  end
 end
 
-ob(C::OppositeCat, x) = ob(C.cat, x)
-hom(C::OppositeCat, f) = hom(C.cat, f)
+# Accessor 
+##########
 
-dom(C::OppositeCat, f) = codom(C.cat, f)
-codom(C::OppositeCat, f) = dom(C.cat, f)
-id(C::OppositeCat, x) = id(C.cat, x)
-compose(C::OppositeCat, f, g) = compose(C.cat, g, f)
+GATlab.getvalue(c::OppositeCat) = c.cat
 
-""" Oppositization 2-functor.
+# ThCategoryExplicitSets Implementation
+#######################################
 
-The oppositization endo-2-functor on Cat, sending a category to its opposite, is
-covariant on objects and morphisms and contravariant on 2-morphisms, i.e., is a
-2-functor ``op: Catᶜᵒ → Cat``. For more explanation, see the
-[nLab](https://ncatlab.org/nlab/show/opposite+category).
-"""
-op(C::Cat) = OppositeCat(C)
-op(C::OppositeCat) = C.cat
+@instance ThCategoryExplicitSets{Ob,Hom} [model::OppositeCat{Ob,Hom}
+                                                ] where {Ob,Hom} begin
+  dom(f::Hom) = codom(getvalue(model), f)
+
+  codom(f::Hom) = dom(getvalue(model), f)
+
+  id(x::Ob) = id(getvalue(model), x)
+
+  compose(f::Hom,g::Hom) = compose(getvalue(model), g, f)
+
+  ob_set()::SetOb = ob_set(getvalue(model))
+
+  hom_set()::SetOb = hom_set(getvalue(model))
+
+end
+
+# Constructor
+#############
+
+op(c::Category) = Category(OppositeCat(c))
 
 end # module

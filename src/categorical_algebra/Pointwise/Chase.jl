@@ -19,23 +19,35 @@ export chase
 
 using ACSets.DenseACSets: datatypes
 using GATlab
-using ....Theories, ....BasicSets, ...Cats, ...SetCats
+
+using ....Theories, ....BasicSets
+using ...Cats
 import ...Cats: universal, ob_map
-using ..ACSetTransformations, ..CSets, ..HomSearch
+using ..Pointwise
 
 # EDs
 #####
 
 """Distill the component of a morphism that merges elements together"""
-egd(e::ACSetTransformation) = factorize(image(e),e)
+function egd(e::ACSetTransformation; cat=nothing)
+  cat = isnothing(cat) ? infer_acset_cat(e) : cat
+  factorize[cat](image(e, Category(cat)), e)
+end
 """Distill the component of a morphism that adds new elements"""
-tgd(e::ACSetTransformation) = factorize(coimage(e), e)
-"""Check if id up to isomorphism"""
-no_change(f) = all(c->is_monic(c) && is_epic(c), components(f))
+function tgd(e::ACSetTransformation; cat=nothing) 
+  cat = isnothing(cat) ? infer_acset_cat(e) : cat
+  factorize[cat](coimage(e, Category(cat)), e)
+end
 
-"""Split a dict of (general) EDs into dicts of EGDs and TGDs"""
-split_Σ(Σ::Dict{Symbol,T}) where {S,T<:CSetTransformation{S}} = map([egd, tgd]) do f 
-    Dict([k=>f(v) for (k,v) in collect(Σ) if !no_change(f(v))])
+"""Check if id up to isomorphism"""
+no_change(f::ACSetTransformation; cat) = is_monic(f; cat) && is_epic(f; cat)
+
+"""
+Split a dict of (general) EDs into dicts of EGDs and TGDs
+This only works in categories with (co)limits defined.
+"""
+split_Σ_factor(Σ::Dict{Symbol,T}; cat) where {T<:ACSetTransformation} = map([egd, tgd]) do f 
+    Dict([k=>f(v) for (k,v) in collect(Σ) if !no_change(f(v); cat)])
 end
 
 """
@@ -43,11 +55,14 @@ We do not have general limits for ACSet transformations, so we cannot yet
 automatically factor an ED into an EGD+TGD. However, it should be possible to 
 define limits such that the CSetTransformation code above works for ACSets too.
 """
-function split_Σ(Σ::Dict{Symbol,<:ACSetTransformation})
+function split_Σ(Σ::Dict{Symbol,<:ACSetTransformation}; cat=nothing)
+  cat = isnothing(cat) && !isempty(Σ) ? infer_acset_cat(first(pairs(Σ))[2]) : cat
   egds, tgds = Dict(), Dict()
   for (k,v) in collect(Σ)
-    e, m = is_epic(v), is_monic(v)
-    if !e && !m error("Cannot automatically factor ED $v")
+    e, m = is_epic(v; cat), is_monic(v; cat)
+    if !e && !m 
+      err = NamedTuple(Dict(k => collect(f) for (k,f) in pairs(v.components)))
+      error("Cannot automatically factor ED $k: $(err)")
     elseif m && !e tgds[k] = v # monic = TGD
     elseif e && !m egds[k] = v # epic = EGD
     end                        # otherwise, no change
@@ -62,10 +77,12 @@ Create constraints for enforcing a C-Set schema on a C-Rel instance.
 A presentation implies constraints of foreign keys being functional
 (total and unique) in addition to any extra equations.
 """
-function pres_to_eds(S::Presentation; types=Dict(), name="")
+function pres_to_eds(S::Presentation; types=Dict(), name="", cat)
   ACS = crel_type(S; types=types, name=name)
+  cat = ACSetCategory(typeof(getvalue(cat))(ACS())) # switch underlying schema
+
   # Convert equations in presentation in EDs
-  eds = Dict{String,ACSetTransformation}(["Eq$i" => equation_to_ed(S,ACS,e1,e2)
+  eds = Dict{String,ACSetTransformation}(["Eq$i" => equation_to_ed(S,ACS,e1,e2; cat)
       for (i, (e1,e2)) in enumerate(equations(S))])
 
   # morphisms are functional, i.e. unique and total
@@ -83,16 +100,16 @@ function pres_to_eds(S::Presentation; types=Dict(), name="")
     if d == cd # not possible if f is an attribute
       uni = ACSetTransformation(unique_l, unique_r;
                                 Dict(f=>[1,1], d=>[rd1, rcd1, rcd1])...)
+                            
       eds["$(f_)_uni"] = uni
     else
-      eds["$(f_)_uni"] = homomorphism(unique_l, unique_r;)
+      eds["$(f_)_uni"] = homomorphism(unique_l, unique_r; cat)
     end
     # totality: [d] ==> [d ⟶ cd]
     add_part!(total_l, d)
-    tot = ACSetTransformation(total_l, unique_r; Dict(d=>[rd1])...)
+    tot = coerce(ACSetTransformation(total_l, unique_r; Dict(d=>[rd1])...); cat)
     eds["$(f_)_total"] = tot
   end
-
   return Dict([Symbol(k) => v for (k,v) in collect(eds)])
 end
 
@@ -109,7 +126,7 @@ to `l`, while `r1` is a single point of type aₙ. `r2` has two points of that
 type, with a unique map to `r1` and picking out `aₙ` and `bₙ` in its map into 
 `l`.
 """
-function equation_to_ed(S,ACS,e1,e2)
+function equation_to_ed(S,ACS,e1,e2; cat)
   d, cd = Symbol.([dom(e1), codom(e1)])
   l, r1, r2 = [ACS() for _ in 1:3]
   add_part!(l, d)
@@ -119,9 +136,9 @@ function equation_to_ed(S,ACS,e1,e2)
   add_parts!(r2, cd, 2)
   is_attr = cd ∈ Symbol.(generators(S,:AttrType))
   rrcomps = Dict(cd=>(is_attr ? AttrVar : identity).([1,1]))
-  rr = ACSetTransformation(r2, r1; rrcomps...)
-  rl = ACSetTransformation(r2, l; Dict([cd => [end1,end2]])...)
-  return first(legs(pushout(rl, rr)))
+  rr = coerce(ACSetTransformation(r2, r1; rrcomps...); cat)
+  rl = coerce(ACSetTransformation(r2, l; Dict([cd => [end1,end2]])...); cat)
+  return first(legs(pushout[cat](rl, rr)))
 end
 
 """
@@ -273,16 +290,17 @@ flag.
 
 TODO: this algorithm could be made more efficient by homomorphism caching.
 """
-function chase(I::ACSet, Σ::AbstractDict, n::Int)
-  Σ_egd, Σ_tgd = split_Σ(Σ)
-  res = id(I) # initialize result
+function chase(I::ACSet, Σ::AbstractDict, n::Int; cat=nothing)
+  cat = isnothing(cat) ? infer_acset_cat(I) : cat
+  Σ_egd, Σ_tgd = split_Σ(Σ; cat)
+  res = id[cat](I) # initialize result
   for i in 1:n
     @debug "Chase iteration $i" result = codom(res)
-    next_morphism = chase_step(codom(res), Σ_egd, Σ_tgd)
-    if no_change(next_morphism)
+    next_morphism = chase_step(cat, codom(res), Σ_egd, Σ_tgd)
+    if no_change(next_morphism; cat)
       return res => true
     else
-      res = compose(res, next_morphism)
+      res = compose[cat](res, next_morphism)
     end
   end
   return res => false # failure
@@ -296,14 +314,14 @@ S->T->I = S->I). Store the trigger with the ED as a span, I<-S->T.
 Optionally initialize the homomorphism search to control the chase process.
 """
 function active_triggers(I::ACSet, Σ::AbstractDict; 
-                         init::Union{NamedTuple, Nothing})
+                         init::Union{NamedTuple, Nothing}, cat)
   maps = Span[]
   @debug "Looking for active triggers"
   for (name,ed) in collect(Σ)
     @debug "Checking if trigger $name is active"
     kw = Dict(isnothing(init) ? [] : [:initial=>init])
-    for trigger in homomorphisms(dom(ed), I; kw...)
-      if isnothing(extend_morphism(trigger, ed))
+    for trigger in homomorphisms(dom(ed), I; cat, kw...)
+      if isnothing(extend_morphism(trigger, ed; cat))
         @debug "Active $name"
         push!(maps, Span(trigger, ed))
       end
@@ -314,22 +332,22 @@ function active_triggers(I::ACSet, Σ::AbstractDict;
 end
 
 """Run a single chase step."""
-function chase_step(I::ACSet, Σegd, Σtgd; init::Union{NamedTuple, Nothing}=nothing)
+function chase_step(cat, I::ACSet, Σegd, Σtgd; init::Union{NamedTuple, Nothing}=nothing)
   # First fire one round of TGDs
-  ats = active_triggers(I, Σtgd; init=init)
-  res = isempty(ats) ? id(I) : fire_triggers(ats) # first: fire TGDs
+  ats = active_triggers(I, Σtgd; init, cat)
+  res = isempty(ats) ? id[cat](I) : fire_triggers(cat, ats) # first: fire TGDs
   if !isempty(ats)
     @debug "Post TGD instance" result = codom(res)
   end
 
   # EGDs merely quotient, so this will terminate.
   while true
-    ats = active_triggers(codom(res), Σegd; init=init)
-    res_ = isempty(ats) ? id(codom(res)) : fire_triggers(ats)
-    if force(res_) == force(id(codom(res)))
+    ats = active_triggers(codom(res), Σegd; init, cat)
+    res_ = isempty(ats) ? id[cat](codom(res)) : fire_triggers(cat, ats)
+    if is_iso(res_; cat) #force(res_) == force(id[cat](codom(res)))
       return res
     else
-      res = compose(res, res_)
+      res = compose[cat](res, res_)
     end
   end
 end
@@ -338,31 +356,37 @@ end
 Compute pushout of all EDs in parallel by combining each list of morphisms into 
 a single one & taking a pushout.
 """
-function fire_triggers(ats)
+function fire_triggers(cat, ats)
   r_i_maps, r_s_maps = left.(ats), right.(ats)
-  I_po = pushout(copair(r_i_maps), oplus(r_s_maps))
+  CM = TypedCatWithCoproducts(cat)
+  I_po = pushout[cat](copair[CM](r_i_maps), oplus[CM](r_s_maps))
   return legs(I_po)[1]
 end
 
 # Sigma migration
 #################
+
 """
 Convert a CSet morphism X->Y into a CSet on the schema C->C 
 (collage of id functor on C).
 """
-collage(f::ACSetTransformation{S}) where S = collage(f, Presentation(S))
-function collage(f::ACSetTransformation, S::Presentation)
-  colim, col_pres = collage(id(FinCat(S)))
+collage(f::ACSetTransformation) = collage(f, Presentation(acset_schema(f)))
+
+function collage(f::ACSetTransformation, S::Presentation; cat=nothing)
+  cat = isnothing(cat) ? infer_acset_cat(f) : cat
+  colim, col_pres = collage(id[FinCatC()](FinCat(S)))
   colimL, colimR = colim
   res = AnonACSet(col_pres)
-  for o in ob(Schema(S))
-    add_parts!(res, nameof(ob_map(colimL,o)), nparts(dom(f), o))
-    add_parts!(res, nameof(ob_map(colimR,o)), nparts(codom(f), o))
-    set_subpart!(res, Symbol("α_$o"), collect(f[o]))
+  for o in S.generators[:Ob]
+    so = Symbol(o)
+    add_parts!(res, nameof(ob_map(colimL,o)), nparts(dom(f), so))
+    add_parts!(res, nameof(ob_map(colimR,o)), nparts(codom(f), so))
+    set_subpart!(res, Symbol("α_$o"), collect(f[so]))
   end
-  for h in homs(Schema(S); just_names=true)
-    set_subpart!(res, nameof(hom_map(colimL,h)), dom(f)[h])
-    set_subpart!(res, nameof(hom_map(colimR,h)), codom(f)[h])
+  for h in S.generators[:Hom]
+    sh = Symbol(h)
+    set_subpart!(res, nameof(hom_map(colimL,h)), dom(f)[sh])
+    set_subpart!(res, nameof(hom_map(colimR,h)), codom(f)[sh])
   end
   colim, res
 end 
@@ -373,10 +397,12 @@ It has the mapping data in addition to injections from the (co)domain.
 """
 function collage(F::FinFunctor;objects=ob_generators(dom(F)))
   (dF, _) = Xs = [dom(F), codom(F)]
-  homs = filter(hom_generators(dF)) do f dom(dF,f) in objects && codom(dF,f) in objects end
+  homs = filter(collect(hom_generators(dF))) do f 
+    dom(dF,f) in objects && codom(dF,f) in objects 
+  end
   C = coproduct_fincat(Xs)
   i1, i2 = legs(C)
-  p = presentation(apex(C)) # inherit equations from dom and codom
+  p = presentation(getvalue(apex(C))) # inherit equations from dom and codom
   # Add natural transformations
   α = Dict(map(objects) do o
     o => add_generator!(p, Hom(Symbol("α_$o"), ob_map(i1,o), ob_map(i2,ob_map(F, o))))
@@ -388,9 +414,9 @@ function collage(F::FinFunctor;objects=ob_generators(dom(F)))
   end
   new_codom = FinCat(p)
   ls = map(legs(C)) do l
-    FinFunctor(l.ob_map, l.hom_map, dom(l), new_codom)
+    FinFunctor(getvalue(l).ob_map, getvalue(l).hom_map, dom(l), new_codom; homtype=:hom)
   end
-  Colimit(DiscreteDiagram(Xs), Multicospan(ls)) => p
+  Multicospan(ls) => p
 end
 
 
@@ -401,9 +427,9 @@ Given a span of morphisms, we seek to find a morphism B → C that makes a
 commuting triangle if possible.
 Accepts homomorphism search keyword arguments to constrain the Hom(B,C) search.
 """
-function extend_morphism(f::ACSetTransformation, g::ACSetTransformation;
+function extend_morphism(f::ACSetTransformation, g::ACSetTransformation; cat=nothing,
     initial=Dict(), kw...)::Union{Nothing, ACSetTransformation}
-  init = combine_dicts!(extend_morphism_constraints(f,g), initial)
+  init = combine_dicts!(extend_morphism_constraints(f,g; cat), initial)
   isnothing(init) ? nothing : homomorphism(codom(g), codom(f); initial=init, kw...)
 end
 
@@ -420,23 +446,27 @@ return `nothing`. Otherwise, return a Dict which can be used to initialize the
 homomorphism search Hom(B,C).
 """
 function extend_morphism_constraints(f::ACSetTransformation,
-                                     g::ACSetTransformation) 
+                                     g::ACSetTransformation; cat=nothing) 
+  cat = isnothing(cat) ? infer_acset_cat(f) : cat
   dom(f) == dom(g) || error("f and g are not a span: $f \n$g")
   S = acset_schema(dom(f))
   init = Dict() # {Symbol, Dict{Int,Int}}
-  for (ob, mapping) in pairs(components(f))
+  for (o, mapping) in pairs(components(f))
     init_comp = [] # Pair{Int,Int}
-    is_var = ob ∈ attrtypes(S)
-    for i in parts(codom(g), ob)
-      p = preimage(g[ob], is_var ? AttrVar(i) : i )
-      vs = Set(mapping.(is_var ? AttrVar.(p) : p))
+    𝒞 = entity_attr_cat(cat, o)
+    mapping_fun = hom_map[𝒞](mapping)
+    is_var = o ∈ attrtypes(S)
+    gfun = hom_map[𝒞](g[o])
+    for i in parts(codom(g), o)
+      p = preimage(gfun, is_var ? Left(i) : i )
+      vs = Set(mapping_fun.(is_var ? Left.(p) : p))
       if length(vs) == 1
         push!(init_comp, i => only(vs))
       elseif length(vs) > 1 # no homomorphism possible
         return nothing
       end
     end
-    init[ob] = Dict(init_comp)
+    init[o] = Dict(init_comp)
   end
   return init
 end
@@ -462,12 +492,13 @@ end
 
 # Colimit of ACset FinCats
 ##########################
+
 """
 Preserves the original name of the inputs if it is unambiguous, otherwise
 disambiguates with index in original input. E.g. (A,B)⊔(B,C) → (A,B#1,B#2,C)
 """
-function coproduct_fincat(Xs::AbstractVector{<:FinCatPresentation{ThSchema.Meta.T}}; kw...)
-  Xps = [X.presentation for X in Xs]
+function coproduct_fincat(Xs::AbstractVector{FinCat}; kw...)
+  Xps = [getvalue(X).presentation for X in Xs] # Assume all Xs are FinCatPresentations
   # Collect all generators and identify conflicting names
   cnflobs, cnflats, cnflhoms, cnflattrs = map([:Ob,:AttrType,:Hom,:Attr]) do x 
     all_ob = Symbol.(vcat([generators(X,x) for X in Xps]...))
@@ -491,20 +522,20 @@ function coproduct_fincat(Xs::AbstractVector{<:FinCatPresentation{ThSchema.Meta.
   gens = merge(ogens,agens)
 
   hgens = Dict(vcat(map(enumerate(Xs)) do (i, X)
-    map(generators(X.presentation,:Hom)) do h
+    map(generators(getvalue(X).presentation,:Hom)) do h
       n = Symbol("$h" * (Symbol(h) ∈ cnflhoms ? "#$i" : ""))
       d, cd = Symbol.([dom(X,h), codom(X,h)])
       s, t = gens[(i, Symbol(d))], gens[(i, Symbol(cd))]
-      (i,Symbol(h)) => Symbol(add_generator!(p, Hom(n, s, t)))
+      (i,Symbol(h)) => add_generator!(p, Hom(n, s, t))
     end
   end...))
 
   atgens = Dict(vcat(map(enumerate(Xs)) do (i, X)
-    map(generators(X.presentation,:Attr)) do h
+    map(generators(getvalue(X).presentation,:Attr)) do h
       n = Symbol("$h" * (Symbol(h) ∈ cnflattrs ? "#$i" : ""))
       d, cd = Symbol.([dom(X,h), codom(X,h)])
       s, t = gens[(i, Symbol(d))], gens[(i, Symbol(cd))]
-      (i,Symbol(h)) => Symbol(add_generator!(p, Attr(n, s, t)))
+      (i,Symbol(h)) => add_generator!(p, Attr(n, s, t))
     end
   end...))
 
@@ -513,9 +544,9 @@ function coproduct_fincat(Xs::AbstractVector{<:FinCatPresentation{ThSchema.Meta.
   # Create legs into equationless target to help us project the equations
   for (i,x) in enumerate(Xs)
     os, hs = map(zip([ob_generators,hom_generators], [gens,gens′])) do (get, g)
-      Dict([o => Symbol(g[(i,o)]) for o in Symbol.(get(x))])
+      Dict([o => g[(i,Symbol(o))] for o in get(x)])
     end
-    l = FinDomFunctor(os, hs, x, FinCat(p))
+    l = FinDomFunctor(os, hs, x, FinCat(p); homtype=:generator)
     for (e1,e2) in equations(x)
       add_equation!(p, hom_map(l, e1), hom_map(l, e2))
     end
@@ -524,12 +555,12 @@ function coproduct_fincat(Xs::AbstractVector{<:FinCatPresentation{ThSchema.Meta.
   # Create legs into equationful target
   ls = map(enumerate(Xs)) do (i,x)
     os, hs = map(zip([ob_generators,hom_generators], [gens,gens′])) do (get, g)
-      Dict([o => g[(i,o)] for o in Symbol.(get(x))])
+      Dict([o => g[(i,Symbol(o))] for o in get(x)])
     end
-    FinDomFunctor(os, hs, x, FinCat(p))
+    FinDomFunctor(os, hs, x, FinCat(p);homtype=:generator)
   end
 
-  Colimit(DiscreteDiagram(Xs), Multicospan(ls))
+  Multicospan(ls)
 end
 
 end # module

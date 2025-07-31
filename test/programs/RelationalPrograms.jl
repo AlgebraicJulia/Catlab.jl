@@ -194,4 +194,4 @@ set_junction!(d, [1,2], outer=true)
 set_subpart!(d, :port_name, [:id, :department, :id, :department])
 @test parsed == d
 
-end
+end # module

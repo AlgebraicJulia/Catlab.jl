@@ -10,8 +10,7 @@ export UndirectedWiringDiagram, HasUWD,
   ocompose, substitute
 
 using GATlab
-using ...CategoricalAlgebra.Pointwise, ...CategoricalAlgebra.LimitsColimits
-using ...BasicSets: FinSet, FinFunction
+using ...BasicSets, ...CategoricalAlgebra
 using ...Theories: dom, codom, compose, ⋅, id, oplus
 import ..DirectedWiringDiagrams: box, boxes, nboxes, add_box!, add_wire!,
   add_wires!, singleton_diagram, ocompose, substitute
@@ -223,8 +222,8 @@ this function generalizes [`singleton_diagram`](@ref).
 
 See also: [`junction_diagram`](@ref).
 """
-function cospan_diagram(::Type{UWD}, inner::FinFunction{Int,Int},
-                        outer::FinFunction{Int,Int}, junction_types=nothing;
+function cospan_diagram(::Type{UWD}, inner::FinFunction,
+                        outer::FinFunction, junction_types=nothing;
                         data...) where UWD <: AbstractUWD
   @assert codom(inner) == codom(outer)
   if isnothing(junction_types)
@@ -247,7 +246,7 @@ end
 
 See also: [`singleton_diagram`](@ref), [`cospan_diagram`](@ref).
 """
-function junction_diagram(::Type{UWD}, outer::FinFunction{Int,Int},
+function junction_diagram(::Type{UWD}, outer::FinFunction,
                           junction_types=nothing) where UWD <: AbstractUWD
   if isnothing(junction_types)
     junction_types = length(codom(outer))
@@ -267,20 +266,14 @@ map_port_types(types::AbstractVector, g) = types[g]
 
 # Operadic interface
 ####################
+const 𝒞 = SkelFinSet()
+const CM = TypedCatWithCoproducts(𝒞)
 
 function ocompose(f::AbstractUWD, gs::AbstractVector{<:AbstractUWD})
   substitute(f, boxes(f), gs)
 end
 function ocompose(f::AbstractUWD, i::Int, g::AbstractUWD)
   substitute(f, [i], [g])
-end
-
-function (f::AbstractUWD)(gs::AbstractVector{<:AbstractUWD})
-    substitute(f, boxes(f), gs)
-end
-
-function (f::AbstractUWD)(i::Int, g::AbstractUWD)
-    substitute(f, [i], [g])
 end
 
 function substitute(f::UWD, indices::AbstractVector{Int},
@@ -311,20 +304,20 @@ function substitute(f::UWD, indices::AbstractVector{Int},
   end
   f_inner = ACSetTransformation(apex, f_junctions, Junction=flat(
     junction(f, ports(f, i)) for (i,j) in enumerate(gs_index) if !isnothing(j)))
-  g_outer = ACSetTransformation(apex, g_junctions, Junction=oplus([
+  g_outer = ACSetTransformation(apex, g_junctions, Junction=oplus[CM]([
     FinFunction(junction(g, outer=true), njunctions(g)) for g in gs ]))
-  colim = pushout(f_inner, g_outer)
+  colim = pushout[infer_acset_cat(apex)](f_inner, g_outer)
   copy_parts_only!(h, ob(colim))
 
   # Assign junctions to all ports.
   f_leg, g_leg = (leg[:Junction] for leg in colim)
-  gs_incl = legs(coproduct([ FinSet(njunctions(g)) for g in gs ]))
+  gs_incl = legs(colimit[𝒞](DiscreteDiagram([ FinSetInt(njunctions(g)) for g in gs ])))
   set_junction!(h, map(f_leg, junction(f, outer=true)), outer=true)
   set_junction!(h, flatmap(enumerate(gs_index)) do (i,j)
     if isnothing(j)
       map(f_leg, junction(f, ports(f, i)))
     else
-      map(gs_incl[j] ⋅ g_leg, junction(gs[j]))
+      map(compose[𝒞](gs_incl[j] , g_leg), junction(gs[j]))
     end
   end)
   return h
@@ -333,4 +326,4 @@ end
 flat(x) = reduce(vcat, x, init=Int[])
 flatmap(f, xs...) = mapreduce(f, vcat, xs..., init=Int[])
 
-end
+end # module

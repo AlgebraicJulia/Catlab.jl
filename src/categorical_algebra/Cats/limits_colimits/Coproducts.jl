@@ -1,39 +1,69 @@
-module Coproducts 
-export BinaryCoproduct, Coproduct, coproduct, coproj1, coproj2, copair
+module Coproducts
+export ThCategoryUnbiasedCoproducts, CatWithCoproducts, TypedCatWithCoproducts, coproduct, copair
 
-import .....Theories: coproj1, coproj2, coproduct, copair
-using ...FreeDiagrams
-using ..Colimits
+using StructEquality
+using GATlab
 
-const BinaryCoproduct{Ob} = AbstractColimit{Ob,<:ObjectPair}
-const Coproduct{Ob} = AbstractColimit{Ob,<:DiscreteDiagram}
+using .....Theories: dom
+import .....Theories: coproduct, universal, copair
+using ..FreeDiagrams: Multicospan, apex, DiscreteDiagram
+import ..FreeDiagrams: ob
+using ..Colimits: AbsColimit, ThCategoryColimitBase
+import ..Colimits: colimit, cocone
 
-""" Coproduct of objects.
-
-To implement for a type `T`, define the method `colimit(::ObjectPair{T})` and/or
-`colimit(::DiscreteDiagram{T})`.
 """
-coproduct(A, B; kw...) = colimit(ObjectPair(A, B); kw...)
-coproduct(As::AbstractVector; kw...) = colimit(DiscreteDiagram(As); kw...)
-
-coproj1(colim::BinaryCoproduct) = first(legs(colim))
-coproj2(colim::BinaryCoproduct) = last(legs(colim))
-
-
-
-""" Copairing of morphisms: universal property of coproducts/pushouts.
-
-To implement for coproducts of type `T`, define the method
-`universal(::BinaryCoproduct{T}, ::Cospan{T})` and/or
-`universal(::Coproduct{T}, ::Multicospan{T})` and similarly for pushouts.
+Alternative, unbiased presentation of `ThCategoryWithCoproducts` which focuses on 
+computational and ergonomic aspects at the expense of hiding a lot of structure 
+within Julia datatypes such as `DiscreteDiagram`.
 """
-copair(f, g) = copair(coproduct(dom(f), dom(g)), f, g)
+@theory ThCategoryUnbiasedCoproducts <: ThCategoryColimitBase begin
+  DiscDiag::TYPE{DiscreteDiagram}  # type of discrete diagrams, i.e. vectors of Ob
 
-copair(fs::AbstractVector) = copair(coproduct(map(dom, fs)), fs)
+  colimit(d::DiscDiag)::Colimit # Unbiased products.
 
-copair(colim::BinaryCoproduct, f, g) = universal(colim, Cospan(f, g))
+  # We can't explicit explicitly represent proj functions of a DiscDiag
+  universal(Σ::Colimit, d::DiscDiag, csp::MCospan)::(ob(Σ) → apex(csp))
+end
 
-copair(colim::Coproduct, fs::AbstractVector) = universal(colim, Multicospan(fs))
+abstract type WithCoproducts end
+ThCategoryUnbiasedCoproducts.Meta.@typed_wrapper TypedCatWithCoproducts <: WithCoproducts
+ThCategoryUnbiasedCoproducts.Meta.@wrapper CatWithCoproducts <: WithCoproducts
 
+
+# Boilerplate? Can interconvert between the two
+# Perhaps `@wrappers Cat TypedCat`
+TypedCatWithCoproducts(c::CatWithCoproducts) = 
+  TypedCatWithCoproducts(getvalue(c))
+
+CatWithCoproducts(c::TypedCatWithCoproducts) = 
+  CatWithCoproducts(getvalue(c))
+
+# Named limits / universal properties
+#####################################
+@model_method coproduct
+
+""" When product is called on two or more things, we assume they are a list of 
+objects to be put into a discrete diagram """
+coproduct(m::WithCoproducts, x, y, xs...) = 
+  coproduct[getvalue(m)](x,y,xs...)
+
+coproduct(m::WithModel, x, xs...; context=nothing) = 
+  colimit(m, DiscreteDiagram([x,xs...]); context)
+
+@model_method copair
+
+""" Copairing of morphisms: universal property of coproducts
+"""
+copair(m::WithModel, colim::AbsColimit, fs::AbstractVector; context=nothing)  =
+  universal(m, colim, DiscreteDiagram(dom.(fs)), Multicospan(fs); context)
+
+copair(m::WithModel, colim::AbsColimit, f1::T, f2::T; context=nothing) where T =
+  copair(m, colim, [f1,f2]; context)
+
+copair(C::WithCoproducts, colim::AbsColimit, fs::AbstractVector)  =
+  copair[getvalue(C)](colim, fs)
+
+copair(C::WithCoproducts, lim::AbsColimit, f1::T,f2::T) where {T} = 
+  copair(C, lim, [f1, f2])
 
 end # module

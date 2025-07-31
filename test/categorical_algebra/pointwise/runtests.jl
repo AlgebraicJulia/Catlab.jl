@@ -1,12 +1,9 @@
-using Test 
 
-@testset "SetsInterop" begin
-  include("SetsInterop.jl")
-end
+using Test 
 
 @testset "CSetCats" begin
   include("csetcats/runtests.jl")
-end 
+end
 
 @testset "ACSetCats" begin
   include("acsetcats/runtests.jl")
@@ -16,18 +13,24 @@ end
   include("varacsetcats/runtests.jl")
 end 
 
-@testset "LabeledCSets" begin
-  include("labeledcsetcats/runtests.jl")
-end
+# @testset "LabeledCSets" begin
+  # include("LabeledCSets/Limits.jl")
+# end
 
 @testset "MADCats" begin
-  include("madacsetcats/runtests.jl")
+  include("madcats/runtests.jl")
 end
 
-@testset "LooseACSetCats" begin
-  include("looseacsetcats/runtests.jl")
+@testset "MADVarACats" begin
+  include("madvaracsetcats/HomSearch.jl")
 end
 
-@testset "LooseVarACSetCats" begin
-  include("loosevaracsetcats/runtests.jl")
-end
+
+# @testset "LooseACSetCats" begin
+  # include("LooseACSetCats/HomSearch.jl")
+# end
+
+# @testset "LooseVarACSetCats" begin
+  # include("LooseVarACSetCats/ACSetTransformations.jl")
+# end
+

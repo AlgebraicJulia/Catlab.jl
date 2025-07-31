@@ -1,26 +1,53 @@
 module Coequalizers 
-export BinaryCoequalizer, Coequalizer, coequalizer, proj, factorize
+export coequalizer, CompositeColimit, CatWithCoequalizers, ThCategoryWithCoequalizers, factorize
 
-import .....Theories: proj, coequalizer, factorize
-using ...FreeDiagrams
-using ..Colimits
+using StructEquality
+using GATlab
+
+using .....Theories: codom
+import .....Theories: proj, coequalizer, universal
+using ..FreeDiagrams: ParallelMorphisms, Multicospan
+using ..Colimits: AbsColimit, ColimitCocone, ThCategoryColimitBase
+import ..Colimits: colimit
+import ..Equalizers: factorize
+
+@theory ThCategoryWithCoequalizers <: ThCategoryColimitBase begin
+  ParallelDiagram()::TYPE{ParallelMorphisms}
+  colimit(p::ParallelDiagram)::Colimit
+  universal(eq::Colimit, p::ParallelDiagram, s::MCospan)::(ob(eq) → apex(s))
+end
+
+ThCategoryWithCoequalizers.Meta.@wrapper CatWithCoequalizers
+
+# Named limits / universal properties
+#####################################
+@model_method coequalizer
+
+coequalizer(C::CatWithCoequalizers, xs...) = 
+  coequalizer[getvalue(C)](collect(xs))
+
+coequalizer(m::WithModel, d::AbstractVector; context=nothing) = 
+  colimit(m, ParallelMorphisms(d; cat=getvalue(m)); context)
+
+coequalizer(m::WithModel, x, y, xs...; context=nothing) = 
+  coequalizer(m, [x,y,xs...]; context)
 
 
-const BinaryCoequalizer{Ob} = AbstractColimit{Ob,<:ParallelPair}
-const Coequalizer{Ob} = AbstractColimit{Ob,<:ParallelMorphisms}
+function factorize(C::CatWithCoequalizers, lim::AbsColimit, h)
+  o = codom(C, h)
+  universal(C, lim, Multicospan(o, [h], [o]))
+end
 
+function factorize(C::WithModel, lim::AbsColimit, h; context=nothing)
+  o = codom(C, h)
+  universal(C, lim, Multicospan(o, [h], [o]))
+end
 
-""" Coequalizer of morphisms with common domain and codomain.
-
-To implement for a type `T`, define the method `colimit(::ParallelPair{T})` or
-`colimit(::ParallelMorphisms{T})`.
-"""
-coequalizer(f, g; kw...) = colimit(ParallelPair(f, g); kw...)
-coequalizer(fs::AbstractVector; kw...) = colimit(ParallelMorphisms(fs); kw...)
-
-proj(coeq::Coequalizer) = only(legs(coeq))
-
-
-factorize(colim::Coequalizer, h) = universal(colim, SMulticospan{1}(h))
+""" Colimit of general diagram computed by coproduct and projection """
+@struct_hash_equal struct CompositeColimit{Hom} <: AbsColimit
+  cocone::Multicospan
+  coprod::AbsColimit # ColimitCocone
+  proj::Hom 
+end
 
 end # module

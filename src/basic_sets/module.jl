@@ -1,17 +1,19 @@
 module BasicSets 
 
-using Reexport
+using Reexport 
 
-include("sets/module.jl")
-@reexport using .Sets
+include("set_theories/module.jl")
 
-include("finsets/module.jl")
-@reexport using .FinSets
+include("set_impls/module.jl")
 
-include("setfunctions/module.jl")
-@reexport using .SetFunctions
+include("fun_theories/module.jl")
 
-include("finfunctions/module.jl")
-@reexport using .FinFunctions
+include("fun_impls/module.jl")
+
+include("coercion/Force.jl")
+
+include("coercion/Cast.jl")
+@reexport using .Cast
+
 
 end # module

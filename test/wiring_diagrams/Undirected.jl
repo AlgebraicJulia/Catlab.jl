@@ -1,7 +1,6 @@
 module TestUndirectedWiringDiagrams
-using Test
 
-using Catlab.BasicSets: FinFunction
+using Test, Catlab
 using Catlab.WiringDiagrams.UndirectedWiringDiagrams
 
 const UWD = UndirectedWiringDiagram
@@ -120,4 +119,4 @@ set_junction!(h, [1,4,4,2,3,4])
 set_junction!(h, 1:3, outer=true)
 @test ocompose(f, [g1,g2,g1]) == h
 
-end
+end # module

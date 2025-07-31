@@ -1,7 +1,12 @@
 module VarFunctions 
 
-include("VarFunctions.jl")
+using Reexport 
 
-include("Limits.jl")
+include("SkelVarFnCat.jl")
+
+include("VarFnCat.jl")
+
+include("VarFnLimits.jl")
+
 
 end # module

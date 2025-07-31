@@ -5,7 +5,7 @@ import JSON3
 using Catlab.Theories, Catlab.Graphs, Catlab.Graphics.GraphvizGraphs
 import Catlab.Graphics: Graphviz
 using Catlab.CategoricalAlgebra.Subobjects
-using Catlab.CategoricalAlgebra.Pointwise
+using Catlab.CategoricalAlgebra.CSets
 using Catlab.BasicSets
 
 const stmts = Graphviz.filter_statements
@@ -216,9 +216,9 @@ gv = to_graphviz(g, invis_edges=true)
 
 # Graph homomorphisms
 #####################
-
+𝒞 = ACSetCategory(Graph())
 # test we only get 1 subgraph with empty function
-f = delete(Graph())
+f = delete[𝒞](Graph())
 gv = to_graphviz(f, draw_codom=true)
 @test gv.directed
 @test length(stmts(gv, Graphviz.Subgraph)) == 1
@@ -234,4 +234,4 @@ gv = to_graphviz(f, draw_codom=true)
 @test gv.directed
 @test length(stmts(gv, Graphviz.Subgraph)) == 2
 
-end
+end # module

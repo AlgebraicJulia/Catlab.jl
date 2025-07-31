@@ -1,20 +1,24 @@
+""" Symbolic categories """
 module FinCatPres 
-export FinCatPresentation, presentation
+export FinCatPresentation, ThFinCat, presentation
 
 using StructEquality
 
-using GATlab
-import GATlab: equations
+using GATlab, ACSets
+import GATlab: equations, getvalue
 
-using .....Theories: ThCategory, ThSchema, ThPointedSetSchema, AttrTypeExpr 
-import .....Theories: hom, id, dom, codom, compose
+using ......Theories: ThSchema, ThPointedSetSchema, AttrTypeExpr, FreeSchema
+import ......Theories: id, compose, dom, codom
+                      
+using ......BasicSets: FinSet, SetOb
+using ...Paths: Path, src, tgt
+using ..FinCats: ThFinCat
+import ..FinCats: FinCat, decompose
 
-using ..FinCats 
-import ..FinCats: FinCat, ob_generators, hom_generators, ob_generator, 
-  hom_generator, ob_generator_name, hom_generator_name
 
-# Symbolic categories
-#####################
+const Ob = Union{FreeSchema.Ob{:generator},FreeSchema.AttrType{:generator}}
+const Hom = Union{FreeSchema.Hom,FreeSchema.Attr}
+const Gen = Union{FreeSchema.Attr{:generator},FreeSchema.Hom{:generator}}
 
 """ Category defined by a `Presentation` object.
 
@@ -26,20 +30,16 @@ the attribute types are identity morphisms). When the schema is formalized as a
 profunctor whose codomain category is discrete, this amounts to taking the
 collage of the profunctor.
 """
-@struct_hash_equal struct FinCatPresentation{T,Ob,Hom} <: FinCat{Ob,Hom}
+@struct_hash_equal struct FinCatPresentation{T}
   presentation::Presentation{T}
 end
 
-function FinCatPresentation(pres::Presentation{T}) where T
-  S = pres.syntax
-  FinCatPresentation{T,S.Ob,S.Hom}(pres)
-end
-function FinCatPresentation(pres::Presentation{ThSchema.Meta.T})
-  S = pres.syntax
-  Ob = Union{S.Ob, S.AttrType}
-  Hom = Union{S.Hom, S.Attr, S.AttrType}
-  FinCatPresentation{ThSchema.Meta.T,Ob,Hom}(pres)
-end
+getvalue(f::FinCatPresentation) = f.presentation
+
+# Constructors
+#--------------
+FinCat(pres::Presentation, args...; kw...) =
+  FinCat(FinCatPresentation(pres, args...; kw...))
 
 function FinCatPresentation(pres::Presentation{ThPointedSetSchema.Meta.T})
   S = pres.syntax
@@ -48,58 +48,89 @@ function FinCatPresentation(pres::Presentation{ThPointedSetSchema.Meta.T})
   FinCatPresentation{ThPointedSetSchema.Meta.T,Ob,Hom}(pres)
 end
 
-"""
-Computes the graph generating a finitely presented category. Ignores any
-attribute side and any equations. Optionally returns the mappings from
-generators to their indices in the resulting graph.
-"""
-presentation(C::FinCatPresentation) = C.presentation
+# Other methods
+#-------------
 
-ob_generators(C::FinCatPresentation) = generators(presentation(C), :Ob)
-ob_generators(C::Union{FinCatPresentation{ThSchema.Meta.T},FinCatPresentation{ThPointedSetSchema.Meta.T}}) = let P = presentation(C)
-  vcat(generators(P, :Ob), generators(P, :AttrType))
+function decompose(::FinCatPresentation, f::Union{FreeSchema.Attr{:generator},FreeSchema.Hom{:generator}}) 
+  Path([f], f.type_args...)
 end
 
-hom_generators(C::FinCatPresentation) = generators(presentation(C), :Hom)
-hom_generators(C::Union{FinCatPresentation{ThSchema.Meta.T},FinCatPresentation{ThPointedSetSchema.Meta.T}}) = let P = presentation(C)
-  vcat(generators(P, :Hom), generators(P, :Attr))
+decompose(::FinCatPresentation, f::FreeSchema.Hom{:id}) = let x = only(f.args);
+  Path([], x, x)
 end
+
+function decompose(C::FinCatPresentation, f::Union{FreeSchema.Attr{:compose},FreeSchema.Hom{:compose}}) 
+  S = Schema(getvalue(C))
+  Path(f.args, dom(S, nameof(first(f.args))), codom(S, nameof(last(f.args))))
+end
+
+
 equations(C::FinCatPresentation) = equations(presentation(C))
 
-ob_generator(C::FinCatPresentation, x) = ob(C, presentation(C)[x])
-ob_generator(C::FinCatPresentation, x::GATExpr{:generator}) = ob(C, x)
-ob_generator_name(C::FinCatPresentation, x::GATExpr{:generator}) = first(x)
+presentation(C::FinCatPresentation) = C.presentation # synonym for getvalue
 
-hom_generator(C::FinCatPresentation, f) = hom(C, presentation(C)[f])
-hom_generator(C::FinCatPresentation, f::GATExpr{:generator}) = hom(C, f)
-hom_generator_name(C::FinCatPresentation, f::GATExpr{:generator}) = first(f)
+# Implementation of FinCat interface
+####################################
+# AnyHom = Union{FreeSchema.Hom{:generator}, FreeSchema.Hom{:compose}, FreeSchema.Hom{:id}}
 
-ob(C::FinCatPresentation, x::GATExpr) =
-  gat_typeof(x) == :Ob ? x : error("Expression $x is not an object")
-ob(C::Union{FinCatPresentation{ThSchema.Meta.T},FinCatPresentation{ThPointedSetSchema.Meta.T}}, x::GATExpr) =
-  gat_typeof(x) ∈ (:Ob, :AttrType) ? x :
-    error("Expression $x is not an object or attribute type")
+@instance ThFinCat{Ob, Hom, Gen} [model::FinCatPresentation{T}] where {T} begin
+  src(f::Gen)::Ob = dom(f)
 
-hom(C::FinCatPresentation, f) = hom_generator(C, f)
-hom(C::FinCatPresentation, fs::AbstractVector) =
-  mapreduce(f -> hom(C, f), compose, fs)
-hom(C::FinCatPresentation, f::GATExpr) =
-  gat_typeof(f) == :Hom ? f : error("Expression $f is not a morphism")
-hom(::Union{FinCatPresentation{ThSchema.Meta.T},FinCatPresentation{ThPointedSetSchema.Meta.T}}, f::GATExpr) =
-  gat_typeof(f) ∈ (:Hom, :Attr, :AttrType) ? f :
-    error("Expression $f is not a morphism or attribute")
+  tgt(f::Gen)::Ob = codom(f)
 
-id(C::Union{FinCatPresentation{ThSchema.Meta.T},FinCatPresentation{ThPointedSetSchema.Meta.T}}, x::AttrTypeExpr) = x
-compose(C::Union{FinCatPresentation{ThSchema.Meta.T},FinCatPresentation{ThPointedSetSchema.Meta.T}}, f::AttrTypeExpr, g::AttrTypeExpr) =
+  dom(f::Hom)::Ob = dom(f)
+
+  codom(f::Hom)::Ob = codom(f)
+  
+  id(x::Ob)::Hom = id(x)
+
+  compose(f::Hom, g::Hom)::Hom = compose(f, g)
+
+  to_hom(g::Gen)::Hom = g
+  
+  function ob_set()::SetOb
+    P = getvalue(model)
+    v = Ob[generators(P, :Ob); 
+           haskey(P.generators, :AttrType) ? generators(P, :AttrType) : []]
+    SetOb(getvalue(FinSet(v)))
+  end
+
+  function gen_set()::FinSet
+    P = getvalue(model) 
+    haskey(P.generators, :Attr) || return FinSet(generators(P, :Hom))
+    v = Gen[generators(P, :Hom); generators(P, :Attr)]
+    FinSet(v)
+  end
+
+  hom_set()::SetOb = SetOb(Hom)
+
+end
+
+id(::Union{FinCatPresentation{ThSchema.Meta.T},
+           FinCatPresentation{ThPointedSetSchema.Meta.T}
+           }, 
+   x::AttrTypeExpr) = x
+
+compose(::Union{FinCatPresentation{ThSchema.Meta.T},
+                FinCatPresentation{ThPointedSetSchema.Meta.T}}, 
+        f::AttrTypeExpr, g::AttrTypeExpr) =
   (f == g) ? f : error("Invalid composite of attribute type identities: $f != $g")
+
+
+# Use generator names, rather than generators themselves, for Dict keys. 
+# Enforced by FinDomFunctor constructor automatically.
+ob_key(::FinCatPresentation, x) = presentation_key(x)
+
+hom_key(::FinCatPresentation, f) = presentation_key(f)
+
+presentation_key(name::Union{AbstractString,Symbol}) = name
+
+presentation_key(expr::GATExpr{:generator}) = first(expr)
 
 function Base.show(io::IO, C::FinCatPresentation)
   print(io, "FinCat(")
   show(io, presentation(C))
   print(io, ")")
 end
-
-FinCat(pres::Presentation, args...; kw...) =
-  FinCatPresentation(pres, args...; kw...)
 
 end # module

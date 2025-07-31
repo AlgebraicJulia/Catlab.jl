@@ -7,8 +7,7 @@ using StaticArrays: StaticVector, SVector
 using Colors: Colorant, @colorant_str, hex, distinguishable_colors
 
 using ...Theories
-using ...Graphs, ...CategoricalAlgebra.Subobjects, ...BasicSets,
-      ...CategoricalAlgebra.ACSetTransformations, ...CategoricalAlgebra.CSets
+using ...Graphs, ...CategoricalAlgebra, ...BasicSets
 import ..Graphviz
 
 # Property graphs
@@ -120,12 +119,6 @@ function to_graphviz(g::AbstractPropertyGraph)::Graphviz.Graph
     if is_directed || (e <= inv(g,e))
       push!(stmts, Graphviz.Edge(gv_path(e), eprops(g, e)))
     end
-  end
-
-  # Add title if it exists.
-  title = get(gprops(g), :title, nothing)
-  if !isnothing(title)
-    push!(stmts, title)
   end
 
   attrs = gprops(g)

@@ -1,94 +1,48 @@
+export unpack, pack_components
 
-# By default, products of acsets are taken w.r.t. loose acset morphisms, whereas
-# coproducts of acsets are taken w.r.t. tight acset morphisms. We do not need to
-# provide defaults for limits and colimits of non-discrete diagrams, because the
-# type of the diagram's morphisms disambiguates the situation.
+using ACSets, GATlab
+using ACSets.DenseACSets: attrtype_type
 
-kw_type(; loose::Bool=false, cset::Bool=false) = 
-  if loose
-    !cset || error("Cannot ask for a Loose CSetTransformation")
-    LooseACSetTransformation
-  elseif cset 
-    CSetTransformation
-  else 
-    TightACSetTransformation
-  end
+import ....Theories: ob
+using ....BasicSets
+using ...Cats, ...SetCats
+import ...Cats: cone, cocone
+using ..ACSetTransformations, ..CSets
+using ..ACSetCats
 
-""" Diagram in C-Set → named tuple of diagrams in Set.
+####################
+# Helper functions #
+####################
+
+""" 
+Unpack a FreeDiagram{ACSet,ACSetTransformation} 
+into a namedtuple of free diagrams, one for each ob/attrtype 
 """
-unpack_diagram(discrete::DiscreteDiagram{<:ACSet}; kw...) =
-  map(DiscreteDiagram, unpack_sets(ob(discrete); kw...))
-unpack_diagram(span::Multispan{<:ACSet}; kw...) =
-  map(Multispan, sets(apex(span); kw...),
-      unpack_components(legs(span); kw...))
-unpack_diagram(cospan::Multicospan{<:ACSet}; kw...) =
-  map(Multicospan, sets(apex(cospan); kw...),
-      unpack_components(legs(cospan); kw...))
-unpack_diagram(para::ParallelMorphisms{<:ACSet}; kw...) =
-  map(ParallelMorphisms, unpack_components(hom(para); kw...))
-unpack_diagram(comp::ComposableMorphisms{<:ACSet}; kw...) =
-  map(ComposableMorphisms, unpack_components(hom(comp); kw...))
-
-function unpack_diagram(diag::Union{FreeDiagram{ACS},BipartiteFreeDiagram{ACS}};
-                        S=nothing, Ts=nothing,all::Bool=false, var::Bool=false
-                        ) where {ACS <: ACSet}
-  res = NamedTuple(c => map(diag, Ob=X->SetOb(X,c), Hom=α->α[c]) for c in objects(S))
-  if all || var 
-    return merge(res, NamedTuple(c => map(diag, Ob=X->VarSet(X,c), Hom=α->α[c]) for c in attrtypes(S)))
-  end
-  return res 
-end
-function unpack_diagram(F::Functor{<:FinCat,<:TypeCat{ACS}};
-                        S=nothing, Ts=nothing, all::Bool=false, var::Bool=false
-                        ) where {ACS <: ACSet}
-  res = NamedTuple(c => map(F, X->SetOb(X,c), α->α[c]) for c in objects(S))
-  if all || var 
-    return merge(res, NamedTuple(c => map(F, X->VarSet(X,c), α->α[c]) for c in attrtypes(S)))
-  end 
-  return res 
-end
-
-""" Vector of C-sets → named tuple of vectors of sets.
-"""
-function unpack_sets(Xs::AbstractVector{<:ACSet}; S=nothing, Ts=nothing,
-                     all::Bool=false, var::Bool=false)
-  # XXX: The explicit use of `FinSet` and `TypeSet` is needed here for the
-  # nullary case (empty vector) because the Julia compiler cannot infer the
-  # return type of the more general `SetOb`.
-  fin_sets = NamedTuple(c => map(X->FinSet(X,c), Xs) for c in objects(S))
-  if all
-    return merge(fin_sets, (d => Vector{TypeSet}(map(X->TypeSet(X,d), Xs)) for d in attrtypes(S)))
-  elseif var 
-    return merge(fin_sets, map(attrtypes(S)) do d 
-      T = VarSet{attrtype_instantiation(S,Ts,d)}
-      d => T[T(nparts(X,d)) for X in Xs]
-    end)
-  else 
-    return fin_sets
-  end 
-end
-
-""" Vector of C-set transformations → named tuple of vectors of functions.
-"""
-function unpack_components(αs::AbstractVector{<:ACSetMorphism};
-    S=nothing, Ts=nothing, all::Bool=false, var::Bool=false)
-  res = NamedTuple(c => map(α -> α[c], αs) for c in objects(S))
-  if !(all || var) return res end 
-  f = var ? identity : type_components
-  merge(res, NamedTuple(map(attrtypes(S)) do c 
-  c => map(α-> f(α)[c] isa LooseVarFunction ? f(α)[c].loose : f(α)[c], αs)
+function unpack(c::ACSetCategory, d::FreeDiagram)
+  S = acset_schema(c)
+  𝒞 = entity_cat(c) 
+  O, H = impl_type.([𝒞,𝒞], Ref(ThCategory), [:Ob,:Hom])
+  ents =NamedTuple(Dict(map(ob(S)) do o
+    o => fmap(d, x->get_ob(c, x, o), x->coerce_hom(c, x, o), O, H)
   end))
+  ats = NamedTuple(Dict(map(attrtype(S)) do o 
+    𝒟 = attr_cat(c, o)
+    T, P = impl_type.([𝒟,𝒟], Ref(ThCategory), [:Ob,:Hom])
+    o => fmap(d, x -> get_attrtype(c, x, o), 
+                 x -> coerce_op(c, x, o), 
+                 T, P)
+  end))
+  ents => ats
 end
 
 """ Named tuple of vectors of FinFunctions → vector of C-set transformations.
 """
-function pack_components(fs::NamedTuple{names}, doms, codoms;
-                         type_components=nothing) where names
-  # XXX: Is there a better way?
-  components = map((x...) -> NamedTuple{names}(x), fs...)
-  if isnothing(type_components) || all(isempty,type_components)
-    map(ACSetTransformation, components, doms, codoms)
-  else 
-    map(LooseACSetTransformation, components, type_components, doms, codoms)
+function pack_components(cat::ACSetCategory, fs::NamedTuple{names}, doms, codoms) where names
+  components = map(1:length(doms)) do i 
+    NamedTuple{names}(fs[n][i] for n in names)
   end
+  # components = map((x...) -> NamedTuple{names}(x), fs...) causes error for empty tuple type sometimes
+  map(zip(components, doms, codoms)) do (component, dom, codom)
+    ACSetTransformation(component, dom, codom; cat)
+  end |> collect
 end

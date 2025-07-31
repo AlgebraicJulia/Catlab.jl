@@ -1,8 +1,8 @@
 module TestChase
 
 using Test, Catlab
-using Catlab.CategoricalAlgebra.Chase: egd, tgd, crel_type, pres_to_eds,
-  from_c_rel, collage
+using Catlab.CategoricalAlgebra.Pointwise.Chase: egd, tgd, crel_type, pres_to_eds, 
+                                                 from_c_rel, collage
 
 # ACSetTransformations as ACSets on the collage
 ###############################################
@@ -22,7 +22,7 @@ etgd_t = @acset Graph begin
   V = 2; E=3; src=[1,1,2]; tgt=[1,2,1]
 end
 # cset common to both tgd and egd
-core = @acset Graph begin V=2; E=2; src=[1,2]; tgt=[2,1] end
+core = complete_graph(Graph, 2)
 
 # This adds a self loop to #1 and merges #1/#3
 etgd = ACSetTransformation(etgd_s,etgd_t; V=[1,2,1], E=[2,3])
@@ -127,8 +127,9 @@ add_parts!(three_two_r,:x,5; src_x=[1,2,3,1,5],tgt_x=[2,3,4,5,4]);
 ED_three_two = ACSetTransformation(three_two_l, three_two_r;
                                    X=[1,2,3,4,5,4], x=[1,2,3,4,5])
 
-loop_eds = pres_to_eds(ThLoop; name="Loop") # autogenerate from schema
-@test loop_eds[:Eq1] == ED_three_two
+cat = ACSetCategory(CSetCat(unique_l))                       
+loop_eds = pres_to_eds(ThLoop; name="Loop", cat) # autogenerate from schema
+@test force(loop_eds[:Eq1]) == ED_three_two
 @test force(loop_eds[:x_total]) == ED_total
 @test loop_eds[:x_uni] == ED_unique
 

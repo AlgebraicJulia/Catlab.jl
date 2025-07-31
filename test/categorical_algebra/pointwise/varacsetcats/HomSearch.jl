@@ -1,39 +1,7 @@
-module TestVarHomSearch
+module TestVarACSetHomSearch 
 
-using Test, Catlab
+using Catlab, Test
 
-const WG = WeightedGraph
-
-A = @acset WG{Bool} begin V=1;E=2;Weight=1;src=1;tgt=1;
-                          weight=[true, AttrVar(1)] end
-B = @acset WG{Bool} begin V=1;E=3;Weight=2;src=1;tgt=1;
-                          weight=[true, false, AttrVar(2)] end
-@test length(homomorphisms(A,B))==3 # E1 forced to E1, E2 can go anywhere
-
-A = @acset WG{Bool} begin V=1;E=3;Weight=1;src=1;tgt=1;
-                          weight=[false, AttrVar(1), AttrVar(1)] end
-B = @acset WG{Bool} begin V=1;E=4;Weight=2;src=1;tgt=1;
-                          weight=[false, true, true, AttrVar(2)] end
-# E1 is forced to E1, E2 and E3 are forced to go to the same value
-# so either false, AttrVar(2), or 4 choices for (true,true).
-@test length(homomorphisms(A,B))== 6
-
-
-# with a different C-set where different attributes affect each other
-@present ThA2(FreeSchema) begin X::Ob; D::AttrType; (f,g)::Attr(X,D) end 
-@acset_type A2(ThA2)
-X = @acset A2{Symbol} begin X=2; D=2; f=[:A,AttrVar(1)]; g=[AttrVar(2), :B] end 
-Y = @acset A2{Symbol} begin X=2; D=1; f=[:C,:A]; g=[:C; :B] end 
-@test length(homomorphisms(X,Y)) == 1
-
-X = @acset A2{Symbol} begin X=3; D=3; f=[:A,AttrVar(1),AttrVar(2)]; g=[AttrVar(2), :B, AttrVar(3)] end 
-Y = @acset A2{Symbol} begin X=3; D=1; f=[:C,:A,:Z]; g=[:C, :B,:Z] end 
-@test isempty(homomorphisms(X,Y))
-
-@test length(homomorphisms(Y,Y;initial=(D=[:Q],)))==1
-
-Z = @acset A2{Symbol} begin X=1; D=1; f=[AttrVar(1)]; g=[AttrVar(1)] end 
-@test isnothing(homomorphism(Z,Z;initial=(D=[:Q],)))
 
 # AttrVar constraints (monic and no_bind)
 #----------------------------------------
@@ -73,5 +41,44 @@ add_part!(G′, :D) # add a free floating variable to domain
 @test length(homomorphisms(G′, H; monic=[:D])) == 2 
 # D₁ D₂ go to any of the 4 Xs. D₃ goes to any of the 3 Ds
 @test length(homomorphisms(G′, H; no_bind=[:D])) == 4*4*3
+
+
+
+# Homomorphism search
+#--------------------
+const WG = WeightedGraph{Bool}
+
+A = @acset WG begin V=1;E=2;Weight=1;src=1;tgt=1;
+                          weight=[true, AttrVar(1)] end
+B = @acset WG begin V=1;E=3;Weight=2;src=1;tgt=1;
+                          weight=[true, false, AttrVar(2)] end
+@test length(homomorphisms(A,B))==3 # E1 forced to E1, E2 can go anywhere
+
+A = @acset WG begin V=1;E=3;Weight=1;src=1;tgt=1;
+                          weight=[false, AttrVar(1), AttrVar(1)] end
+B = @acset WG begin V=1;E=4;Weight=2;src=1;tgt=1;
+                          weight=[false, true, true, AttrVar(2)] end
+# E1 is forced to E1, E2 and E3 are forced to go to the same value
+# so either false, AttrVar(2), or 4 choices for (true,true).
+@test length(homomorphisms(A,B))== 6
+
+
+# test with a different C-set where different attributes affect each other
+###########################################################################
+
+@present ThA2(FreeSchema) begin X::Ob; D::AttrType; (f,g)::Attr(X,D) end 
+@acset_type A2(ThA2)
+X = @acset A2{Symbol} begin X=2; D=2; f=[:A,AttrVar(1)]; g=[AttrVar(2), :B] end 
+Y = @acset A2{Symbol} begin X=2; D=1; f=[:C,:A]; g=[:C; :B] end 
+@test length(homomorphisms(X,Y)) == 1
+
+X = @acset A2{Symbol} begin X=3; D=3; f=[:A,AttrVar(1),AttrVar(2)]; g=[AttrVar(2), :B, AttrVar(3)] end 
+Y = @acset A2{Symbol} begin X=3; D=1; f=[:C,:A,:Z]; g=[:C, :B,:Z] end 
+@test isempty(homomorphisms(X,Y))
+
+@test length(homomorphisms(Y,Y;initial=(D=[:Q],)))==1
+
+Z = @acset A2{Symbol} begin X=1; D=1; f=[AttrVar(1)]; g=[AttrVar(1)] end 
+@test isnothing(homomorphism(Z,Z;initial=(D=[:Q],)))
 
 end # module

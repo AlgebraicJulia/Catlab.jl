@@ -1,8 +1,10 @@
 export ThSchema, FreeSchema, AttrType, Attr, SchemaExpr, AttrTypeExpr, AttrExpr, ThPointedSetSchema, FreePointedSetSchema,zeromap
 
 # Schema
-
 ########
+
+# Why is ThSchema in Catlab rather than in GATlab?
+# TODO make this an optional dependency of ACSets
 
 """ The GAT that parameterizes Attributed C-sets
 A schema is comprised of a category C, a discrete category D, and a profunctor

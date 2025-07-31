@@ -1,19 +1,29 @@
-export Functor, Transformation, ob_map, hom_map, do_compose, do_ob_map, 
-       do_hom_map, dom_ob, codom_ob, component, op, co
+export Functor, ob_map, hom_map, ThFunctor, fmap, AbsFunctor
 
 using StructEquality
-
 using GATlab
-import GATlab: op
 
-using ....Theories
-using ..Categories
-import ..Categories: dom, codom
+using ..Categories: Cat, obtype, homtype
+import ..Categories: dom, codom, validate, ob_map, hom_map
 
-# Functors
-##########
+# Theory of functors
+####################
 
-""" Abstract base type for a functor between categories.
+# The equations that come with this will be less tedious to do when colimits 
+# of GATs are a thing. We also wouldn't need a "Cat" type.
+@theory ThFunctor begin
+  DomOb::TYPE; CodomOb::TYPE; DomHom::TYPE; CodomHom::TYPE;
+  DomCat::TYPE; CodCat::TYPE;
+  dom()::DomCat
+  codom()::CodCat
+  ob_map(o::DomOb)::CodomOb
+  hom_map(o::DomHom)::CodomHom
+end
+
+""" Common type for Functor, FinFunctor, FinDomFunctor """
+abstract type AbsFunctor end 
+
+""" Functor between categories.
 
 A functor has a domain and a codomain ([`dom`](@ref) and [`codom`](@ref)), which
 are categories, and object and morphism maps, which can be evaluated using
@@ -22,56 +32,49 @@ directly when the objects and morphisms have distinct Julia types. This is
 sometimes but not always the case (see [`Category`](@ref)), so when writing
 generic code one should prefer the `ob_map` and `hom_map` functions.
 """
-abstract type Functor{Dom<:Cat,Codom<:Cat} end
+ThFunctor.Meta.@typed_wrapper Functor′ <: AbsFunctor
 
-""" Evaluate functor on object.
-"""
-@inline ob_map(F::Functor, x) = do_ob_map(F, x)
+const Functor{A,B,C,D} = Functor′{A,B,C,D,Cat,Cat}
 
-""" Evaluate functor on morphism.
+Functor(x) = Functor′(x)
+
 """
-@inline hom_map(F::Functor, f) = do_hom_map(F, f)
+Wrapper of an implementation of ThFunctor
+"""
+function validate(f::Functor)
+  DO, CO, DH, CH = impl_type.(Ref(f),[:DomOb,:CodomOb,:DomHom, :CodomHom])
+  D, C = ThFunctor.dom[impl](), ThFunctor.codom[impl]()
+  obtype(D) == DO || error("Bad dom obtype")
+  homtype(D) == DH || error("Bad dom obtype $(homtype(D)) ≠ $DH")
+  obtype(C) == CO || error("Bad dom obtype")
+  homtype(C) == CH || error("Bad dom obtype")
+end 
+
+
+# Other methods
+#--------------
+
+Base.show(io::IO, s::Functor) = show(io, getvalue(s))
 
 show_type_constructor(io::IO, ::Type{<:Functor}) = print(io, "Functor")
 
+function show_domains(io::IO, f; domain::Bool=true, codomain::Bool=true,
+                      recurse::Bool=true)
+  if get(io, :hide_domains, false)
+    print(io, "…")
+  else
+    if domain
+      show(IOContext(io, :compact=>true, :hide_domains=>!recurse), dom(f))
+    end
+    if codomain
+      domain && print(io, ", ")
+      show(IOContext(io, :compact=>true, :hide_domains=>!recurse), codom(f))
+    end
+  end
+end
 
-# Instances
-#----------
-
-(F::Functor{TypeCat{Ob,Hom}})(x::Ob) where {Ob,Hom} = ob_map(F, x)
-(F::Functor{TypeCat{Ob,Hom}})(f::Hom) where {Ob,Hom} = hom_map(F, f)
-
-# Natural transformations
-#########################
-
-""" Abstract base type for a natural transformation between functors.
-
-A natural transformation ``α: F ⇒ G`` has a domain ``F`` and codomain ``G``
-([`dom`](@ref) and [`codom`](@ref)), which are functors ``F,G: C → D`` having
-the same domain ``C`` and codomain ``D``. The transformation consists of a
-component ``αₓ: Fx → Gx`` in ``D`` for each object ``x ∈ C``, accessible using
-[`component`](@ref) or indexing notation (`Base.getindex`).
-"""
-abstract type Transformation{C<:Cat,D<:Cat,Dom<:Functor,Codom<:Functor} end
-
-""" Component of natural transformation.
-"""
-function component end
-
-@inline Base.getindex(α::Transformation, c) = component(α, c)
-
-""" Domain object of natural transformation.
-
-Given ``α: F ⇒ G: C → D``, this function returns ``C``.
-"""
-dom_ob(α::Transformation) = dom(dom(α)) # == dom(codom(α))
-
-""" Codomain object of natural transformation.
-
-Given ``α: F ⇒ G: C → D``, this function returns ``D``.
-"""
-codom_ob(α::Transformation) = codom(dom(α)) # == codom(codom(α))
-
-function do_ob_map end # extended by other modules
-function do_hom_map end # extended by other modules
-function do_compose end # extended by other modules
+fmap(F::Functor, x) = fmap(x, 
+                           y->ob_map(F, y), 
+                           y->hom_map(F, y), 
+                           impl_type(F, :CodomOb), 
+                           impl_type(F, :CodomHom))

@@ -1,25 +1,42 @@
 module TypeCats 
-export TypeCat
+export TypeCat 
 
-using ..Categories
-import ..Categories: ob, hom
+using GATlab
 
-""" Pair of Julia types regarded as a category.
+using .....BasicSets: SetOb
+using ..Categories: ThCategoryExplicitSets, ThCategory
 
-The Julia types should form an `@instance` of the theory of categories
-(`Theories.Category`).
+using .ThCategory
+
 """
-struct TypeCat{Ob,Hom} <: Cat{Ob,Hom,LargeCatSize} end
+A TypeCat is just a wrapper around a model of `ThCategory`. The objects are the 
+values of the Julia type parameter, `Ob`, and the morphisms are the values of 
+the Julia type parameter, `Hom`.
 
-TypeCat(Ob::Type, Hom::Type) = TypeCat{Ob,Hom}()
+"""
+ThCategory.Meta.@typed_wrapper TypeCat
 
-# FIXME: Type conversion isn't practical because types are often too tight.
-#ob(::TypeCat{Ob,Hom}, x) where {Ob,Hom} = convert(Ob, x)
-#hom(::TypeCat{Ob,Hom}, f) where {Ob,Hom} = convert(Hom, f)
-ob(::TypeCat, x) = x
-hom(::TypeCat, f) = f
+Base.show(io::IO, ::TypeCat{Ob,Hom}) where {Ob,Hom} = 
+  print(io, "TypeCat($Ob,$Hom)")
 
-Base.show(io::IO, ::TypeCat{Ob,Hom}) where {Ob,Hom} =
-  print(io, "TypeCat($Ob, $Hom)")
+# ThCategoryExplicitSets Implementation
+######################################
+
+@instance ThCategoryExplicitSets{Ob,Hom
+                                } [model::TypeCat{Ob,Hom}] where {Ob,Hom} begin
+
+  dom(f::Hom) = dom(WithModel(getvalue(model)), f)
+
+  codom(f::Hom) = codom(WithModel(getvalue(model)), f)
+
+  id(x::Ob) = id(model, x)
+
+  compose(f::Hom,g::Hom) = compose(model, f, g)
+
+  ob_set() = SetOb(Ob) # creates a TypeSet
+
+  hom_set() = SetOb(Hom) # creates a TypeSet
+
+end
 
 end # module

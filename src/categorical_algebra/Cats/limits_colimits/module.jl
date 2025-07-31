@@ -1,5 +1,3 @@
-""" Limits and colimits in a category.
-"""
 module LimitsColimits
 using Reexport 
 
@@ -41,6 +39,9 @@ include("FreeGraphs.jl")
 
 include("EpiMono.jl")
 @reexport using .EpiMono
+
+# Other things 
+include("other_limits/TrivialLimits.jl")
 
 
 end # module

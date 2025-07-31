@@ -1,141 +1,278 @@
-module Multispans
-export Span, Cospan, Multispan, Multicospan, SMultispan, SMulticospan,
-        apex, legs, feet, left, right, bundle_legs
+module Multispans 
+
+export Multispan, Multicospan, Span, Cospan, SMultispan, SMulticospan, apex, feet, legs
 
 using StaticArrays: StaticVector, SVector
+using StructEquality, MLStyle
+using GATlab 
 
-using StructEquality
-using .....Theories: pair, copair, id, dom, codom
-using ..FreeDiagrams
-import ..FreeDiagrams: ob, cocone_objects, cone_objects
+using .....Theories: dom, codom, ThCategory
+using .....BasicSets: FinSet
+import .....BasicSets: left, right, untag
 
-# Spans and cospans
-#------------------
+using ...FreeDiagrams: ThFreeDiagram, FreeDiagram
+import ...FreeDiagrams: fmap, cone_objects, cocone_objects, specialize
 
+using .ThFreeDiagram
+
+#############################################
+# Common to (multi)spans and (multi)cospans #
+#############################################
+
+abstract type MultiSpanCospan end
+
+Base.getindex(m::MultiSpanCospan, i) = legs(m)[i]
+
+apex(m::MultiSpanCospan) = m.apex
+legs(m::MultiSpanCospan) = m.legs
+feet(m::MultiSpanCospan) = m.feet
+
+Base.length(m::MultiSpanCospan) = length(legs(m))
+
+Base.iterate(m::MultiSpanCospan, x...) = iterate(legs(m), x...)
+
+function left(s::MultiSpanCospan) 
+  length(s) == 2 || error("Span/Cospan does has $(length(s)) legs")
+  first(legs(s))
+end
+
+function right(s::MultiSpanCospan) 
+  length(s) == 2 || error("Span/Cospan does has $(length(s)) legs")
+  last(legs(s))
+end
+
+
+##############
+# Multispans #
+##############
 """ Multispan of morphisms in a category.
 
 A [multispan](https://ncatlab.org/nlab/show/multispan) is like a [`Span`](@ref)
 except that it may have a number of legs different than two. A colimit of this
 shape is a pushout.
 """
-@struct_hash_equal struct Multispan{Ob,Hom,Legs<:AbstractVector{Hom}} <:
-    FixedShapeFreeDiagram{Ob,Hom}
+@struct_hash_equal struct Multispan{Ob, Hom, Foot, 
+    V<:AbstractVector{<:Hom}, W<:AbstractVector{<:Foot}} <: MultiSpanCospan  
   apex::Ob
-  legs::Legs
+  legs::V
+  feet::W
+  function Multispan{O, H, F}(apx::O, legvec::V, feetvec::W
+      ) where {O,H,F,V<:AbstractVector{<:H}, W<:AbstractVector{<:F}}
+    # Validate
+    nf, nl = length(feetvec), length(legvec)
+    nf == nl || error("$(nf) feet != $nl legs")
+    # Construct
+    new{O, H, F, V, W}(apx, legvec, feetvec)
+  end
 end
 
-function Multispan(legs::AbstractVector)
-  !isempty(legs) || error("Empty list of legs but no apex given")
-  allequal(dom.(legs)) || error("Legs $legs do not have common domain")
-  Multispan(dom(first(legs)), legs)
-end
+const SMultispan{N,Ob,Hom,Foot} = 
+  Multispan{Ob,Hom,Foot,<:StaticVector{N,Hom}, <:StaticVector{N,Foot}}
 
-const SMultispan{N,Ob,Hom} = Multispan{Ob,Hom,<:StaticVector{N,Hom}}
+SMultispan{N}(apex, legs::Vararg{Any,N}; cat=nothing) where N =
+  Multispan(apex, SVector{N}(legs...); cat)
 
-SMultispan{N}(apex, legs::Vararg{Any,N}) where N =
-  Multispan(apex, SVector{N}(legs...))
-SMultispan{0}(apex) = Multispan(apex, SVector{0,typeof(id(apex))}())
-SMultispan{N}(legs::Vararg{Any,N}) where N = Multispan(SVector{N}(legs...))
+SMultispan{N}(legs::Vararg{Any,N}; cat=nothing) where N =   
+  Multispan(SVector{N}(legs...); cat)
 
-""" Span of morphims in a category.
+""" Span of morphism in a category.
 
 A common special case of [`Multispan`](@ref). See also [`Cospan`](@ref).
 """
-const Span{Ob,Hom} = SMultispan{2,Ob,Hom}
+const Span{Ob,Hom,Foot} = SMultispan{2,Ob,Hom,Foot}
 
-""" Apex of multispan or multicospan.
+Multispan(apex::Ob,legs::AbstractVector{Hom},feet::AbstractVector{Foot}
+         ) where {Ob,Hom,Foot} = Multispan{Ob,Hom,Foot}(apex, legs, feet)
 
-The apex of a multi(co)span is the object that is the (co)domain of all the
-[`legs`](@ref).
+""" 
+If a `Category` is not provided, we must implicitly assume that the category 
+structure comes from type dispatch.
+In this setting, we can check upon construction whether or not it is a valid 
+span.
 """
-apex(span::Multispan) = span.apex
+function Multispan{Ob,Hom}(apex::Ob,legs::AbstractVector{<:Hom}; cat=nothing
+                          ) where {Ob,Hom} 
+  𝒞 = isnothing(cat) ? Dispatch(ThCategory, [Ob,Hom]) : cat
+  baddoms = [dom[𝒞](l) for l in legs if dom[𝒞](l)!=apex]
+  isempty(baddoms) || error("Bad span $baddoms != $apex")
+  feet = codom[𝒞].(legs)
+  Multispan{Ob,Hom, eltype(feet)}(apex, legs, feet)
+end
 
-""" Legs of multispan or multicospan.
+""" Construct from just a list, assuming it's nonempty """
+function Multispan(legs::AbstractVector; cat=nothing) 
+  l = first(legs)
+  apx = isnothing(cat) ? dom(l) : dom[cat](l)
+  Multispan(apx, legs; cat)
+end 
 
-The legs are the morphisms comprising the multi(co)span.
-"""
-legs(span::Multispan) = span.legs
+""" Cast a span to a Multispan """
+Multispan(s::Span{Ob,Hom,Foot}) where {Ob, Hom, Foot} = 
+  Multispan{Ob,Hom}(apex(s), legs(s), feet(s))
 
-""" Feet of multispan or multicospan.
+""" Empty span """
+Multispan{Ob, Hom, Foot}(a::Ob) where {Ob, Hom, Foot} = 
+  Multispan{Ob, Hom}(a, Hom[], Foot[])
 
-The feet of a multispan are the codomains of the [`legs`](@ref).
-"""
-feet(span::Multispan) = map(codom, span.legs)
 
-""" Left leg of span or cospan.
-"""
-left(span::Span) = span.legs[1]
+function Multispan{Ob, Hom}(hs::AbstractVector{<:Hom}) where {Ob, Hom} 
+  isempty(hs) && error("Multispan needs an apex")   
+  allequal(dom.(hs)) || error("Span domains not equal")
+  Multispan{Ob, Hom}(dom(first(hs)), hs)
+end
 
-""" Right leg of span or cospan.
-"""
-right(span::Span) = span.legs[2]
+function Multispan(apex::Ob,legs::AbstractVector{Hom}; cat=nothing) where {Ob,Hom} 
+  Multispan{Ob, Hom}(apex, legs; cat)
+end
+
 
 cocone_objects(span::Multispan) = feet(span)
 
-Base.iterate(span::Multispan, args...) = iterate(span.legs, args...)
-Base.eltype(span::Multispan) = eltype(span.legs)
-Base.length(span::Multispan) = length(span.legs)
 
-""" Multicospan of morphisms in a category.
+@instance ThFreeDiagram{Int,Int,Union{Ob,Foot},Hom
+                       } [model::Multispan{Ob,Hom,Foot,V,W}
+                         ] where {Ob, Hom, Foot, V, W} begin
+  src(::Int)::Int = 1
+  tgt(x::Int)::Int = x+1
+  obmap(x::Int)::Union{Ob,Foot} = @match x begin 
+    1 => apex(model)
+    i => feet(model)[i-1]
+  end
+  hommap(i::Int)::Hom = model[i]
+  obset()::FinSet = FinSet(length(model)+1)
+  homset()::FinSet = FinSet(length(model))
+end
 
-A multicospan is like a [`Cospan`](@ref) except that it may have a number of
-legs different than two. A limit of this shape is a pullback.
-"""
-@struct_hash_equal struct Multicospan{Ob,Hom,Legs<:AbstractVector{Hom}} <:
-    FixedShapeFreeDiagram{Ob,Hom}
+
+""" Specialize a free diagram (can fail) """
+function specialize(::Type{Multispan}, d::FreeDiagram)
+  es = homset(d)
+  apex_v = only(unique(src.(Ref(d), es)))
+  feet = obmap.(Ref(d), tgt.(Ref(d), es))
+  Multispan(obmap(d, apex_v), hommap.(Ref(d), es), feet)
+end
+
+
+""" Replace homs via a replacement function """
+function fmap(d::Multispan, o, h, O::Type, H::Type)
+  new_apex::O = o(apex(d))
+  new_legs::Vector{H} = h.(legs(d))
+  new_feet::Vector{O} = Vector{O}(o.(feet(d)))
+  Multispan{O,H,O}(new_apex, new_legs, new_feet)
+end
+
+function untag(d::Multispan{Ob,Hom}, i::Int, j::Int) where {Ob,Hom}
+  O, H = untag(Ob, i), untag(Hom, j)
+  Multispan{O, H, O}(untag(d.apex, i), (x->untag(x, j)).(d.legs), (x->untag(x,i)).(d.feet))
+end 
+
+################
+# Multicospans #
+################
+
+@struct_hash_equal struct Multicospan{Ob, Hom, Feet, 
+      V<:AbstractVector{Hom}, U<:AbstractVector{Feet}} <: MultiSpanCospan
   apex::Ob
-  legs::Legs
+  legs::V
+  feet::U
+  function Multicospan{Ob, Hom, Feet}(apex::Ob,legs::V, feet::U
+      ) where {Ob,Hom,Feet, V<:AbstractVector{Hom}, U<:AbstractVector{Feet}}
+    # Validate
+    nf, nl = length(feet), length(legs)
+    nf == nl || error("$(nf) feet != $nl legs")
+
+    # Construct
+    new{Ob, Hom, Feet, V, U}(apex, legs, feet)
+  end
 end
 
-function Multicospan(legs::AbstractVector)
-  !isempty(legs) || error("Empty list of legs but no apex given")
-  allequal(codom.(legs)) || error("Legs $legs do not have common codomain")
-  Multicospan(codom(first(legs)), legs)
-end
+const SMulticospan{N,Ob,Hom,Feet} = 
+  Multicospan{Ob,Hom,Feet,<:StaticVector{N,Hom}, <:StaticVector{N,Feet}}
 
-const SMulticospan{N,Ob,Hom} = Multicospan{Ob,Hom,<:StaticVector{N,Hom}}
+SMulticospan{N}(apex, legs::Vararg{Any,N}; cat=nothing) where N =
+  Multicospan(apex, SVector{N}(legs...); cat)
 
-SMulticospan{N}(apex, legs::Vararg{Any,N}) where N =
-  Multicospan(apex, SVector{N}(legs...))
-SMulticospan{0}(apex) = Multicospan(apex, SVector{0,typeof(id(apex))}())
-SMulticospan{N}(legs::Vararg{Any,N}) where N = Multicospan(SVector{N}(legs...))
+SMulticospan{N}(legs::Vararg{Any,N}; cat=nothing) where N = 
+  Multicospan(SVector{N}(legs...); cat)
 
 """ Cospan of morphisms in a category.
 
 A common special case of [`Multicospan`](@ref). See also [`Span`](@ref).
 """
-const Cospan{Ob,Hom} = SMulticospan{2,Ob,Hom}
+const Cospan{Ob,Hom,Foot} = SMulticospan{2,Ob,Hom,Foot}
 
-apex(cospan::Multicospan) = cospan.apex
-legs(cospan::Multicospan) = cospan.legs
-feet(cospan::Multicospan) = map(dom, cospan.legs)
-left(cospan::Cospan) = cospan.legs[1]
-right(cospan::Cospan) = cospan.legs[2]
+Multicospan(apex::Ob,legs::AbstractVector{Hom},feet::AbstractVector{Foot}
+           ) where {Ob,Hom,Foot} = Multicospan{Ob,Hom,Foot}(apex, legs, feet)
+
+Multicospan(apex::Ob,legs::AbstractVector{Hom}; cat=nothing) where {Ob,Hom} =
+  Multicospan{Ob,Hom}(apex, legs; cat)
+
+""" 
+Assume that the category this span lives in has `codom` given by type dispatch. 
+In this setting, we can check whether or not this is a valid cospan. 
+"""
+function Multicospan{Ob,Hom}(apex::Ob,legs::AbstractVector{<:Hom}; cat=nothing) where {Ob,Hom} 
+  𝒞 = WithModel(isnothing(cat) ? Dispatch(ThCategory, [Ob,Hom]) : cat)
+  badcods = [codom(𝒞,l) for l in legs if codom(𝒞,l) != apex]
+  isempty(badcods) || error("Bad cospan $badcods != $apex")
+  feet = map(legs) do l 
+    dom(𝒞,l)
+  end
+  Multicospan{Ob,Hom, eltype(feet)}(apex, legs, feet)
+end
+
+""" Construct from just a list, assuming it's nonempty """
+function Multicospan(legs::AbstractVector; cat=nothing)
+  l = first(legs)
+  apx = isnothing(cat) ? codom(l) : codom[cat](l)
+  Multicospan(apx, legs; cat)
+end 
+
+""" Cast a cospan to a Multicospan """
+Multicospan(s::Cospan{Ob,Hom}) where {Ob, Hom} = 
+  Multicospan{Ob,Hom}(apex(s), legs(s))
+
+""" Empty cospan """
+Multicospan{Ob, Hom, Foot}(a::Ob) where {Ob, Hom, Foot}= 
+  Multicospan{Ob, Hom}(a, Hom[], Foot[])
+
+function Multicospan{Ob, Hom}(hs::AbstractVector{<:Hom}) where {Ob, Hom} 
+  isempty(hs) && error("Multicospan needs an apex")   
+  allequal(codom.(hs)) || error("Cospan codomains not equal")
+  Multicospan{Ob, Hom}(codom(first(hs)), hs)
+end
 
 cone_objects(cospan::Multicospan) = feet(cospan)
 
-Base.iterate(cospan::Multicospan, args...) = iterate(cospan.legs, args...)
-Base.eltype(cospan::Multicospan) = eltype(cospan.legs)
-Base.length(cospan::Multicospan) = length(cospan.legs)
+@instance ThFreeDiagram{Int,Int,Union{Ob,Foot},Hom
+                       } [model::Multicospan{Ob,Hom, Foot, V, W}
+                         ] where {Ob,Hom,Foot,V,W} begin
+  src(x::Int)::Int = x+1
+  tgt(::Int)::Int = 1
+  obmap(x::Int)::Union{Ob,Foot} = @match x begin 
+    1 => apex(model)
+    i => feet(model)[i-1]
+  end
+  hommap(i::Int)::Hom = model[i]
+  obset()::FinSet = FinSet(length(model)+1)
+  homset()::FinSet = FinSet(length(model))
+end
 
-""" Bundle together legs of a multi(co)span.
+""" Specialize a free diagram (can fail) """
+function specialize(::Type{Multicospan}, d::FreeDiagram)
+  es = homset(d)
+  apex_v = only(unique(tgt.(Ref(d), es)))
+  feet = obmap.(Ref(d), src.(Ref(d), es))
+  Multicospan(obmap(d, apex_v), hommap.(Ref(d), es), feet)
+end
 
-For example, calling `bundle_legs(span, SVector((1,2),(3,4)))` on a multispan
-with four legs gives a span whose left leg bundles legs 1 and 2 and whose right
-leg bundles legs 3 and 4. Note that in addition to bundling, this function can
-also permute legs and discard them.
+""" Replace homs via a replacement function """
+fmap(d::Multicospan, o, h, O::Type, H::Type) = 
+  Multicospan{O,H,O}(o(apex(d))::O, Vector{H}(h.(legs(d))), Vector{O}(o.(feet(d))))
 
-The bundling is performed using the universal property of (co)products, which
-assumes that these (co)limits exist.
-"""
-bundle_legs(span::Multispan, indices) =
-  Multispan(apex(span), map(i -> bundle_leg(span, i), indices))
-bundle_legs(cospan::Multicospan, indices) =
-  Multicospan(apex(cospan), map(i -> bundle_leg(cospan, i), indices))
-
-bundle_leg(x::Union{Multispan,Multicospan}, i::Int) = legs(x)[i]
-bundle_leg(x::Union{Multispan,Multicospan}, i::Tuple) = bundle_leg(x, SVector(i))
-bundle_leg(span::Multispan, i::AbstractVector{Int}) = pair(legs(span)[i])
-bundle_leg(cospan::Multicospan, i::AbstractVector{Int}) = copair(legs(cospan)[i])
-
+function untag(d::Multicospan{Ob,Hom}, i::Int, j::Int) where {Ob,Hom}
+  O, H = untag(Ob, i), untag(Hom, j)
+  Multicospan{O, H, O}(untag(d.apex, i), (x->untag(x, j)).(d.legs), (x->untag(x,i)).(d.feet))
+end 
+  
 end # module

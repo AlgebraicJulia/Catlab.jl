@@ -1,5 +1,5 @@
 env:
-  JULIA_VERSION: "1.10.2"
+  JULIA_VERSION: "1.11.5"
   GATAS_HOME: "~/.gatas/buildkite/agents/$BUILDKITE_AGENT_NAME"
 
 steps:

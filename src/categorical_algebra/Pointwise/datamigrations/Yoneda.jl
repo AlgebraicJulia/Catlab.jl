@@ -1,3 +1,11 @@
+module Yoneda 
+export representable, yoneda, subobject_classifier, internal_hom
+
+using ACSets, GATlab
+
+using .....BasicSets
+using ....Cats
+using ..Pointwise
 
 # Yoneda embedding
 #-----------------
@@ -14,16 +22,19 @@ which works because left Kan extensions take representables to representables
 representables (they can be infinite), this function thus inherits any
 limitations of our implementation of left pushforward data migrations.
 """
-function representable(cons, ob::Symbol; return_unit_id::Bool=false)
+function representable(cons, obname::Symbol; return_unit_id::Bool=false)
   C₀ = Presentation{Symbol}(FreeSchema)
+  S = acset_schema(cons())
   C = Presentation(cons())
-  add_generator!(C₀, C[ob])
-  X = AnonACSet(C₀); add_part!(X, ob)
-  F = FinFunctor(Dict(ob => ob), Dict(), C₀, C)
+  add_generator!(C₀, C[obname])
+  X = AnonACSet(C₀); add_part!(X, obname)
+  F = FinFunctor(Dict(C[obname] => C[obname]), Dict(), FinCat(C₀), FinCat(C))
   ΣF = SigmaMigrationFunctor(F, X, cons())
   if return_unit_id
     η = ΣF(X; return_unit=true)
-    (ACSet(diagram(codom(η))), only(collect(diagram_map(η)[ob])))
+    elem = diagram_map(η)[C[obname]] # UNTAG if necessary
+    ηob = obname ∈ ob(S) ? elem : untag(elem, S[obname])
+    (typeof(cons())(diagram(codom[DiagramIdCat()](η))), only(collect(ηob)))
   else
     ΣF(X)
   end
@@ -45,29 +56,31 @@ map from B into the A which sends the point of B to f applied to the point of A)
 Returns the classifier as well as a dictionary of subobjects corresponding to 
 the parts of the classifier.
 """
-function subobject_classifier(T::Type; kw...)
+function subobject_classifier(T::Type; cat=nothing, kw...)
+  cat = isnothing(cat) ? infer_acset_cat(T()) : cat
   S = Presentation(T())
   isempty(generators(S, :AttrType)) ||
     error("Cannot compute Ω for schema with attributes")
   y = yoneda(T; kw...)
-  obs = nameof.(generators(S, :Ob))
+  obs = generators(S, :Ob)
   subobs = Dict(ob => subobject_graph(ob_map(y, ob))[2] for ob in obs)
   Ω = T()
 
   for ob in obs
-    add_parts!(Ω, ob, length(subobs[ob]))
+    add_parts!(Ω, nameof(ob), length(subobs[ob]))
   end
 
   for (f, a, b) in homs(acset_schema(Ω))
-    BA = hom_map(y, f)
-    Ω[f] = map(parts(Ω, a)) do pᵢ
-      Aᵢ = hom(subobs[a][pᵢ])
-      _, PB = force.(pullback(Aᵢ, BA))
+    BA = gen_map(y, S[f])
+    comp = map(parts(Ω, a)) do pᵢ
+      Aᵢ = hom(subobs[S[a]][pᵢ])
+      _, PB = force.(pullback[cat](Aᵢ, BA))
       return only(filter(parts(Ω, b)) do pⱼ
-        Bⱼ = hom(subobs[b][pⱼ])
-        any(σ ->  force(σ ⋅ Bⱼ) == PB, isomorphisms(dom(PB),dom(Bⱼ)))
+        Bⱼ = hom(subobs[S[b]][pⱼ])
+        any(σ ->  force(compose[cat](σ, Bⱼ)) == PB, isomorphisms(dom(PB),dom(Bⱼ)))
       end)
     end
+    Ω[f] = comp 
   end
   return Ω, subobs
 end
@@ -83,23 +96,26 @@ Given a map f: a->b, we compute that f(Aᵢ) = Bⱼ by constructing the followin
 
 where f* is given by `yoneda`.
 """
-function internal_hom(G::T, F::T; kw...) where T<:ACSet
+function internal_hom(G::T, F::T; cat=nothing, kw...) where T<:ACSet
+  cat = isnothing(cat) ? infer_acset_cat(G) : cat
   S = Presentation(G)
   y = yoneda(T; kw...)
-  obs = nameof.(generators(S, :Ob))
-  prods = Dict(ob => product(ob_map(y, ob),G) for ob in obs)
+  obs = generators(S, :Ob)
+  prods = Dict(ob => product[cat](ob_map(y, ob),G) for ob in obs)
   maps = Dict(ob => homomorphisms(apex(prods[ob]),F) for ob in obs)
   Fᴳ = T()
 
   for ob in obs
-    add_parts!(Fᴳ, ob, length(maps[ob]))
+    add_parts!(Fᴳ, nameof(ob), length(maps[ob]))
   end
 
   for (f, a, b) in homs(acset_schema(G))
-    BA = hom_map(y, f)
+    a, b = S[a], S[b]
+    BA = gen_map(y, S[f])
     π₁, π₂ = prods[b]
-    Fᴳ[f] = map(parts(Fᴳ, a)) do pᵢ
-      composite = force(universal(prods[a], Span(π₁⋅BA, π₂)) ⋅ maps[a][pᵢ])
+    Fᴳ[f] = map(parts(Fᴳ, nameof(a))) do pᵢ
+      u = universal[cat](prods[a], Span(compose[cat](π₁,BA), π₂))
+      composite = force(compose[cat](u, maps[a][pᵢ]))
       findfirst(==(composite), maps[b])
     end
   end
@@ -134,17 +150,19 @@ function yoneda(cons; cache::AbstractDict=Dict{Symbol,Any}())
   end
 
   # Object map of Yoneda embedding.
-  y_ob = Dict(c => yc for (c, (yc, _)) in pairs(cache))
+  y_ob = Dict(C[c] => yc for (c, (yc, _)) in pairs(cache))
 
   # Morphism map of Yoneda embedding.
   y_hom = Dict(Iterators.map(generators(C, :Hom) ∪ generators(C, :Attr)) do f
     c, d = nameof(dom(f)), nameof(codom(f))
     (yc, rootc), (yd, rootd) = cache[c], cache[d]
     initial = Dict(d => Dict(rootd => yc[rootc,f]))
-    nameof(f) => homomorphism(yd, yc, initial=initial) # Unique homomorphism.
+    f => homomorphism(yd, yc, initial=initial) # Unique homomorphism.
   end)
 
-  FinDomFunctor(y_ob, y_hom, op(FinCat(C)))
+  FinDomFunctor(y_ob, y_hom, op(FinCat(C)), Category(ACSetCategory(cons())))
 end
 
 yoneda(X::DynamicACSet; kw...) = yoneda(constructor(X); kw...)
+
+end # module

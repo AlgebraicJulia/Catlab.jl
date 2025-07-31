@@ -1,41 +1,61 @@
-module Products 
-export BinaryProduct, Product, product, proj1, proj2, pair
+module Products
+export ThCategoryUnbiasedProducts, CatWithProducts, TypedCatWithProducts, pair, product
 
-import .....Theories: proj1, proj2, product, pair
-using ...FreeDiagrams
+using StructEquality
+using GATlab
 
-using ..Limits
+using .....Theories: codom
+import .....Theories: product, universal, pair
+import ..FreeDiagrams: ob
+using ..Multispans: Multispan
+using ..Discrete: DiscreteDiagram
+using ..Limits: AbsLimit, ThCategoryLimitBase
+import ..Limits: limit
 
-const BinaryProduct{Ob} = AbstractLimit{Ob,<:ObjectPair}
-const Product{Ob} = AbstractLimit{Ob,<:DiscreteDiagram}
-
-
-""" Product of objects.
-
-To implement for a type `T`, define the method `limit(::ObjectPair{T})` and/or
-`limit(::DiscreteDiagram{T})`.
 """
-product(A, B; kw...) = limit(ObjectPair(A, B); kw...)
-product(As::AbstractVector; kw...) = limit(DiscreteDiagram(As); kw...)
-
-
-
-proj1(lim::BinaryProduct) = first(legs(lim))
-proj2(lim::BinaryProduct) = last(legs(lim))
-
-
-""" Pairing of morphisms: universal property of products/pullbacks.
-
-To implement for products of type `T`, define the method
-`universal(::BinaryProduct{T}, ::Span{T})` and/or
-`universal(::Product{T}, ::Multispan{T})` and similarly for pullbacks.
+Alternative, unbiased presentation of `ThCategoryWithProducts` which focuses on 
+computational and ergonomic aspects at the expense of hiding a lot of structure 
+within Julia datatypes such as `DiscreteDiagram`.
 """
-pair(f, g) = pair(product(codom(f), codom(g)), f, g)
+@theory ThCategoryUnbiasedProducts <: ThCategoryLimitBase begin
+  DiscDiag::TYPE{DiscreteDiagram}
 
-pair(fs::AbstractVector) = pair(product(map(codom, fs)), fs)
+  limit(d::DiscDiag)::Limit
+  universal(lim::Limit, d::DiscDiag, sp::MSpan)::(apex(sp) → ob(lim))
+end
 
-pair(lim::BinaryProduct, f, g) = universal(lim, Span(f, g))
+abstract type WithProducts end 
+ThCategoryUnbiasedProducts.Meta.@wrapper CatWithProducts <: WithProducts
+ThCategoryUnbiasedProducts.Meta.@typed_wrapper TypedCatWithProducts <: WithProducts
 
-pair(lim::Product, fs::AbstractVector) = universal(lim, Multispan(fs))
+# Boilerplate? Can interconvert between the two. Perhaps `@wrappers Cat TypedCat`
+TypedCatWithProducts(c::CatWithProducts) = TypedCatWithProducts(getvalue(c))
+
+CatWithProducts(c::TypedCatWithProducts) = CatWithProducts(getvalue(c))
+
+# Named limits / universal properties
+#####################################
+@model_method product
+
+""" When product is called on two or more things, we assume they are a list of 
+objects to be put into a discrete diagram """
+product(m::CatWithProducts, x, y, xs...) = product[getvalue(m)](x,y,xs...)
+
+product(m::WithModel, x, y, xs...; context=nothing) = limit(m, DiscreteDiagram([x,y,xs...]); context)
+
+
+@model_method pair
+
+""" Pairing of morphisms: universal property of products.
+"""
+pair(C::WithProducts, lim::AbsLimit, fs::AbstractVector) = pair[getvalue(C)](lim, fs)
+
+pair(C::WithProducts, lim::AbsLimit, f1::T, f2::T) where {T} = pair(C, lim, [f1, f2])
+
+pair(m::WithModel, lim::AbsLimit, f1::T, f2::T; context=nothing) where T =
+ pair(m, lim, [f1, f2]) 
+
+pair(m::WithModel, lim::AbsLimit, fs::AbstractVector; context=nothing) = 
+  universal(m, lim, DiscreteDiagram(codom.(fs)), Multispan(fs); context)
 
 end # module

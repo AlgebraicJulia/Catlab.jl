@@ -1,9 +1,12 @@
 module TestGraphSearching
+
 using Test
+
+using ACSets: @acset
 
 using Catlab.Graphs.BasicGraphs, Catlab.Graphs.GraphSearching
 using Catlab.Graphs.GraphSearching: tree
-using Catlab.CategoricalAlgebra: @acset, is_isomorphic
+using Catlab.CategoricalAlgebra: is_isomorphic
 
 # BFS
 #----
@@ -45,6 +48,7 @@ g′ = @acset Graph begin
   src = [1, 1, 2, 2]
   tgt = [2, 3, 4, 5]
 end
+
 @test is_isomorphic(g, g′)
 
 end

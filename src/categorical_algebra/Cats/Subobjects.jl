@@ -6,7 +6,7 @@ such as subsets (subobjects in Set or FinSet) and sub-C-sets (subobjects in
 C-Set) are defined elsewhere.
 """
 module Subobjects
-export Subobject, ob, hom, SubOpAlgorithm, SubOpWithLimits,
+export Subobject, SubobjectHom, ob, hom, SubOpCatLimits,
   ThSubobjectLattice, ThSubobjectHeytingAlgebra, ThSubobjectBiHeytingAlgebra,
   meet, ∧, join, ∨, top, ⊤, bottom, ⊥,
   implies, ⟹, subtract, \, negate, ¬, non, ~
@@ -18,6 +18,8 @@ using StaticArrays: SVector
 using GATlab
 import ....Theories: ob, hom, meet, ∧, join, ∨, top, ⊤, bottom, ⊥
 using ....Theories, ..LimitsColimits
+using ..FreeDiagrams: legs
+using ..Categories: Category
 
 # Theories
 ##########
@@ -100,43 +102,49 @@ ob(sub::SubobjectHom) = codom(hom(sub))
 # Algorithms
 ############
 
-""" Abstract type for algorithm to compute operation(s) on subobjects.
 """
-abstract type SubOpAlgorithm end
+Model of `ThSubobjectLattice`, given a category that has pullbacks and pushouts.
+"""
+struct SubOpCatLimits{Ob,Hom}
+  m::Any
+  function SubOpCatLimits(m)
+    O, H = impl_type.(Ref(m), Ref(ThCategoryWithPushouts), [:Ob, :Hom]) 
+    implements(m, ThCategoryWithPushouts) || error("Bad $m: no pushouts")
+    implements(m, ThCategoryWithPullbacks) || error("Bad $m: no pullbacks")
+    new{O,H}(m)
+  end
+end 
 
-""" Algorithm to compute subobject operations using limits and/or colimits.
-"""
-struct SubOpWithLimits <: SubOpAlgorithm end
+GATlab.getvalue(s::SubOpCatLimits) = s.m
 
-""" Meet (intersection) of subobjects.
-"""
-function meet(A::Subobject, B::Subobject, ::SubOpWithLimits)
-  meet(SVector(A,B), SubOpWithLimits())
+@instance ThSubobjectLattice{O,SubobjectHom{O,H}} [model::SubOpCatLimits{O,H}
+                                             ] where {O,H} begin 
+  """ Meet (intersection) of subobjects.
+  """
+  function meet(A::Subobject{O}, B::Subobject{O})
+    As, 𝒞 = [A,B], getvalue(model)
+    fs = map(hom, As)
+    lim = legs(pullback[𝒞 ](fs))
+    Subobject(compose[𝒞](first(lim), first(fs))) # Arbitrarily use first leg.
+  end
+
+  """ Join (union) of subobjects.
+  """
+  function join(A::Subobject{O}, B::Subobject{O})
+    As, 𝒞 = [A,B], getvalue(model)
+    fs = map(hom, As)
+    lim = pullback[𝒞](fs)
+    colim = pushout[𝒞](legs(lim)...)
+    Subobject(copair[𝒞](colim, fs))
+  end
+
+  """ Top (full) subobject.
+  """
+  top(X) = Subobject(id[getvalue(model)](X))
+
+  """ Bottom (empty) subobject.
+  """
+  bottom(X) = Subobject(create[getvalue(model)](X))
 end
-function meet(As::AbstractVector{<:Subobject}, ::SubOpWithLimits)
-  fs = map(hom, As)
-  lim = pullback(fs)
-  Subobject(compose(first(legs(lim)), first(fs))) # Arbitrarily use first leg.
-end
 
-""" Join (union) of subobjects.
-"""
-function join(A::Subobject, B::Subobject, ::SubOpWithLimits)
-  join(SVector(A,B), SubOpWithLimits())
-end
-function join(As::AbstractVector{<:Subobject}, ::SubOpWithLimits)
-  fs = map(hom, As)
-  lim = pullback(fs)
-  colim = pushout(legs(lim))
-  Subobject(copair(colim, fs))
-end
-
-""" Top (full) subobject.
-"""
-top(X, ::SubOpWithLimits) = Subobject(id(X))
-
-""" Bottom (empty) subobject.
-"""
-bottom(X::T, ::SubOpWithLimits) where T = Subobject(create(initial(T), X))
-
-end
+end # module

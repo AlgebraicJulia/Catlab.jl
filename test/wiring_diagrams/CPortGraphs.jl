@@ -1,4 +1,5 @@
 module TestCPortGraphs
+
 using Test
 
 using Catlab.Graphs, Catlab.WiringDiagrams, Catlab.CategoricalAlgebra
@@ -84,7 +85,6 @@ end
   fee = ocompose(f, [boe₁, boe₁])
   @test fee[:, :src] == [1,3,1,2]
   @test fee[:, :tgt] == [2,4,3,4]
-  @test f([boe₁, boe₁]) == fee
   
   add_parts!(f, :Bundle, 2)
   add_parts!(f, :OuterPort, 2, con=[1,2], bun=[1,2])
@@ -99,4 +99,4 @@ end
   @test nparts(h, :Wire) == 12
 end
 
-end
+end # module

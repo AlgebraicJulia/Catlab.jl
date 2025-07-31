@@ -4,6 +4,7 @@
 
 using Catlab.Graphs, Catlab.Graphics
 using Catlab.Theories, Catlab.CategoricalAlgebra
+Grph = ACSetCategory(Graph())
 
 # A *subgraph* of a graph $G$ is a monomorphism $A \rightarrowtail G$. Because
 # the category of graphs is a presheaf topos, its subobjects have a rich
@@ -11,7 +12,9 @@ using Catlab.Theories, Catlab.CategoricalAlgebra
 #
 # Throughout the vignette, we will work with subgraphs of the following graph.
 
-G = cycle_graph(Graph, 4) ⊕ path_graph(Graph, 2) ⊕ cycle_graph(Graph, 1)
+G = @withmodel TypedCatWithCoproducts(Grph) (⊕) begin 
+ cycle_graph(Graph, 4) ⊕ path_graph(Graph, 2) ⊕ cycle_graph(Graph, 1)
+end
 add_edge!(G, 3, add_vertex!(G))
 
 to_graphviz(G, node_labels=true, edge_labels=true)
@@ -35,14 +38,18 @@ to_graphviz(G, node_labels=true, edge_labels=true)
 #
 # $$A \vee B \leq C \qquad\text{iff}\qquad A \leq C \text{ and } B \leq C.$$
 
-A ∨ B |> to_graphviz
+@withmodel Grph (∨) begin 
+  A ∨ B
+end |> to_graphviz
 
 # Dually, the *meet* is defined as right adjoint to the diagonal, making it the
 # *greatest lower bound*:
 #
 # $$C \leq A \text{ and } C \leq B \qquad\text{iff}\qquad C \leq A \wedge B.$$
 
-A ∧ B |> to_graphviz
+@withmodel Grph (∧) begin 
+  A ∧ B 
+end |> to_graphviz
 
 # ## Implication and negation
 # 
@@ -53,13 +60,17 @@ A ∧ B |> to_graphviz
 # 
 # $$C \wedge A \leq B \qquad\text{iff}\qquad C \leq A \Rightarrow B.$$
 
-(A ⟹ B) |> to_graphviz
+@withmodel Grph (⟹) begin 
+  A ⟹ B
+end |> to_graphviz
 
 # *Negation* is defined by setting $B = \bot$ in the above formula:
 # 
 # $$C \wedge A = \bot \qquad\text{iff}\qquad C \leq \neg A.$$
 
-¬A |> to_graphviz
+@withmodel Grph (¬) begin 
+  ¬A 
+end |> to_graphviz
 
 # ### Induced subgraph as a double negation
 # 
@@ -74,7 +85,9 @@ A ∧ B |> to_graphviz
 
 (C = Subobject(G, V=1:4)) |> to_graphviz
 #-
-¬(¬C) |> to_graphviz
+@withmodel Grph (¬) begin 
+  ¬(¬C) 
+end |> to_graphviz
 
 # ## Subtraction and non
 # 
@@ -87,13 +100,17 @@ A ∧ B |> to_graphviz
 # 
 # $$A \leq B \vee C \qquad\text{iff}\qquad A \setminus B \leq C.$$
 
-(A \ B) |> to_graphviz
+@withmodel Grph (\) begin 
+  A \ B
+end |> to_graphviz
 
 # *Non* is defined by setting $A = \top$ in the above formula:
 # 
 # $$\top = B \vee C \qquad\text{iff}\qquad {\sim} B \leq C.$$
 
-~A |> to_graphviz
+@withmodel Grph (~) begin 
+  ~A 
+end |> to_graphviz
 
 # ### Boundary via non
 # 
@@ -102,4 +119,6 @@ A ∧ B |> to_graphviz
 # 
 # $$\partial A := A \wedge {\sim} A.$$
 
-(A ∧ ~A) |> to_graphviz
+@withmodel Grph (∧, ~) begin 
+  (A ∧ ~A) 
+end |> to_graphviz

@@ -1,27 +1,42 @@
-module IdFunctor 
+module IdFunctor
+
 export IdentityFunctor
 
 using StructEquality
+using GATlab
 
-import .....Theories: dom, codom
-using ..Categories, ..Functors 
-import ..Functors: do_ob_map, do_hom_map, do_compose
+using ...Categories: Cat, obtype, homtype
+using ..Functors: ThFunctor
+import ..Functors: Functor
 
 """ Identity functor on a category.
 """
-@struct_hash_equal struct IdentityFunctor{Dom<:Cat} <: Functor{Dom,Dom}
-  dom::Dom
+@struct_hash_equal struct IdentityFunctor{O,H}
+  dom::Cat
+  IdentityFunctor(c::Cat) = new{obtype(c), homtype(c)}(c)
 end
 
-codom(F::IdentityFunctor) = F.dom
-
-do_ob_map(F::IdentityFunctor, x) = ob(F.dom, x)
-do_hom_map(F::IdentityFunctor, f) = hom(F.dom, f)
+GATlab.getvalue(i::IdentityFunctor) = i.dom
 
 function Base.show(io::IO, F::IdentityFunctor)
   print(io, "id(")
-  Categories.show_domains(io, F, codomain=false)
+  show(io, F.dom)
   print(io, ")")
 end
+
+@instance ThFunctor{O,O,H,H,Cat,Cat} [model::IdentityFunctor{O,H}] where {O,H} begin 
+  dom() = getvalue(model)
+
+  codom() = getvalue(model)
+
+  ob_map(x::O)::O = x
+
+  hom_map(x::H)::H = x
+end
+
+# Convenience constructors
+##########################
+
+Functor(c::Cat) = Functor(IdentityFunctor(c))
 
 end # module

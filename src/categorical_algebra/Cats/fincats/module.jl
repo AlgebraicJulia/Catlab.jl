@@ -10,12 +10,15 @@ and only if the graph is DAG, which is a fairly special condition. This usage of
 finitely presented are equivalent.
 """
 module FinCats
-using Reexport 
+using Reexport
 
 include("FinCats.jl")
 
-include("DiscreteFinCats.jl")
-@reexport using .DiscreteFinCats
+include("PathCats.jl")
+@reexport using .PathCats
+
+include("PreorderCats.jl")
+@reexport using .PreorderCats
 
 include("OpFinCat.jl")
 @reexport using .OpFinCat
@@ -25,5 +28,11 @@ include("FinCatGraphs.jl")
 
 include("FinCatPres.jl")
 @reexport using .FinCatPres
+
+# include("FinCatsAsCats.jl")
+# @reexport using .FinCatsAsCats
+
+include("DiscreteFinCats.jl")
+@reexport using .DiscreteFinCats
 
 end # module

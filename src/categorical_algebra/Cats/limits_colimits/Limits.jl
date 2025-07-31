@@ -1,93 +1,120 @@
-module Limits 
-export AbstractLimit, Limit, LimitAlgorithm, SpecializeLimit, cone, limit, 
-       universal
+module Limits
 
-using StaticArrays: StaticVector, SVector
+export Limit, diagram, cone, limit,LimitCone, proj1, proj2, AbsLimit, 
+       JoinAlgorithm, ThCategoryLimitBase, ThCategoryWithLimits, incl
+       
 using StructEquality
+using GATlab
 
-using ...FreeDiagrams, ...FinCats, ...FinFunctors
-import ...FreeDiagrams: legs, apex
-import ..LimitsColimits: ob, universal
+using .....Theories: dom, codom
+import .....Theories: universal, ob
+import .....Theories: proj1, proj2, incl
 
-""" Abstract type for limit in a category.
+using ...Categories: Category, ThCategoryExplicitSets
+using ...FreeDiagrams
+import ...FreeDiagrams: apex, feet, legs
+using ...FinFunctors: FinDomFunctor
 
-The standard concrete subtype is [`Limit`](@ref), although for computational
-reasons certain categories may use different subtypes to include extra data.
-"""
-abstract type AbstractLimit{Ob,Diagram} end
+@theory ThCategoryLimitBase <: ThCategoryExplicitSets begin
+  Limit()::TYPE{AbsLimit}
+  ob(lim::Limit)::Ob
 
-ob(lim::AbstractLimit) = apex(lim)
-cone(lim::AbstractLimit) = lim.cone
-
-"""Synonymous with `ob` in the case of `Limit`s, but 
-present here to allow a `Limit` to be implicitly 
-treated like a `Multispan`."""
-apex(lim::AbstractLimit) = apex(cone(lim)) 
-legs(lim::AbstractLimit) = legs(cone(lim))
-
-Base.iterate(lim::AbstractLimit, args...) = iterate(cone(lim), args...)
-Base.eltype(lim::AbstractLimit) = eltype(cone(lim))
-Base.length(lim::AbstractLimit) = length(cone(lim))
-
-""" Limit in a category.
-"""
-@struct_hash_equal struct Limit{Ob,Diagram,Cone<:Multispan{Ob}} <:
-    AbstractLimit{Ob,Diagram}
-  diagram::Diagram
-  cone::Cone
+  MSpan::TYPE{Multispan} # type of (multi)spans
+  apex(s::MSpan)::Ob 
+  cone(l::Limit)::MSpan
+  apex(cone(l)) == ob(l) ⊣ [l::Limit]
 end
 
+apex(::WithModel, m::Multispan; context=nothing) = apex(m) # always use dispatch
 
-""" Algorithm for computing limits.
 """
-abstract type LimitAlgorithm end
+`AbsLimit` implementations should be able to recover the diagram that it is a 
+limit of and a computed limit cone.
 
+Any implementation must provide 
+- cone()::Multispan 
+- diagram()::FreeDiagram
 
-""" Limit of a diagram.
-
-To define limits in a category with objects `Ob`, override the method
-`limit(::FreeDiagram{Ob})` for general limits or `limit(::D)` with suitable type
-`D <: FixedShapeFreeDiagram{Ob}` for limits of specific shape, such as products
-or equalizers.
-
-See also: [`colimit`](@ref)
+Every use of a AbsLimit (e.g. in `universal`) must use these 
+methods or the methods below which are derived from these.
 """
-limit(diagram; kw...) = limit(diagram_type(diagram), diagram; kw...)
-limit(diagram, ::Nothing; kw...) = limit(diagram; kw...) # alg == nothing
+abstract type AbsLimit end
 
+cone(lim::AbsLimit) = lim.cone # by default, assume AbsLimit has a `cone` field
+""" We assume *every model* is going to implement `cone` the following way """
+cone(::WithModel, lim::AbsLimit; context=nothing) = cone(lim)
 
+diagram(lim::AbsLimit) = lim.diagram # by default, assume a `diagram` field
 
-""" Meta-algorithm that reduces general limits to common special cases.
+apex(lim::AbsLimit) = apex(cone(lim))
 
-Reduces limits of free diagrams that happen to be discrete to products. If this
-fails, fall back to the given algorithm (if any).
+ob(lim::AbsLimit) = apex(lim)
 
-TODO: Reduce free diagrams that are (multi)cospans to (wide) pullbacks.
+feet(lim::AbsLimit) = feet(cone(lim))
+
+legs(lim::AbsLimit) = legs(cone(lim))
+
+Base.iterate(l::AbsLimit, i...) = iterate(cone(l), i...)
+
+incl(lim::AbsLimit) = only(legs(lim))
+
+proj1(lim::AbsLimit) = let (l,_) = legs(lim); l end
+
+proj2(lim::AbsLimit) = let (_,l) = legs(lim); l end
+
+Base.length(lim::AbsLimit) = length(cone(lim))
+
+ob(::WithModel, x::AbsLimit; context=nothing) = apex(x) # always use dispatch
+
+""" 
+By default, computing a universal property with a limit will pull out the
+diagram type so that we can dispatch on it
 """
-@Base.kwdef struct SpecializeLimit <: LimitAlgorithm
-  fallback::Union{LimitAlgorithm,Nothing} = nothing
+universal(m::WithModel, d::AbsLimit, s::Multispan; context=nothing) = 
+  universal(m, d, getvalue(diagram(d)), s; context)
+
+# Algorithms
+############
+
+abstract type LimitAlgorithm end 
+
+@struct_hash_equal struct DefaultLimit <: LimitAlgorithm end
+
+# abstract type CatAbsLimit{Ob,Hom} end
+
+
+""" Algorithm for limit of cospan or multicospan with feet being finite sets.
+
+In the context of relational databases, such limits are called *joins*. The
+trivial join algorithm is [`NestedLoopJoin`](@ref), which is algorithmically
+equivalent to the generic algorithm `ComposeProductEqualizer`. The algorithms
+[`HashJoin`](@ref) and [`SortMergeJoin`](@ref) are usually much faster. If you
+are unsure what algorithm to pick, use [`SmartJoin`](@ref).
+"""
+abstract type JoinAlgorithm <: LimitAlgorithm end
+
+""" Compute pullback by composing a product with an equalizer.
+
+See also: [`ComposeCoproductCoequalizer`](@ref).
+"""
+@struct_hash_equal struct ComposeProductEqualizer <: LimitAlgorithm end 
+
+# Limit Implementations 
+#######################
+
+""" 
+Most common representation of the result of a limit computation: a limit cone
+"""
+@struct_hash_equal struct LimitCone <: AbsLimit
+  cone::Multispan
+  diagram::FreeDiagram
 end
 
-limit(diagram, alg::SpecializeLimit) = limit(diagram, alg.fallback)
+diagram(c::LimitCone) = c.diagram  
 
-function limit(F::FinDomFunctor{<:FinCat{Int},<:TypeCat{Ob,Hom}},
-               alg::SpecializeLimit) where {Ob,Hom}
-  if is_discrete(dom(F))
-    limit(DiscreteDiagram(collect_ob(F), Hom), SpecializeLimit())
-  else
-    limit(F, alg.fallback)
-  end
-end
-limit(diagram::FreeDiagram, alg::SpecializeLimit) =
-  limit(FinDomFunctor(diagram), alg)
+# Generic limits
+####################
 
-function limit(Xs::DiscreteDiagram{Ob,Hom,Obs},
-               alg::SpecializeLimit) where {Ob,Hom,Obs}
-  if !(Obs <: StaticVector) && length(Xs) <= 3
-    limit(DiscreteDiagram(SVector{length(Xs)}(ob(Xs)), Hom), SpecializeLimit())
-  else
-    limit(Xs, alg.fallback)
-  end
-end
+function limit end
 
 end # module

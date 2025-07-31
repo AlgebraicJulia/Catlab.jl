@@ -86,17 +86,20 @@ f = FinFunction([1,2,3,3], A, Q)
 g = FinFunction([1,1,2,2], A, P)
 h = FinFunction([1,1,2], Q, P)
 
-@test_throws ErrorException compose(g,h) #Catlab checks the domains match
+𝒞 = SkelFinSet()
+@test_throws ErrorException compose[𝒞](g,h) #Catlab checks the domains match
 
-pretty_table(compose(f,h), Symbol("(f⋅h)"))
+pretty_table(compose[𝒞](f,h), Symbol("(f⋅h)"))
 
-compose(f,h) == g
+force(compose[𝒞](f,h)) == g
 
 # This triangle commutes, so f is a refinement of g equivalently g is coarser than f.
 
 h′ = FinFunction([1,1], P, FinSet(1))
 
-pretty_table(f⋅h⋅h′, Symbol("f⋅h⋅h′"))
+@withmodel 𝒞 (⋅) begin 
+  pretty_table(f⋅h⋅h′, Symbol("f⋅h⋅h′"))
+end
 
 # ### Properties of refinements
 # We can show that refinement gives us a preorder on partitions directly from the

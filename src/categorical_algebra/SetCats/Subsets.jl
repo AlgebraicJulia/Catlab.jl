@@ -1,25 +1,29 @@
-module Subsets
+module Subsets 
 
-export SubFinSet, SubOpBoolean, predicate
+export SubFinSet, predicate, SubobjectElementWise
 
 using StructEquality
 
-using ....Theories, ....BasicSets
-import ....Theories: meet, join, top, bottom
-using ...Cats 
-import ...Cats: Subobject, hom, force, ob
-using ...Cats.Subobjects: SubobjectHom
-using ..VarFunctions
+using GATlab
 
-""" Subset of a finite set.
-"""
-const SubFinSet{S,T} = Subobject{<:FinSet{S,T}}
+using ....BasicSets
+import ....BasicSets: force
+using ....Theories: dom, codom
+import ....Theories: ob, hom
+using ...Cats: Subobject, Category, TypeCat, ThSubobjectLattice
+import ...Cats.Subobjects: Subobject, meet, join, top, bottom
+
+""" Subset of a finite set. """
+const SubFinSet = Subobject{FinSet}
 
 Subobject(X::FinSet, f) = Subobject(FinFunction(f, X))
+
 SubFinSet(X, f) = Subobject(FinFunction(f, X))
 
-force(A::SubFinSet{Int}) = Subobject(force(hom(A)))
+force(A::SubFinSet) = Subobject(force(hom(A)))
+
 Base.collect(A::SubFinSet) = collect(hom(A))
+
 Base.sort(A::SubFinSet) = SubFinSet(ob(A), sort(collect(A)))
 
 const AbstractBoolVector = Union{AbstractVector{Bool},BitVector}
@@ -41,10 +45,13 @@ classifier for `Set`.
 end
 
 Subobject(X::FinSet, pred::AbstractBoolVector) = SubFinSetVector(X, pred)
+
 SubFinSet(pred::AbstractBoolVector) = Subobject(FinSet(length(pred)), pred)
 
 ob(A::SubFinSetVector) = A.set
+
 hom(A::SubFinSetVector) = FinFunction(findall(A.predicate), A.set)
+
 predicate(A::SubFinSetVector) = A.predicate
 
 function predicate(A::SubFinSet)
@@ -56,35 +63,22 @@ function predicate(A::SubFinSet)
   pred
 end
 
-function predicate(A::SubobjectHom{<:VarSet}) 
-  f = hom(A)
-  pred = falses(length(codom(f)))
-  for x in dom(f)
-    fx = f(x)
-    if fx isa AttrVar
-      pred[fx.val] = true
-    end
-  end
-  pred
-end
-
-@instance ThSubobjectLattice{FinSet,SubFinSet} begin
-  @import ob
-  meet(A::SubFinSet, B::SubFinSet) = meet(A, B, SubOpBoolean())
-  join(A::SubFinSet, B::SubFinSet) = join(A, B, SubOpBoolean())
-  top(X::FinSet) = top(X, SubOpWithLimits())
-  bottom(X::FinSet) = bottom(X, SubOpWithLimits())
-end
-
-""" Algorithm to compute subobject operations using elementwise boolean logic.
+""" 
+Algorithms to compute subobject operations using elementwise boolean logic.
 """
-struct SubOpBoolean <: SubOpAlgorithm end
+struct SubobjectElementWise end 
 
-meet(A::SubFinSet{Int}, B::SubFinSet{Int}, ::SubOpBoolean) =
-  SubFinSet(predicate(A) .& predicate(B))
-join(A::SubFinSet{Int}, B::SubFinSet{Int}, ::SubOpBoolean) =
-  SubFinSet(predicate(A) .| predicate(B))
-top(X::FinSet{Int}, ::SubOpBoolean) = SubFinSet(trues(length(X)))
-bottom(X::FinSet{Int}, ::SubOpBoolean) = SubFinSet(falses(length(X)))
+@instance ThSubobjectLattice{Union{FinSetInt,FinSet},SubFinSet} [model::SubobjectElementWise ] begin
+
+  meet(A::SubFinSet, B::SubFinSet) = 
+    SubFinSet(predicate(A) .& predicate(B))
+
+  join(A::SubFinSet, B::SubFinSet) = 
+    SubFinSet(predicate(A) .| predicate(B))
+
+  top(X::Union{FinSetInt,FinSet}) = SubFinSet(trues(length(X)))
+
+  bottom(X::Union{FinSetInt,FinSet}) = SubFinSet(falses(length(X)))
+end
 
 end # module

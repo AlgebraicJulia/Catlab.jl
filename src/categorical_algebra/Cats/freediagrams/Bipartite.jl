@@ -1,14 +1,24 @@
-module Bipartite 
-export BipartiteFreeDiagram, SchBipartiteFreeDiagram, ob₁, ob₂
+module Bipartite
 
-using ACSets, GATlab
+export BipartiteFreeDiagram, ob₁, ob₂, nv₁, nv₂, 
+      vertices₁, vertices₂, add_vertex₁!, add_vertex₂!, add_vertices₁!,
+      add_vertices₂!, specialize
+
+using StructEquality
+
+using ACSets, GATlab 
+
+import .....Theories: hom, ThCategory
+using .....BasicSets: FinSet
 using .....Graphs
+import .....Graphs: nv₁, nv₂
 
-using ...FinCats, ...Functors, ..FreeDiagrams
-import ..FreeDiagrams: ob, hom, cone_objects, cocone_objects, diagram_type
+using ...Categories: obtype, homtype
+using ..FreeDiagrams
+import ..FreeDiagrams: fmap, cone_objects, cocone_objects, specialize
 
-# Bipartite free diagrams
-#------------------------
+using .ThFreeDiagram
+
 
 @abstract_acset_type _BipartiteFreeDiagram <: AbstractUndirectedBipartiteGraph
 
@@ -58,12 +68,18 @@ BipartiteFreeDiagram{Ob,Hom}() where {Ob,Hom} =
   BasicBipartiteFreeDiagram{Ob,Hom}()
 
 BipartiteFreeDiagram(obs₁::AbstractVector{Ob₁}, obs₂::AbstractVector{Ob₂},
-                     homs::AbstractVector{Tuple{Hom,Int,Int}}) where {Ob₁,Ob₂,Hom} =
-  BipartiteFreeDiagram{Union{Ob₁,Ob₂},Hom}(obs₁, obs₂, homs)
+                     homs::AbstractVector{Tuple{Hom,Int,Int}}; cat=nothing) where {Ob₁,Ob₂,Hom} =
+  BipartiteFreeDiagram{Union{Ob₁,Ob₂},Hom}(obs₁, obs₂, homs; cat)
 
 function BipartiteFreeDiagram{Ob,Hom}(obs₁::AbstractVector, obs₂::AbstractVector,
-                                      homs::AbstractVector) where {Ob,Hom}
-  @assert all(obs₁[s] == dom(f) && obs₂[t] == codom(f) for (f,s,t) in homs)
+                                      homs::AbstractVector; cat=nothing) where {Ob,Hom}
+
+  cat = isnothing(cat) ? Dispatch(ThCategory, [Ob,Hom]) : cat
+  for (f,s,t) in homs
+    obs₁[s] == dom[cat](f) || error("Bad dom($f) = $(dom[cat](f)) ≠ $(obs₁[s])")
+    obs₂[t] == codom[cat](f) || error("Bad codom($f) = $(codom[cat](f)) ≠ $(obs₂[t])")
+  end
+
   d = BipartiteFreeDiagram{Ob,Hom}()
   add_vertices₁!(d, length(obs₁), ob₁=obs₁)
   add_vertices₂!(d, length(obs₂), ob₂=obs₂)
@@ -71,12 +87,11 @@ function BipartiteFreeDiagram{Ob,Hom}(obs₁::AbstractVector, obs₂::AbstractVe
   return d
 end
 
-BipartiteFreeDiagram(d::FixedShapeFreeDiagram{Ob,Hom}; kw...) where {Ob,Hom} =
-  BipartiteFreeDiagram{Ob,Hom}(d; kw...)
-
-function BipartiteFreeDiagram{Ob,Hom}(discrete::DiscreteDiagram;
-                                      colimit::Bool=false) where {Ob,Hom}
-  d = BipartiteFreeDiagram{Ob,Hom}()
+function BipartiteFreeDiagram(discrete::DiscreteDiagram{Ob};
+                                      colimit::Bool=false) where {Ob}
+  # error if use Union{} ... this is incorrect while we wait for the bug to be 
+  # fixed in Julia 1.12 
+  d = BipartiteFreeDiagram{Ob,Nothing}() 
   if colimit
     add_vertices₂!(d, length(discrete), ob₂=collect(discrete))
   else
@@ -85,13 +100,19 @@ function BipartiteFreeDiagram{Ob,Hom}(discrete::DiscreteDiagram;
   return d
 end
 
-function BipartiteFreeDiagram{Ob,Hom}(span::Multispan) where {Ob,Hom}
+BipartiteFreeDiagram(span::Multispan{O,H}) where {O,H} = 
+  BipartiteFreeDiagram{O,H}(span)
+
+function BipartiteFreeDiagram{Ob,Hom}(span::Multispan{O,H}) where {Ob,Hom, O<:Ob, H<:Hom}
   d = BipartiteFreeDiagram{Ob,Hom}()
   v₀ = add_vertex₁!(d, ob₁=apex(span))
   vs = add_vertices₂!(d, length(span), ob₂=feet(span))
   add_edges!(d, fill(v₀, length(span)), vs, hom=legs(span))
   return d
 end
+
+BipartiteFreeDiagram(span::Multicospan{O,H}) where {O,H} = 
+  BipartiteFreeDiagram{O,H}(span)
 
 function BipartiteFreeDiagram{Ob,Hom}(cospan::Multicospan) where {Ob,Hom}
   d = BipartiteFreeDiagram{Ob,Hom}()
@@ -101,34 +122,58 @@ function BipartiteFreeDiagram{Ob,Hom}(cospan::Multicospan) where {Ob,Hom}
   return d
 end
 
+function BipartiteFreeDiagram(para::ParallelMorphisms{Ob,Hom}; 
+                              cat=nothing) where {Ob,Hom} 
+  O,H = isnothing(cat) ? (Ob,Hom) : impl_type.(Ref(cat),Ref(ThCategory), [:Ob,:Hom])
+  BipartiteFreeDiagram{O,H}(para)
+end
+
 function BipartiteFreeDiagram{Ob,Hom}(para::ParallelMorphisms) where {Ob,Hom}
   d = BipartiteFreeDiagram{Ob,Hom}()
   v₁ = add_vertex₁!(d, ob₁=dom(para))
   v₂ = add_vertex₂!(d, ob₂=codom(para))
-  add_edges!(d, fill(v₁,length(para)), fill(v₂,length(para)), hom=hom(para))
+  add_edges!(d, fill(v₁,length(para)), fill(v₂,length(para)), hom=collect(para))
   return d
 end
 
 cocone_indices(d::FreeDiagramAsBipartite) = d[:orig_vert₂]
+
 cocone_indices(d::BasicBipartiteFreeDiagram) = parts(d,:V₂)
 
-""" Convert a free diagram to a bipartite free diagram.
+@instance ThFreeDiagram{Int,Int,Ob,Hom
+                       } [model::_BipartiteFreeDiagram{S,Tuple{Ob,Hom}}
+                         ] where {S, Ob, Hom} begin
+  src(e::Int)::Int = src(model, e)
+  tgt(e::Int)::Int = tgt(model, e) + nv₁(model) 
+  function obmap(x::Int)::Ob 
+    if x ≤ nv₁(model) 
+      ob₁(model, x)
+    else 
+      ob₂(model, x - nv₁(model))
+    end
+  end
+  hommap(x::Int)::Hom = hom(model, x)
+  obset()::FinSet = FinSet(sum(nv(model)))
+  homset()::FinSet = FinSet(ne(model))
+end
 
-Reduce a free diagram to a free bipartite diagram with the same limit (the
-default, `colimit=false`) or the same colimit (`colimit=true`). The reduction is
-essentially the same in both cases, except for the choice of where to put
-isolated vertices, where we follow the conventions described at
-[`cone_objects`](@ref) and [`cocone_objects`](@ref). The resulting object is a
-bipartite free diagram equipped with maps from the vertices of the bipartite
-diagram to the vertices of the original diagram.
-"""
-function BipartiteFreeDiagram{Ob,Hom}(F::Functor{<:FinCat{Int}};
+# """ Convert a free diagram to a bipartite free diagram.
+
+# Reduce a free diagram to a free bipartite diagram with the same limit (the
+# default, `colimit=false`) or the same colimit (`colimit=true`). The reduction is
+# essentially the same in both cases, except for the choice of where to put
+# isolated vertices, where we follow the conventions described at
+# [`cone_objects`](@ref) and [`cocone_objects`](@ref). The resulting object is a
+# bipartite free diagram equipped with maps from the vertices of the bipartite
+# diagram to the vertices of the original diagram.
+# """
+function BipartiteFreeDiagram{Ob,Hom}(F::FreeDiagram;
                                       colimit::Bool=false) where {Ob,Hom}
   d = FreeDiagramAsBipartite{Ob,Hom}()
-  g = graph(dom(F))
+  g = FreeGraph(F)
   add_parts!(d, :V, nv(g))
-  for v in vertices(g)
-    x = ob_map(F, v)
+  for (v, o) in zip(vertices(g), obset(F))
+    x = obmap(F, o)
     out_edges, in_edges = incident(g, v, :src), incident(g, v, :tgt)
     v₁ = if !isempty(out_edges) || (!colimit && isempty(in_edges))
       add_vertex₁!(d, ob₁=x, orig_vert₁=v)
@@ -143,11 +188,28 @@ function BipartiteFreeDiagram{Ob,Hom}(F::Functor{<:FinCat{Int}};
   for e in edges(g)
     v₁ = only(incident(d, src(g, e), :orig_vert₁))
     v₂ = only(incident(d, tgt(g, e), :orig_vert₂))
-    add_edge!(d, v₁, v₂, hom=hom_map(F, e))
+    add_edge!(d, v₁, v₂, hom=hommap(F, e))
   end
   return d
 end
-BipartiteFreeDiagram(F::Functor{<:FinCat{Int},<:Cat{Ob,Hom}}; kw...) where {Ob,Hom} =
-  BipartiteFreeDiagram{Ob,Hom}(F; kw...)
-  
+
+BipartiteFreeDiagram(F::FreeDiagram) = 
+  BipartiteFreeDiagram{obtype(F), homtype(F)}(F)
+
+
+function specialize(::Type{BipartiteFreeDiagram}, d::FreeDiagram)
+  BipartiteFreeDiagram{impl_type(d, :Ob), impl_type(d, :Hom)}(d)
+end
+
+""" Replace homs via a replacement function """
+function fmap(d::BasicBipartiteFreeDiagram, o, h, O::Type, H::Type) 
+  res = BasicBipartiteFreeDiagram{O,H}()
+  add_vertices₁!(res, nparts(d, :V₁), ob₁=o.(d[:ob₁]))
+  add_vertices₂!(res, nparts(d, :V₂), ob₂=o.(d[:ob₂]))
+  for e in edges(d)
+    add_edge!(res, src(d, e), tgt(d, e); hom=h(hom(d,e)))
+  end
+  res
+end
+
 end # module

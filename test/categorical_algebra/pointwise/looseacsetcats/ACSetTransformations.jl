@@ -1,26 +1,30 @@
-module TestLooseACSetTransformations 
+module TestLooseACSetTransformations
 
 using Catlab, Test
 
-g = path_graph(WeightedGraph{Float64}, 2, E=(weight=2,))
-h = path_graph(WeightedGraph{Float64}, 4, E=(weight=[1,2,3],))
+const WGF = WeightedGraph{Float64}
 
-# Loose morphisms.
+g = path_graph(WGF, 2, E=(weight=2.,))
+h = path_graph(WGF, 4, E=(weight=[1.,2.,3.],))
+
+const 𝒞 = ACSetCategory(LooseACSetCat(WGF()))
 half = x->x/2
-α = LooseACSetTransformation((V=[1,2], E=[1]), (Weight=half,), g, h)
-α′ = ACSetTransformation(g, h, V=[1,2], E=[1], Weight=half,)
+α = ACSetTransformation((V=[1,2], E=[1], Weight=half,), g, h; cat=𝒞)
+@test α[:Weight] isa SetFunction
+
+α′ = ACSetTransformation(g, h, V=[1,2], E=[1], Weight=half, cat=𝒞)
 @test α == α′
-@test α isa LooseACSetTransformation
-@test type_components(α)[:Weight](10.0) == 5.0
+@test components(α)[:Weight](10.0) == 5.0
 @test is_natural(α)
 @test contains(sprint(show, α), "Weight =")
 
+const WGB = WeightedGraph{Bool}
+const 𝒟 = ACSetCategory(LooseACSetCat(WGB()))
 g = star_graph(WeightedGraph{Bool}, 3, E=(weight=[true,false],))
-α = LooseACSetTransformation((V=[2,1,3], E=[2,1]), (Weight=~,), g, g)
+α = ACSetTransformation((V=[2,1,3], E=[2,1], Weight=~,), g, g; cat=𝒟)
 @test is_natural(α)
-α² = compose(α, α)
-@test α² isa LooseACSetTransformation
-@test α²[:V] == force(id(FinSet(3)))
+α² = compose[𝒟](α, α)
+@test α²[:V] ≃ id[FinSetC()](FinSet(3))
 @test α²[:Weight](true) == true
 
 end # module

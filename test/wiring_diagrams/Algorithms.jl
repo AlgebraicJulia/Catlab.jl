@@ -70,4 +70,4 @@ add_wires!(d, [ Wire((fv1,1) => (gv1,1)), Wire((fv2,1),(gv2,1)) ])
 @test crossing_minimization_by_sort(d, [gv1,gv2], sources=[fv1,fv2]) == [1,2]
 @test crossing_minimization_by_sort(d, [fv1,fv2], targets=[gv1,gv2]) == [1,2]
 
-end
+end # module

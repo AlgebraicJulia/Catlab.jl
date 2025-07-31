@@ -188,4 +188,4 @@ test_roundtrip(compose(l, braid(Y,X), m))
 test_roundtrip(compose(mcopy(X), otimes(f,f)))
 test_roundtrip(compose(f, mcopy(Y), otimes(g,g)))
 
-end
+end # module

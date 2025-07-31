@@ -1,90 +1,151 @@
 module FinDomMap 
-export FinDomFunctorMap, ob_key, hom_key
+
+export FinDomFunctorMap
 
 using StructEquality
 
 using GATlab
-import GATlab: op
 
-using .....BasicSets, ...FinCats, ..Functors, ..FinFunctors
-using ..FinFunctors: mappairs
-import ..FinFunctors: do_compose, do_hom_map, do_ob_map, hom_map, ob_map
+using ...Cats, ..FinFunctors
 
-# Mapping-based functors
-#-----------------------
+import ..FinFunctors: FinDomFunctor, FinFunctor
 
 """ Functor out of a finitely presented category given by explicit mappings.
 """
-@struct_hash_equal struct FinDomFunctorMap{Dom<:FinCat, Codom<:Cat,
-    ObMap, HomMap} <: FinDomFunctor{Dom,Codom}
+@struct_hash_equal struct FinDomFunctorMap{DO,CO,DH,CH,DG, ObMap, HomMap, C<:AbsCat}
   ob_map::ObMap
   hom_map::HomMap
-  dom::Dom
-  codom::Codom
-end
+  dom::FinCat
+  codom::C
 
-function Base.show(io::IO, F::T) where T <: FinDomFunctorMap
-  SetFunctions.show_type_constructor(io, T); print(io, "(")
-  show(io, F.ob_map)
-  print(io, ", ")
-  show(io, F.hom_map)
-  print(io, ", ")
-  Categories.show_domains(io, F)
-  print(io, ")")
-end
+  """
+  When codom is actually a FinCat, there are a variety of 'formats' to represent
+  the homs in the hom map.
 
-FinDomFunctorMap(ob_map::Union{AbstractVector{Ob},AbstractDict{<:Any,Ob}},
-                 hom_map::Union{AbstractVector{Hom},AbstractDict{<:Any,Hom}},
-                 dom::FinCat) where {Ob,Hom} =
-  FinDomFunctorMap(ob_map, hom_map, dom, TypeCat(Ob, Hom))
+  homtype = hom: the hom map `h` contains homs
+            generator: contains raw generators 
+            path (default): contains AbstractVectors of generators
+  """
+  function FinDomFunctorMap(o,h,d::FinCat,c::C; homtype=nothing, check=true) where {C<:AbsCat}
+    DO, CO, DH, CH = impl_type.([d,c,d,c], [:Ob,:Ob,:Hom,:Hom])
+    DG = gentype(d)
 
-function FinDomFunctor(ob_map::Union{AbstractVector{Ob},AbstractDict{<:Any,Ob}},
-                       hom_map::Union{AbstractVector{Hom},AbstractDict{<:Any,Hom}},
-                       dom::FinCat, codom::Union{Cat,Nothing}=nothing) where {Ob,Hom}
-  length(ob_map) == length(ob_generators(dom)) ||
-    error("Length of object map $ob_map does not match domain $dom")
-  length(hom_map) == length(hom_generators(dom)) ||
-    error("Length of morphism map $hom_map does not match domain $dom")
-  #Empty checks here are to avoid Julia blowing up the type
-  if isnothing(codom)
-    ob_map = isempty(ob_map) ? ob_map : mappairs(x -> ob_key(dom, x), identity, ob_map; fixvaltype = true)
-    hom_map = isempty(hom_map) ? hom_map : mappairs(f -> hom_key(dom, f), identity, hom_map; fixvaltype = true)
-    FinDomFunctorMap(ob_map, hom_map, dom)
-  else
-    ob_map = isempty(ob_map) ? ob_map : mappairs(x -> ob_key(dom, x), y -> ob(codom, y), ob_map)
-    hom_map = isempty(hom_map) ? hom_map : mappairs(f -> hom_key(dom, f), g -> hom(codom, g), hom_map)
-    FinDomFunctorMap(ob_map, hom_map, dom, codom)
+    homtype = isnothing(homtype) ? (c isa FinCat ? :path : :hom) : homtype
+    h′ = if isnothing(h) 
+      if isempty(hom_generators(d))
+        Dict{DG,CH}()
+      else 
+        error("Cannot provide `nothing` for FinDomFunctorMap: domain has " 
+              * "generators $(hom_generators(d))")
+      end
+    else 
+      mapvals(f-> coerce_hom(c, f; homtype), h;) 
+    end
+
+
+    if check 
+      for obgen in ob_generators(d)
+        o[obgen] isa CO || error("Bad return type $(o[obgen]) not a $CO")
+      end
+      for homgen in hom_generators(d)
+        h′[homgen] isa CH || error("Bad return type $(h[homgen]) not a $CH")
+      end
+    end
+    
+    length(o) == length(ob_generators(d)) ||
+      error("Length of object map $o does not match domain $d")
+
+    length(h′) == length(hom_generators(d)) ||
+      error("Length of morphism map $h does not match domain $d")
+    new{DO, CO, DH, CH, DG, typeof(o), typeof(h′), C}(o, h′, d, c)
   end
 end
 
-ob_key(C::FinCat, x) = ob_generator(C, x)
-hom_key(C::FinCat, f) = hom_generator(C, f)
-ob_map(F::FinDomFunctorMap) = F.ob_map
-hom_map(F::FinDomFunctorMap) = F.hom_map
 
-# Use generator names, rather than generators themselves, for Dict keys. Enforced by FinDomFunctor constructor automatically.
-ob_key(C::FinCatPresentation, x) = presentation_key(x)
-hom_key(C::FinCatPresentation, f) = presentation_key(f)
-presentation_key(name::Union{AbstractString,Symbol}) = name
-presentation_key(expr::GATExpr{:generator}) = first(expr)
-ob_key(C::OppositeFinCat, x) = ob_key(C.cat,x)
-hom_key(C::OppositeFinCat, f) = hom_key(C.cat,f)
-
-Functors.do_ob_map(F::FinDomFunctorMap, x) = F.ob_map[ob_key(F.dom, x)]
-Functors.do_hom_map(F::FinDomFunctorMap, f) = F.hom_map[hom_key(F.dom, f)]
-
-function do_compose(F::FinDomFunctorMap, G::FinDomFunctorMap)
-  FinDomFunctor(mapvals(x -> ob_map(G, x), F.ob_map),
-                   mapvals(f -> hom_map(G, f), F.hom_map), dom(F), codom(G))
+""" Interpret a presented hom as a hom in the codomain category """
+function coerce_hom(cod::FinCat, f; homtype=:path)
+  homtype == :hom && return f
+  homtype == :generator && return to_hom(cod, f)
+  homtype == :list && return foldl(compose[getvalue(cod)], to_hom.(Ref(cod), f))
+  homtype == :path || error("Bad homtype $homtype")
+  f isa Path || error("Bad path $f")
+  isempty(f) && return id(cod, src(f))
+  coerce_hom(cod, collect(f); homtype=:list)
 end
 
-collect_ob(F::FinDomFunctorMap) = collect_values(F.ob_map)
-collect_hom(F::FinDomFunctorMap) = collect_values(F.hom_map)
-collect_values(vect::AbstractVector) = vect
-collect_values(dict::AbstractDict) = collect(values(dict))
+function coerce_hom(::Cat, f; homtype=:path)
+  homtype == :hom || error("Cannot coerce hom via $homtype for a Category")
+  f
+end
 
-op(F::FinDomFunctorMap) = FinDomFunctorMap(F.ob_map, F.hom_map,
-                                           op(dom(F)), op(codom(F)))
+# FinDomFunctor instance
+########################
 
+
+"""
+Note: in order to implement the findomfunctor interface, we need a 
+way to decompose a 
+"""
+@instance ThFinDomFunctor{DO, CO, DH, CH, FinCat, C, DG
+                          } [model::FinDomFunctorMap{DO,CO,DH,CH,DG,OM,HM,C}
+                            ] where {DO,CO,DH,CH,DG,OM,HM,C} begin 
+  dom() = model.dom
+
+  codom() = model.codom
+
+  ob_map(x::DO)::CO = model.ob_map[x]
+
+  function hom_map(x::DH)::CH 
+    pth = decompose(getvalue(model.dom), x)
+    isempty(pth) && return id(codom[model](), ob_map[model](src(pth)))
+    foldl(compose[getvalue(model.codom)], gen_map[model].(pth))
+  end
+  gen_map(f::DG)::CH = model.hom_map[f]
+
+end
+
+# Constructors 
+##############
+
+# Check that cod is a FinCat
+function FinFunctor(o,h,d::FinCat,c::FinCat; kw...) 
+  FinDomFunctor′(FinDomFunctorMap(o,h,d,c; kw...)) |> validate
+end
+
+""" Wrap `FinDomFunctorMap` as a `FinDomFunctor` """
+FinDomFunctor(o,h,d::FinCat,c::AbsCat; kw...) = 
+  FinDomFunctor′(FinDomFunctorMap(o,h,d,c; kw...)) |> validate
+
+# Check that cod is a FinCat
+FinFunctor(maps::NamedTuple{(:V,:E)}, dom::FinCat, cod::FinCat; kw...) = 
+  FinDomFunctor(maps, dom, cod; kw...) |> validate
+
+function FinDomFunctor(maps::NamedTuple{(:V,:E)}, dom::FinCat, cod::AbsCat; kw...)
+  D = getvalue(dom)
+  if getvalue(D) isa FinCatGraph 
+    FinDomFunctor(maps.V, maps.E, dom, cod; kw...)
+  else 
+    error("bad maps $maps for dom $(typeof(D))")
+  end
+end
+
+function FinDomFunctor(ob_map, dom::FinCat, codom::AbsCat)
+  is_discrete(dom) || error(
+    "Morphism map omitted by domain category is not discrete: $dom")
+  FinDomFunctor′(FinDomFunctorMap(ob_map, [], dom, codom)) |> validate
+end
+
+function FinFunctor(ob_map, dom::FinCat, codom::FinCat)
+  Hom = impl_type(codom, :Hom)
+  is_discrete(dom) ||
+    error("Morphism map omitted by domain category is not discrete: $dom")
+  FinDomFunctor′(FinDomFunctorMap(ob_map, empty(ob_map, Hom), dom, codom)) |> validate
+end
+
+FinFunctor(ob_map, ::Nothing, dom::FinCat, codom::FinCat) =
+  FinDomFunctor′(ob_map, dom, codom) |> validate
+
+FinDomFunctor(ob_map, ::Nothing, dom::FinCat, codom::Cat) =
+  FinDomFunctor′(ob_map, dom, codom) |> validate
 
 end # module

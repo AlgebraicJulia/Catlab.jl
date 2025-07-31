@@ -1,19 +1,18 @@
+
 export ACSetHomomorphismAlgorithm, BacktrackingSearch, HomomorphismQuery,
        homomorphism, homomorphisms, is_homomorphic,
        isomorphism, isomorphisms, is_isomorphic,
        @acset_transformation, @acset_transformations
-   
-
-using Random, StructEquality
+       
+       
+using Random, StructEquality, MLStyle
 using CompTime
-using MLStyle: @match
-
-using ACSets.DenseACSets: attrtype_type
-
+       
+using ....Theories
 using ....Graphs.BasicGraphs
-using ....Theories, ....BasicSets, ...Cats, ...SetCats
+using ....BasicSets, ...Cats
 using ..ACSetTransformations, ..CSets
-using ..ACSetTransformations: map_components
+using ACSets.DenseACSets: attrtype_type
 
 # Finding C-set transformations
 ###############################
@@ -120,15 +119,18 @@ filter = only consider morphisms which meet some criteria, expressed as a Julia
 It does not make sense to specify both `take` and `max`.
 """
 function homomorphisms(X::ACSet, Y::ACSet, alg::BacktrackingSearch; 
-                       take=nothing, max=nothing, filter=nothing, kw...) 
+                       cat=nothing, take=nothing, max=nothing, filter=nothing, 
+                       kw...) 
   results = []
   isnothing(take) || isnothing(max) || error(
-    "Cannot set both `take`=$take and `max`=$max for `homomorphisms`")
-  backtracking_search(X, Y; kw...) do αs
+    "Cannot set both `take`=$take and `max`=$max for `homomorphisms`")    
+  cat = isnothing(cat) ? infer_acset_cat(X) : cat
+
+  backtracking_search(X, Y; cat, kw...) do αs
     for α in αs
       isnothing(filter) || filter(α) || continue
       length(results) == max && error("Exceeded $max: $([results; α])")
-      push!(results, map_components(deepcopy, α));
+      push!(results, map_components(deepcopy, α; cat));
       length(results) == take && return true
     end 
     return false
@@ -154,8 +156,8 @@ See [`homomorphism`](@ref) for more information about the algorithms involved.
 isomorphism(X::ACSet, Y::ACSet; alg=BacktrackingSearch(), kw...) =
   isomorphism(X, Y, alg; kw...)
 
-isomorphism(X::ACSet, Y::ACSet, alg::BacktrackingSearch; initial=(;)) =
-  homomorphism(X, Y, alg; iso=true, initial=initial)
+isomorphism(X::ACSet, Y::ACSet, alg::BacktrackingSearch; kw...) =
+  homomorphism(X, Y, alg; iso=true, kw...)
 
 """ Find all isomorphisms between two attributed ``C``-sets.
 
@@ -184,7 +186,7 @@ is_isomorphic(X::ACSet, Y::ACSet, alg::BacktrackingSearch; kw...) =
 
 """ Get assignment pairs from partially specified component of C-set morphism.
 """
-partial_assignments(x::FinFunction; is_attr=false) = partial_assignments(collect(x))
+partial_assignments(x::FinFunction; is_attr=false) = partial_assignments(collect(x); is_attr)
 partial_assignments(x::AbstractDict; is_attr=false) = pairs(x)
 partial_assignments(x::AbstractVector; is_attr=false) =
   ((i,y) for (i,y) in enumerate(x) if is_attr || (!isnothing(y) && y > 0))
@@ -211,12 +213,15 @@ struct BacktrackingState{
   predicates::Predicates
   image::Image # Negative of image for epic components or if finding an epimorphism
   unassigned::Unassign # "# of unassigned elems in domain of a component 
+  cat::ACSetCategory
 end
 
 function backtracking_search(f, X::ACSet, Y::ACSet;
     monic=false, epic=false, iso=false, random=false, predicates=(;),
-    type_components=(;), initial=(;), error_failures=false, no_bind=false)
+    type_components=(;), initial=(;), error_failures=false, no_bind=false,
+    cat=nothing)
   S, Sy = acset_schema.([X,Y])
+  cat = isnothing(cat) ? infer_acset_cat(X) : cat
   S == Sy || error("Schemas must match for morphism search")
   Ob = Tuple(objects(S))
   Attr = Tuple(attrtypes(S))
@@ -269,8 +274,8 @@ function backtracking_search(f, X::ACSet, Y::ACSet;
   # Injections between finite sets of the same size are bijections, so reduce to that case.
   monic = unique([iso..., monic...])
 
-  if error_failures 
-    uns = naturality_failures(X,Y,initial,type_components)
+  if error_failures
+    uns = naturality_failures(coerce_components(_ACSetTransformation(initial,X,Y); cat))
     all(isempty,[uns[a] for a in keys(uns)]) ||
       error(sprint(show_naturality_failures, uns))
   end
@@ -298,11 +303,20 @@ function backtracking_search(f, X::ACSet, Y::ACSet;
 
   state = BacktrackingState(assignment, assignment_depth, 
                             inv_assignment, X, Y, loosefuns, pred_nt,
-                            images, unassigned)
+                            images, unassigned, cat)
 
   # Make any initial assignments, failing immediately if inconsistent.
   for (c, c_assignments) in pairs(initial)
     for (x, y) in partial_assignments(c_assignments; is_attr = c ∈ Attr)
+      y = if c ∉ Attr
+        y 
+      elseif y isa Left
+        AttrVar(getvalue(y))
+      elseif y isa Right 
+        getvalue(y)
+      else 
+       y # error("Unexpected partial assignment $c#$x: $y")
+      end
       if c ∈ ob(S)
         assign_elem!(state, 0, c, x, y) || return false
       else 
@@ -327,11 +341,12 @@ function backtracking_search(f, state::BacktrackingState, depth::Int;
   if isnothing(mrv_elem)
     # No unassigned elements remain, so we have a complete assignment.
     if any(!=(identity), state.type_components)
-      return f([LooseACSetTransformation(
-        state.assignment, state.type_components, state.dom, state.codom)])
+      return f([ACSetTransformation(
+        merge(state.assignment, state.type_components), state.dom, state.codom; 
+        cat=state.cat)])
     else
       m = Dict(k=>!isnothing(v) for (k,v) in pairs(state.inv_assignment))
-      return f(postprocess_search_results(state.dom, state.codom, state.assignment, m))
+      return f(postprocess_search_results(state.dom, state.codom, state.assignment, m; cat=state.cat))
     end
   elseif mrv == 0
     # An element has no allowable assignment, so we must backtrack.
@@ -512,7 +527,7 @@ representables.
 This function takes a result assignment from backtracking search and returns an
 iterator of the implicit set of homomorphisms that it specifies.
 """
-function postprocess_search_results(dom, codom, assgn, monic)
+function postprocess_search_results(dom, codom, assgn, monic; cat)
   S = acset_schema(dom)
   od = Dict{Symbol,Vector{Int}}(k=>(assgn[k]) for k in objects(S))
 
@@ -537,7 +552,7 @@ function postprocess_search_results(dom, codom, assgn, monic)
       k => vec
     end)
     comps = merge(NamedTuple(od),NamedTuple(ad))
-    ACSetTransformation(comps, dom, codom)
+    ACSetTransformation(comps, dom, codom; cat)
   end
 end
 

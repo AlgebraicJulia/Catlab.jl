@@ -1,4 +1,5 @@
 module TestMonoidalUndirectedWiringDiagrams
+
 using Test
 
 using Catlab.Theories, Catlab.WiringDiagrams
@@ -56,4 +57,4 @@ I = munit(HDOb)
 # XXX: Not equal due to ordering of outer ports, but isomorphic.
 #@test (id(B)⊗dunit(A)) ⋅ (id(B)⊗f⊗id(A)) ⋅ (dcounit(B)⊗id(A)) == dagger(f)
 
-end
+end # module

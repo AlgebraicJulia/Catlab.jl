@@ -1,81 +1,109 @@
+module ACSetFunctors 
+
+export ACSetFunctor
+
 using StructEquality
 
+using GATlab, ACSets
 import ACSets: ACSet
-import ...Cats: FinDomFunctor
+using ACSets.DenseACSets: attrtype_type
 
-# Categories interop
-####################
-
-# ACSets as set-valued FinDomFunctors.
-
-# TODO: We should wrap `SchemaDescType` instead of creating a presentation.
-const ACSetDomCat = FinCats.FinCatPresentation{
-  Symbol, Union{FreeSchema.Ob,FreeSchema.AttrType},
-  Union{FreeSchema.Hom,FreeSchema.Attr,FreeSchema.AttrType}}
+using .....BasicSets
+using ....Cats
+import ....Cats: FinDomFunctor
+using ...Pointwise, ..CSets
 
 """ Wrapper type to interpret attributed C-set as a functor.
 """
-@struct_hash_equal struct ACSetFunctor{ACS<:ACSet} <:
-    Functor{ACSetDomCat,
-            TypeCat{Union{FinSet,VarSet},
-                    Union{VarFunction,FinDomFunction{Int}}}}
+@struct_hash_equal struct ACSetFunctor{ACS<:ACSet, Ob, Hom}
   acset::ACS
-end
-FinDomFunctor(X::ACSet) = ACSetFunctor(X)
-ACSet(X::ACSetFunctor) = X.acset
-
-function hasvar(X::ACSet,x) 
-  s = acset_schema(X)
-  (x∈ attrs(acset_schema(X),just_names=true) && hasvar(X,codom(s,x))) || 
-  x∈attrtypes(acset_schema(X)) && nparts(X,x)>0
-end
-hasvar(X::ACSet) = any(o->hasvar(X,o), attrtypes(acset_schema(X)))
-hasvar(X::ACSetFunctor,x) = hasvar(X.acset,x)
-hasvar(X::ACSetFunctor) = hasvar(X.acset)
-
-
-dom(F::ACSetFunctor) = FinCat(Presentation(ACSet(F)))
-
-#not clear this couldn't just always give the Vars
-function codom(F::ACSetFunctor)
-  hasvar(F) ? TypeCat{Union{SetOb,VarSet},Union{FinDomFunction{Int},VarFunction}}() :
-    TypeCat{SetOb,FinDomFunction{Int}}()
-end
-
-Functors.do_ob_map(F::ACSetFunctor, x) = 
-  (hasvar(F,functor_key(x)) ? VarSet : SetOb)(F.acset, functor_key(x))
-Functors.do_hom_map(F::ACSetFunctor, f) =  
-  (hasvar(F,functor_key(f)) ? VarFunction : FinFunction)(F.acset, functor_key(f))
-
-functor_key(x) = x
-functor_key(expr::GATExpr{:generator}) = first(expr)
-
-# Set-valued FinDomFunctors as ACSets.
-(T::Type{ACS})(F::Diagram) where ACS <: ACSet = F |> diagram |> T
-function (::Type{ACS})(F::FinDomFunctor) where ACS <: ACSet
-  X = if ACS isa UnionAll
-    pres = presentation(dom(F))
-    ACS{(strip_attrvars(eltype(ob_map(F, c))) for c in generators(pres, :AttrType))...}()
-  else
-    ACS()
+  cod::ACSetCategory
+  function ACSetFunctor(x::T, c::ACSetCategory) where {T<:ACSet}
+    S = acset_schema(c)
+    O,H,AT,Op,A = impl_type.(Ref(c), [:Ob, :Hom, :AttrType,:Op, :Attr])
+    Op′, AT′, A′ = [Tagged(Dict{Symbol,Type}(a=>X for a in attrtypes(S)))   
+                    for X in [Op, AT, A]]
+    new{T, Union{O, AT′}, Union{H, Op′, A′}}(x, c)
   end
+end
+
+# Accessors
+###########
+GATlab.getvalue(f::ACSetFunctor) = f.acset
+
+getcategory(f::ACSetFunctor) = f.cod
+
+ACSet(X::ACSetFunctor) = X.acset # synonym for getvalue
+
+# FinDomFunctor interface
+#########################
+
+@instance ThFinDomFunctor{FinCatPres.Ob, Ob, FinCatPres.Hom, Hom,
+                           FinCat, Category, FinCatPres.Gen,
+                          } [model::ACSetFunctor{ACS, Ob, Hom} 
+                            ] where {ACS, Ob, Hom} begin 
+
+  dom()::FinCat = FinCat(Presentation(getvalue(model)))
+
+  codom()::Category = Category(CollageCat(model.cod))
+
+  function ob_map(x::GATExpr{:generator})::Ob 
+    S = acset_schema(model.cod)
+    x = nameof(x)
+    if x ∈ ob(S)
+      get_ob(model.cod, getvalue(model), x)
+    else 
+      TaggedElem(get_attrtype(model.cod, getvalue(model), x), x)
+    end
+  end 
+
+  hom_map(f::GATExpr)::Hom = if f isa GATExpr{:generator}
+    gen_map[model](f)
+  elseif f isa GATExpr{:id}
+    id(codom[model](), ob_map[model](only(f.args)))
+  else 
+    error("TODO $f")
+  end
+
+  function gen_map(f::GATExpr{:generator})::Hom 
+    S = acset_schema(model.cod)
+    f = nameof(f)
+    if f ∈ homs(S; just_names=true)
+      get_hom(model.cod, getvalue(model), f)
+    else 
+      TaggedElem(get_attr(model.cod, getvalue(model), f), codom(S, f))
+    end
+
+  end
+end
+
+FinDomFunctor(acs::ACSet; cat=nothing) = 
+  FinDomFunctor(ACSetFunctor(acs, isnothing(cat) ? infer_acset_cat(acs) : cat)) |> validate
+
+
+# Converting Diagrams to ACSets if possible
+###########################################
+
+
+""" Set-valued FinDomFunctors as ACSets. """
+function (::Type{ACS})(F::FinDomFunctor) where ACS <: ACSet
+  getvalue(F) isa ACSetFunctor && return getvalue(F).acset
+  X = ACS()
   copy_parts!(X, F)
   return X
 end
-strip_attrvars(T) = T
-strip_attrvars(::Type{Union{AttrVar, T}}) where T = T
 
 """ Copy parts from a set-valued `FinDomFunctor` to an `ACSet`.
 """
 function ACSetInterface.copy_parts!(X::ACSet, F::FinDomFunctor)
-  pres = presentation(dom(F))
+  pres = presentation(getvalue(dom(F))) # assume FinCatPresentation
   added = Dict(Iterators.map(generators(pres, :Ob)) do c
     c = nameof(c)
-    c => add_parts!(X, c, length(ob_map(F, c)::FinSet{Int}))
+    c => add_parts!(X, c, length(ob_map(F, pres[c])))
   end)
   for f in generators(pres, :Hom)
     dom_parts, codom_parts = added[nameof(dom(f))], added[nameof(codom(f))]
-    set_subpart!(X, dom_parts, nameof(f), codom_parts[collect(hom_map(F, f))])
+    set_subpart!(X, dom_parts, nameof(f), codom_parts[collect(hom_map(F, pres[f]))])
   end
   for f in generators(pres, :Attr)
     cd = nameof(codom(f))
@@ -89,3 +117,4 @@ function ACSetInterface.copy_parts!(X::ACSet, F::FinDomFunctor)
   added
 end
 
+end #module

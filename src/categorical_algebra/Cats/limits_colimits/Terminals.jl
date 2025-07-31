@@ -1,26 +1,62 @@
 module Terminals 
-export Terminal, terminal, delete
+export TerminalLimit, ThCategoryWithTerminal, CatWithTerminal, delete, terminal
 
-import .....Theories: delete, terminal
+using StructEquality
+
+using GATlab
+
+import .....Theories: terminal, delete, ◊, universal, ob, ThCategory
 using ...FreeDiagrams
+import ...FreeDiagrams: EmptyDiagram, apex
+using ..Limits: AbsLimit, DefaultLimit, ThCategoryLimitBase
+import ..Limits: limit, cone, diagram
 
-using ..Limits
 
-""" Terminal object.
-
-To implement for a type `T`, define the method `limit(::EmptyDiagram{T})`.
 """
-terminal(T::Type; kw...) = limit(EmptyDiagram{T}(); kw...)
-
-const Terminal{Ob} = AbstractLimit{Ob,<:EmptyDiagram}
-
-
-""" Unique morphism into a terminal object.
-
-To implement for a type `T`, define the method
-`universal(::Terminal{T}, ::SMultispan{0,T})`.
+`Terminal` is expected to be implemented by `TerminalLimit`.
 """
-delete(A::T) where T = delete(terminal(T), A)
-delete(lim::Terminal, A) = universal(lim, SMultispan{0}(A))
+@theory ThCategoryWithTerminal <: ThCategoryLimitBase begin
+  Empty()::TYPE{EmptyDiagram}
+  limit(e::Empty)::Limit
+  universal(lim::Limit, d::Empty, sp::MSpan)::(apex(sp) → ob(lim))
+end
+
+ThCategoryWithTerminal.Meta.@wrapper CatWithTerminal
+
+
+# Named limits / universal properties
+#####################################
+@model_method terminal
+
+terminal(C::CatWithTerminal) = terminal[getvalue(C)]()
+
+terminal(m::WithModel; context=nothing) = 
+  limit(m, EmptyDiagram{impl_type(getvalue(m), ThCategory, :Ob)}(); context)
+
+@model_method delete
+
+delete(C, x) = delete[getvalue(C)](x)
+
+function delete(m::WithModel, x; context)
+  O, H = impl_types(getvalue(m), ThCategory)
+  emp = EmptyDiagram{O}()
+  universal(m, terminal(m; context), emp, Multispan{O,H,O}(x, H[], O[]); context)
+end
+
+# Special limit data structure
+##############################
+
+""" Any implementation of a TerminalLimit is just an object """
+@struct_hash_equal struct TerminalLimit{Ob,Hom} <: AbsLimit 
+  ob::Ob
+end
+
+ob(t::TerminalLimit) = t.ob
+
+cone(s::TerminalLimit{Ob,Hom}) where {Ob, Hom} = 
+  Multispan(s.ob, Hom[], Ob[])
+
+diagram(::TerminalLimit{Ob,Hom}) where {Ob,Hom} = 
+  FreeDiagram(EmptyDiagram{Ob}())
 
 end # module
