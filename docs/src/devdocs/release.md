@@ -64,7 +64,7 @@ f′ = compose[𝒞](id[𝒞](G2), f)
 
 #### Extensional equality and `force`
 
-There are many granularities of equality that one may be interested in. `==` is quite coarse: `f` and `f′` above are not equal under that equivalence relation. However, under `≃` (an operator introduced in `v0.17`) they are equal. This should be used in place of `force(f) == force(f′)`. 
+There are many granularities of equality that one may be interested in. `==` is quite fine grained: `f` and `f′` above are not equal under that equivalence relation. However, under `≃` (an operator introduced in `v0.17`) they are equal. This should be used in place of `force(f) == force(f′)`. 
 
 `force` can be used to improve the performance of a function by replacing it with an equivalent-behavior one, but this is not always a normal form for comparison of extensional behavior (e.g. `id(FinSet(100))` when converted to a normal form is much less efficient than just leaving it as an `IdentityFunction`).
 
