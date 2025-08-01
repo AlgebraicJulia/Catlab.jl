@@ -212,8 +212,8 @@ the adjunction between Σ and Δ migration functors.
 #be possible to cache.
 function (M::SigmaMigrationFunctor)(d::ACSet; n=100, return_unit::Bool=false, cat=nothing)
   D,CD = M.dom_constructor(), M.codom_constructor()
+  Fun = functor(M)
   cat = isnothing(cat) ? infer_acset_cat(CD) : cat
-  F = functor(M)
   Sc = acset_schema(d)
   S = Presentation(Sc)
   S_codom = Presentation(acset_schema(CD))
@@ -221,7 +221,7 @@ function (M::SigmaMigrationFunctor)(d::ACSet; n=100, return_unit::Bool=false, ca
   #ask the collage to represent a transformation that's natural
   #only on the non-attrtype objects of the domain
   obs = S.generators[:Ob] #map(x->S[x],Sc.obs)
-  col, col_pres = collage(functor(M),objects=obs)
+  col, col_pres = collage(Fun, objects=obs)
   i1,i2 = legs(col)
   # Initialize collage C-Set with data from `d`
   atypes = Dict{Symbol,Type}()
@@ -260,7 +260,7 @@ function (M::SigmaMigrationFunctor)(d::ACSet; n=100, return_unit::Bool=false, ca
   #Go back and make sure attributes that ought to have
   #specific values because of d do have those values.
   for (k, kdom, _) in attrs(Sc)
-    f = hom_map(F,S[k])
+    f = hom_map(Fun,S[k])
     #split f into its hom part and its attr part
     f1,f2 = split_r(f)
     #Need f1 on the collage for rel_res but f2 
@@ -292,8 +292,8 @@ function (M::SigmaMigrationFunctor)(d::ACSet; n=100, return_unit::Bool=false, ca
     # This is assuming we're working with CSets or VarACSets
     S[o] => o ∈ ob(Sc) ? elem : TaggedElem(elem, S[o])
   end)
-  F(x) = DiagramId(FinDomFunctor(x))
-  DiagramHom(functor(M), diagram_map, F(d), F(res))
+  F(x) = DiagramId(FinDomFunctor(x; check=false))
+  DiagramHom(functor(M), diagram_map, F(d), F(res); check=false)
 end
 
 """

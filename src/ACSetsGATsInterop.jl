@@ -94,11 +94,12 @@ end
 function DenseACSets.DynamicACSet(
   name::String,
   p::Presentation;
+  part_type::Type{<:PartsType}=IntParts,
   type_assignment=Dict{Symbol,Type}(),
   index::Vector=[],
   unique_index::Vector=[]
   )
-  DynamicACSet(name, Schema(p); type_assignment, index, unique_index)
+  DynamicACSet(name, Schema(p); part_type, type_assignment, index, unique_index)
 end
 
 function DenseACSets.DynamicACSet(name::String, p::Presentation, type_assignment, parts, subparts)

@@ -34,7 +34,7 @@ for all f: X → Y in 𝒞, the diagram commutes:
   function FinTransformationMap(comps, F::DomFun, G::CodFun; check=true
                                ) where {DomFun<:FunctorFinDom,CodFun<:AbsFunctor}
     O, H = impl_type.([F,F], [:DomOb,:CodomHom])
-    C, D = check_transformation_domains(F, G)
+    C, D = check_transformation_domains(F, G; check)
     DO = impl_type(C, :Ob)
     DO == O || error("Bad F dom ob type $DO ≠ $O")
     length(comps) == length(ob_generators(C)) ||
@@ -60,8 +60,8 @@ end
 end 
 
 Transformation(components::Union{AbstractVector,AbstractDict}, 
-               F::FunctorFinDom, G::AbsFunctor) =
-  Transformation(FinTransformationMap(components, F, G)) |> validate
+               F::FunctorFinDom, G::AbsFunctor; check=true) =
+  validate(Transformation(FinTransformationMap(components, F, G; check)); check)
 
 
 component(α::FinTransformationMap, x) = α.components[ob_key(dom_ob(α), x)]
