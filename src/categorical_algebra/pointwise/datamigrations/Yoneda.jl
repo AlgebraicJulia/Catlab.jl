@@ -29,14 +29,19 @@ function representable(cons, obname::Symbol; return_unit_id::Bool=false)
   add_generator!(C₀, C[obname])
   X = AnonACSet(C₀); add_part!(X, obname)
   F = FinFunctor(Dict(C[obname] => C[obname]), Dict(), FinCat(C₀), FinCat(C))
-  ΣF = SigmaMigrationFunctor(F, X, cons())
+
+  typeof(cons().parts[obname]) == IntParts || error(
+    "Currently can only compute representables of DenseACSets")
+  cat = ACSetCategory(VarACSetCat(X))
+
+  ΣF = SigmaMigrationFunctor(F, X, cons)
   if return_unit_id
-    η = ΣF(X; return_unit=true)
+    η = ΣF(X; return_unit=true, cat)
     elem = diagram_map(η)[C[obname]] # UNTAG if necessary
     ηob = obname ∈ ob(S) ? elem : untag(elem, S[obname])
     (typeof(cons())(diagram(codom[DiagramIdCat()](η))), only(collect(ηob)))
   else
-    ΣF(X)
+    ΣF(X; cat)
   end
 end
 

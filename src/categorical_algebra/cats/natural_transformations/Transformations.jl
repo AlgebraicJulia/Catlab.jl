@@ -34,12 +34,12 @@ ThTransformation.Meta.@typed_wrapper Transformation
 const FinTransformation{DO,CH,CodFun} = Transformation{DO,CH,<:FunctorFinDom, CodFun}
 
 
-function validate(i::Transformation)
+function validate(i::Transformation; check=true)
   F, G = ThTransformation.dom(i), ThTransformation.codom(i)
   validate(F)
   validate(G)
   tF, tG = typeof.([F,G])
-  C, D = check_transformation_domains(F, G)
+  C, D = check_transformation_domains(F, G; check)
   DO,CH,DF,CF,Ob,Hom = impl_type.([i,i,i,i,C,D], [:DO,:CH,:DomFun,:CodFun,:Ob,:Hom])
   Ob == DO || error("Bad dom ob type: $(Ob) ≠ $DO")
   Hom == CH || error("Bad codom hom type: $(Hom) ≠ $CH")
@@ -110,14 +110,14 @@ end
 components(α::Transformation) =
   make_map(x -> component(α, x), ob_generators(dom_ob(α)))
 
-function check_transformation_domains(F::FunctorFinDom, G::FunctorFinDom)
+function check_transformation_domains(F::FunctorFinDom, G::FunctorFinDom; check=true)
   # XXX: Equality of TypeCats is too strict, so for now we are punting on
   # (co)domain checks in that case.
   (C, C′), (D, D′) = (Cs, Ds) = (dom.([F,G]), codom.([F,G]))
   vC, vC′, vD, vD′ = getvalue.([Cs; Ds])
-  (vC isa TypeCat && vC′ isa TypeCat) || vC == vC′ ||
-    error("Mismatched domains in functors $F and $G")
-  (vD isa TypeCat && vD′ isa TypeCat) || vD == vD′ ||
-    error("Mismatched codomains in functors $F and $G")
+  !check || (vC isa TypeCat && vC′ isa TypeCat) || vC == vC′ ||
+    error("Mismatched domains in functors $F and $G:\n$vC\n$vC′")
+  !check || (vD isa TypeCat && vD′ isa TypeCat) || vD == vD′ ||
+    error("Mismatched codomains in functors $F and $G:\n$vD\n$vD′")
   (C, D)
 end

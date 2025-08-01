@@ -159,8 +159,8 @@ function DiagramHom(ob_maps, hom_map, D::DiagramCo, D′::DiagramCo; homtype=:ho
   DiagramHom(f, mapvals(x -> cell2(D′,x), ob_maps), D, D′)
 end
 
-function DiagramHom(f::FinFunctor, components, D::DiagramId, D′::DiagramId)
-  ϕ = Transformation(components, diagram(D), compose[CatC()](f,diagram(D′)))
+function DiagramHom(f::FinFunctor, components, D::DiagramId, D′::DiagramId; check=true)
+  ϕ = Transformation(components, diagram(D), compose[CatC()](f,diagram(D′)); check)
   DiagramHom(f, ϕ, D′)
 end
 

@@ -77,9 +77,10 @@ ACSet(X::ACSetFunctor) = X.acset # synonym for getvalue
   end
 end
 
-FinDomFunctor(acs::ACSet; cat=nothing) = 
-  FinDomFunctor(ACSetFunctor(acs, isnothing(cat) ? infer_acset_cat(acs) : cat)) |> validate
-
+function FinDomFunctor(acs::ACSet; cat=nothing, check=true)
+  res = FinDomFunctor(ACSetFunctor(acs, isnothing(cat) ? infer_acset_cat(acs) : cat)) 
+  check ? validate(res) : res
+end
 
 # Converting Diagrams to ACSets if possible
 ###########################################
