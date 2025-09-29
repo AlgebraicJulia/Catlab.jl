@@ -13,7 +13,7 @@ to differences between the data structures.
 module BasicGraphs
 export HasVertices, HasGraph, AbstractGraph, Graph, SchGraph,
   nv, ne, src, tgt, edges, inedges, outedges, vertices, has_edge, has_vertex,
-  add_edge!, add_edges!, add_vertex!, add_vertices!, add_vertices_with_indices!,
+  add_edge!, add_edges!, add_vertex!, add_vertices!, add_vertices_with_indices!, add_reflexives!, add_reflexives,
   rem_edge!, rem_edges!, rem_vertex!, rem_vertices!, 
   neighbors, inneighbors, outneighbors, all_neighbors, degree, induced_subgraph,
   AbstractSymmetricGraph, SymmetricGraph, SchSymmetricGraph, inv, is_directed,
@@ -25,7 +25,7 @@ export HasVertices, HasGraph, AbstractGraph, Graph, SchGraph,
   AbstractWeightedGraph, WeightedGraph, SchWeightedGraph, weight,
   AbstractSymmetricWeightedGraph, SymmetricWeightedGraph, SchSymmetricWeightedGraph
 
-import Base: inv
+import Base: inv, convert
 
 using ACSets, ...ACSetsGATsInterop
 using ...Theories
@@ -158,6 +158,28 @@ function add_edges!(g::HasGraph, srcs::AbstractVector{Int},
   @assert (n = length(srcs)) == length(tgts)
   add_parts!(g, :E, n, (src=srcs, tgt=tgts, kw...))
 end
+
+""" Add reflexive edges to a graph
+
+Setting the keyword `idempotent::Bool=true` will skip adding reflexive edges to vertices which already have them
+"""
+function add_reflexives!(g::HasGraph; idempotent::Bool=false)
+    if idempotent
+        out = Int[]
+        for v in vertices(g)
+            if isempty(incident(g, v, :src) ∩ incident(g, v, :tgt))
+                e′ = add_edge!(g, v, v)
+                push!(out, e′)
+            end
+        end
+        return out
+    else
+        vs =  vertices(g)
+        add_edges!(g, vs, vs)
+    end
+end
+
+add_reflexives(g; kw...) = add_reflexives!(copy(g); kw...)
 
 """ Remove a vertex from a graph.
 
@@ -344,6 +366,24 @@ function rem_vertices!(g::AbstractReflexiveGraph, vs; keep_edges::Bool=false)
   end
   rem_parts!(g, :E, es)
   rem_parts!(g, :V, vs)
+end
+
+function convert(::Type{AbstractReflexiveGraph}, g::Graph)
+    X = ReflexiveGraph()
+    vs = add_parts!(X, :V, nv(g))
+    es = for e in edges(g)
+        let src = g[e, :src], tgt = g[e, :tgt]
+            e′ = add_part!(X, :E, src=src, tgt=tgt)
+            # if the edge is reflexive and there is no entry for that vertex in `refl`, add it
+            src == tgt && X[src, :refl] == 0 && set_subpart!(X, src, :refl, e′)
+        end
+    end
+    # add the rest
+    refls = add_reflexives!(X; idempotent=true)
+    for e in refls
+        set_subpart!(X, X[e, :src], :refl, e)
+    end
+    return X
 end
 
 # Symmetric reflexive graphs
