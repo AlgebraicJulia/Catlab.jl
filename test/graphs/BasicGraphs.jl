@@ -46,6 +46,12 @@ g = Graph(2)
 @test collect(edges(g, 1, 1)) == [1,3]
 @test collect(edges(g, 2, 2)) == [2,4]
 
+# verify that adding multiple reflexive edges when the `idempotent` flag is set
+@test_throws Exception add_reflexives!(g; idempotent=true)
+
+# test that this error does not occur when `idempotent=false` is set
+@test add_reflexives!(g) == 5:6 
+
 g = Graph(3)
 add_edges!(g, [1,2,3], [2,3,1])
 gg = convert(AbstractReflexiveGraph, g)

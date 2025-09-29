@@ -164,19 +164,23 @@ end
 Setting the keyword `idempotent::Bool=true` will skip adding reflexive edges to vertices which already have them
 """
 function add_reflexives!(g::HasGraph; idempotent::Bool=false)
-    if idempotent
-        out = Int[]
-        for v in vertices(g)
-            if isempty(incident(g, v, :src) ∩ incident(g, v, :tgt))
-                e′ = add_edge!(g, v, v)
-                push!(out, e′)
-            end
-        end
-        return out
-    else
-        vs =  vertices(g)
-        add_edges!(g, vs, vs)
+  if idempotent
+    out = Int[]
+    for v in vertices(g)
+      es = incident(g, v, :src) ∩ incident(g, v, :tgt)
+      if isempty(es)
+        e′ = add_edge!(g, v, v)
+        push!(out, e′)
+      end
+      if length(es) > 1
+        error("Vertex $v has more than one reflexive loop. Set `idempotent=false` to bypass this error by allowing multiple reflexive edges")
+      end
     end
+    return out
+  else
+    vs = vertices(g)
+    add_edges!(g, vs, vs)
+  end
 end
 
 add_reflexives(g; kw...) = add_reflexives!(copy(g); kw...)
@@ -369,21 +373,20 @@ function rem_vertices!(g::AbstractReflexiveGraph, vs; keep_edges::Bool=false)
 end
 
 function convert(::Type{AbstractReflexiveGraph}, g::Graph)
-    X = ReflexiveGraph()
-    vs = add_parts!(X, :V, nv(g))
-    es = for e in edges(g)
-        let src = g[e, :src], tgt = g[e, :tgt]
-            e′ = add_part!(X, :E, src=src, tgt=tgt)
-            # if the edge is reflexive and there is no entry for that vertex in `refl`, add it
-            src == tgt && X[src, :refl] == 0 && set_subpart!(X, src, :refl, e′)
-        end
+  X = ReflexiveGraph()
+  vs = add_parts!(X, :V, nv(g))
+  es = for e in edges(g)
+    s, t = src(g, e), tgt(g, e)
+    e′ = add_part!(X, :E, src=s, tgt=t)
+      # if the edge is reflexive and there is no entry for that vertex in `refl`, add it
+      s == t && refl(X, s) == 0 && set_subpart!(X, s, :refl, e′)
     end
-    # add the rest
-    refls = add_reflexives!(X; idempotent=true)
-    for e in refls
-        set_subpart!(X, X[e, :src], :refl, e)
-    end
-    return X
+  # add the rest
+  refls = add_reflexives!(X; idempotent=true)
+  for e in refls
+    set_subpart!(X, src(X, e), :refl, e)
+  end
+  return X
 end
 
 # Symmetric reflexive graphs
