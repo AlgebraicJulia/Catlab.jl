@@ -19,6 +19,11 @@ end
 @testset "Subobjects" begin
   include("Subobjects.jl")
 end
+
 @testset "MCO" begin
   include("MCO.jl")
+end 
+
+@testset "Yoneda" begin
+  include("Yoneda.jl")
 end 
