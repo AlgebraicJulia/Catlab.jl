@@ -379,18 +379,12 @@ end
 
 function convert(::Type{AbstractReflexiveGraph}, g::Graph)
   X = ReflexiveGraph()
-  vs = add_parts!(X, :V, nv(g))
-  for e in edges(g)
-    s, t = src(g, e), tgt(g, e)
-    e′ = add_part!(X, :E, src=s, tgt=t)
-    s != t && continue
-    # if the edge is reflexive and there is no entry for that vertex in `refl`, add it. If there is already a reflexive edge there, then the underlying graph is invalid.
-    refl(X, s) == 0 ? set_subpart!(X, s, :refl, e′) : error("Vertex $s has mulitple loops, and therefore cannot have a distinguished reflexive edge.")
-  end
-  # add the rest
-  refls = add_loops!(X; idempotent=true)
-  for e in refls
-    set_subpart!(X, src(X, e), :refl, e)
+  copy_parts!(X, g)
+  add_loops!(X; idempotent=true)
+  for v in vertices(X) 
+    e = incident(X, v, :src) ∩ incident(X, v, :tgt)
+    length(e) > 1 && error("Vertex $v has multiple loops, and therefore cannot have a distinguished reflexive edge.")
+    set_subpart!(X, v, :refl, only(e)) 
   end
   return X
 end
