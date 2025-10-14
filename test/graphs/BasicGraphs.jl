@@ -35,6 +35,33 @@ add_edge!(g, 1, 2)
 @test degree(g, 1) == 2
 @test SimpleGraphs.DiGraph(g) == SimpleGraphs.path_digraph(3)
 
+g = Graph(2)
+@test add_loops!(g) == 1:2
+@test collect(edges(g, 1, 1)) == [1]
+@test collect(edges(g, 2, 2)) == [2]
+@test add_loops!(g; idempotent=true) == Int[]
+@test collect(edges(g, 1, 1)) == [1]
+@test collect(edges(g, 2, 2)) == [2]
+@test add_loops!(g; idempotent=false) == 3:4
+@test collect(edges(g, 1, 1)) == [1,3]
+@test collect(edges(g, 2, 2)) == [2,4]
+
+g = Graph(3)
+add_edges!(g, [1,2,3], [2,3,1])
+gg = convert(AbstractReflexiveGraph, g)
+@test gg[1:3, :refl] == 4:6
+
+g = Graph(3)
+add_edges!(g, [1,2,3,3], [2,3,1,3])
+gg = convert(AbstractReflexiveGraph, g)
+@test gg[1:2, :refl] == 5:6 # vertices without reflexive edges get new ones
+@test gg[3, :refl] == 4 # preexisting reflexive edge is retained
+
+# test that a graph with two loops cannot be converted into an AbstractReflexiveGraph
+g = Graph(3)
+add_edges!(g, [1,2,3,3], [2,3,3,3])
+@test_throws Exception convert(AbstractReflexiveGraph, g)
+
 g = Graph(4)
 add_edges!(g, [1,2,3], [2,3,4])
 @test SimpleGraphs.DiGraph(g) == SimpleGraphs.path_digraph(4)

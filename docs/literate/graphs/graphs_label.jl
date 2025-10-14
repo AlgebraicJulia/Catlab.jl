@@ -138,14 +138,6 @@ Grph = ACSetCategory(G)
 draw(apex(product[Grph](G,G)))
 
 # The graph above looks weirdly disconnected and probably wasn't what you expected to see as the product. When we compose with products, we often want to add the reflexive edges in order to get the expected notion of product.
-add_loops!(G::LGraph) = begin
-  for v in parts(G,:V)
-    add_edge!(G, v,v)
-  end
-  return G
-end 
-add_loops(G::LGraph) = add_loops!(copy(G))
-
 Gᵣ = add_loops(G)
 P = apex(product[Grph](Gᵣ, G))
 draw(P)

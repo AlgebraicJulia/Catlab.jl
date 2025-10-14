@@ -13,7 +13,7 @@ to differences between the data structures.
 module BasicGraphs
 export HasVertices, HasGraph, AbstractGraph, Graph, SchGraph,
   nv, ne, src, tgt, edges, inedges, outedges, vertices, has_edge, has_vertex,
-  add_edge!, add_edges!, add_vertex!, add_vertices!, add_vertices_with_indices!,
+  add_edge!, add_edges!, add_vertex!, add_vertices!, add_vertices_with_indices!, add_loops!, add_loops,
   rem_edge!, rem_edges!, rem_vertex!, rem_vertices!, 
   neighbors, inneighbors, outneighbors, all_neighbors, degree, induced_subgraph,
   AbstractSymmetricGraph, SymmetricGraph, SchSymmetricGraph, inv, is_directed,
@@ -25,7 +25,7 @@ export HasVertices, HasGraph, AbstractGraph, Graph, SchGraph,
   AbstractWeightedGraph, WeightedGraph, SchWeightedGraph, weight,
   AbstractSymmetricWeightedGraph, SymmetricWeightedGraph, SchSymmetricWeightedGraph
 
-import Base: inv
+import Base: inv, convert
 
 using ACSets, ...ACSetsGATsInterop
 using ...Theories
@@ -157,6 +157,37 @@ function add_edges!(g::HasGraph, srcs::AbstractVector{Int},
                     tgts::AbstractVector{Int}; kw...)
   @assert (n = length(srcs)) == length(tgts)
   add_parts!(g, :E, n, (src=srcs, tgt=tgts, kw...))
+end
+
+""" Adds loops to a graph
+
+Setting the keyword `idempotent::Bool=true` will skip adding loops on vertices which already have them. These loops may canonically become reflexive edges by converting the `Graph` to an `AbstractReflexiveGraph` 
+```
+convert(AbstractReflexiveGraph, g)
+```
+however this will throw an error if any vertex has more than one loop.
+"""
+function add_loops!(g::HasGraph; idempotent::Bool=false)
+  if idempotent
+    out = Int[]
+    for v in vertices(g)
+      es = incident(g, v, :src) ∩ incident(g, v, :tgt)
+      if isempty(es)
+        e′ = add_edge!(g, v, v)
+        push!(out, e′)
+      end 
+    end
+    return out
+  else
+    vs = vertices(g)
+    add_edges!(g, vs, vs)
+  end
+end
+
+function add_loops(g; kw...)
+  h = copy(g)
+  add_loops!(h; kw...)
+  h
 end
 
 """ Remove a vertex from a graph.
@@ -344,6 +375,18 @@ function rem_vertices!(g::AbstractReflexiveGraph, vs; keep_edges::Bool=false)
   end
   rem_parts!(g, :E, es)
   rem_parts!(g, :V, vs)
+end
+
+function convert(::Type{AbstractReflexiveGraph}, g::Graph)
+  X = ReflexiveGraph()
+  copy_parts!(X, g)
+  add_loops!(X; idempotent=true)
+  for v in vertices(X) 
+    e = incident(X, v, :src) ∩ incident(X, v, :tgt)
+    length(e) > 1 && error("Vertex $v has multiple loops, and therefore cannot have a distinguished reflexive edge.")
+    set_subpart!(X, v, :refl, only(e)) 
+  end
+  return X
 end
 
 # Symmetric reflexive graphs
