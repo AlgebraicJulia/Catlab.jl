@@ -9,6 +9,7 @@ using ACSets, GATlab
 import .....Theories: ob, hom, top, bottom, meet, join
 
 using .....BasicSets, ...Cats, ...SetCats
+import ...Cats: Subobject
 import .....BasicSets: preimage, left
 import ...Cats: components, implies, subtract, negate, non, force
 using ..Pointwise
