@@ -6,9 +6,9 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Set up Julia
-        uses: julia-actions/setup-julia@latest
+        uses: julia-actions/setup-julia@v1
         with:
-          version: "1"
+          version: "1.11"
       - name: Install dependencies
         run: julia -e 'using Pkg; pkg"add PkgBenchmark BenchmarkCI@0.1"'
       - name: Run benchmarks
