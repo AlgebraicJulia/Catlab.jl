@@ -9,6 +9,7 @@ include("PropertyGraphs.jl")
 include("GraphAlgorithms.jl")
 include("GraphGenerators.jl")
 include("GraphSearching.jl")
+include("ImplicitGraphs.jl")
 
 @reexport using .BasicGraphs
 @reexport using .BipartiteGraphs
@@ -17,5 +18,6 @@ include("GraphSearching.jl")
 @reexport using .GraphAlgorithms
 @reexport using .GraphGenerators
 @reexport using .GraphSearching
+@reexport using .ImplicitGraphs
 
 end
