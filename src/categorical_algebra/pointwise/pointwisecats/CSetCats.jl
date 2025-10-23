@@ -94,7 +94,7 @@ function coerce_component(::Nothing, d::FinSet, cd::FinSet)
   if length(d) == 0
     FinFunction(getvalue(d) isa FinSetInt ? Int[] : Set{eltype(cd)}(), cd)
   elseif length(cd) == 1
-    FinFunction(ConstantFunction(only(parts(Y, o)), d, cd))
+    FinFunction(ConstantFunction(only(cd), d, cd))
   else 
     error("Missing component with dom $d and codom $cd")
   end
