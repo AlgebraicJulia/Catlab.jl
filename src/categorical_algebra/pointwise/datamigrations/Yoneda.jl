@@ -350,14 +350,6 @@ function colimit_representables(data::DiagramData, y::FinDomFunctor)
   # Given a name of some representable, get its corresponding inclusion into Σ
   lookup = Dict([v=>ι[i] for (i,(_,v)) in enumerate(reprs)])
 
-  # TODO get representing element for real. Requires passing in extra data.
-  names = NamedTuple(map(reprs) do (repr_type, repr_name) 
-    ι = lookup[repr_name][repr_type]
-    length(dom(ι)) == 1 || error("Assumption that representing element is "*
-    "unique has been violated, more data required by `colimit_representables`")
-    repr_name => (repr_type, ι(only(dom(ι))))
-  end) 
-
   # Convert a morphism out of a representable into an ACSetTransformation into Σ
   function list_to_hom(rep_f::RPath)::ACSetTransformation
     rep, f = rep_f
@@ -397,8 +389,17 @@ function colimit_representables(data::DiagramData, y::FinDomFunctor)
 
   # Perform all pushouts at once by putting the spans together in parallel
   lefts, rights = left.(spans), right.(spans)
-  acset = apex(pushout[𝒞](foldl(oplus[𝒞′], lefts), foldl(copair[𝒞′], rights)))
-  (names, acset)
+  _,bigι = big_colim = pushout[𝒞](foldl(oplus[𝒞′], lefts), foldl(copair[𝒞′], rights))
+
+  # TODO get representing element for real. Requires passing in extra data.
+  names = NamedTuple(map(reprs) do (repr_type, repr_name)
+    ι = FinFunction(lookup[repr_name][repr_type], bigι[repr_type])
+    length(dom(ι)) == 1 || error("Assumption that representing element is "*
+    "unique has been violated, more data required by `colimit_representables`")
+    repr_name => (repr_type, ι(only(dom(ι))))
+  end) 
+
+  (names, apex(big_colim))
 end
 
 end # module
