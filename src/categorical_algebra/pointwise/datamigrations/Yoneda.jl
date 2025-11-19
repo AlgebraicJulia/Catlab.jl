@@ -271,20 +271,18 @@ end
 
 """
 ```
-Dom = @named_acset_colim yGraph MyDomain begin
+names, Dom = @named_acset_colim yGraph begin
   v::V; e::E; src(e)==v
 end
 ```
 
-This would be have like `@acset_colim` and assign to `Dom` the walking edge 
+This would behave like `@acset_colim` and assign to `Dom` the walking edge 
 ACSet with src=1 and tgt=2. However, unlike `@acset_colim`, this also assigns 
-to a variable MyDomain the NamedTuple `(v=(:V, 1),e=(:E, 1))`.
+to a variable `names` the NamedTuple `(v=(:V, 1),e=(:E, 1))`.
 """
-macro named_acset_colim(yon, names_var, body)
+macro named_acset_colim(yon, body)
   quote 
-    names, acset = colimit_representables($(parse_diagram_data(body, __module__)), $(esc(yon)))
-    $(esc(names_var)) = names
-    acset
+    colimit_representables($(parse_diagram_data(body, __module__)), $(esc(yon)))
   end
 end
 
@@ -325,7 +323,10 @@ representables and relations. Assumes a background context of VarACSetCategory
 function colimit_representables(data::DiagramData, y::FinDomFunctor)
   # Warning: we assume FinDomFunctor is implemented by FinDomFunctorMap to
   # get access to an arbitrary element (not part of the FinCat interface)
-  arb = last(first(getvalue(y).ob_map))
+  vy = getvalue(y)
+  vy isa FinDomFunctorMap || error("Expected FinDomFunctorMap")
+  arb = last(first(vy.ob_map))
+
   S = acset_schema(arb)
   P = Presentation(S)
   
@@ -334,6 +335,7 @@ function colimit_representables(data::DiagramData, y::FinDomFunctor)
   ks = collect(keys(data.reprs))
 
   𝒞 = ACSetCategory(VarACSetCat(arb))
+  cat(x::Symbol) = x ∈ ob(S) ? entity_cat(𝒞) : attr_cat(𝒞, x)
   𝒞′ = TypedCatWithCoproducts(𝒞)
 
   # Total order on the representables 
@@ -350,34 +352,17 @@ function colimit_representables(data::DiagramData, y::FinDomFunctor)
   # Given a name of some representable, get its corresponding inclusion into Σ
   lookup = Dict([v=>ι[i] for (i,(_,v)) in enumerate(reprs)])
 
-  # Convert a morphism out of a representable into an ACSetTransformation into Σ
-  function list_to_hom(rep_f::RPath)::ACSetTransformation
-    rep, f = rep_f
-    p = if isempty(f)
-      k = ks[findfirst(k->rep ∈ data.reprs[k], ks)]
-      id(gen(k))
-    else
-      compose(gen.(f))
-    end
-    m = @match only(typeof(p).parameters) begin 
-      :generator => gen_map(y, p) 
-      :compose => hom_map(y, p)
-      :id => id[𝒞](ob_map(y, dom(p)))
-    end
-    compose[𝒞](m, lookup[rep])
-  end
-
   # A quotient for each equation: if we are identifying a rep x, this is a span 
   # x ⇇ x² ⇉ Σᵢrᵢ where the left is merge + the right map comes from an equation
   spans = map(data.eqs) do lr
-    l, r = map(list_to_hom,lr)
+    l, r = [list_to_hom(y, 𝒞, lookup, x) for x in lr]
     merge = let idᵣ = id[𝒞](dom(l)); copair[𝒞′](idᵣ,idᵣ) end
     Span(merge, copair[𝒞′](l,r))
   end
 
   # A quotient for each fixed value: assert the attrvar is equal via pushout
   for (rp,val) in pairs(data.vals)
-    h = list_to_hom(rp)
+    h = list_to_hom(y, 𝒞, lookup, rp)
     T = codom(S, last(last(rp))) 
     set_val = ACSetTransformation(ob_map(y, gen(T)), constructor(𝒞); 
                                   Dict([T=>[val]])...)
@@ -385,21 +370,38 @@ function colimit_representables(data::DiagramData, y::FinDomFunctor)
   end
 
   # If we are just asking for a coproduct of representables
-  isempty(spans) && return (names, apex(Σ))
-
-  # Perform all pushouts at once by putting the spans together in parallel
-  lefts, rights = left.(spans), right.(spans)
-  _,bigι = big_colim = pushout[𝒞](foldl(oplus[𝒞′], lefts), foldl(copair[𝒞′], rights))
+  colim, incl = if isempty(spans) 
+    Σ, Dict(k => id[cat(k)](get_ob(𝒞, apex(Σ), k)) for k in types(S))
+  else 
+    # Perform all pushouts at once by putting spans together in parallel
+    lefts, rights = left.(spans), right.(spans)
+    _,bigι = big_colim = pushout[𝒞](
+      foldl(oplus[𝒞′], lefts), foldl(copair[𝒞′], rights))
+    (big_colim, bigι)
+  end
 
   # TODO get representing element for real. Requires passing in extra data.
   names = NamedTuple(map(reprs) do (repr_type, repr_name)
-    ι = FinFunction(lookup[repr_name][repr_type], bigι[repr_type])
-    length(dom(ι)) == 1 || error("Assumption that representing element is "*
+    c = cat(repr_type)
+    ι = compose[c](lookup[repr_name][repr_type],incl[repr_type])
+    length(dom[c](ι)) == 1 || error("Assumption that representing element is "*
     "unique has been violated, more data required by `colimit_representables`")
-    repr_name => (repr_type, ι(only(dom(ι))))
-  end) 
+    e = (repr_type ∈ ob(S) ? identity : Left)(only(dom[c](ι)))
+    repr_name => (repr_type, hom_map[c](ι)(e))
+  end)
 
-  (names, apex(big_colim))
+  (names, apex(colim))
+end
+
+# Helper function for colimit_representables
+# Convert a morphism out of a representable into an ACSetTransformation into Σ
+function list_to_hom(y::FinDomFunctor, 𝒞::ACSetCategory, 
+                     lookup::Dict{Symbol, <:ACSetTransformation}, 
+                     rep_f::RPath)::ACSetTransformation
+  rep, f = rep_f
+  gen(x) = generator(Presentation(acset_schema(𝒞)), x)
+  hs = gen_map.(Ref(y), gen.(f))
+  foldl(compose[𝒞], [hs..., lookup[rep]])
 end
 
 end # module

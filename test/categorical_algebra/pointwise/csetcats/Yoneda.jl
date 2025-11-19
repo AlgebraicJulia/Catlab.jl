@@ -85,7 +85,7 @@ v3e2′ = @acset Graph begin V=3; E=2; src=[1,2]; tgt=[2,3] end
 
 @test is_isomorphic(v3e2, v3e2′)
 
-acs = @named_acset_colim y_Graph MyDomain begin
+MyDomain, acs = @named_acset_colim y_Graph begin
   v::V; e::E; src(e)==v
 end
 
