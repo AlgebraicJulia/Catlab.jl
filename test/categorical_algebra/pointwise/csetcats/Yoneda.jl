@@ -73,6 +73,7 @@ ZG = ob(product[ACSetCategory(DDS42())](Z,G))
 #############
 
 @test is_isomorphic((@acset_colim y_Graph begin v::V end), Graph(1))
+@test is_isomorphic((@acset_colim y_Graph begin (v1,v2,v3)::V; v1==v2==v3 end), Graph(1))
 
 v3e2 = @acset_colim y_Graph begin
   v1::V; (e1,e2)::E
@@ -83,5 +84,30 @@ end
 v3e2′ = @acset Graph begin V=3; E=2; src=[1,2]; tgt=[2,3] end 
 
 @test is_isomorphic(v3e2, v3e2′)
+
+MyDomain, acs = @named_acset_colim y_Graph begin
+  v::V; e::E; src(e)==v
+end
+
+@test acs[MyDomain.e[2],:src] == MyDomain.v[2]
+
+# sending path graph •→•→• to •→•↺↺. There are two graph momomorphisms if we 
+# identify the start vertices
+f = @acset_transformation_colim y_Graph #=domain=# begin
+  (vstart,vend)::V; (e1,e2)::E; 
+  src(e1)==vstart; tgt(e1)==src(e2); tgt(e2)==vend
+end #=codomain =# begin
+  v::V; (ea,eb,ec)::E; 
+  src(ea)==v; tgt(ea)==src(eb) == tgt(eb) == src(ec) == tgt(ec)
+end #=mapping=# begin vstart=>v; end #=kw=# (any=true, monic=[:E])
+
+# However, we can remove `any=true` by also specifying one the two loops 
+f2 = @acset_transformation_colim y_Graph #=domain=# begin
+  (vstart,vend)::V; (e1,e2)::E; 
+  src(e1)==vstart; tgt(e1)==src(e2); tgt(e2)==vend
+end #=codomain =# begin
+  v::V; (ea,eb,ec)::E; 
+  src(ea)==v; tgt(ea)==src(eb) == tgt(eb) == src(ec) == tgt(ec)
+end #=mapping=# begin vstart=>v; e2=>eb; end #=kw=# (monic=[:E],)
 
 end # module
