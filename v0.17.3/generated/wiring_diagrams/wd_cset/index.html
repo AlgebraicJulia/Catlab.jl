@@ -1,0 +1,1640 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Wiring Diagrams as Attributed C-Sets · Catlab.jl</title><meta name="title" content="Wiring Diagrams as Attributed C-Sets · Catlab.jl"/><meta property="og:title" content="Wiring Diagrams as Attributed C-Sets · Catlab.jl"/><meta property="twitter:title" content="Wiring Diagrams as Attributed C-Sets · Catlab.jl"/><meta name="description" content="Documentation for Catlab.jl."/><meta property="og:description" content="Documentation for Catlab.jl."/><meta property="twitter:description" content="Documentation for Catlab.jl."/><script data-outdated-warner src="../../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../search_index.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../assets/themeswap.js"></script><script src="../../../assets/analytics.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../../"><img src="../../../assets/logo.svg" alt="Catlab.jl logo"/></a><div class="docs-package-name"><span class="docs-autofit"><a href="../../../">Catlab.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../../">Catlab.jl</a></li><li><span class="tocitem">Vignettes</span><ul><li><input class="collapse-toggle" id="menuitem-2-1" type="checkbox"/><label class="tocitem" for="menuitem-2-1"><span class="docs-label">Seven Sketches in Compositionality</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../sketches/partitions/">Partitions</a></li><li><a class="tocitem" href="../../sketches/preorders/">Preorders</a></li><li><a class="tocitem" href="../../sketches/meets/">Meets in Preorders</a></li><li><a class="tocitem" href="../../sketches/smc/">Symmetric Monoidal Categories</a></li><li><a class="tocitem" href="../../sketches/cat_elements/">The Category of Elements</a></li><li><a class="tocitem" href="../../sketches/sheaves/">Basic Sheaf Constructions</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-2" type="checkbox"/><label class="tocitem" for="menuitem-2-2"><span class="docs-label">Graphs</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../graphs/graphs/">The Category of Graphs</a></li><li><a class="tocitem" href="../../graphs/graphs_label/">Labeled Graphs</a></li><li><a class="tocitem" href="../../graphs/subgraphs/">Algebra of subgraphs</a></li></ul></li><li><span class="tocitem">Categorical Algebra</span></li><li><input class="collapse-toggle" id="menuitem-2-4" type="checkbox" checked/><label class="tocitem" for="menuitem-2-4"><span class="docs-label">Wiring Diagrams</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../wiring_diagram_basics/">Basics of wiring diagrams</a></li><li><a class="tocitem" href="../diagrams_and_expressions/">Wiring diagrams and syntactic expressions</a></li><li class="is-active"><a class="tocitem" href>Wiring Diagrams as Attributed C-Sets</a><ul class="internal"><li><a class="tocitem" href="#Directed-Wiring-Diagrams"><span>Directed Wiring Diagrams</span></a></li><li><a class="tocitem" href="#Diagrams-as-C-Sets"><span>Diagrams as C-Sets</span></a></li><li><a class="tocitem" href="#Undirected-Wiring-Diagrams"><span>Undirected Wiring Diagrams</span></a></li><li><a class="tocitem" href="#Circular-Port-Graphs"><span>Circular Port Graphs</span></a></li></ul></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-5" type="checkbox"/><label class="tocitem" for="menuitem-2-5"><span class="docs-label">Graphics</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../graphics/graphviz_graphs/">Drawing graphs in Graphviz</a></li><li><a class="tocitem" href="../../graphics/graphviz_wiring_diagrams/">Drawing wiring diagrams in Graphviz</a></li><li><a class="tocitem" href="../../graphics/composejl_wiring_diagrams/">Drawing wiring diagrams in Compose.jl</a></li><li><a class="tocitem" href="../../graphics/tikz_wiring_diagrams/">Drawing wiring diagrams in TikZ</a></li><li><a class="tocitem" href="../../graphics/layouts_vs_drawings/">Layouts versus drawings of wiring diagrams</a></li></ul></li></ul></li><li><span class="tocitem">Modules</span><ul><li><a class="tocitem" href="../../../apis/theories/">Standard library of theories</a></li><li><a class="tocitem" href="../../../apis/categorical_algebra/">Categorical algebra</a></li><li><a class="tocitem" href="../../../apis/graphs/">Graphs</a></li><li><a class="tocitem" href="../../../apis/wiring_diagrams/">Wiring diagrams</a></li><li><a class="tocitem" href="../../../apis/graphics/">Graphics</a></li><li><a class="tocitem" href="../../../apis/programs/">Programs</a></li><li><a class="tocitem" href="../../../apis/sheaves/">Sheaves</a></li></ul></li><li><span class="tocitem">Developer Docs</span><ul><li><a class="tocitem" href="../../../devdocs/release/">Release Notes</a></li><li><a class="tocitem" href="../../../devdocs/style/">Style Guide for AlgebraicJulia</a></li><li><a class="tocitem" href="../../peg-parser/dsl_peg_tutorial/">Domain Specific Parsing Expression Grammars</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Vignettes</a></li><li><a class="is-disabled">Wiring Diagrams</a></li><li class="is-active"><a href>Wiring Diagrams as Attributed C-Sets</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Wiring Diagrams as Attributed C-Sets</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/Catlab.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/Catlab.jl/blob/main/docs/literate/wiring_diagrams/wd_cset.jl" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Wiring-Diagrams-as-Attributed-C-Sets"><a class="docs-heading-anchor" href="#Wiring-Diagrams-as-Attributed-C-Sets">Wiring Diagrams as Attributed C-Sets</a><a id="Wiring-Diagrams-as-Attributed-C-Sets-1"></a><a class="docs-heading-anchor-permalink" href="#Wiring-Diagrams-as-Attributed-C-Sets" title="Permalink"></a></h1><p>Catlab supports many different flavors of diagrammatic syntax. These support the different combinatorial data structures that we use for representing categorical constructions. We will discuss DirectedWiringDiagrams, UndirectedWiringDiagrams, and CPortGraphs in this document.</p><pre><code class="language-julia hljs">using Catlab.Theories, Catlab.CategoricalAlgebra
+using Catlab.WiringDiagrams, Catlab.Programs, Catlab.Graphics
+using Catlab.Graphics: Graphviz
+
+draw(d::WiringDiagram) = to_graphviz(d,
+  orientation=LeftToRight,
+  labels=true, label_attr=:xlabel,
+  node_attrs=Graphviz.Attributes(
+    :fontname =&gt; &quot;Courier&quot;,
+  ),
+  edge_attrs=Graphviz.Attributes(
+    :fontname =&gt; &quot;Courier&quot;,
+  )
+)
+
+draw(uwd::AbstractUWD) = to_graphviz(uwd, junction_labels=:variable, box_labels=:name)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">draw (generic function with 2 methods)</code></pre><h2 id="Directed-Wiring-Diagrams"><a class="docs-heading-anchor" href="#Directed-Wiring-Diagrams">Directed Wiring Diagrams</a><a id="Directed-Wiring-Diagrams-1"></a><a class="docs-heading-anchor-permalink" href="#Directed-Wiring-Diagrams" title="Permalink"></a></h2><p>DWDs are used to represent the morphisms in a symmetric monoidal category. You can get started by presenting a <code>FreeSymmetricMonoidalCategory</code> with the <code>@present</code> macro.</p><pre><code class="language-julia hljs">@present P(FreeSymmetricMonoidalCategory) begin
+  (A,B,C,D)::Ob
+  f::Hom(A,B)
+  g::Hom(B,A)
+  h::Hom(A⊗B, C)
+  k::Hom(C,D⊗A)
+end
+generators(P)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">8-element Vector{CategoryExpr{:generator}}:
+ A
+ B
+ C
+ D
+ f: A → B
+ g: B → A
+ h: A⊗B → C
+ k: C → D⊗A</code></pre><p>These presentations are very syntactic objects and expose an API for manipulating expressions.</p><pre><code class="language-julia hljs">for g in generators(P)
+  &quot;$g is a $(gat_typeof(g)) with arguments $(gat_type_args(g))&quot;
+end</code></pre><p>The <code>gat_typeof</code> function computes the algebraic type of a term by analogy to <code>Base.typeof</code> which computes the Julia type of a value.</p><pre><code class="language-julia hljs">homs_P = filter(generators(P)) do g
+  gat_typeof(g) == :Hom
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">4-element Vector{CategoryExpr{:generator}}:
+ f: A → B
+ g: B → A
+ h: A⊗B → C
+ k: C → D⊗A</code></pre><p>When the term is a Hom, you can get the domain and codomain of the morphism with the <code>dom</code> and <code>codom</code> functions.</p><pre><code class="language-julia hljs">map(homs_P) do f
+  &quot;$f: $(dom(f)) → $(codom(f))&quot;
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">4-element Vector{String}:
+ &quot;f: A → B&quot;
+ &quot;g: B → A&quot;
+ &quot;h: otimes(A,B) → C&quot;
+ &quot;k: C → otimes(D,A)&quot;</code></pre><p>With the presentation you can build up morphism expressions using a formula syntax.</p><pre><code class="language-julia hljs">P[:h]⋅P[:k]</code></pre><p class="math-container">\[h \cdot k : A \otimes B \to D \otimes A\]</p><p>This syntactic API is useful for manipulating terms in an arbitrary GAT and is the formal language of Catlab for representing and manipulating algebraic structures. However, when we want to work with big expressions in an SMC, the tree structure inherent to formulas is too verbose, and we want to move to a port-graph structure called <code>DirectedWiringDiagrams</code>. This gives us the benefits of combinatorial data structures like graphs with the right expressional power for representing the morphisms in an SMC.</p><pre><code class="language-julia hljs">wd = @program P (a::A, b::B) begin
+  c = h(a,b)
+  return k(c)
+end
+
+draw(wd)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="156pt" height="74pt"
+ viewBox="0.00 0.00 156.00 74.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 70)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-70 152,-70 152,4 -4,4"/>
+<!-- n0in1 -->
+<!-- n0in2 -->
+<!-- n0in1&%2345;&gt;n0in2 -->
+<!-- n1 -->
+<!-- h -->
+<g id="n1" class="node">
+<title>n1</title>
+<polygon fill="none" stroke="black" points="37.5,-9 37.5,-57 56.5,-57 56.5,-9 37.5,-9"/>
+<text text-anchor="start" x="42.5" y="-29.3" font-family="Courier,monospace" font-size="14.00">h</text>
+</g>
+<!-- n0in1&%2345;&gt;n1 -->
+<!-- A -->
+<g id="e1" class="edge">
+<title>n0in1:e&%2345;&gt;n1:w</title>
+<path fill="none" stroke="black" d="M1,-54C15.56,-54 19.62,-46.99 31.71,-45.34"/>
+<polygon fill="black" stroke="black" points="32.12,-47.07 37,-45 31.9,-43.58 32.12,-47.07"/>
+<text text-anchor="middle" x="14.4" y="-38.35" font-family="Courier,monospace" font-size="14.00">A</text>
+</g>
+<!-- n0in2&%2345;&gt;n1 -->
+<!-- B -->
+<g id="e2" class="edge">
+<title>n0in2:e&%2345;&gt;n1:w</title>
+<path fill="none" stroke="black" d="M1,-12C15.56,-12 19.62,-19.01 31.71,-20.66"/>
+<polygon fill="black" stroke="black" points="31.9,-22.42 37,-21 32.12,-18.93 31.9,-22.42"/>
+<text text-anchor="middle" x="14.4" y="-5.25" font-family="Courier,monospace" font-size="14.00">B</text>
+</g>
+<!-- n0out1 -->
+<!-- n0out2 -->
+<!-- n0out1&%2345;&gt;n0out2 -->
+<!-- n2 -->
+<!-- k -->
+<g id="n2" class="node">
+<title>n2</title>
+<polygon fill="none" stroke="black" points="92.5,-9 92.5,-57 111.5,-57 111.5,-9 92.5,-9"/>
+<text text-anchor="start" x="97.5" y="-29.3" font-family="Courier,monospace" font-size="14.00">k</text>
+</g>
+<!-- n1&%2345;&gt;n2 -->
+<!-- C -->
+<g id="e3" class="edge">
+<title>n1:e&%2345;&gt;n2:w</title>
+<path fill="none" stroke="black" d="M56,-33C70.12,-33 74.9,-33 86.83,-33"/>
+<polygon fill="black" stroke="black" points="87,-34.75 92,-33 87,-31.25 87,-34.75"/>
+<text text-anchor="middle" x="69.4" y="-21.8" font-family="Courier,monospace" font-size="14.00">C</text>
+</g>
+<!-- n2&%2345;&gt;n0out1 -->
+<!-- D -->
+<g id="e4" class="edge">
+<title>n2:e&%2345;&gt;n0out1:w</title>
+<path fill="none" stroke="black" d="M111,-45C125.56,-45 129.62,-52.01 141.71,-53.66"/>
+<polygon fill="black" stroke="black" points="141.9,-55.42 147,-54 142.12,-51.93 141.9,-55.42"/>
+<text text-anchor="middle" x="124.4" y="-38.25" font-family="Courier,monospace" font-size="14.00">D</text>
+</g>
+<!-- n2&%2345;&gt;n0out2 -->
+<!-- A -->
+<g id="e5" class="edge">
+<title>n2:e&%2345;&gt;n0out2:w</title>
+<path fill="none" stroke="black" d="M111,-21C125.56,-21 129.62,-13.99 141.71,-12.34"/>
+<polygon fill="black" stroke="black" points="142.12,-14.07 147,-12 141.9,-10.58 142.12,-14.07"/>
+<text text-anchor="middle" x="124.4" y="-5.35" font-family="Courier,monospace" font-size="14.00">A</text>
+</g>
+</g>
+</svg>
+'/><p>Catlab gives you the tools for drawing wiring diagrams. Visualization of wiring diagrams is the oldest part of Catlab and the original motivation for its development. The <code>@program</code> macro allows you to define wiring diagrams using a syntax that feels like Julia code.</p><pre><code class="language-julia hljs">wd = @program P (a::A, b::B) begin
+  c = h(a,b)
+  d,a₁ = k(c)
+  return d, f(a₁)
+end
+draw(wd)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="211pt" height="77pt"
+ viewBox="0.00 0.00 211.00 77.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 73)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-73 207,-73 207,4 -4,4"/>
+<!-- n0in1 -->
+<!-- n0in2 -->
+<!-- n0in1&%2345;&gt;n0in2 -->
+<!-- n1 -->
+<!-- h -->
+<g id="n1" class="node">
+<title>n1</title>
+<polygon fill="none" stroke="black" points="37.5,-12 37.5,-60 56.5,-60 56.5,-12 37.5,-12"/>
+<text text-anchor="start" x="42.5" y="-32.3" font-family="Courier,monospace" font-size="14.00">h</text>
+</g>
+<!-- n0in1&%2345;&gt;n1 -->
+<!-- A -->
+<g id="e1" class="edge">
+<title>n0in1:e&%2345;&gt;n1:w</title>
+<path fill="none" stroke="black" d="M1,-57C15.56,-57 19.62,-49.99 31.71,-48.34"/>
+<polygon fill="black" stroke="black" points="32.12,-50.07 37,-48 31.9,-46.58 32.12,-50.07"/>
+<text text-anchor="middle" x="14.4" y="-41.35" font-family="Courier,monospace" font-size="14.00">A</text>
+</g>
+<!-- n0in2&%2345;&gt;n1 -->
+<!-- B -->
+<g id="e2" class="edge">
+<title>n0in2:e&%2345;&gt;n1:w</title>
+<path fill="none" stroke="black" d="M1,-15C15.56,-15 19.62,-22.01 31.71,-23.66"/>
+<polygon fill="black" stroke="black" points="31.9,-25.42 37,-24 32.12,-21.93 31.9,-25.42"/>
+<text text-anchor="middle" x="14.4" y="-8.25" font-family="Courier,monospace" font-size="14.00">B</text>
+</g>
+<!-- n0out1 -->
+<!-- n0out2 -->
+<!-- n0out1&%2345;&gt;n0out2 -->
+<!-- n2 -->
+<!-- k -->
+<g id="n2" class="node">
+<title>n2</title>
+<polygon fill="none" stroke="black" points="92.5,-12 92.5,-60 111.5,-60 111.5,-12 92.5,-12"/>
+<text text-anchor="start" x="97.5" y="-32.3" font-family="Courier,monospace" font-size="14.00">k</text>
+</g>
+<!-- n1&%2345;&gt;n2 -->
+<!-- C -->
+<g id="e3" class="edge">
+<title>n1:e&%2345;&gt;n2:w</title>
+<path fill="none" stroke="black" d="M56,-36C70.12,-36 74.9,-36 86.83,-36"/>
+<polygon fill="black" stroke="black" points="87,-37.75 92,-36 87,-34.25 87,-37.75"/>
+<text text-anchor="middle" x="69.4" y="-24.8" font-family="Courier,monospace" font-size="14.00">C</text>
+</g>
+<!-- n2&%2345;&gt;n0out1 -->
+<!-- D -->
+<g id="e5" class="edge">
+<title>n2:e&%2345;&gt;n0out1:w</title>
+<path fill="none" stroke="black" d="M111,-48C149.9,-48 160.47,-56.24 196.93,-56.95"/>
+<polygon fill="black" stroke="black" points="196.98,-58.7 202,-57 197.02,-55.2 196.98,-58.7"/>
+<text text-anchor="middle" x="152.07" y="-41.31" font-family="Courier,monospace" font-size="14.00">D</text>
+</g>
+<!-- n3 -->
+<!-- f -->
+<g id="n3" class="node">
+<title>n3</title>
+<polygon fill="none" stroke="black" points="147.5,-3 147.5,-28 166.5,-28 166.5,-3 147.5,-3"/>
+<text text-anchor="start" x="152.5" y="-11.8" font-family="Courier,monospace" font-size="14.00">f</text>
+</g>
+<!-- n2&%2345;&gt;n3 -->
+<!-- A -->
+<g id="e4" class="edge">
+<title>n2:e&%2345;&gt;n3:w</title>
+<path fill="none" stroke="black" d="M111,-24C125.56,-24 129.62,-16.99 141.71,-15.34"/>
+<polygon fill="black" stroke="black" points="142.12,-17.07 147,-15 141.9,-13.58 142.12,-17.07"/>
+<text text-anchor="middle" x="124.4" y="-8.35" font-family="Courier,monospace" font-size="14.00">A</text>
+</g>
+<!-- n3&%2345;&gt;n0out2 -->
+<!-- B -->
+<g id="e6" class="edge">
+<title>n3:e&%2345;&gt;n0out2:w</title>
+<path fill="none" stroke="black" d="M166,-15C180.12,-15 184.9,-15 196.83,-15"/>
+<polygon fill="black" stroke="black" points="197,-16.75 202,-15 197,-13.25 197,-16.75"/>
+<text text-anchor="middle" x="179.4" y="-3.8" font-family="Courier,monospace" font-size="14.00">B</text>
+</g>
+</g>
+</svg>
+'/><p>The input wires are declared as <em>arguments</em> to the program, and the output wires are declared as <em>returns</em> from the function. Variables that are not consumed or by another function or returned by the program are automatically dropped.</p><pre><code class="language-julia hljs">wd = @program P (a::A, b::B) begin
+  c = h(a,b)
+  d,a₁ = k(c)
+  return f(a₁)
+end
+draw(wd)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="211pt" height="74pt"
+ viewBox="0.00 0.00 211.00 74.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 70)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-70 207,-70 207,4 -4,4"/>
+<!-- n0in1 -->
+<!-- n0in2 -->
+<!-- n0in1&%2345;&gt;n0in2 -->
+<!-- n1 -->
+<!-- h -->
+<g id="n1" class="node">
+<title>n1</title>
+<polygon fill="none" stroke="black" points="37.5,-9 37.5,-57 56.5,-57 56.5,-9 37.5,-9"/>
+<text text-anchor="start" x="42.5" y="-29.3" font-family="Courier,monospace" font-size="14.00">h</text>
+</g>
+<!-- n0in1&%2345;&gt;n1 -->
+<!-- A -->
+<g id="e1" class="edge">
+<title>n0in1:e&%2345;&gt;n1:w</title>
+<path fill="none" stroke="black" d="M1,-54C15.56,-54 19.62,-46.99 31.71,-45.34"/>
+<polygon fill="black" stroke="black" points="32.12,-47.07 37,-45 31.9,-43.58 32.12,-47.07"/>
+<text text-anchor="middle" x="14.4" y="-38.35" font-family="Courier,monospace" font-size="14.00">A</text>
+</g>
+<!-- n0in2&%2345;&gt;n1 -->
+<!-- B -->
+<g id="e2" class="edge">
+<title>n0in2:e&%2345;&gt;n1:w</title>
+<path fill="none" stroke="black" d="M1,-12C15.56,-12 19.62,-19.01 31.71,-20.66"/>
+<polygon fill="black" stroke="black" points="31.9,-22.42 37,-21 32.12,-18.93 31.9,-22.42"/>
+<text text-anchor="middle" x="14.4" y="-5.25" font-family="Courier,monospace" font-size="14.00">B</text>
+</g>
+<!-- n0out1 -->
+<!-- n2 -->
+<!-- k -->
+<g id="n2" class="node">
+<title>n2</title>
+<polygon fill="none" stroke="black" points="92.5,-9 92.5,-57 111.5,-57 111.5,-9 92.5,-9"/>
+<text text-anchor="start" x="97.5" y="-29.3" font-family="Courier,monospace" font-size="14.00">k</text>
+</g>
+<!-- n1&%2345;&gt;n2 -->
+<!-- C -->
+<g id="e3" class="edge">
+<title>n1:e&%2345;&gt;n2:w</title>
+<path fill="none" stroke="black" d="M56,-33C70.12,-33 74.9,-33 86.83,-33"/>
+<polygon fill="black" stroke="black" points="87,-34.75 92,-33 87,-31.25 87,-34.75"/>
+<text text-anchor="middle" x="69.4" y="-21.8" font-family="Courier,monospace" font-size="14.00">C</text>
+</g>
+<!-- n3 -->
+<!-- f -->
+<g id="n3" class="node">
+<title>n3</title>
+<polygon fill="none" stroke="black" points="147.5,-9 147.5,-34 166.5,-34 166.5,-9 147.5,-9"/>
+<text text-anchor="start" x="152.5" y="-17.8" font-family="Courier,monospace" font-size="14.00">f</text>
+</g>
+<!-- n2&%2345;&gt;n3 -->
+<!-- A -->
+<g id="e4" class="edge">
+<title>n2:e&%2345;&gt;n3:w</title>
+<path fill="none" stroke="black" d="M111,-21C125.12,-21 129.9,-21 141.83,-21"/>
+<polygon fill="black" stroke="black" points="142,-22.75 147,-21 142,-19.25 142,-22.75"/>
+<text text-anchor="middle" x="124.4" y="-9.8" font-family="Courier,monospace" font-size="14.00">A</text>
+</g>
+<!-- n3&%2345;&gt;n0out1 -->
+<!-- B -->
+<g id="e5" class="edge">
+<title>n3:e&%2345;&gt;n0out1:w</title>
+<path fill="none" stroke="black" d="M166,-21C180.12,-21 184.9,-21 196.83,-21"/>
+<polygon fill="black" stroke="black" points="197,-22.75 202,-21 197,-19.25 197,-22.75"/>
+<text text-anchor="middle" x="179.4" y="-9.8" font-family="Courier,monospace" font-size="14.00">B</text>
+</g>
+</g>
+</svg>
+'/><p>You can copy a value by using it more than once. This is visualized as a wire being split into two wires.</p><pre><code class="language-julia hljs">wd = @program P (b::B) begin
+  h(g(b),b)
+end
+draw(wd)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="156pt" height="66pt"
+ viewBox="0.00 0.00 156.00 65.50" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 61.5)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-61.5 152,-61.5 152,4 -4,4"/>
+<!-- n0in1 -->
+<!-- n1 -->
+<!-- g -->
+<g id="n1" class="node">
+<title>n1</title>
+<polygon fill="none" stroke="black" points="37.5,-32 37.5,-57 56.5,-57 56.5,-32 37.5,-32"/>
+<text text-anchor="start" x="42.5" y="-40.8" font-family="Courier,monospace" font-size="14.00">g</text>
+</g>
+<!-- n0in1&%2345;&gt;n1 -->
+<!-- B -->
+<g id="e1" class="edge">
+<title>n0in1:e&%2345;&gt;n1:w</title>
+<path fill="none" stroke="black" d="M1,-24C17.44,-24 18.62,-40.14 31.97,-43.42"/>
+<polygon fill="black" stroke="black" points="31.83,-45.17 37,-44 32.23,-41.69 31.83,-45.17"/>
+<text text-anchor="middle" x="14.27" y="-22.54" font-family="Courier,monospace" font-size="14.00">B</text>
+</g>
+<!-- n2 -->
+<!-- h -->
+<g id="n2" class="node">
+<title>n2</title>
+<polygon fill="none" stroke="black" points="92.5,0 92.5,-48 111.5,-48 111.5,0 92.5,0"/>
+<text text-anchor="start" x="97.5" y="-20.3" font-family="Courier,monospace" font-size="14.00">h</text>
+</g>
+<!-- n0in1&%2345;&gt;n2 -->
+<!-- B -->
+<g id="e2" class="edge">
+<title>n0in1:e&%2345;&gt;n2:w</title>
+<path fill="none" stroke="black" d="M1,-24C40.04,-24 50.34,-13.01 86.91,-12.06"/>
+<polygon fill="black" stroke="black" points="87.02,-13.81 92,-12 86.98,-10.31 87.02,-13.81"/>
+<text text-anchor="middle" x="42.07" y="-6.78" font-family="Courier,monospace" font-size="14.00">B</text>
+</g>
+<!-- n0out1 -->
+<!-- n1&%2345;&gt;n2 -->
+<!-- A -->
+<g id="e3" class="edge">
+<title>n1:e&%2345;&gt;n2:w</title>
+<path fill="none" stroke="black" d="M56,-44C70.47,-44 74.67,-37.77 86.74,-36.3"/>
+<polygon fill="black" stroke="black" points="87.11,-38.04 92,-36 86.91,-34.54 87.11,-38.04"/>
+<text text-anchor="middle" x="69.4" y="-28.84" font-family="Courier,monospace" font-size="14.00">A</text>
+</g>
+<!-- n2&%2345;&gt;n0out1 -->
+<!-- C -->
+<g id="e4" class="edge">
+<title>n2:e&%2345;&gt;n0out1:w</title>
+<path fill="none" stroke="black" d="M111,-24C125.12,-24 129.9,-24 141.83,-24"/>
+<polygon fill="black" stroke="black" points="142,-25.75 147,-24 142,-22.25 142,-25.75"/>
+<text text-anchor="middle" x="124.4" y="-12.8" font-family="Courier,monospace" font-size="14.00">C</text>
+</g>
+</g>
+</svg>
+'/><p>You can visualize the copy and delete morphisms explicitly with the <code>add_junctions</code> function. The dots with one wire input and multiple outputs are copying values and dots with no wires out are deletions (discarding values). Not all instances of a <code>SymmetricMonoidalCategory</code> support copy and delete, for example, in manufacturing you can&#39;t duplicate a resource, and in chemistry you can&#39;t discard species. Catlab would enforce that when you tried to interpret the wiring diagram in a specific SMC.</p><pre><code class="language-julia hljs">wd = @program P (b::B) begin
+  c = h(g(b),b)
+  d, a₁ = k(c)
+  return f(a₁)
+end
+draw(add_junctions(wd))</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="306pt" height="74pt"
+ viewBox="0.00 0.00 306.00 73.50" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 69.5)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-69.5 302,-69.5 302,4 -4,4"/>
+<!-- n0in1 -->
+<!-- n5 -->
+<!-- junction -->
+<g id="n5" class="node">
+<title>n5</title>
+<ellipse fill="black" stroke="black" cx="39" cy="-32" rx="2" ry="2"/>
+</g>
+<!-- n0in1&%2345;&gt;n5 -->
+<!-- B -->
+<g id="e1" class="edge">
+<title>n0in1:e&%2345;&gt;n5</title>
+<path fill="none" stroke="black" d="M1,-32C11.82,-32 24.42,-32 31.77,-32"/>
+<polygon fill="black" stroke="black" points="31.85,-33.75 36.85,-32 31.85,-30.25 31.85,-33.75"/>
+<text text-anchor="middle" x="14.2" y="-20.8" font-family="Courier,monospace" font-size="14.00">B</text>
+</g>
+<!-- n0out1 -->
+<!-- n1 -->
+<!-- g -->
+<g id="n1" class="node">
+<title>n1</title>
+<polygon fill="none" stroke="black" points="77.5,-40 77.5,-65 96.5,-65 96.5,-40 77.5,-40"/>
+<text text-anchor="start" x="82.5" y="-48.8" font-family="Courier,monospace" font-size="14.00">g</text>
+</g>
+<!-- n2 -->
+<!-- h -->
+<g id="n2" class="node">
+<title>n2</title>
+<polygon fill="none" stroke="black" points="132.5,-8 132.5,-56 151.5,-56 151.5,-8 132.5,-8"/>
+<text text-anchor="start" x="137.5" y="-28.3" font-family="Courier,monospace" font-size="14.00">h</text>
+</g>
+<!-- n1&%2345;&gt;n2 -->
+<!-- A -->
+<g id="e3" class="edge">
+<title>n1:e&%2345;&gt;n2:w</title>
+<path fill="none" stroke="black" d="M96,-52C110.47,-52 114.67,-45.77 126.74,-44.3"/>
+<polygon fill="black" stroke="black" points="127.11,-46.04 132,-44 126.91,-42.54 127.11,-46.04"/>
+<text text-anchor="middle" x="109.4" y="-36.84" font-family="Courier,monospace" font-size="14.00">A</text>
+</g>
+<!-- n3 -->
+<!-- k -->
+<g id="n3" class="node">
+<title>n3</title>
+<polygon fill="none" stroke="black" points="187.5,-8 187.5,-56 206.5,-56 206.5,-8 187.5,-8"/>
+<text text-anchor="start" x="192.5" y="-28.3" font-family="Courier,monospace" font-size="14.00">k</text>
+</g>
+<!-- n2&%2345;&gt;n3 -->
+<!-- C -->
+<g id="e4" class="edge">
+<title>n2:e&%2345;&gt;n3:w</title>
+<path fill="none" stroke="black" d="M151,-32C165.12,-32 169.9,-32 181.83,-32"/>
+<polygon fill="black" stroke="black" points="182,-33.75 187,-32 182,-30.25 182,-33.75"/>
+<text text-anchor="middle" x="164.4" y="-20.8" font-family="Courier,monospace" font-size="14.00">C</text>
+</g>
+<!-- n4 -->
+<!-- f -->
+<g id="n4" class="node">
+<title>n4</title>
+<polygon fill="none" stroke="black" points="242.5,-3 242.5,-28 261.5,-28 261.5,-3 242.5,-3"/>
+<text text-anchor="start" x="247.5" y="-11.8" font-family="Courier,monospace" font-size="14.00">f</text>
+</g>
+<!-- n3&%2345;&gt;n4 -->
+<!-- A -->
+<g id="e2" class="edge">
+<title>n3:e&%2345;&gt;n4:w</title>
+<path fill="none" stroke="black" d="M206,-20C220.26,-20 224.81,-16.1 236.79,-15.19"/>
+<polygon fill="black" stroke="black" points="237.07,-16.93 242,-15 236.94,-13.43 237.07,-16.93"/>
+<text text-anchor="middle" x="219.4" y="-6.33" font-family="Courier,monospace" font-size="14.00">A</text>
+</g>
+<!-- n6 -->
+<!-- junction -->
+<g id="n6" class="node">
+<title>n6</title>
+<ellipse fill="black" stroke="black" cx="251.5" cy="-49" rx="2" ry="2"/>
+</g>
+<!-- n3&%2345;&gt;n6 -->
+<!-- D -->
+<g id="e7" class="edge">
+<title>n3:e&%2345;&gt;n6</title>
+<path fill="none" stroke="black" d="M206,-44C219.74,-44 235.72,-46.38 244.3,-47.86"/>
+<polygon fill="black" stroke="black" points="244.17,-49.61 249.4,-48.79 244.8,-46.17 244.17,-49.61"/>
+<text text-anchor="middle" x="223.22" y="-34.25" font-family="Courier,monospace" font-size="14.00">D</text>
+</g>
+<!-- n4&%2345;&gt;n0out1 -->
+<!-- B -->
+<g id="e8" class="edge">
+<title>n4:e&%2345;&gt;n0out1:w</title>
+<path fill="none" stroke="black" d="M261,-15C275.12,-15 279.9,-15 291.83,-15"/>
+<polygon fill="black" stroke="black" points="292,-16.75 297,-15 292,-13.25 292,-16.75"/>
+<text text-anchor="middle" x="274.4" y="-3.8" font-family="Courier,monospace" font-size="14.00">B</text>
+</g>
+<!-- n5&%2345;&gt;n1 -->
+<!-- B -->
+<g id="e5" class="edge">
+<title>n5&%2345;&gt;n1:w</title>
+<path fill="none" stroke="black" d="M40.82,-32.86C44.17,-36.27 57.28,-48.79 71.66,-51.49"/>
+<polygon fill="black" stroke="black" points="71.86,-53.26 77,-52 72.19,-49.78 71.86,-53.26"/>
+<text text-anchor="middle" x="52.54" y="-34.45" font-family="Courier,monospace" font-size="14.00">B</text>
+</g>
+<!-- n5&%2345;&gt;n2 -->
+<!-- B -->
+<g id="e6" class="edge">
+<title>n5&%2345;&gt;n2:w</title>
+<path fill="none" stroke="black" d="M41.29,-31.7C49.05,-29.94 90.47,-20.91 126.7,-20.06"/>
+<polygon fill="black" stroke="black" points="127.02,-21.81 132,-20 126.98,-18.31 127.02,-21.81"/>
+<text text-anchor="middle" x="82.12" y="-12.34" font-family="Courier,monospace" font-size="14.00">B</text>
+</g>
+</g>
+</svg>
+'/><p>For more details about working with wiring diagrams in Catlab, you should look at the other vignettes in this section which explain how wiring diagrams interact with SMC expressions and the basics of constructing and manipulation wiring diagrams.</p><h2 id="Diagrams-as-C-Sets"><a class="docs-heading-anchor" href="#Diagrams-as-C-Sets">Diagrams as C-Sets</a><a id="Diagrams-as-C-Sets-1"></a><a class="docs-heading-anchor-permalink" href="#Diagrams-as-C-Sets" title="Permalink"></a></h2><p>The underlying data of a wiring diagram is combinatorial. That means we can represent it as a C-Set</p><pre><code class="language-julia hljs">wd.diagram</code></pre><div class="c-set">
+<span class="c-set-summary">Catlab.WiringDiagrams.DirectedWiringDiagrams.WiringDiagramACSet{Any, Any, Any, DataType} {Box:4, InPort:5, OutPort:5, OuterInPort:1, OuterOutPort:1, Wire:3, InWire:2, OutWire:1, PassWire:0, PortValue:0, WireValue:0, BoxValue:0, BoxType:0}</span>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Box</th>
+      <th style = "text-align: right;">value</th>
+      <th style = "text-align: right;">box_type</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">g</td>
+      <td style = "text-align: right;">Box{Symbol}</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">h</td>
+      <td style = "text-align: right;">Box{Symbol}</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">k</td>
+      <td style = "text-align: right;">Box{Symbol}</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">f</td>
+      <td style = "text-align: right;">Box{Symbol}</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">InPort</th>
+      <th style = "text-align: right;">in_port_box</th>
+      <th style = "text-align: right;">in_port_type</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">B</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">A</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">B</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">C</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">5</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">A</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">OutPort</th>
+      <th style = "text-align: right;">out_port_box</th>
+      <th style = "text-align: right;">out_port_type</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">A</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">C</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">D</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">A</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">5</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">B</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">OuterInPort</th>
+      <th style = "text-align: right;">outer_in_port_type</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">B</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">OuterOutPort</th>
+      <th style = "text-align: right;">outer_out_port_type</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">B</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Wire</th>
+      <th style = "text-align: right;">src</th>
+      <th style = "text-align: right;">tgt</th>
+      <th style = "text-align: right;">wire_value</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">5</td>
+      <td style = "text-align: right;">nothing</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">nothing</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">4</td>
+      <td style = "text-align: right;">nothing</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">InWire</th>
+      <th style = "text-align: right;">in_src</th>
+      <th style = "text-align: right;">in_tgt</th>
+      <th style = "text-align: right;">in_wire_value</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">nothing</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">nothing</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">OutWire</th>
+      <th style = "text-align: right;">out_src</th>
+      <th style = "text-align: right;">out_tgt</th>
+      <th style = "text-align: right;">out_wire_value</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">5</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">nothing</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+<p>Ok, there is a lot in there. The columns with integer entries are the combinatorial data encoding the connectivity of the wiring diagram. The columns with Symbols in them are encoding the labels for the diagram, the <code>value</code> of a box is the content of the box. Ports have types and wires have values. When we define the wiring diagram with the <code>@program</code> macro, we get a diagram that has labels and types, but no values. These values are initialized to nothing, but could be filled with values to be carried down the wires in an application.</p><p>The schema of for wiring diagrams is called <code>SchAttributedWiringDiagrams</code> and is a little overwhelming, so we can explore how to build it up with C-Set schema inheritance.</p><pre><code class="language-julia hljs">to_graphviz(SchAttributedWiringDiagram)</code></pre><img src="482eec26.svg" alt="Example block output"/><p>From the file Catlab/src/WiringDiagrams/Directed.jl</p><pre><code class="language-julia hljs">@present SchWiringDiagram(FreeSchema) begin
+  Box::Ob
+  (InPort, OutPort, OuterInPort, OuterOutPort)::Ob
+  (Wire, InWire, OutWire, PassWire)::Ob
+
+  src::Hom(Wire, OutPort)
+  tgt::Hom(Wire, InPort)
+  in_src::Hom(InWire, OuterInPort)
+  in_tgt::Hom(InWire, InPort)
+  out_src::Hom(OutWire, OutPort)
+  out_tgt::Hom(OutWire, OuterOutPort)
+  pass_src::Hom(PassWire, OuterInPort)
+  pass_tgt::Hom(PassWire, OuterOutPort)
+
+  in_port_box::Hom(InPort, Box)
+  out_port_box::Hom(OutPort, Box)
+end
+
+@abstract_acset_type AbstractWiringDiagram &lt;: AbstractGraph
+
+@present SchTypedWiringDiagram &lt;: SchWiringDiagram begin
+  PortValue::AttrType
+  in_port_type::Attr(InPort, PortValue)
+  out_port_type::Attr(OutPort, PortValue)
+  outer_in_port_type::Attr(OuterInPort, PortValue)
+  outer_out_port_type::Attr(OuterOutPort, PortValue)
+end
+
+@present SchAttributedWiringDiagram &lt;: SchTypedWiringDiagram begin
+  WireValue::AttrType
+  BoxValue::AttrType
+  BoxType::AttrType
+
+  value::Attr(Box, BoxValue)
+  box_type::Attr(Box, BoxType)
+  wire_value::Attr(Wire, WireValue)
+  in_wire_value::Attr(InWire, WireValue)
+  out_wire_value::Attr(OutWire, WireValue)
+  pass_wire_value::Attr(PassWire, WireValue)
+end</code></pre><p>The bare minimum diagram language is:</p><pre><code class="language-julia hljs">to_graphviz(SchWiringDiagram)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="306pt" height="273pt"
+ viewBox="0.00 0.00 305.63 273.06" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 269.06)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-269.06 301.63,-269.06 301.63,4 -4,4"/>
+<!-- n1 -->
+<g id="node1" class="node">
+<title>n1</title>
+<ellipse fill="none" stroke="black" cx="113.39" cy="-18" rx="27" ry="18"/>
+<text text-anchor="middle" x="113.39" y="-14.3" font-family="Times,serif" font-size="14.00">Box</text>
+</g>
+<!-- n2 -->
+<g id="node2" class="node">
+<title>n2</title>
+<ellipse fill="none" stroke="black" cx="59.27" cy="-85.18" rx="27" ry="18"/>
+<text text-anchor="middle" x="59.27" y="-81.48" font-family="Times,serif" font-size="14.00">InPort</text>
+</g>
+<!-- n2&%2345;&gt;n1 -->
+<g id="edge9" class="edge">
+<title>n2&%2345;&gt;n1</title>
+<path fill="none" stroke="black" d="M72.09,-69.26C78.6,-61.18 86.65,-51.19 93.91,-42.19"/>
+<polygon fill="black" stroke="black" points="96.73,-44.26 100.28,-34.27 91.28,-39.86 96.73,-44.26"/>
+<text text-anchor="middle" x="41.5" y="-44.52" font-family="Times,serif" font-size="14.00">in_port_box</text>
+</g>
+<!-- n3 -->
+<g id="node3" class="node">
+<title>n3</title>
+<ellipse fill="none" stroke="black" cx="195.55" cy="-44.66" rx="31.2" ry="18"/>
+<text text-anchor="middle" x="195.55" y="-40.96" font-family="Times,serif" font-size="14.00">OutPort</text>
+</g>
+<!-- n3&%2345;&gt;n1 -->
+<g id="edge10" class="edge">
+<title>n3&%2345;&gt;n1</title>
+<path fill="none" stroke="black" d="M168.19,-35.78C161.61,-33.65 154.49,-31.34 147.63,-29.11"/>
+<polygon fill="black" stroke="black" points="148.46,-25.7 137.87,-25.94 146.3,-32.36 148.46,-25.7"/>
+<text text-anchor="middle" x="204.41" y="-21.25" font-family="Times,serif" font-size="14.00">out_port_box</text>
+</g>
+<!-- n4 -->
+<g id="node4" class="node">
+<title>n4</title>
+<ellipse fill="none" stroke="black" cx="99.03" cy="-235.63" rx="47.1" ry="18"/>
+<text text-anchor="middle" x="99.03" y="-231.93" font-family="Times,serif" font-size="14.00">OuterInPort</text>
+</g>
+<!-- n5 -->
+<g id="node5" class="node">
+<title>n5</title>
+<ellipse fill="none" stroke="black" cx="243.73" cy="-192.79" rx="53.8" ry="18"/>
+<text text-anchor="middle" x="243.73" y="-189.09" font-family="Times,serif" font-size="14.00">OuterOutPort</text>
+</g>
+<!-- n6 -->
+<g id="node6" class="node">
+<title>n6</title>
+<ellipse fill="none" stroke="black" cx="130.1" cy="-73.79" rx="27" ry="18"/>
+<text text-anchor="middle" x="130.1" y="-70.09" font-family="Times,serif" font-size="14.00">Wire</text>
+</g>
+<!-- n6&%2345;&gt;n2 -->
+<g id="edge2" class="edge">
+<title>n6&%2345;&gt;n2</title>
+<path fill="none" stroke="black" d="M103.72,-78.03C101.18,-78.44 98.56,-78.86 95.94,-79.28"/>
+<polygon fill="black" stroke="black" points="95.22,-75.86 85.9,-80.9 96.33,-82.77 95.22,-75.86"/>
+<text text-anchor="middle" x="94.33" y="-67.46" font-family="Times,serif" font-size="14.00">tgt</text>
+</g>
+<!-- n6&%2345;&gt;n3 -->
+<g id="edge1" class="edge">
+<title>n6&%2345;&gt;n3</title>
+<path fill="none" stroke="black" d="M152.62,-63.77C155.42,-62.52 158.32,-61.23 161.24,-59.93"/>
+<polygon fill="black" stroke="black" points="162.81,-63.07 170.52,-55.8 159.96,-56.67 162.81,-63.07"/>
+<text text-anchor="middle" x="167.93" y="-65.65" font-family="Times,serif" font-size="14.00">src</text>
+</g>
+<!-- n7 -->
+<g id="node7" class="node">
+<title>n7</title>
+<ellipse fill="none" stroke="black" cx="49.15" cy="-168.85" rx="27" ry="18"/>
+<text text-anchor="middle" x="49.15" y="-165.15" font-family="Times,serif" font-size="14.00">InWire</text>
+</g>
+<!-- n7&%2345;&gt;n2 -->
+<g id="edge4" class="edge">
+<title>n7&%2345;&gt;n2</title>
+<path fill="none" stroke="black" d="M51.34,-150.69C52.66,-139.84 54.35,-125.81 55.84,-113.53"/>
+<polygon fill="black" stroke="black" points="59.35,-113.65 57.08,-103.3 52.4,-112.81 59.35,-113.65"/>
+<text text-anchor="middle" x="32.59" y="-135.91" font-family="Times,serif" font-size="14.00">in_tgt</text>
+</g>
+<!-- n7&%2345;&gt;n4 -->
+<g id="edge3" class="edge">
+<title>n7&%2345;&gt;n4</title>
+<path fill="none" stroke="black" d="M61.22,-185.01C66.84,-192.54 73.67,-201.68 79.96,-210.1"/>
+<polygon fill="black" stroke="black" points="77.23,-212.29 86.02,-218.21 82.83,-208.1 77.23,-212.29"/>
+<text text-anchor="middle" x="49.09" y="-201.36" font-family="Times,serif" font-size="14.00">in_src</text>
+</g>
+<!-- n8 -->
+<g id="node8" class="node">
+<title>n8</title>
+<ellipse fill="none" stroke="black" cx="249.4" cy="-109.62" rx="33.6" ry="18"/>
+<text text-anchor="middle" x="249.4" y="-105.92" font-family="Times,serif" font-size="14.00">OutWire</text>
+</g>
+<!-- n8&%2345;&gt;n3 -->
+<g id="edge5" class="edge">
+<title>n8&%2345;&gt;n3</title>
+<path fill="none" stroke="black" d="M235.54,-92.89C229.52,-85.64 222.36,-77 215.77,-69.05"/>
+<polygon fill="black" stroke="black" points="218.26,-66.57 209.19,-61.11 212.88,-71.04 218.26,-66.57"/>
+<text text-anchor="middle" x="251.66" y="-69.77" font-family="Times,serif" font-size="14.00">out_src</text>
+</g>
+<!-- n8&%2345;&gt;n5 -->
+<g id="edge6" class="edge">
+<title>n8&%2345;&gt;n5</title>
+<path fill="none" stroke="black" d="M248.17,-127.66C247.44,-138.45 246.49,-152.4 245.65,-164.61"/>
+<polygon fill="black" stroke="black" points="242.15,-164.56 244.96,-174.78 249.13,-165.04 242.15,-164.56"/>
+<text text-anchor="middle" x="220.91" y="-149.94" font-family="Times,serif" font-size="14.00">out_tgt</text>
+</g>
+<!-- n9 -->
+<g id="node9" class="node">
+<title>n9</title>
+<ellipse fill="none" stroke="black" cx="181.1" cy="-247.06" rx="36.7" ry="18"/>
+<text text-anchor="middle" x="181.1" y="-243.36" font-family="Times,serif" font-size="14.00">PassWire</text>
+</g>
+<!-- n9&%2345;&gt;n4 -->
+<g id="edge7" class="edge">
+<title>n9&%2345;&gt;n4</title>
+<path fill="none" stroke="black" d="M145.34,-242.08C145.19,-242.06 145.04,-242.04 144.89,-242.02"/>
+<polygon fill="black" stroke="black" points="153.91,-239.74 143.52,-241.83 152.94,-246.67 153.91,-239.74"/>
+<text text-anchor="middle" x="114.61" y="-245.85" font-family="Times,serif" font-size="14.00">pass_src</text>
+</g>
+<!-- n9&%2345;&gt;n5 -->
+<g id="edge8" class="edge">
+<title>n9&%2345;&gt;n5</title>
+<path fill="none" stroke="black" d="M199.22,-231.36C204.58,-226.72 210.58,-221.52 216.39,-216.48"/>
+<polygon fill="black" stroke="black" points="218.86,-218.97 224.12,-209.78 214.27,-213.68 218.86,-218.97"/>
+<text text-anchor="middle" x="177.3" y="-212.72" font-family="Times,serif" font-size="14.00">pass_tgt</text>
+</g>
+</g>
+</svg>
+'/><p>And then you can add back in the types.</p><pre><code class="language-julia hljs">to_graphviz(SchTypedWiringDiagram)</code></pre><img src="e4ad5b8a.svg" alt="Example block output"/><p>Layout is hard, so if you want to understand the <code>SchAttributedWiringDiagrams</code>, you should do the layout by hand as an exercise.</p><p>We can create our own version of the theory of DWDs to see how it works:</p><pre><code class="language-julia hljs">@present MySchWiringDiagram(FreeSchema) begin
+  Box::Ob
+  (InPort, OutPort, OuterInPort, OuterOutPort)::Ob
+  (Wire, InWire, OutWire, PassWire)::Ob
+
+  src::Hom(Wire, OutPort)
+  tgt::Hom(Wire, InPort)
+  in_src::Hom(InWire, OuterInPort)
+  in_tgt::Hom(InWire, InPort)
+  out_src::Hom(OutWire, OutPort)
+  out_tgt::Hom(OutWire, OuterOutPort)
+  pass_src::Hom(PassWire, OuterInPort)
+  pass_tgt::Hom(PassWire, OuterOutPort)
+
+  in_port_box::Hom(InPort, Box)
+  out_port_box::Hom(OutPort, Box)
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Presentation{Catlab.Theories.ThSchema.Meta.T, Symbol}(Catlab.Theories.FreeSchema, (Ob = Catlab.Theories.FreeSchema.Ob{:generator}[Box, InPort, OutPort, OuterInPort, OuterOutPort, Wire, InWire, OutWire, PassWire], Hom = Catlab.Theories.FreeSchema.Hom{:generator}[src, tgt, in_src, in_tgt, out_src, out_tgt, pass_src, pass_tgt, in_port_box, out_port_box], AttrType = Catlab.Theories.FreeSchema.AttrType{:generator}[], Attr = Catlab.Theories.FreeSchema.Attr{:generator}[]), Dict(:InPort =&gt; (:Ob =&gt; 2), :InWire =&gt; (:Ob =&gt; 7), :in_port_box =&gt; (:Hom =&gt; 9), :Box =&gt; (:Ob =&gt; 1), :OuterOutPort =&gt; (:Ob =&gt; 5), :in_src =&gt; (:Hom =&gt; 3), :in_tgt =&gt; (:Hom =&gt; 4), :src =&gt; (:Hom =&gt; 1), :OuterInPort =&gt; (:Ob =&gt; 4), :out_port_box =&gt; (:Hom =&gt; 10)…), Pair[])</code></pre><p>If your application of wiring diagrams needs to attach numeric or textual information to the boxes of a wiring diagram, you would extend the <code>SchWiringDiagram</code> with the attributes that you need. That will give you a custom data structure that has those fields. One of the goals of Catlab is to make it so much easier to generate custom data structures that interoperate, that you don&#39;t need to create generic structures that can be used for many purposes. Just snap your fingers and create a new structure perfectly tailored to your needs, when your needs change, snap again to get a new version of that structure.</p><p>The <code>@acset_type</code> macro does the hard work of generating the data structure and accessors and mutators for you. The form of this call is <code>@acset_type NewStructName(Schema, index=[morphisms in Schema]) &lt;: Supertype</code>. You should index any morphism where you need to use <code>incident</code> frequently. For wiring diagrams you will often want to know what all the wires that are incident to a port.</p><pre><code class="language-julia hljs">@acset_type MyWiringDiagramACSet(MySchWiringDiagram,
+  index=[:src, :tgt, :in_src, :in_tgt, :out_src, :out_tgt, :pass_src, :pass_tgt]) &lt;: WiringDiagrams.DirectedWiringDiagrams.AbstractWiringDiagram</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Main.MyWiringDiagramACSet</code></pre><p>We get the <code>@acset</code> macro from Catlab and can create DWDs by hand. It is very tedious, which is why the <code>@program</code> macro exists!</p><pre><code class="language-julia hljs">md = @acset MyWiringDiagramACSet begin
+  Box = 3
+  InPort = 6
+  OutPort = 3
+  Wire = 3
+  src = [1,2,3]
+  tgt = [3,4,5]
+  in_port_box = [1,1,2,2,3,3]
+  out_port_box = [1,2,3]
+end</code></pre><div class="c-set">
+<span class="c-set-summary">Main.__atexample__named__wd_cset.MyWiringDiagramACSet {Box:3, InPort:6, OutPort:3, OuterInPort:0, OuterOutPort:0, Wire:3, InWire:0, OutWire:0, PassWire:0}</span>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">InPort</th>
+      <th style = "text-align: right;">in_port_box</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">5</td>
+      <td style = "text-align: right;">3</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">6</td>
+      <td style = "text-align: right;">3</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">OutPort</th>
+      <th style = "text-align: right;">out_port_box</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">3</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Wire</th>
+      <th style = "text-align: right;">src</th>
+      <th style = "text-align: right;">tgt</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">3</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">4</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">5</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+<h2 id="Undirected-Wiring-Diagrams"><a class="docs-heading-anchor" href="#Undirected-Wiring-Diagrams">Undirected Wiring Diagrams</a><a id="Undirected-Wiring-Diagrams-1"></a><a class="docs-heading-anchor-permalink" href="#Undirected-Wiring-Diagrams" title="Permalink"></a></h2><p>A much simpler structure than DWDs are known as undirected wiring diagrams. They are called undirected because ports boxes have one set of ports that aren&#39;t divided into inputs and outputs, and the wires are undirected. Wires connect junctions to ports (which live on boxes).</p><pre><code class="language-julia hljs">to_graphviz(SchUWD)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="317pt" height="60pt"
+ viewBox="0.00 0.00 316.61 60.47" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 56.47)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-56.47 312.61,-56.47 312.61,4 -4,4"/>
+<!-- n1 -->
+<g id="node1" class="node">
+<title>n1</title>
+<ellipse fill="none" stroke="black" cx="27" cy="-25.91" rx="27" ry="18"/>
+<text text-anchor="middle" x="27" y="-22.21" font-family="Times,serif" font-size="14.00">Box</text>
+</g>
+<!-- n2 -->
+<g id="node2" class="node">
+<title>n2</title>
+<ellipse fill="none" stroke="black" cx="98.75" cy="-32.89" rx="27" ry="18"/>
+<text text-anchor="middle" x="98.75" y="-29.19" font-family="Times,serif" font-size="14.00">Port</text>
+</g>
+<!-- n2&%2345;&gt;n1 -->
+<g id="edge1" class="edge">
+<title>n2&%2345;&gt;n1</title>
+<path fill="none" stroke="black" d="M72.04,-30.29C69.46,-30.04 66.81,-29.78 64.15,-29.52"/>
+<polygon fill="black" stroke="black" points="64.27,-26.02 53.98,-28.53 63.59,-32.99 64.27,-26.02"/>
+<text text-anchor="middle" x="61.59" y="-18.71" font-family="Times,serif" font-size="14.00">box</text>
+</g>
+<!-- n4 -->
+<g id="node4" class="node">
+<title>n4</title>
+<ellipse fill="none" stroke="black" cx="170.97" cy="-34.47" rx="32.4" ry="18"/>
+<text text-anchor="middle" x="170.97" y="-30.77" font-family="Times,serif" font-size="14.00">Junction</text>
+</g>
+<!-- n2&%2345;&gt;n4 -->
+<g id="edge2" class="edge">
+<title>n2&%2345;&gt;n4</title>
+<path fill="none" stroke="black" d="M126.05,-33.48C126.68,-33.5 127.31,-33.51 127.94,-33.52"/>
+<polygon fill="black" stroke="black" points="128.21,-37.03 138.28,-33.75 128.36,-30.03 128.21,-37.03"/>
+<text text-anchor="middle" x="127" y="-22.3" font-family="Times,serif" font-size="14.00">junction</text>
+</g>
+<!-- n3 -->
+<g id="node3" class="node">
+<title>n3</title>
+<ellipse fill="none" stroke="black" cx="241.36" cy="-18" rx="39.7" ry="18"/>
+<text text-anchor="middle" x="241.36" y="-14.3" font-family="Times,serif" font-size="14.00">OuterPort</text>
+</g>
+<!-- n3&%2345;&gt;n4 -->
+<g id="edge3" class="edge">
+<title>n3&%2345;&gt;n4</title>
+<path fill="none" stroke="black" d="M205.75,-26.33C205.66,-26.35 205.56,-26.37 205.47,-26.4"/>
+<polygon fill="black" stroke="black" points="210.2,-21.69 201.26,-27.38 211.8,-28.51 210.2,-21.69"/>
+<text text-anchor="middle" x="257.11" y="-30.16" font-family="Times,serif" font-size="14.00">outer_junction</text>
+</g>
+</g>
+</svg>
+'/><p>These UWDs are combinatorial syntax for relations. The junctions are variables and the boxes are the relations. A relation R ⊆ X × Y has two ports one for the value of X and one for the value of Y. The expression R(x:X, y:Y) says to connect the X port of R to the junction for the variable x, and the Y port of R to the y variable junction. If two ports are attached to the same junction, then you have a constraint that those values must be equal. The outer ports are the components of the final relation. For example the following UWD encodes the relation {(x,y,z) | R(x,y) and S(y,z) for all x∈X, y∈Y, z∈Z}.</p><pre><code class="language-julia hljs">uwd = @relation (x, y, z) begin
+  R(x,y)
+  S(y,z)
+end</code></pre><div class="c-set">
+<span class="c-set-summary">Catlab.WiringDiagrams.RelationDiagrams.UntypedUnnamedRelationDiagram{Symbol, Symbol} {Box:2, Port:4, OuterPort:3, Junction:3, Name:0, VarName:0}</span>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Box</th>
+      <th style = "text-align: right;">name</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">R</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">S</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Port</th>
+      <th style = "text-align: right;">box</th>
+      <th style = "text-align: right;">junction</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">3</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">OuterPort</th>
+      <th style = "text-align: right;">outer_junction</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">3</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Junction</th>
+      <th style = "text-align: right;">variable</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">x</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">y</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">z</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+<p>These UWDs are drawn with circular boxes and undirected wires. Note that since all wires go from junction to port, they are not <em>symmetric</em> wires.</p><pre><code class="language-julia hljs">draw(uwd)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="187pt" height="135pt"
+ viewBox="0.00 0.00 186.89 134.75" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 130.75)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-130.75 182.89,-130.75 182.89,4 -4,4"/>
+<!-- n1 -->
+<g id="box1" class="node">
+<title>n1</title>
+<ellipse fill="none" stroke="black" cx="45.04" cy="-58.91" rx="18" ry="18"/>
+<text text-anchor="middle" x="45.04" y="-55.21" font-family="Serif" font-size="14.00">R</text>
+</g>
+<!-- n6 -->
+<!-- junction -->
+<g id="junction1" class="node">
+<title>n6</title>
+<ellipse fill="black" stroke="black" cx="21.68" cy="-30.15" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="14.68" y="-36.45" font-family="Serif" font-size="14.00">x</text>
+</g>
+<!-- n1&%2345;&%2345;n6 -->
+<g id="edge1" class="edge">
+<title>n1&%2345;&%2345;n6</title>
+<path fill="none" stroke="black" d="M33.63,-44.87C29.56,-39.85 25.44,-34.77 23.26,-32.09"/>
+</g>
+<!-- n7 -->
+<!-- junction -->
+<g id="junction2" class="node">
+<title>n7</title>
+<ellipse fill="black" stroke="black" cx="67.04" cy="-91.33" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="60.04" y="-97.63" font-family="Serif" font-size="14.00">y</text>
+</g>
+<!-- n1&%2345;&%2345;n7 -->
+<g id="edge3" class="edge">
+<title>n1&%2345;&%2345;n7</title>
+<path fill="none" stroke="black" d="M55.27,-73.98C59.22,-79.8 63.3,-85.82 65.47,-89.01"/>
+</g>
+<!-- n2 -->
+<g id="box2" class="node">
+<title>n2</title>
+<ellipse fill="none" stroke="black" cx="106.19" cy="-93.23" rx="18" ry="18"/>
+<text text-anchor="middle" x="106.19" y="-89.53" font-family="Serif" font-size="14.00">S</text>
+</g>
+<!-- n2&%2345;&%2345;n7 -->
+<g id="edge4" class="edge">
+<title>n2&%2345;&%2345;n7</title>
+<path fill="none" stroke="black" d="M87.99,-92.35C80.8,-92 73.37,-91.64 69.59,-91.45"/>
+</g>
+<!-- n8 -->
+<!-- junction -->
+<g id="junction3" class="node">
+<title>n8</title>
+<ellipse fill="black" stroke="black" cx="143.04" cy="-97.39" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="136.54" y="-103.69" font-family="Serif" font-size="14.00">z</text>
+</g>
+<!-- n2&%2345;&%2345;n8 -->
+<g id="edge6" class="edge">
+<title>n2&%2345;&%2345;n8</title>
+<path fill="none" stroke="black" d="M124.18,-95.26C130.61,-95.99 137.11,-96.72 140.55,-97.11"/>
+</g>
+<!-- n3 -->
+<!-- n3&%2345;&%2345;n6 -->
+<g id="edge2" class="edge">
+<title>n3&%2345;&%2345;n6</title>
+<path fill="none" stroke="black" d="M1.02,-1.23C3.67,-4.94 15.66,-21.71 20.06,-27.87"/>
+</g>
+<!-- n4 -->
+<!-- n4&%2345;&%2345;n7 -->
+<g id="edge5" class="edge">
+<title>n4&%2345;&%2345;n7</title>
+<path fill="none" stroke="black" d="M47.82,-125.39C50.33,-120.94 61.87,-100.5 65.76,-93.61"/>
+</g>
+<!-- n5 -->
+<!-- n5&%2345;&%2345;n8 -->
+<g id="edge7" class="edge">
+<title>n5&%2345;&%2345;n8</title>
+<path fill="none" stroke="black" d="M177.52,-106.05C173.1,-104.94 153.1,-99.92 145.75,-98.07"/>
+</g>
+</g>
+</svg>
+'/><p>By adding more relations we can get bigger relations.</p><pre><code class="language-julia hljs">uwd₂ = @relation (x, z) begin
+  R(x,y)
+  S(y,z)
+  T(x,z,y)
+end</code></pre><div class="c-set">
+<span class="c-set-summary">Catlab.WiringDiagrams.RelationDiagrams.UntypedUnnamedRelationDiagram{Symbol, Symbol} {Box:3, Port:7, OuterPort:2, Junction:3, Name:0, VarName:0}</span>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Box</th>
+      <th style = "text-align: right;">name</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">R</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">S</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">T</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Port</th>
+      <th style = "text-align: right;">box</th>
+      <th style = "text-align: right;">junction</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">3</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">3</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">5</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">6</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">7</td>
+      <td style = "text-align: right;">3</td>
+      <td style = "text-align: right;">3</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">OuterPort</th>
+      <th style = "text-align: right;">outer_junction</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">2</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Junction</th>
+      <th style = "text-align: right;">variable</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">x</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">z</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">y</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+<p>Not all of the junctions have to be exposed to the outside world. Note that there is no distinction between arguments and return values in the relation macro. This is because relations are inherently undirected, unlike functions.</p><pre><code class="language-julia hljs">draw(uwd₂)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="144pt" height="109pt"
+ viewBox="0.00 0.00 143.89 109.02" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 105.02)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-105.02 139.89,-105.02 139.89,4 -4,4"/>
+<!-- n1 -->
+<g id="box1" class="node">
+<title>n1</title>
+<ellipse fill="none" stroke="black" cx="39.5" cy="-18" rx="18" ry="18"/>
+<text text-anchor="middle" x="39.5" y="-14.3" font-family="Serif" font-size="14.00">R</text>
+</g>
+<!-- n6 -->
+<!-- junction -->
+<g id="junction1" class="node">
+<title>n6</title>
+<ellipse fill="black" stroke="black" cx="32.91" cy="-58.15" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="25.91" y="-64.45" font-family="Serif" font-size="14.00">x</text>
+</g>
+<!-- n1&%2345;&%2345;n6 -->
+<g id="edge1" class="edge">
+<title>n1&%2345;&%2345;n6</title>
+<path fill="none" stroke="black" d="M36.51,-36.19C35.29,-43.66 34,-51.48 33.35,-55.47"/>
+</g>
+<!-- n8 -->
+<!-- junction -->
+<g id="junction3" class="node">
+<title>n8</title>
+<ellipse fill="black" stroke="black" cx="79.14" cy="-21.68" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="72.14" y="-27.98" font-family="Serif" font-size="14.00">y</text>
+</g>
+<!-- n1&%2345;&%2345;n8 -->
+<g id="edge7" class="edge">
+<title>n1&%2345;&%2345;n8</title>
+<path fill="none" stroke="black" d="M57.46,-19.67C64.84,-20.35 72.56,-21.07 76.49,-21.44"/>
+</g>
+<!-- n2 -->
+<g id="box2" class="node">
+<title>n2</title>
+<ellipse fill="none" stroke="black" cx="117.82" cy="-31.06" rx="18" ry="18"/>
+<text text-anchor="middle" x="117.82" y="-27.36" font-family="Serif" font-size="14.00">S</text>
+</g>
+<!-- n7 -->
+<!-- junction -->
+<g id="junction2" class="node">
+<title>n7</title>
+<ellipse fill="black" stroke="black" cx="111.01" cy="-71.2" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="104.51" y="-77.5" font-family="Serif" font-size="14.00">z</text>
+</g>
+<!-- n2&%2345;&%2345;n7 -->
+<g id="edge4" class="edge">
+<title>n2&%2345;&%2345;n7</title>
+<path fill="none" stroke="black" d="M114.74,-49.25C113.47,-56.72 112.14,-64.53 111.47,-68.52"/>
+</g>
+<!-- n2&%2345;&%2345;n8 -->
+<g id="edge8" class="edge">
+<title>n2&%2345;&%2345;n8</title>
+<path fill="none" stroke="black" d="M100.29,-26.81C93.09,-25.07 85.56,-23.24 81.72,-22.31"/>
+</g>
+<!-- n3 -->
+<g id="box3" class="node">
+<title>n3</title>
+<ellipse fill="none" stroke="black" cx="72.21" cy="-63.23" rx="18" ry="18"/>
+<text text-anchor="middle" x="72.21" y="-59.53" font-family="Serif" font-size="14.00">T</text>
+</g>
+<!-- n3&%2345;&%2345;n6 -->
+<g id="edge2" class="edge">
+<title>n3&%2345;&%2345;n6</title>
+<path fill="none" stroke="black" d="M53.94,-60.87C46.72,-59.94 39.26,-58.97 35.46,-58.48"/>
+</g>
+<!-- n3&%2345;&%2345;n7 -->
+<g id="edge5" class="edge">
+<title>n3&%2345;&%2345;n7</title>
+<path fill="none" stroke="black" d="M90.25,-66.93C97.22,-68.36 104.42,-69.84 108.24,-70.63"/>
+</g>
+<!-- n3&%2345;&%2345;n8 -->
+<g id="edge9" class="edge">
+<title>n3&%2345;&%2345;n8</title>
+<path fill="none" stroke="black" d="M75.19,-45.37C76.54,-37.28 77.99,-28.58 78.69,-24.33"/>
+</g>
+<!-- n4 -->
+<!-- n4&%2345;&%2345;n6 -->
+<g id="edge3" class="edge">
+<title>n4&%2345;&%2345;n6</title>
+<path fill="none" stroke="black" d="M1.3,-77.77C5.36,-75.25 23.69,-63.87 30.42,-59.69"/>
+</g>
+<!-- n5 -->
+<!-- n5&%2345;&%2345;n7 -->
+<g id="edge6" class="edge">
+<title>n5&%2345;&%2345;n7</title>
+<path fill="none" stroke="black" d="M134.79,-99.8C131.74,-96.13 117.95,-79.54 112.89,-73.45"/>
+</g>
+</g>
+</svg>
+'/><h2 id="Circular-Port-Graphs"><a class="docs-heading-anchor" href="#Circular-Port-Graphs">Circular Port Graphs</a><a id="Circular-Port-Graphs-1"></a><a class="docs-heading-anchor-permalink" href="#Circular-Port-Graphs" title="Permalink"></a></h2><p>CPGs are the natural data structure for representing process of interconnected systems that share information along wires, but send different information to their different neighbors.</p><pre><code class="language-julia hljs">to_graphviz(SchCPortGraph)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="130pt" height="169pt"
+ viewBox="0.00 0.00 130.13 169.48" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 165.48)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-165.48 126.13,-165.48 126.13,4 -4,4"/>
+<!-- n1 -->
+<g id="node1" class="node">
+<title>n1</title>
+<ellipse fill="none" stroke="black" cx="27" cy="-143.48" rx="27" ry="18"/>
+<text text-anchor="middle" x="27" y="-139.78" font-family="Times,serif" font-size="14.00">Box</text>
+</g>
+<!-- n2 -->
+<g id="node2" class="node">
+<title>n2</title>
+<ellipse fill="none" stroke="black" cx="71.02" cy="-86.15" rx="27" ry="18"/>
+<text text-anchor="middle" x="71.02" y="-82.45" font-family="Times,serif" font-size="14.00">Port</text>
+</g>
+<!-- n2&%2345;&gt;n1 -->
+<g id="edge3" class="edge">
+<title>n2&%2345;&gt;n1</title>
+<path fill="none" stroke="black" d="M58.52,-102.43C54.49,-107.68 49.94,-113.61 45.56,-119.3"/>
+<polygon fill="black" stroke="black" points="42.69,-117.3 39.38,-127.36 48.24,-121.56 42.69,-117.3"/>
+<text text-anchor="middle" x="39.04" y="-114.67" font-family="Times,serif" font-size="14.00">box</text>
+</g>
+<!-- n3 -->
+<g id="node3" class="node">
+<title>n3</title>
+<ellipse fill="none" stroke="black" cx="95.13" cy="-18" rx="27" ry="18"/>
+<text text-anchor="middle" x="95.13" y="-14.3" font-family="Times,serif" font-size="14.00">Wire</text>
+</g>
+<!-- n3&%2345;&gt;n2 -->
+<g id="edge1" class="edge">
+<title>n3&%2345;&gt;n2</title>
+<path fill="none" stroke="black" d="M82.95,-34.24C79.72,-41.33 76.52,-49.85 74.03,-57.91"/>
+<polygon fill="black" stroke="black" points="70.6,-57.18 71.3,-67.75 77.35,-59.05 70.6,-57.18"/>
+<text text-anchor="middle" x="67.49" y="-49.88" font-family="Times,serif" font-size="14.00">src</text>
+</g>
+<!-- n3&%2345;&gt;n2 -->
+<g id="edge2" class="edge">
+<title>n3&%2345;&gt;n2</title>
+<path fill="none" stroke="black" d="M94.92,-36.1C93.14,-43.53 90.34,-52.26 87.21,-60.34"/>
+<polygon fill="black" stroke="black" points="83.91,-59.16 83.27,-69.74 90.36,-61.87 83.91,-59.16"/>
+<text text-anchor="middle" x="102.06" y="-52.02" font-family="Times,serif" font-size="14.00">tgt</text>
+</g>
+</g>
+</svg>
+'/><p>They are also a kind of CSet, so we can use the <code>@acset</code> macro to construct them.</p><pre><code class="language-julia hljs">cpg = @acset CPortGraph begin
+  Box = 3
+  Port = 6
+  Wire = 5
+
+  box = [1,1,2,2,3,3]
+  src = [1,2,5,2,6]
+  tgt = [3,4,2,4,1]
+end</code></pre><div class="c-set">
+<span class="c-set-summary">CPortGraph {Box:3, Port:6, Wire:5}</span>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Port</th>
+      <th style = "text-align: right;">box</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">5</td>
+      <td style = "text-align: right;">3</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">6</td>
+      <td style = "text-align: right;">3</td>
+    </tr>
+  </tbody>
+</table>
+<table>
+  <thead>
+    <tr class = "header headerLastRow">
+      <th class = "rowLabel" style = "font-weight: bold; text-align: right;">Wire</th>
+      <th style = "text-align: right;">src</th>
+      <th style = "text-align: right;">tgt</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td>
+      <td style = "text-align: right;">1</td>
+      <td style = "text-align: right;">3</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">4</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td>
+      <td style = "text-align: right;">5</td>
+      <td style = "text-align: right;">2</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td>
+      <td style = "text-align: right;">2</td>
+      <td style = "text-align: right;">4</td>
+    </tr>
+    <tr>
+      <td class = "rowLabel" style = "font-weight: bold; text-align: right;">5</td>
+      <td style = "text-align: right;">6</td>
+      <td style = "text-align: right;">1</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+<p>the layout for CPGs is not great with graphviz.</p><pre><code class="language-julia hljs">to_graphviz(cpg, port_labels=true, graph_attrs=Dict(&quot;nodesep&quot;=&gt;&quot;2&quot;, &quot;ranksep&quot;=&gt;&quot;2&quot;))</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="242pt" height="196pt"
+ viewBox="0.00 0.00 241.88 195.73" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 191.73)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-191.73 237.88,-191.73 237.88,4 -4,4"/>
+<!-- n1 -->
+<g id="box1" class="node">
+<title>n1</title>
+<ellipse fill="none" stroke="black" cx="105.19" cy="-79.18" rx="18" ry="18"/>
+<text text-anchor="middle" x="105.19" y="-75.48" font-family="Serif" font-size="14.00">n1</text>
+</g>
+<!-- n2 -->
+<g id="box2" class="node">
+<title>n2</title>
+<ellipse fill="none" stroke="black" cx="127.09" cy="-107.93" rx="18" ry="18"/>
+<text text-anchor="middle" x="127.09" y="-104.23" font-family="Serif" font-size="14.00">n2</text>
+</g>
+<!-- n1&%2345;&gt;n2 -->
+<g id="edge1" class="edge">
+<title>n1&%2345;&gt;n2</title>
+<path fill="none" stroke="black" d="M90.88,-90.35C0,-162.97 14.59,-187.73 104.23,-124.7"/>
+<polygon fill="black" stroke="black" points="106.45,-127.42 112.55,-118.76 102.38,-121.72 106.45,-127.42"/>
+<text text-anchor="middle" x="107.55" y="-122.56" font-family="Serif" font-size="14.00">1</text>
+<text text-anchor="middle" x="85.88" y="-94.15" font-family="Serif" font-size="14.00">1</text>
+</g>
+<!-- n1&%2345;&gt;n2 -->
+<g id="edge2" class="edge">
+<title>n1&%2345;&gt;n2</title>
+<path fill="none" stroke="black" d="M119.75,-68.35C213.88,0 233.88,-20.64 149.33,-90.34"/>
+<polygon fill="black" stroke="black" points="146.95,-87.77 141.39,-96.79 151.36,-93.2 146.95,-87.77"/>
+<text text-anchor="middle" x="146.39" y="-85.59" font-family="Serif" font-size="14.00">2</text>
+<text text-anchor="middle" x="124.75" y="-57.15" font-family="Serif" font-size="14.00">2</text>
+</g>
+<!-- n1&%2345;&gt;n2 -->
+<g id="edge4" class="edge">
+<title>n1&%2345;&gt;n2</title>
+<path fill="none" stroke="black" d="M116.14,-93.56C116.18,-93.61 116.23,-93.67 116.27,-93.73"/>
+<polygon fill="black" stroke="black" points="107.55,-88.06 116.4,-93.89 113.12,-83.82 107.55,-88.06"/>
+<text text-anchor="middle" x="111.4" y="-82.69" font-family="Serif" font-size="14.00">2</text>
+<text text-anchor="middle" x="121.14" y="-82.36" font-family="Serif" font-size="14.00">2</text>
+</g>
+<!-- n3 -->
+<g id="box3" class="node">
+<title>n3</title>
+<ellipse fill="none" stroke="black" cx="93.12" cy="-45.12" rx="18" ry="18"/>
+<text text-anchor="middle" x="93.12" y="-41.42" font-family="Serif" font-size="14.00">n3</text>
+</g>
+<!-- n3&%2345;&gt;n1 -->
+<g id="edge3" class="edge">
+<title>n3&%2345;&gt;n1</title>
+<path fill="none" stroke="black" d="M76.43,-51.94C36.27,-70.99 40.08,-92.16 77.6,-86.46"/>
+<polygon fill="black" stroke="black" points="78.73,-89.8 87.85,-84.41 77.36,-82.93 78.73,-89.8"/>
+<text text-anchor="middle" x="82.85" y="-73.21" font-family="Serif" font-size="14.00">2</text>
+<text text-anchor="middle" x="71.43" y="-55.74" font-family="Serif" font-size="14.00">1</text>
+</g>
+<!-- n3&%2345;&gt;n1 -->
+<g id="edge5" class="edge">
+<title>n3&%2345;&gt;n1</title>
+<path fill="none" stroke="black" d="M110.38,-39.91C153.57,-29.41 163.93,-48.26 131.2,-67.46"/>
+<polygon fill="black" stroke="black" points="129.17,-64.57 121.95,-72.33 132.43,-70.77 129.17,-64.57"/>
+<text text-anchor="middle" x="126.95" y="-76.13" font-family="Serif" font-size="14.00">1</text>
+<text text-anchor="middle" x="115.38" y="-28.71" font-family="Serif" font-size="14.00">2</text>
+</g>
+</g>
+</svg>
+'/><p>Almost every application of graphs in computer science could be better served by using one of these extensions to the basic graph data structure.</p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../diagrams_and_expressions/">« Wiring diagrams and syntactic expressions</a><a class="docs-footer-nextpage" href="../../graphics/graphviz_graphs/">Drawing graphs in Graphviz »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.16.1 on <span class="colophon-date" title="Friday 5 December 2025 21:09">Friday 5 December 2025</span>. Using Julia version 1.12.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
