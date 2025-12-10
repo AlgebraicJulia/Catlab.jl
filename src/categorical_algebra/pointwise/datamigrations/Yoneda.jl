@@ -1,5 +1,6 @@
 module Yoneda 
-export representable, yoneda, subobject_classifier, internal_hom, @acset_colim
+export representable, yoneda, subobject_classifier, internal_hom, @acset_colim, 
+  @named_acset_colim, @acset_transformation_colim
 
 using DataStructures, MLStyle 
 
@@ -219,6 +220,19 @@ function parse_diagram_data(x::Expr, mod::Module)::DiagramData
     Expr(:$, x) => Base.eval(mod, x)
   end
 
+  function parse_eq(t1t2::Tuple) 
+    p1,p2 = parse_call.(t1t2)
+    if p1 isa RPath
+      if p2 isa RPath 
+        push!(data.eqs, p1 => p2) 
+      else 
+        data.vals[p1] = p2
+      end 
+    else
+      data.vals[p2] = p1
+    end
+  end
+
   for arg in Base.remove_linenums!(x).args
     @match arg begin
       Expr(:(::), partname::Symbol, parttype::Symbol) => begin 
@@ -227,18 +241,13 @@ function parse_diagram_data(x::Expr, mod::Module)::DiagramData
       Expr(:(::), Expr(:tuple, partnames...), parttype::Symbol) => begin
         add_part.(partnames, Ref(parttype))
       end
-      Expr(:call, :(==), t1, t2) => begin
-        p1,p2 = parse_call.([t1,t2])
-        if p1 isa RPath
-          if p2 isa RPath 
-            push!(data.eqs, p1 => p2) 
-          else 
-            data.vals[p1] = p2
-          end 
-        else
-          data.vals[p2] = p1
-        end
+      Expr(:call, :(==), t1, t2) => parse_eq((t1,t2))
+      Expr(:comparison, raw...) => begin
+        all(==(:(==)), raw[2:2:end]) || error("Improper equality $arg")
+        ts = raw[1:2:end]
+        parse_eq.(zip(ts, ts[2:end]))
       end
+      _ => error("Unexpected expr $arg")
     end
   end
   data
@@ -256,9 +265,56 @@ end
 """
 macro acset_colim(yon, body)
   quote 
+    colimit_representables($(parse_diagram_data(body, __module__)), $(esc(yon)))[2]
+  end
+end
+
+"""
+```
+names, Dom = @named_acset_colim yGraph begin
+  v::V; e::E; src(e)==v
+end
+```
+
+This would behave like `@acset_colim` and assign to `Dom` the walking edge 
+ACSet with src=1 and tgt=2. However, unlike `@acset_colim`, this also assigns 
+to a variable `names` the NamedTuple `(v=(:V, 1),e=(:E, 1))`.
+"""
+macro named_acset_colim(yon, body)
+  quote 
     colimit_representables($(parse_diagram_data(body, __module__)), $(esc(yon)))
   end
 end
+
+"""
+Although providing an assignment for every generator is sufficient to guarantee
+a uniquely determined homomorphism, it is not always necessary. If a generator
+`a` in the domain is equal to some `b.f`, then only specifying `b` is necessary.
+Furthermore, keyword arguments like `monic`, `epic`, and `iso` can be used to
+specify a morphism uniquely (or `any` + `random` if it doesn't matter).
+"""
+macro acset_transformation_colim(yon, body1, body2, body3, kwargs=:((;)))
+    initial = Dict(map(filter(e->e isa Expr,body3.args)) do e 
+      @match e begin 
+        Expr(:call, :(=>), a, b) => a => b
+      end
+    end)
+    quote 
+    names1, acset1 = colimit_representables(
+      $(parse_diagram_data(body1, __module__)), $(esc(yon)))
+    names2, acset2 = colimit_representables(
+      $(parse_diagram_data(body2, __module__)), $(esc(yon)))
+
+    initial=DefaultDict{Symbol,Dict}(()->Dict())
+    for (k,v) in $initial 
+      ty, domval = names1[k]
+      _, codval = names2[v]
+      initial[ty][domval] = codval
+    end
+    homomorphism(acset1, acset2; initial=initial, $(kwargs)...)
+  end
+end
+
 
 """ 
 Construct an ACSet given a colimit of representables, given by generating 
@@ -267,7 +323,10 @@ representables and relations. Assumes a background context of VarACSetCategory
 function colimit_representables(data::DiagramData, y::FinDomFunctor)
   # Warning: we assume FinDomFunctor is implemented by FinDomFunctorMap to
   # get access to an arbitrary element (not part of the FinCat interface)
-  arb = last(first(getvalue(y).ob_map))
+  vy = getvalue(y)
+  vy isa FinDomFunctorMap || error("Expected FinDomFunctorMap")
+  arb = last(first(vy.ob_map))
+
   S = acset_schema(arb)
   P = Presentation(S)
   
@@ -276,6 +335,7 @@ function colimit_representables(data::DiagramData, y::FinDomFunctor)
   ks = collect(keys(data.reprs))
 
   𝒞 = ACSetCategory(VarACSetCat(arb))
+  cat(x::Symbol) = x ∈ ob(S) ? entity_cat(𝒞) : attr_cat(𝒞, x)
   𝒞′ = TypedCatWithCoproducts(𝒞)
 
   # Total order on the representables 
@@ -292,34 +352,17 @@ function colimit_representables(data::DiagramData, y::FinDomFunctor)
   # Given a name of some representable, get its corresponding inclusion into Σ
   lookup = Dict([v=>ι[i] for (i,(_,v)) in enumerate(reprs)])
 
-  # Convert a morphism out of a representable into an ACSetTransformation into Σ
-  function list_to_hom(rep_f::RPath)::ACSetTransformation
-    rep, f = rep_f
-    p = if isempty(f)
-      k = ks[findfirst(k->rep ∈ data.reprs[k], ks)]
-      id(gen(k))
-    else
-      compose(gen.(f))
-    end
-    m = @match only(typeof(p).parameters) begin 
-      :generator => gen_map(y, p) 
-      :compose => hom_map(y, p)
-      :id => id[𝒞](ob_map(y, dom(p)))
-    end
-    compose[𝒞](m, lookup[rep])
-  end
-
   # A quotient for each equation: if we are identifying a rep x, this is a span 
   # x ⇇ x² ⇉ Σᵢrᵢ where the left is merge + the right map comes from an equation
   spans = map(data.eqs) do lr
-    l, r = map(list_to_hom,lr)
+    l, r = [list_to_hom(y, 𝒞, lookup, x) for x in lr]
     merge = let idᵣ = id[𝒞](dom(l)); copair[𝒞′](idᵣ,idᵣ) end
     Span(merge, copair[𝒞′](l,r))
   end
 
   # A quotient for each fixed value: assert the attrvar is equal via pushout
   for (rp,val) in pairs(data.vals)
-    h = list_to_hom(rp)
+    h = list_to_hom(y, 𝒞, lookup, rp)
     T = codom(S, last(last(rp))) 
     set_val = ACSetTransformation(ob_map(y, gen(T)), constructor(𝒞); 
                                   Dict([T=>[val]])...)
@@ -327,11 +370,38 @@ function colimit_representables(data::DiagramData, y::FinDomFunctor)
   end
 
   # If we are just asking for a coproduct of representables
-  isempty(spans) && return apex(Σ)
+  colim, incl = if isempty(spans) 
+    Σ, Dict(k => id[cat(k)](get_ob(𝒞, apex(Σ), k)) for k in types(S))
+  else 
+    # Perform all pushouts at once by putting spans together in parallel
+    lefts, rights = left.(spans), right.(spans)
+    _,bigι = big_colim = pushout[𝒞](
+      foldl(oplus[𝒞′], lefts), foldl(copair[𝒞′], rights))
+    (big_colim, bigι)
+  end
 
-  # Perform all pushouts at once by putting the spans together in parallel
-  lefts, rights = left.(spans), right.(spans)
-  apex(pushout[𝒞](foldl(oplus[𝒞′], lefts), foldl(copair[𝒞′], rights)))
+  # TODO get representing element for real. Requires passing in extra data.
+  names = NamedTuple(map(reprs) do (repr_type, repr_name)
+    c = cat(repr_type)
+    ι = compose[c](lookup[repr_name][repr_type],incl[repr_type])
+    length(dom[c](ι)) == 1 || error("Assumption that representing element is "*
+    "unique has been violated, more data required by `colimit_representables`")
+    e = (repr_type ∈ ob(S) ? identity : Left)(only(dom[c](ι)))
+    repr_name => (repr_type, hom_map[c](ι)(e))
+  end)
+
+  (names, apex(colim))
+end
+
+# Helper function for colimit_representables
+# Convert a morphism out of a representable into an ACSetTransformation into Σ
+function list_to_hom(y::FinDomFunctor, 𝒞::ACSetCategory, 
+                     lookup::Dict{Symbol, <:ACSetTransformation}, 
+                     rep_f::RPath)::ACSetTransformation
+  rep, f = rep_f
+  gen(x) = generator(Presentation(acset_schema(𝒞)), x)
+  hs = gen_map.(Ref(y), gen.(f))
+  foldl(compose[𝒞], [hs..., lookup[rep]])
 end
 
 end # module
