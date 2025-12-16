@@ -71,8 +71,9 @@ ZG = ob(product[ACSetCategory(DDS42())](Z,G))
 
 # ACSet colim
 #############
-
+@test is_isomorphic((@acset_colim y_Graph begin end), Graph())
 @test is_isomorphic((@acset_colim y_Graph begin v::V end), Graph(1))
+@test is_isomorphic((@acset_colim y_Graph begin (v1,v2,v3)::V; v1==v2==v3 end), Graph(1))
 
 v3e2 = @acset_colim y_Graph begin
   v1::V; (e1,e2)::E
