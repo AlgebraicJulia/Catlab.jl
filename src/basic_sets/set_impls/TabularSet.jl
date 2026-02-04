@@ -43,7 +43,7 @@ function Base.show(io::IO, ::MIME"text/plain", set::TabularSet)
   print(io, "$(Tables.rowcount(set.table))-element TabularSet")
   if !get(io, :compact, false)
     println(io, ":")
-    PrettyTables.pretty_table(io, set.table)
+    PrettyTables.pretty_table(io, set.table, show_first_column_label_only = true)
   end
 end
 
