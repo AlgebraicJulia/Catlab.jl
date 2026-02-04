@@ -16,6 +16,9 @@ println("\n=== Adding PrettyTables v3 ===")
 Pkg.add(name="PrettyTables", version="3")
 
 # Add ACSets from PR #175 (with PrettyTables v3 support)
+# NOTE: This commit SHA (d5596bd) is the tip of PR #175 which adds PrettyTables v3 support
+# Once PR #175 is merged and a new ACSets version is released (0.2.27+), this script
+# can be removed and tests should use the normal test suite instead.
 println("\n=== Adding ACSets from PR #175 ===")
 Pkg.add(url="https://github.com/AlgebraicJulia/ACSets.jl.git", rev="d5596bdb081ae853b1ecd72540eb2e248d004092")
 
