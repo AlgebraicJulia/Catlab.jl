@@ -50,7 +50,8 @@ end
 function Base.show(io::IO, ::MIME"text/html", set::TabularSet)
   println(io, "<div class=\"tabular-set\">")
   println(io, "$(Tables.rowcount(set.table))-element TabularSet")
-  PrettyTables.pretty_table(io, set.table, backend=:html, stand_alone=false)
+  PrettyTables.pretty_table(io, set.table, backend=:html, stand_alone=false,
+    show_first_column_label_only = true)
   println(io, "</div>")
 end
 
