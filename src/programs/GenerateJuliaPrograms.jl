@@ -70,7 +70,7 @@ function compile_block(f::HomExpr{:compose}, inputs::Vector,
                        state::CompileState)::Block
   code = Expr(:block)
   vars = inputs
-  for g in args(f)
+  for g in GATlab.args(f)
     block = compile_block(g, vars, state)
     code = concat_expr(code, block.code)
     vars = block.outputs
@@ -79,7 +79,7 @@ function compile_block(f::HomExpr{:compose}, inputs::Vector,
   Block(code, inputs, outputs)
 end
 
-function compile_block(f::HomExpr{:id}, inputs::Vector,
+function compile_block(_::HomExpr{:id}, inputs::Vector,
                        state::CompileState)::Block
   Block(Expr(:block), inputs, inputs)
 end
@@ -89,7 +89,7 @@ function compile_block(f::HomExpr{:otimes}, inputs::Vector,
   code = Expr(:block)
   outputs = empty(inputs)
   i = 1
-  for g in args(f)
+  for g in GATlab.args(f)
     nin = ndims(dom(g))
     block = compile_block(g, inputs[i:i+nin-1], state)
     code = concat_expr(code, block.code)
@@ -201,23 +201,23 @@ evaluating a standard Julia function.
 Compare with [`functor`](@ref).
 """
 function evaluate(f::HomExpr, xs...; kw...)
-  make_return_value(evaluate_hom(f, collect(xs); kw...))
+  make_return_value(evaluate_hom(f, Base.collect(xs); kw...))
 end
 
 function evaluate_hom(f::HomExpr{:generator}, xs::Vector;
                       generators::AbstractDict=Dict(), broadcast::Bool=false)
   fun = generators[first(f)]
   y = broadcast ? fun.(xs...) : fun(xs...)
-  y isa Tuple ? collect(y) : [y]
+  y isa Tuple ? Base.collect(y) : [y]
 end
 
 function evaluate_hom(f::HomExpr{:compose}, xs::Vector; kw...)
-  foldl((ys, g) -> evaluate_hom(g, ys; kw...), args(f); init=xs)
+  foldl((ys, g) -> evaluate_hom(g, ys; kw...), GATlab.args(f); init=xs)
 end
 
 function evaluate_hom(f::Union{HomExpr{:otimes},HomExpr{:oplus}}, xs::Vector; kw...)
   i = 1
-  mapreduce(vcat, args(f); init=[]) do g
+  mapreduce(vcat, GATlab.args(f); init=[]) do g
     m = ndims(dom(g))
     ys = evaluate_hom(g, xs[i:i+m-1]; kw...)
     i += m

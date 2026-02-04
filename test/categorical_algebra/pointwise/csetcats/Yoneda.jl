@@ -69,4 +69,20 @@ Z = @acset DDS42 begin X=5; Φ=[2,3,4,3,4] end
 ZG = ob(product[ACSetCategory(DDS42())](Z,G))
 @test length(homomorphisms(Z, Fᴳ)) == length(homomorphisms(ZG, F)) == 1024
 
+# ACSet colim
+#############
+@test is_isomorphic((@acset_colim y_Graph begin end), Graph())
+@test is_isomorphic((@acset_colim y_Graph begin v::V end), Graph(1))
+@test is_isomorphic((@acset_colim y_Graph begin (v1,v2,v3)::V; v1==v2==v3 end), Graph(1))
+
+v3e2 = @acset_colim y_Graph begin
+  v1::V; (e1,e2)::E
+  src(e1) == v1
+  tgt(e1) == src(e2)
+end
+
+v3e2′ = @acset Graph begin V=3; E=2; src=[1,2]; tgt=[2,3] end 
+
+@test is_isomorphic(v3e2, v3e2′)
+
 end # module
