@@ -11,14 +11,13 @@ PrettyTables.pretty_table(f::FinFunction, name::Symbol=:f) =
 using LaTeXStrings</code></pre><h2 id="FinSet:-the-category-of-Finite-Sets"><a class="docs-heading-anchor" href="#FinSet:-the-category-of-Finite-Sets">FinSet: the category of Finite Sets</a><a id="FinSet:-the-category-of-Finite-Sets-1"></a><a class="docs-heading-anchor-permalink" href="#FinSet:-the-category-of-Finite-Sets" title="Permalink"></a></h2><p>In FinSet the objects are sets n = {1...n} and the morphisms are functions between finite sets. You can wrap a plain old Int into a finite set with the FinSet(n::Int) function. These sets will serve as the domain and codomains of our functions.</p><pre><code class="language-julia hljs">n = FinSet(3)
 m = FinSet(4)</code></pre>FinSet(4)<p>once you have some sets, you can define functions between them. A FinFunction from n to m, f:n→m, can be specified as an array of length n with elements from m.</p><pre><code class="language-julia hljs">f = FinFunction([2,4,3], n, m)
 
-pretty_table(f)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">┌───────┬───────┐
-│     x │  f(x) │
-│ Int64 │ Int64 │
-├───────┼───────┤
-│     1 │     2 │
-│     2 │     4 │
-│     3 │     3 │
-└───────┴───────┘</code></pre><h2 id="Surjective-maps"><a class="docs-heading-anchor" href="#Surjective-maps">Surjective maps</a><a id="Surjective-maps-1"></a><a class="docs-heading-anchor-permalink" href="#Surjective-maps" title="Permalink"></a></h2><p>In order to use a map to represent a partition, we have to make sure that it is surjective. Given a FinFunction, we can compute the preimage of any element in its codomain.</p><pre><code class="language-julia hljs">preimage(f, 2)
+pretty_table(f)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">┌────────┬───────────────────────┐
+│   Keys │                Values │
+│ Symbol │ AbstractVector{Int64} │
+├────────┼───────────────────────┤
+│      x │                   1:3 │
+│   f(x) │             [2, 4, 3] │
+└────────┴───────────────────────┘</code></pre><h2 id="Surjective-maps"><a class="docs-heading-anchor" href="#Surjective-maps">Surjective maps</a><a id="Surjective-maps-1"></a><a class="docs-heading-anchor-permalink" href="#Surjective-maps" title="Permalink"></a></h2><p>In order to use a map to represent a partition, we have to make sure that it is surjective. Given a FinFunction, we can compute the preimage of any element in its codomain.</p><pre><code class="language-julia hljs">preimage(f, 2)
 
 preimage(f, 1)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Int64[]</code></pre><p>If the preimage is empty, then there is no element in the domain that maps to that element of the codomain. This gives us a definition of surjective functions by asserting that all the preimages are nonempty. Julia note: !p is the predicate x ↦ ¬p(x), f.(A) applies f to all of the elements in A.</p><pre><code class="language-julia hljs">is_surjective(f::FinFunction) = all((!isempty).(preimage(f,i) for i in codom(f)))
 is_surjective(f)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">false</code></pre><p>Our function f, wasn&#39;t surjective so it can&#39;t be used to induce a partition via its preimages. Let&#39;s try again,</p><pre><code class="language-julia hljs">g = FinFunction([1,2,3,3], m, n)
@@ -34,7 +33,7 @@ A &amp;&amp;&amp; Q \\
 \arrow[&quot;g&quot;&#39;, two heads, from=1-1, to=3-4]
 &quot;&quot;&quot;;
 
-TikzCD(triangle, preamble=TikzCDs.Styles.Quiver)</code></pre><img src="65019c62.svg" alt="Example block output"/><p>Let&#39;s take a look at an example:</p><pre><code class="language-julia hljs">A = FinSet(4)
+TikzCD(triangle, preamble=TikzCDs.Styles.Quiver)</code></pre><img src="3c6d43f2.svg" alt="Example block output"/><p>Let&#39;s take a look at an example:</p><pre><code class="language-julia hljs">A = FinSet(4)
 Q = FinSet(3)
 P = FinSet(2)
 
@@ -51,15 +50,13 @@ force(compose[𝒞](f,h)) == g</code></pre><pre class="documenter-example-output
 
 @withmodel 𝒞 (⋅) begin
   pretty_table(f⋅h⋅h′, Symbol(&quot;f⋅h⋅h′&quot;))
-end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">┌───────┬───────────┐
-│     x │ f⋅h⋅h′(x) │
-│ Int64 │     Int64 │
-├───────┼───────────┤
-│     1 │         1 │
-│     2 │         1 │
-│     3 │         1 │
-│     4 │         1 │
-└───────┴───────────┘</code></pre><h3 id="Properties-of-refinements"><a class="docs-heading-anchor" href="#Properties-of-refinements">Properties of refinements</a><a id="Properties-of-refinements-1"></a><a class="docs-heading-anchor-permalink" href="#Properties-of-refinements" title="Permalink"></a></h3><p>We can show that refinement gives us a preorder on partitions directly from the nice properties of surjective maps.</p><ol><li>Reflexive: Any partition is a refinement of itself.</li><li>Transitive: If f ≤ g ≤ h as partitions, then f ≤ h</li></ol><p>You can read these directly off the definition of refinements as a commutative triangle in the category of (Set, Surjections). You can edit this diagram in <a href="https://q.uiver.app/?q=WzAsNCxbMCwwLCJBIl0sWzMsMCwiUSJdLFszLDIsIlAiXSxbMyw0LCJRXlxccHJpbWUiXSxbMSwyLCJoIl0sWzAsMSwiZiIsMCx7InN0eWxlIjp7ImhlYWQiOnsibmFtZSI6ImVwaSJ9fX1dLFswLDIsImciLDIseyJzdHlsZSI6eyJoZWFkIjp7Im5hbWUiOiJlcGkifX19XSxbMiwzLCJoXlxccHJpbWUiXSxbMCwzLCJmXFxjZG90IGhcXGNkb3QgaF5cXHByaW1lID0gZ1xcY2RvdCBoXlxccHJpbWUiLDIseyJzdHlsZSI6eyJoZWFkIjp7Im5hbWUiOiJlcGkifX19XV0=">quiver</a></p><pre><code class="language-julia hljs">refinement = L&quot;&quot;&quot;
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">┌───────────┬───────────────────────┐
+│      Keys │                Values │
+│    Symbol │ AbstractVector{Int64} │
+├───────────┼───────────────────────┤
+│         x │                   1:4 │
+│ f⋅h⋅h′(x) │          [1, 1, 1, 1] │
+└───────────┴───────────────────────┘</code></pre><h3 id="Properties-of-refinements"><a class="docs-heading-anchor" href="#Properties-of-refinements">Properties of refinements</a><a id="Properties-of-refinements-1"></a><a class="docs-heading-anchor-permalink" href="#Properties-of-refinements" title="Permalink"></a></h3><p>We can show that refinement gives us a preorder on partitions directly from the nice properties of surjective maps.</p><ol><li>Reflexive: Any partition is a refinement of itself.</li><li>Transitive: If f ≤ g ≤ h as partitions, then f ≤ h</li></ol><p>You can read these directly off the definition of refinements as a commutative triangle in the category of (Set, Surjections). You can edit this diagram in <a href="https://q.uiver.app/?q=WzAsNCxbMCwwLCJBIl0sWzMsMCwiUSJdLFszLDIsIlAiXSxbMyw0LCJRXlxccHJpbWUiXSxbMSwyLCJoIl0sWzAsMSwiZiIsMCx7InN0eWxlIjp7ImhlYWQiOnsibmFtZSI6ImVwaSJ9fX1dLFswLDIsImciLDIseyJzdHlsZSI6eyJoZWFkIjp7Im5hbWUiOiJlcGkifX19XSxbMiwzLCJoXlxccHJpbWUiXSxbMCwzLCJmXFxjZG90IGhcXGNkb3QgaF5cXHByaW1lID0gZ1xcY2RvdCBoXlxccHJpbWUiLDIseyJzdHlsZSI6eyJoZWFkIjp7Im5hbWUiOiJlcGkifX19XV0=">quiver</a></p><pre><code class="language-julia hljs">refinement = L&quot;&quot;&quot;
 A &amp;&amp;&amp; Q \\
 \\
 &amp;&amp;&amp; P \\
@@ -72,4 +69,4 @@ A &amp;&amp;&amp; Q \\
 \arrow[&quot;{f\cdot h\cdot h^\prime = g\cdot h^\prime}&quot;&#39;, two heads, from=1-1, to=5-4]
 &quot;&quot;&quot;;
 
-TikzCD(refinement, preamble=TikzCDs.Styles.Quiver)</code></pre><img src="3c338646.svg" alt="Example block output"/></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../../">« Catlab.jl</a><a class="docs-footer-nextpage" href="../preorders/">Preorders »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Tuesday 17 March 2026 23:29">Tuesday 17 March 2026</span>. Using Julia version 1.12.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+TikzCD(refinement, preamble=TikzCDs.Styles.Quiver)</code></pre><img src="c2ccaa74.svg" alt="Example block output"/></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../../">« Catlab.jl</a><a class="docs-footer-nextpage" href="../preorders/">Preorders »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Wednesday 18 March 2026 00:24">Wednesday 18 March 2026</span>. Using Julia version 1.12.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
