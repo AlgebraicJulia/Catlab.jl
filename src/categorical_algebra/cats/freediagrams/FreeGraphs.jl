@@ -80,7 +80,7 @@ end
 function fmap(d::FreeGraph, o, h, O::Type, H::Type) 
   res = FreeGraph{O,H}()
   add_vertices!(res, nv(d); ob=o.(d[:ob]))
-  for e in edges(res)
+  for e in edges(d)
     add_edge!(res, src(d, e), tgt(d, e); hom=h(hom(d,e)))
   end
   res
