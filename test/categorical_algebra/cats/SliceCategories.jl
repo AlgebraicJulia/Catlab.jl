@@ -65,10 +65,13 @@ slic = SliceHom(A,A,id[𝒞](G2); cat=𝒞)
 slice_lim = π₁, π₂ = product[𝒞3](A,B);
 
 # test universal property
-mA, mB = [ACSetTransformation(G1,G2;V=x) for x in [[1],[2]]]
-sp = Multispan(SliceOb(ACSetTransformation(G1, G3; V=[2])), [mA, mB], [A,B])
+X = SliceOb(ACSetTransformation(G1, G3; V=[1]))
+mA, mB = map([A=>[1],B=>[2]]) do (L,x)
+  SliceHom(X, L, ACSetTransformation(G1,G2;V=x); cat=𝒞)
+end
+sp = Span(mA,mB; cat=𝒞3)
 u = universal[𝒞3](slice_lim, sp)
-@test force(compose[𝒞](u, π₁)) == mA
-@test force(compose[𝒞](u, π₂)) == mB
+@test force(compose[𝒞3](u, π₁); cat=𝒞) == mA
+@test force(compose[𝒞3](u, π₂); cat=𝒞) == mB
 
 end # module
