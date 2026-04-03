@@ -169,6 +169,13 @@ diagram = FreeGraph([A,B,C], [(f,1,3),(g,2,3),(h,1,2)]) |> FreeDiagram
 @test (src(diagram), tgt(diagram)) == ([1,2,1], [3,3,2])
 @test_throws Exception FreeDiagram([A,B,C], [(f,1,2),(g,2,3),(h,1,2)])
 
+double(f) = let n = string(nameof(f)); Hom(Symbol(n*n), dom(f), codom(f)) end
+diagram′ = fmap(diagram, identity, double, FreeCategory.Ob,FreeCategory.Hom).val
+
+@test nv(diagram′) == 3
+@test ne(diagram′) == 3
+@test Hom(:gg, B, C) ∈ diagram′[:hom]
+
 # Bipartite free diagrams
 #------------------------
 

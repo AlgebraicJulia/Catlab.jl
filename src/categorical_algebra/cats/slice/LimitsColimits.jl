@@ -112,14 +112,18 @@ function limit_slice(model, diagram::FreeDiagram)
   lim = limit[𝒞](FG)
 
   new_apex = SliceOb(apex(lim), first(legs(lim.cone)))
-  spn = Multispan(new_apex, legs(lim.cone)[2:end], FG[:ob][2:end])
+  lgs = map(zip(legs(lim.cone)[2:end], ob(diagram))) do (l, o)
+    SliceHom(new_apex, o, l; cat=𝒞)
+  end
+  spn = Multispan(new_apex, lgs, ob(diagram))
   SliceLimitCone(spn, diagram, lim)
 end
 
 """ Use the universal property of the underlying category. """
 function slice_limit_universal(model, lim::AbsLimit, _::FreeDiagram, sp::Multispan)
   𝒞, apx = model.cat, apex(sp)
-  universal[𝒞](lim.underlying, Multispan(apx.ob, [apx.hom, sp...]; cat=𝒞))
+  res = universal[𝒞](lim.underlying, Multispan(apx.ob, [apx.hom, [f.hom for f in sp]...]; cat=𝒞))
+  SliceHom(apx, apex(lim), res; cat=𝒞)
 end
 
 end # module
