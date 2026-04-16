@@ -76,7 +76,7 @@ end
 
 GATlab.getvalue(x::NamedCoproductCat) = x.cats
 
-Base.getindex(x::NamedCoproductCat, i::Int) = x.cats[i]
+Base.getindex(x::NamedCoproductCat, i) = x.cats[i]
 
 @instance ThCategoryExplicitSets{O,H} [model::NamedCoproductCat{O,H}
                                              ] where {O,H} begin 

@@ -57,7 +57,7 @@ ACSet(X::ACSetFunctor) = X.acset # synonym for getvalue
     end
   end 
 
-  hom_map(f::GATExpr)::Hom = if f isa GATExpr{:generator}
+  hom_map(f::GATExpr) = if f isa GATExpr{:generator}
     gen_map[model](f)
   elseif f isa GATExpr{:id}
     id(codom[model](), ob_map[model](only(f.args)))
@@ -65,7 +65,7 @@ ACSet(X::ACSetFunctor) = X.acset # synonym for getvalue
     error("TODO $f")
   end
 
-  function gen_map(f::GATExpr{:generator})::Hom 
+  function gen_map(f::GATExpr{:generator})
     S = acset_schema(model.cod)
     f = nameof(f)
     if f ∈ homs(S; just_names=true)
@@ -89,9 +89,41 @@ end
 """ Set-valued FinDomFunctors as ACSets. """
 function (::Type{ACS})(F::FinDomFunctor) where ACS <: ACSet
   getvalue(F) isa ACSetFunctor && return getvalue(F).acset
-  X = ACS()
+  # For parametric ACSets, infer type params from functor attr values if needed
+  ACST = try
+    ACS()
+    ACS
+  catch
+    _infer_acset_type(ACS, F)
+  end
+  X = ACST()
   copy_parts!(X, F)
   return X
+end
+
+"""Infer type parameters for a parametric ACSet from a FinDomFunctor's attr values."""
+function _infer_acset_type(::Type{ACS}, F::FinDomFunctor) where ACS <: ACSet
+  pres = presentation(getvalue(dom(F)))
+  attr_types = map(generators(pres, :AttrType)) do at
+    # Try to infer the element type from Attr morphisms targeting this AttrType
+    attrs_for_at = filter(a -> nameof(codom(a)) == nameof(at), generators(pres, :Attr))
+    for a in attrs_for_at
+      hm = hom_map(F, a)
+      hm_val = hm isa TaggedElem ? getvalue(hm) : hm
+      if hm_val isa FinDomFunction
+        vals = [hm_val(i) for i in 1:length(dom(hm_val))]
+        if !isempty(vals)
+          return typejoin(typeof.(vals)...)
+        end
+      end
+    end
+    Any
+  end
+  if isempty(attr_types)
+    ACS
+  else
+    ACS{attr_types...}
+  end
 end
 
 """ Copy parts from a set-valued `FinDomFunctor` to an `ACSet`.
@@ -104,12 +136,18 @@ function ACSetInterface.copy_parts!(X::ACSet, F::FinDomFunctor)
   end)
   for f in generators(pres, :Hom)
     dom_parts, codom_parts = added[nameof(dom(f))], added[nameof(codom(f))]
-    set_subpart!(X, dom_parts, nameof(f), codom_parts[collect(hom_map(F, pres[f]))])
+    f_mapped = hom_map(F, f)
+    n = length(dom_parts)
+    vals = [f_mapped(i) for i in 1:n]
+    set_subpart!(X, dom_parts, nameof(f), codom_parts[vals])
   end
   for f in generators(pres, :Attr)
     cd = nameof(codom(f))
     dom_parts = added[nameof(dom(f))]
-    F_of_f = collect(hom_map(F,f))
+    f_mapped = hom_map(F, f)
+    f_mapped = f_mapped isa TaggedElem ? getvalue(f_mapped) : f_mapped
+    n = length(added[nameof(dom(f))])
+    F_of_f = [f_mapped(i) for i in 1:n]
     n_attrvars_present = nparts(X, cd)
     n_attrvars_needed = maximum(map(x->x.val,filter(x->x isa AttrVar,F_of_f)),init=0)
     add_parts!(X,cd,n_attrvars_needed-n_attrvars_present)

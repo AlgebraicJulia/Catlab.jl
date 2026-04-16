@@ -211,6 +211,7 @@ function parse_diagram_data(x::Expr, mod::Module)::DiagramData
   end
 
   parse_call(e::Symbol)::RPath = e => Symbol[]
+  parse_call(e) = e
 
   parse_call(e::Expr) = @match e begin
     Expr(:call, f, x) => let (e, fs) = parse_call(x);
