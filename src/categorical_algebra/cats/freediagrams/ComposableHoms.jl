@@ -77,11 +77,19 @@ const ComposablePair{Ob,Hom} = ComposableMorphisms{Ob,Hom,<:StaticVector{2,Hom}}
 # Constructor in which we infer Hom and Ob type
 ComposablePair(f::Hom, g::Hom; kw...) where Hom = ComposablePair{Hom}(f, g; kw...)
 
+# Constructor for composable pairs whose morphisms have different concrete types.
+function ComposablePair(first, last; cat=nothing)
+  Hom = typejoin(typeof(first), typeof(last))
+  𝒞 = isnothing(cat) ? Dispatch(ThCategory, [Union{},Hom]) : cat
+  Ob = Union{typeof.([dom[𝒞](first), dom[𝒞](last), codom[𝒞](last)])...}
+  ComposableMorphisms{Ob, Hom}(SVector{2,Hom}(first, last); cat)
+end
+
 # Constructor in which we infer Ob type
 function ComposablePair{Hom}(first::Hom, last::Hom; cat=nothing) where Hom
   𝒞 = isnothing(cat) ? Dispatch(ThCategory, [Union{},Hom]) : cat
   Ob = Union{typeof.([dom[𝒞](first), dom[𝒞](last), codom[𝒞](last)])...}
-  ComposableMorphisms{Ob, Hom}(SVector(first, last); cat)
+  ComposableMorphisms{Ob, Hom}(SVector{2,Hom}(first, last); cat)
 end
 
 @instance ThFreeDiagram{Int,Int,Ob,Hom} [model::ComposableMorphisms{Ob,Hom}
