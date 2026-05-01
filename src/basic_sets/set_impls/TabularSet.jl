@@ -43,15 +43,15 @@ function Base.show(io::IO, ::MIME"text/plain", set::TabularSet)
   print(io, "$(Tables.rowcount(set.table))-element TabularSet")
   if !get(io, :compact, false)
     println(io, ":")
-    PrettyTables.pretty_table(io, set.table, show_subheader=false)
+    PrettyTables.pretty_table(io, set.table, show_first_column_label_only=true)
   end
 end
 
 function Base.show(io::IO, ::MIME"text/html", set::TabularSet)
   println(io, "<div class=\"tabular-set\">")
   println(io, "$(Tables.rowcount(set.table))-element TabularSet")
-  PrettyTables.pretty_table(io, set.table, backend=Val(:html), standalone=false,
-                            show_subheader=false)
+  PrettyTables.pretty_table(io, set.table, backend=:html,
+    show_first_column_label_only = true)
   println(io, "</div>")
 end
 

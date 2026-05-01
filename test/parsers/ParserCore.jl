@@ -24,4 +24,4 @@ end
   @test expr("f(a, b, c)")[1] == Expr(:f, :a, :b, :c)
 end
 
-end
+end # module

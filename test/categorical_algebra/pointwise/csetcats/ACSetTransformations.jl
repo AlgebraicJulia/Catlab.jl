@@ -19,6 +19,10 @@ g, h = path_graph(Graph, 4), cycle_graph(Graph, 2)
 α′′ = ACSetTransformation(g, h, V=FinFunction([1,2,1,2]), E=FinFunction([1,2,1]))
 @test components(α′′) == components(α)
 
+# Coerce component
+g1, g5 = Graph(1), Graph(5)
+@test ACSetTransformation(g5, g1)[:V](4) == 1 # don't need to specify V: unique
+
 # Naturality.
 #-------------
 

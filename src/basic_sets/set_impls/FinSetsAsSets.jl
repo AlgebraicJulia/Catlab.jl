@@ -4,7 +4,8 @@ export FinSetAsSet
 
 using StructEquality
 using GATlab 
-using ..BasicSets: ThSet, FinSet, ThFinSet
+using ..BasicSets: ThSet, ThFinSet
+import ..BasicSets: FinSet
 using ..ProdSets: ProdSet
 import ..Sets: SetOb
 

@@ -192,18 +192,13 @@ graphhoms(T, t)
 
 # The reason we don't have a morphism into t is vertices 2,3,4,5 aren't arranged into a triangle. We can relax those constraints by adding loops to the codomain. Loops in the codomain allow you to merge adjacent vertices when you construct the homomorphism. 
 
-add_loops!(g) = add_parts!(g, :E, nparts(g,:V), src=parts(g,:V), tgt=parts(g,:V))
-add_loops(g) = begin
-    h = copy(g)
-    add_loops!(h)
-    return h
-end
+add_loops!(t)
 
-draw(add_loops(t))
+draw(t)
 
 # Once we add loops, then we have morphisms.
  
-length(homomorphisms(T,add_loops(t)))
+length(homomorphisms(T,t))
 
 
 # ## Bipartite Graphs

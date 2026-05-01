@@ -76,12 +76,12 @@ FreeCatGraph(n::FreeGraph) =  FreeCatGraph(getvalue(n))
 end
 
 
-""" Replace homs via a replacement function """
-function fmap(d::FreeGraph, o, h, O::Type, H::Type) 
+""" Replace obs / homs via a replacement function """
+function fmap(old_graph::FreeGraph, ofun, hfun, O::Type, H::Type) 
   res = FreeGraph{O,H}()
-  add_vertices!(res, nv(d); ob=o.(d[:ob]))
-  for e in edges(res)
-    add_edge!(res, src(d, e), tgt(d, e); hom=h(hom(d,e)))
+  add_vertices!(res, nv(old_graph); ob=ofun.(old_graph[:ob]))
+  for e in edges(old_graph)
+    add_edge!(res, src(old_graph, e), tgt(old_graph, e); hom=hfun(old_graph[e,:hom]))
   end
   res
 end

@@ -60,6 +60,8 @@ coproj1(colim::AbsColimit) = let (l,_) = legs(colim); l end
 
 coproj2(colim::AbsColimit) = let (_,l) = legs(colim); l end
 
+Base.length(colim::AbsColimit) = length(cocone(colim))
+
 ob(::WithModel, x::AbsColimit; context=nothing) = ob(x) # always use dispatch
 
 

@@ -37,6 +37,10 @@ SliceOb(hom; cat=nothing) =
   end
 end
 
+function force(f::SliceHom{O,H}; cat=nothing) where {O,H} 
+  SliceHom(f.dom, f.codom, force(f.hom); cat) 
+end
+
 # We want to use this for potentially many theories (e.g. the various (co)limit
 # theories) so it doesn't make sense to store a wrapped model. Just store raw 
 # model.
@@ -102,7 +106,7 @@ using .ThCategoryExplicitSets
   codom(h::SliceHom{<:ObT, <:HomT}) = h.codom
 
   function compose(f::SliceHom{<:ObT, <:HomT}, g::SliceHom{<:ObT, <:HomT})
-    SliceHom(f.dom, g.codom, compose[model.cat](f.hom, g.hom))
+    SliceHom(f.dom, g.codom, compose[model.cat](f.hom, g.hom); cat=model.cat)
   end
 
   # Actually we can get more specific than this with PredicatedSets.

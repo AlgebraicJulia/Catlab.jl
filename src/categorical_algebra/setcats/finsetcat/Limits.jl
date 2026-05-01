@@ -47,34 +47,14 @@ end
 # Equalizers #
 ##############
 
-# @instance ThCategoryWithEqualizers{FinSet, FinFunction} [model::FinSetC] begin 
-#   function limit(para::ParallelMorphisms)::AbsLimit
-#     @assert !isempty(para)
-#     d = dom(para)
-#     eq_test(i) = allequal([f(i) for f in para])
-#     eq = if d isa FinSet 
-#       FinFunction(Dict(x=>x for x in collect(d) if eq_test(x)), d)
-#     else 
-#       SetFunction(SetFunctionCallable(identity, 
-#                                       PredicatedSet(eltype(d), eq_test), d)) 
-#     end
-#     LimitCone(Multispan(dom(eq), [eq]), FreeDiagram(para))
-#   end
-#   function universal(res::AbsLimit, ::ParallelMorphisms, x::Multispan) 
-#     error("TODO")
-#   end  
-# end
-
-
-
 @instance ThCategoryWithEqualizers{FinSet, FinFunction} [model::FinSetC] begin 
 
   function limit(para::ParallelMorphisms)::AbsLimit  
     @assert !isempty(para)
-    f1, frest = para[1], para[2:end]
-    m = length(dom(para))
-    eq = FinFunction(filter(i -> all(f1(i) == f(i) for f in frest), 1:m), m)
-    Limit(Diagram(para, Category(TypeCat(c))), Multispan(dom(eq), [eq]))
+    d = dom(para)
+    eq_test(i) = allequal([f(i) for f in para])
+    eq = FinFunction(Dict(x=>x for x in collect(d) if eq_test(x)), d)
+    LimitCone(Multispan(dom[model](eq), [eq]; cat=model), FreeDiagram(para))
   end
 
   function universal(res::AbsLimit, ::ParallelMorphisms, x::Multispan) 
@@ -86,29 +66,28 @@ end
 
 @instance ThCategoryWithPullbacks{FinSet, FinFunction} [model::FinSetC] begin 
   function limit(cospan::Multicospan)::AbsLimit  
-      # Handle the important special case where one of the legs is a constant
-  # (function out of a singleton set). In this case, we just need to take a
-  # product of preimages of the constant value.
-  funcs = legs(cospan)
-  i = findfirst(f -> length(dom(f)) == 1, funcs)
-  if !isnothing(i)
-    c = funcs[i](1)
-    ιs = map(deleteat(funcs, i)) do f
-      FinFunction(preimage(f, c), dom(f))
+    # Handle the important special case where one of the legs is a constant
+    # (function out of a singleton set). In this case, we just need to take a
+    # product of preimages of the constant value.
+    funcs = legs(cospan)
+    i = findfirst(f -> length(dom(f)) == 1, funcs)
+    if !isnothing(i)
+      c = funcs[i](1)
+      ιs = map(deleteat(funcs, i)) do f
+        FinFunction(preimage(f, c), dom(f))
+      end
+      x, πs = if length(ιs) == 1
+        dom(only(ιs)), ιs
+      else
+        prod = product(map(dom, ιs))
+        ob(prod), map(compose, legs(prod), ιs)
+      end
+      πs = insert(πs, i, FinDomFunction(ConstantFunction(1, x, FinSet(1))))
+      return FinSetIndexedLimit(Multispan(x, πs), FreeDiagram(cospan))
     end
-    x, πs = if length(ιs) == 1
-      dom(only(ιs)), ιs
-    else
-      prod = product(map(dom, ιs))
-      ob(prod), map(compose, legs(prod), ιs)
-    end
-    πs = insert(πs, i, FinDomFunction(ConstantFunction(1, x, FinSet(1))))
-    return FinSetIndexedLimit(Multispan(x, πs), FreeDiagram(cospan))
-  end
-  # In the general case, for now we always just do a hash join, although
-  # sort-merge joins can sometimes be faster.
-  hash_join(cospan, model)
-
+    # In the general case, for now we always just do a hash join, although
+    # sort-merge joins can sometimes be faster.
+    hash_join(cospan, model)
   end
 
   function universal(res::AbsLimit, ::Multicospan, x::Multispan) 
