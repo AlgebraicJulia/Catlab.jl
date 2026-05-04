@@ -156,17 +156,15 @@ function compile_recording_expr(body::Expr, args::Vector{Symbol};
     lookup::Symbol=Symbol("##lookup"))::Expr
   lookup_keys_set = Set(kwargs)
   function rewrite(expr)
-    if expr isa Symbol && expr in lookup_keys_set
-      :($(lookup)[$(QuoteNode(expr))])
-    else
-      @match expr begin
-        Expr(:call, f, args...) =>
-          Expr(:call, Expr(:call, recorder, rewrite(f)), map(rewrite, args)...)
-        Expr(:curly, f, args...) =>
-          Expr(:call, rewrite(f), map(rewrite, args)...)
-        Expr(head, args...) => Expr(head, map(rewrite, args)...)
-        _ => expr
-      end
+  @match expr begin
+    f::Symbol && GuardBy(in(lookup_keys_set)) =>
+      :($(lookup)[$(QuoteNode(f))])
+    Expr(:call, f, args...) =>
+      Expr(:call, Expr(:call, recorder, rewrite(f)), map(rewrite, args)...)
+    Expr(:curly, f, args...) =>
+      Expr(:call, rewrite(f), map(rewrite, args)...)
+    Expr(head, args...) => Expr(head, map(rewrite, args)...)
+    _ => expr
     end
   end
   Expr(:function,
