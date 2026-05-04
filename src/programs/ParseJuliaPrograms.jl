@@ -5,7 +5,7 @@ export @program, parse_wiring_diagram
 
 using RuntimeGeneratedFunctions
 RuntimeGeneratedFunctions.init(@__MODULE__)
-using MLStyle: @match
+using MLStyle: @match, GuardBy
 
 using GATlab
 import GATlab.Util.MetaUtils: Expr0
