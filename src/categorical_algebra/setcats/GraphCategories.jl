@@ -28,12 +28,12 @@ function connected_component_projection_bfs(g::ACSet)
     label[v] != 0 && continue
     label[v] = v
     empty!(q)
-    enqueue!(q, v)
+    push!(q, v)
     while !isempty(q)
-      src = dequeue!(q)
+      src = popfirst!(q)
       for vertex in all_neighbors(g, src)
         if label[vertex] == 0
-          enqueue!(q,vertex)
+          push!(q, vertex)
           label[vertex] = v
         end
       end
