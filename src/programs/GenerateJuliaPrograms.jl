@@ -35,16 +35,19 @@ end
 
 """ Compile a morphism expression into a Julia function.
 
-The `mod` parameter is accepted for backward compatibility but is no longer
-used for symbol resolution. Symbols in the compiled expression are resolved
-from the `GenerateJuliaPrograms` module (which has access to `Base`).
-To reference custom functions as generators, use the `generators` keyword
-argument instead.
+The optional `mod` parameter specifies a context module used to resolve
+symbols in the generated function. Pass the module where the referenced
+functions are defined so that unqualified names (e.g. `:my_func`) are looked
+up there. The module must have been initialised with
+`RuntimeGeneratedFunctions.init(mod)` beforehand.
+
+To bind specific generators to arbitrary function values (including closures),
+use the `generators` keyword argument instead.
 """
 function compile(mod::Module, f::HomExpr; kw...)
-  @RuntimeGeneratedFunction(compile_expr(f; kw...))
+  @RuntimeGeneratedFunction(mod, compile_expr(f; kw...))
 end
-compile(f::HomExpr; kw...) = compile(Main, f; kw...)
+compile(f::HomExpr; kw...) = compile(GenerateJuliaPrograms, f; kw...)
 
 """ Compile a morphism expression into a Julia function expression.
 """
