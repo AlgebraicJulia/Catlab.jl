@@ -30,6 +30,15 @@ x = collect(range(-2,stop=2,length=50))
 local_f(x) = x + 1
 @test compile(f_hom, generators=Dict(:f => local_f)).(x) == [xi+1 for xi in x]
 
+# Functions not defined in Base (module-level functions in this test module).
+square(x) = x^2
+cube(x) = x^3
+@test compile(f_hom, generators=Dict(:f => square)).(x) == x.^2
+@test compile(compose(f_hom, g_hom),
+              generators=Dict(:f => square, :g => cube)).(x) == (x.^2).^3
+@test compile(otimes(f_hom, g_hom),
+              generators=Dict(:f => square, :g => cube))(2.0, 3.0) == (4.0, 27.0)
+
 # Evaluation
 ############
 
