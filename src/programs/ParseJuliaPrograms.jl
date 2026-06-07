@@ -3,8 +3,9 @@
 module ParseJuliaPrograms
 export @program, parse_wiring_diagram
 
-using GeneralizedGenerated: mk_function
-using MLStyle: @match
+using RuntimeGeneratedFunctions
+RuntimeGeneratedFunctions.init(@__MODULE__)
+using MLStyle: @match, GuardBy
 
 using GATlab
 import GATlab.Util.MetaUtils: Expr0
@@ -77,10 +78,10 @@ function parse_wiring_diagram(pres::Presentation, call::Expr0, body::Expr)::Wiri
 
   # Compile...
   args = Symbol[ first(arg) for arg in parsed_args ]
-  kwargs = make_lookup_table(pres, syntax_module, unique_symbols(body))
+  lookup_dict = make_lookup_table(pres, syntax_module, unique_symbols(body))
   func_expr = compile_recording_expr(body, args,
-    kwargs = sort!(collect(keys(kwargs))))
-  func = mk_function(parentmodule(syntax_module), func_expr)
+    kwargs = sort!(collect(keys(lookup_dict))))
+  func = @RuntimeGeneratedFunction(func_expr)
 
   # ...and then evaluate function that records the function calls.
   arg_obs = syntax_module.Ob[ last(arg) for arg in parsed_args ]
@@ -91,7 +92,7 @@ function parse_wiring_diagram(pres::Presentation, call::Expr0, body::Expr)::Wiri
   arg_ports = [ Tuple(Port(v_in, OutputPort, i) for i in (stop-len+1):stop)
                 for (len, stop) in zip(arg_blocks, cumsum(arg_blocks)) ]
   recorder = f -> (args...) -> record_call!(diagram, f, args...)
-  value = func(recorder, arg_ports...; kwargs...)
+  value = func(recorder, lookup_dict, arg_ports...)
 
   # Add outgoing wires for return values.
   out_ports = normalize_arguments((value,))
@@ -111,6 +112,7 @@ end
 function make_lookup_table(pres::Presentation, syntax_module::Module, names)
   theory = syntax_module.Meta.theory
   terms = Set(nameof.(keys(theory.resolvers)))
+  context_mod = parentmodule(syntax_module)
 
   table = Dict{Symbol,Any}()
   for name in names
@@ -118,6 +120,8 @@ function make_lookup_table(pres::Presentation, syntax_module::Module, names)
       table[name] = generator(pres, name)
     elseif name in terms
       table[name] = (args...) -> invoke_term(syntax_module, name, args)
+    elseif isdefined(context_mod, name)
+      table[name] = getfield(context_mod, name)
     end
   end
   table
@@ -148,9 +152,13 @@ Rewrites the function body so that:
 """
 function compile_recording_expr(body::Expr, args::Vector{Symbol};
     kwargs::Vector{Symbol}=Symbol[],
-    recorder::Symbol=Symbol("##recorder"))::Expr
+    recorder::Symbol=Symbol("##recorder"),
+    lookup::Symbol=Symbol("##lookup"))::Expr
+  lookup_keys_set = Set(kwargs)
   function rewrite(expr)
     @match expr begin
+      f::Symbol && GuardBy(in(lookup_keys_set)) =>
+        :($(lookup)[$(QuoteNode(f))])
       Expr(:call, f, args...) =>
         Expr(:call, Expr(:call, recorder, rewrite(f)), map(rewrite, args)...)
       Expr(:curly, f, args...) =>
@@ -160,9 +168,7 @@ function compile_recording_expr(body::Expr, args::Vector{Symbol};
     end
   end
   Expr(:function,
-    Expr(:tuple,
-      Expr(:parameters, (Expr(:kw, kw, nothing) for kw in kwargs)...),
-      recorder, args...),
+    Expr(:tuple, recorder, lookup, args...),
     rewrite(body))
 end
 

@@ -3,6 +3,15 @@ using Test
 
 using Catlab.Theories
 using Catlab.Programs.GenerateJuliaPrograms
+using RuntimeGeneratedFunctions
+
+# Context module for testing compile with non-Base functions referenced by name.
+module TestContext
+  using RuntimeGeneratedFunctions
+  RuntimeGeneratedFunctions.init(@__MODULE__)
+  my_square(x) = x^2
+  my_cube(x) = x^3
+end
 
 ℝ = Ob(FreeCartesianCategory, :ℝ)
 plus_hom = Hom(:+, ℝ⊗ℝ, ℝ)
@@ -29,6 +38,22 @@ x = collect(range(-2,stop=2,length=50))
 
 local_f(x) = x + 1
 @test compile(f_hom, generators=Dict(:f => local_f)).(x) == [xi+1 for xi in x]
+
+# Functions not defined in Base (module-level functions in this test module).
+square(x) = x^2
+cube(x) = x^3
+@test compile(f_hom, generators=Dict(:f => square)).(x) == x.^2
+@test compile(compose(f_hom, g_hom),
+              generators=Dict(:f => square, :g => cube)).(x) == (x.^2).^3
+@test compile(otimes(f_hom, g_hom),
+              generators=Dict(:f => square, :g => cube))(2.0, 3.0) == (4.0, 27.0)
+
+# Context module: functions referenced by name are resolved from the given module.
+my_square_hom = Hom(:my_square, ℝ, ℝ)
+my_cube_hom = Hom(:my_cube, ℝ, ℝ)
+@test compile(TestContext, my_square_hom).(x) == x.^2
+@test compile(TestContext, compose(my_square_hom, my_cube_hom)).(x) == (x.^2).^3
+@test compile(TestContext, otimes(my_square_hom, my_cube_hom))(2.0, 3.0) == (4.0, 27.0)
 
 # Evaluation
 ############
