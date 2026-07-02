@@ -18,7 +18,7 @@ steps:
       JULIA_DEPOT_PATH: "$GATAS_HOME"
       JULIA_PROJECT: "docs/"
     command:
-      - "srun --cpus-per-task=16 --mem=64G --time=1:00:00 --output=.buildkite/log_%j.log --unbuffered .buildkite/jobscript.sh"
+      - "srun --cpus-per-task=16 --mem=64G --time=1:00:00 --unbuffered  .buildkite/jobscript.sh"
 
   - wait
 
