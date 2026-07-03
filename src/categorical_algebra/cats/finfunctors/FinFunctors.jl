@@ -4,7 +4,7 @@ export FinFunctor, FinDomFunctor, is_functorial, functoriality_failures,
        ThFinDomFunctor, force, mapvals, dom_cat, codom_cat, mappairs,
        FunctorFinDom, FinFunctorAsFunctor, compose_abs_functor
 
-using DataStructures: IntDisjointSets, in_same_set, num_groups
+using DataStructures: IntDisjointSet, in_same_set, num_groups
 using StructEquality
 
 using GATlab, ACSets
@@ -332,7 +332,7 @@ function is_initial(F::FunctorFinDom)::Bool
     end
 
     # Use check_pair to determine pairwise connectivity
-    connected = IntDisjointSets(length(ob_slice)) # sym/trans/refl closure
+    connected = IntDisjointSet(length(ob_slice)) # sym/trans/refl closure
     obs = 1:length(ob_slice)
     for (i,j) in Base.Iterators.product(obs, obs)
       if !in_same_set(connected, i, j) && check_pair(i,j)
