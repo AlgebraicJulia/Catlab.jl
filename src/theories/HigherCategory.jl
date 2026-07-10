@@ -168,6 +168,45 @@ show_unicode(io::IO, expr::CategoryExpr{:pcompose}; kw...) =
 show_latex(io::IO, expr::CategoryExpr{:pcompose}; kw...) =
   show_latex_infix(io, expr, "*"; kw...)
 
+
+
+# Lawless Double Category
+##########################
+
+# @theory ThLawlessDoubleCategory <: ThCategory begin
+#     Pro(src::Ob, tgt::Ob)::TYPE
+
+#     Cell(dom::Pro(A,B), codom::Pro(C,D), 
+#          src::Hom(A,C), tgt::Hom(B,D))::TYPE ⊣ [A::Ob, B::Ob, C::Ob, D::Ob]
+
+#     @op begin
+#         (↛) := Pro
+#         (⇒) := Cell
+#         (*) := pcompose
+#     end
+#     # Category D₀: category structure on objects and arrows.
+#     # Inherited from `ThCategory`.
+
+#     # Category D₁: category structure on proarrows and cells.
+#     compose(α::Cell(m, n, f, g), β::Cell(n, p, h, k))::Cell(m, p, f⋅h, g⋅k) ⊣
+#         [A::Ob, B::Ob, C::Ob, X::Ob, Y::Ob, Z::Ob,
+#         m::(A ↛ X), n::(B ↛ Y), p::(C ↛ Z),
+#         f::(A → B), g::(X → Y), h::(B → C), k::(Y → Z)]
+#     id(m::(A ↛ B))::Cell(m, m, id(A), id(B)) ⊣ [A::Ob, B::Ob]
+
+#     # External category operations.
+#     pcompose(m::(A ↛ B), n::(B ↛ C))::(A ↛ C) ⊣ [A::Ob, B::Ob, C::Ob]
+#     pid(A)::(A ↛ A) ⊣ [A::Ob]
+# end
+
+# @symbolic_model FreeLawlessDoubleCategory{ObExpr,HomExpr,ProExpr,CellExpr} ThLawlessDoubleCategory begin
+#   compose(f::Hom, g::Hom) = associate_unit(new(f,g; strict=true), id)
+#   compose(α::Cell, β::Cell) = associate_unit(new(α,β), id)
+#   pcompose(m::Pro, n::Pro) = associate_unit(new(m,n; strict=true), pid)
+#   pcompose(α::Cell, β::Cell) = associate_unit(new(α,β), pid)
+# end
+
+
 # Tabulators
 ############
 
