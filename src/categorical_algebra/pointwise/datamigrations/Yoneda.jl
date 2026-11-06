@@ -127,7 +127,7 @@ function internal_hom(G::T, F::T; cat=nothing, kw...) where T<:ACSet
     end
   end
 
-  return Fᴳ, homs
+  return Fᴳ, maps
 end
 
 """ Compute the Yoneda embedding of a category C in the category of C-sets.
