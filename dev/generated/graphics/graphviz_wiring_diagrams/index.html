@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Drawing wiring diagrams in Graphviz · Catlab.jl</title><meta name="title" content="Drawing wiring diagrams in Graphviz · Catlab.jl"/><meta property="og:title" content="Drawing wiring diagrams in Graphviz · Catlab.jl"/><meta property="twitter:title" content="Drawing wiring diagrams in Graphviz · Catlab.jl"/><meta name="description" content="Documentation for Catlab.jl."/><meta property="og:description" content="Documentation for Catlab.jl."/><meta property="twitter:description" content="Documentation for Catlab.jl."/><script data-outdated-warner src="../../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../search_index.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../assets/themeswap.js"></script><script src="../../../assets/analytics.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../../"><img src="../../../assets/logo.svg" alt="Catlab.jl logo"/></a><div class="docs-package-name"><span class="docs-autofit"><a href="../../../">Catlab.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../../">Catlab.jl</a></li><li><span class="tocitem">Vignettes</span><ul><li><input class="collapse-toggle" id="menuitem-2-1" type="checkbox"/><label class="tocitem" for="menuitem-2-1"><span class="docs-label">Seven Sketches in Compositionality</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../sketches/partitions/">Partitions</a></li><li><a class="tocitem" href="../../sketches/preorders/">Preorders</a></li><li><a class="tocitem" href="../../sketches/meets/">Meets in Preorders</a></li><li><a class="tocitem" href="../../sketches/smc/">Symmetric Monoidal Categories</a></li><li><a class="tocitem" href="../../sketches/cat_elements/">The Category of Elements</a></li><li><a class="tocitem" href="../../sketches/sheaves/">Basic Sheaf Constructions</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-2" type="checkbox"/><label class="tocitem" for="menuitem-2-2"><span class="docs-label">Graphs</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../graphs/graphs/">The Category of Graphs</a></li><li><a class="tocitem" href="../../graphs/graphs_label/">Labeled Graphs</a></li><li><a class="tocitem" href="../../graphs/subgraphs/">Algebra of subgraphs</a></li></ul></li><li><span class="tocitem">Categorical Algebra</span></li><li><input class="collapse-toggle" id="menuitem-2-4" type="checkbox"/><label class="tocitem" for="menuitem-2-4"><span class="docs-label">Wiring Diagrams</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../wiring_diagrams/wiring_diagram_basics/">Basics of wiring diagrams</a></li><li><a class="tocitem" href="../../wiring_diagrams/diagrams_and_expressions/">Wiring diagrams and syntactic expressions</a></li><li><a class="tocitem" href="../../wiring_diagrams/wd_cset/">Wiring Diagrams as Attributed C-Sets</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-5" type="checkbox" checked/><label class="tocitem" for="menuitem-2-5"><span class="docs-label">Graphics</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../graphviz_graphs/">Drawing graphs in Graphviz</a></li><li class="is-active"><a class="tocitem" href>Drawing wiring diagrams in Graphviz</a><ul class="internal"><li><a class="tocitem" href="#Directed-wiring-diagrams"><span>Directed wiring diagrams</span></a></li><li><a class="tocitem" href="#Undirected-wiring-diagrams"><span>Undirected wiring diagrams</span></a></li><li><a class="tocitem" href="#Custom-styles"><span>Custom styles</span></a></li><li><a class="tocitem" href="#Output-formats"><span>Output formats</span></a></li></ul></li><li><a class="tocitem" href="../composejl_wiring_diagrams/">Drawing wiring diagrams in Compose.jl</a></li><li><a class="tocitem" href="../tikz_wiring_diagrams/">Drawing wiring diagrams in TikZ</a></li><li><a class="tocitem" href="../layouts_vs_drawings/">Layouts versus drawings of wiring diagrams</a></li></ul></li></ul></li><li><span class="tocitem">Modules</span><ul><li><a class="tocitem" href="../../../apis/theories/">Standard library of theories</a></li><li><a class="tocitem" href="../../../apis/categorical_algebra/">Categorical algebra</a></li><li><a class="tocitem" href="../../../apis/graphs/">Graphs</a></li><li><a class="tocitem" href="../../../apis/wiring_diagrams/">Wiring diagrams</a></li><li><a class="tocitem" href="../../../apis/graphics/">Graphics</a></li><li><a class="tocitem" href="../../../apis/programs/">Programs</a></li><li><a class="tocitem" href="../../../apis/sheaves/">Sheaves</a></li></ul></li><li><span class="tocitem">Developer Docs</span><ul><li><a class="tocitem" href="../../../devdocs/release/">Release Notes</a></li><li><a class="tocitem" href="../../../devdocs/style/">Style Guide for AlgebraicJulia</a></li><li><a class="tocitem" href="../../peg-parser/dsl_peg_tutorial/">Domain Specific Parsing Expression Grammars</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Vignettes</a></li><li><a class="is-disabled">Graphics</a></li><li class="is-active"><a href>Drawing wiring diagrams in Graphviz</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Drawing wiring diagrams in Graphviz</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/Catlab.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/Catlab.jl/blob/main/docs/literate/graphics/graphviz_wiring_diagrams.jl" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Drawing-wiring-diagrams-in-Graphviz"><a class="docs-heading-anchor" href="#Drawing-wiring-diagrams-in-Graphviz">Drawing wiring diagrams in Graphviz</a><a id="Drawing-wiring-diagrams-in-Graphviz-1"></a><a class="docs-heading-anchor-permalink" href="#Drawing-wiring-diagrams-in-Graphviz" title="Permalink"></a></h1><p><a href="https://nbviewer.jupyter.org/github/AlgebraicJulia/Catlab.jl/blob/gh-pages/dev/generated/graphics/graphviz_wiring_diagrams.ipynb"><img src="https://img.shields.io/badge/show-nbviewer-579ACA.svg" alt/></a></p><p>Catlab can draw wiring diagrams using <a href="https://www.graphviz.org/">Graphviz</a>. Directed wiring diagrams are drawn using the <code>dot</code> program and undirected wiring diagrams using <code>neato</code> and <code>fdp</code>. This feature requires that Graphviz be installed, but does not require any additional Julia packages.</p><pre><code class="language-julia hljs">using Catlab.WiringDiagrams, Catlab.Graphics</code></pre><h2 id="Directed-wiring-diagrams"><a class="docs-heading-anchor" href="#Directed-wiring-diagrams">Directed wiring diagrams</a><a id="Directed-wiring-diagrams-1"></a><a class="docs-heading-anchor-permalink" href="#Directed-wiring-diagrams" title="Permalink"></a></h2><h3 id="Symmetric-monoidal-category"><a class="docs-heading-anchor" href="#Symmetric-monoidal-category">Symmetric monoidal category</a><a id="Symmetric-monoidal-category-1"></a><a class="docs-heading-anchor-permalink" href="#Symmetric-monoidal-category" title="Permalink"></a></h3><pre><code class="language-julia hljs">using Catlab.Theories
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><meta name="referrer" content="no-referrer"/><title>Drawing wiring diagrams in Graphviz · Catlab.jl</title><meta name="title" content="Drawing wiring diagrams in Graphviz · Catlab.jl"/><meta property="og:title" content="Drawing wiring diagrams in Graphviz · Catlab.jl"/><meta property="twitter:title" content="Drawing wiring diagrams in Graphviz · Catlab.jl"/><meta name="description" content="Documentation for Catlab.jl."/><meta property="og:description" content="Documentation for Catlab.jl."/><meta property="twitter:description" content="Documentation for Catlab.jl."/><script data-outdated-warner src="../../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.63.2/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../search_index.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../assets/themeswap.js"></script><script src="../../../assets/analytics.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../../"><img src="../../../assets/logo.svg" alt="Catlab.jl logo"/></a><div class="docs-package-name"><span class="docs-autofit"><a href="../../../">Catlab.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../../">Catlab.jl</a></li><li><span class="tocitem">Vignettes</span><ul><li><input class="collapse-toggle" id="menuitem-2-1" type="checkbox"/><label class="tocitem" for="menuitem-2-1"><span class="docs-label">Seven Sketches in Compositionality</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../sketches/partitions/">Partitions</a></li><li><a class="tocitem" href="../../sketches/preorders/">Preorders</a></li><li><a class="tocitem" href="../../sketches/meets/">Meets in Preorders</a></li><li><a class="tocitem" href="../../sketches/smc/">Symmetric Monoidal Categories</a></li><li><a class="tocitem" href="../../sketches/cat_elements/">The Category of Elements</a></li><li><a class="tocitem" href="../../sketches/sheaves/">Basic Sheaf Constructions</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-2" type="checkbox"/><label class="tocitem" for="menuitem-2-2"><span class="docs-label">Graphs</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../graphs/graphs/">The Category of Graphs</a></li><li><a class="tocitem" href="../../graphs/graphs_label/">Labeled Graphs</a></li><li><a class="tocitem" href="../../graphs/subgraphs/">Algebra of subgraphs</a></li></ul></li><li><span class="tocitem">Categorical Algebra</span></li><li><input class="collapse-toggle" id="menuitem-2-4" type="checkbox"/><label class="tocitem" for="menuitem-2-4"><span class="docs-label">Wiring Diagrams</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../wiring_diagrams/wiring_diagram_basics/">Basics of wiring diagrams</a></li><li><a class="tocitem" href="../../wiring_diagrams/diagrams_and_expressions/">Wiring diagrams and syntactic expressions</a></li><li><a class="tocitem" href="../../wiring_diagrams/wd_cset/">Wiring Diagrams as Attributed C-Sets</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-5" type="checkbox" checked/><label class="tocitem" for="menuitem-2-5"><span class="docs-label">Graphics</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../graphviz_graphs/">Drawing graphs in Graphviz</a></li><li class="is-active"><a class="tocitem" href>Drawing wiring diagrams in Graphviz</a><ul class="internal"><li><a class="tocitem" href="#Directed-wiring-diagrams"><span>Directed wiring diagrams</span></a></li><li><a class="tocitem" href="#Undirected-wiring-diagrams"><span>Undirected wiring diagrams</span></a></li><li><a class="tocitem" href="#Custom-styles"><span>Custom styles</span></a></li><li><a class="tocitem" href="#Output-formats"><span>Output formats</span></a></li></ul></li><li><a class="tocitem" href="../composejl_wiring_diagrams/">Drawing wiring diagrams in Compose.jl</a></li><li><a class="tocitem" href="../tikz_wiring_diagrams/">Drawing wiring diagrams in TikZ</a></li><li><a class="tocitem" href="../layouts_vs_drawings/">Layouts versus drawings of wiring diagrams</a></li></ul></li></ul></li><li><span class="tocitem">Modules</span><ul><li><a class="tocitem" href="../../../apis/theories/">Standard library of theories</a></li><li><a class="tocitem" href="../../../apis/categorical_algebra/">Categorical algebra</a></li><li><a class="tocitem" href="../../../apis/graphs/">Graphs</a></li><li><a class="tocitem" href="../../../apis/wiring_diagrams/">Wiring diagrams</a></li><li><a class="tocitem" href="../../../apis/graphics/">Graphics</a></li><li><a class="tocitem" href="../../../apis/programs/">Programs</a></li><li><a class="tocitem" href="../../../apis/sheaves/">Sheaves</a></li></ul></li><li><span class="tocitem">Developer Docs</span><ul><li><a class="tocitem" href="../../../devdocs/release/">Release Notes</a></li><li><a class="tocitem" href="../../../devdocs/style/">Style Guide for AlgebraicJulia</a></li><li><a class="tocitem" href="../../peg-parser/dsl_peg_tutorial/">Domain Specific Parsing Expression Grammars</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Vignettes</a></li><li><a class="is-disabled">Graphics</a></li><li class="is-active"><a href>Drawing wiring diagrams in Graphviz</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Drawing wiring diagrams in Graphviz</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/Catlab.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/Catlab.jl/blob/main/docs/literate/graphics/graphviz_wiring_diagrams.jl" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Drawing-wiring-diagrams-in-Graphviz"><a class="docs-heading-anchor" href="#Drawing-wiring-diagrams-in-Graphviz">Drawing wiring diagrams in Graphviz</a><a id="Drawing-wiring-diagrams-in-Graphviz-1"></a><a class="docs-heading-anchor-permalink" href="#Drawing-wiring-diagrams-in-Graphviz" title="Permalink"></a></h1><p><a href="https://nbviewer.jupyter.org/github/AlgebraicJulia/Catlab.jl/blob/gh-pages/dev/generated/graphics/graphviz_wiring_diagrams.ipynb"><img src="https://img.shields.io/badge/show-nbviewer-579ACA.svg" alt/></a></p><p>Catlab can draw wiring diagrams using <a href="https://www.graphviz.org/">Graphviz</a>. Directed wiring diagrams are drawn using the <code>dot</code> program and undirected wiring diagrams using <code>neato</code> and <code>fdp</code>. This feature requires that Graphviz be installed, but does not require any additional Julia packages.</p><pre><code class="language-julia hljs">using Catlab.WiringDiagrams, Catlab.Graphics</code></pre><h2 id="Directed-wiring-diagrams"><a class="docs-heading-anchor" href="#Directed-wiring-diagrams">Directed wiring diagrams</a><a id="Directed-wiring-diagrams-1"></a><a class="docs-heading-anchor-permalink" href="#Directed-wiring-diagrams" title="Permalink"></a></h2><h3 id="Symmetric-monoidal-category"><a class="docs-heading-anchor" href="#Symmetric-monoidal-category">Symmetric monoidal category</a><a id="Symmetric-monoidal-category-1"></a><a class="docs-heading-anchor-permalink" href="#Symmetric-monoidal-category" title="Permalink"></a></h3><pre><code class="language-julia hljs">using Catlab.Theories
 
 A, B = Ob(FreeSymmetricMonoidalCategory, :A, :B)
 f = Hom(:f, A, B)
@@ -7,100 +7,100 @@ g = Hom(:g, B, A)
 h = Hom(:h, otimes(A,B), otimes(A,B));</code></pre><p>To start, here are a few very simple examples.</p><pre><code class="language-julia hljs">to_graphviz(f)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<!-- Generated by graphviz version 2.43.0 (0)
+<!-- Generated by graphviz version 15.1.0 (20260618.0150)
  -->
 <!-- Title: G Pages: 1 -->
-<svg width="32pt" height="107pt"
- viewBox="0.00 0.00 32.00 107.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 103)">
+<svg width="32pt" height="110pt"
+ viewBox="0.00 0.00 32.00 110.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 106.13)">
 <title>G</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-103 28,-103 28,4 -4,4"/>
+<polygon fill="white" stroke="none" points="-4,4 -4,-106.13 28,-106.13 28,4 -4,4"/>
 <!-- n0in1 -->
 <!-- n1 -->
 <!-- f -->
 <g id="n1" class="node">
 <title>n1</title>
-<polygon fill="none" stroke="black" points="0,-36.5 0,-61.5 24,-61.5 24,-36.5 0,-36.5"/>
-<text text-anchor="start" x="9" y="-45.3" font-family="Serif" font-size="14.00">f</text>
+<polygon fill="none" stroke="black" points="0,-37.44 0,-64.69 24,-64.69 24,-37.44 0,-37.44"/>
+<text xml:space="preserve" text-anchor="start" x="9.38" y="-46.19" font-family="Serif" font-size="14.00">f</text>
 </g>
 <!-- n0in1&%2345;&gt;n1 -->
 <!-- A -->
 <g id="e1" class="edge">
 <title>n0in1:s&%2345;&gt;n1:n</title>
-<path fill="none" stroke="black" d="M12,-98C12,-83.88 12,-79.1 12,-67.17"/>
-<polygon fill="black" stroke="black" points="13.75,-67 12,-62 10.25,-67 13.75,-67"/>
+<path fill="none" stroke="black" d="M12,-100.69C12,-87.06 12,-82.14 12,-71.1"/>
+<polygon fill="black" stroke="black" points="13.75,-71.2 12,-66.2 10.25,-71.2 13.75,-71.2"/>
 </g>
 <!-- n0out1 -->
 <!-- n1&%2345;&gt;n0out1 -->
 <!-- B -->
 <g id="e2" class="edge">
 <title>n1:s&%2345;&gt;n0out1:n</title>
-<path fill="none" stroke="black" d="M12,-37C12,-22.88 12,-18.1 12,-6.17"/>
-<polygon fill="black" stroke="black" points="13.75,-6 12,-1 10.25,-6 13.75,-6"/>
+<path fill="none" stroke="black" d="M12,-37.44C12,-23.81 12,-18.89 12,-7.85"/>
+<polygon fill="black" stroke="black" points="13.75,-7.95 12,-2.95 10.25,-7.95 13.75,-7.95"/>
 </g>
 </g>
 </svg>
 '/><pre><code class="language-julia hljs">to_graphviz(compose(f,g))</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<!-- Generated by graphviz version 2.43.0 (0)
+<!-- Generated by graphviz version 15.1.0 (20260618.0150)
  -->
 <!-- Title: G Pages: 1 -->
-<svg width="32pt" height="168pt"
- viewBox="0.00 0.00 32.00 168.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 164)">
+<svg width="32pt" height="173pt"
+ viewBox="0.00 0.00 32.00 173.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 169.38)">
 <title>G</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-164 28,-164 28,4 -4,4"/>
+<polygon fill="white" stroke="none" points="-4,4 -4,-169.38 28,-169.38 28,4 -4,4"/>
 <!-- n0in1 -->
 <!-- n1 -->
 <!-- f -->
 <g id="n1" class="node">
 <title>n1</title>
-<polygon fill="none" stroke="black" points="0,-97.5 0,-122.5 24,-122.5 24,-97.5 0,-97.5"/>
-<text text-anchor="start" x="9" y="-106.3" font-family="Serif" font-size="14.00">f</text>
+<polygon fill="none" stroke="black" points="0,-100.69 0,-127.94 24,-127.94 24,-100.69 0,-100.69"/>
+<text xml:space="preserve" text-anchor="start" x="9.38" y="-109.44" font-family="Serif" font-size="14.00">f</text>
 </g>
 <!-- n0in1&%2345;&gt;n1 -->
 <!-- A -->
 <g id="e1" class="edge">
 <title>n0in1:s&%2345;&gt;n1:n</title>
-<path fill="none" stroke="black" d="M12,-159C12,-144.88 12,-140.1 12,-128.17"/>
-<polygon fill="black" stroke="black" points="13.75,-128 12,-123 10.25,-128 13.75,-128"/>
+<path fill="none" stroke="black" d="M12,-163.94C12,-150.31 12,-145.39 12,-134.35"/>
+<polygon fill="black" stroke="black" points="13.75,-134.45 12,-129.45 10.25,-134.45 13.75,-134.45"/>
 </g>
 <!-- n0out1 -->
 <!-- n2 -->
 <!-- g -->
 <g id="n2" class="node">
 <title>n2</title>
-<polygon fill="none" stroke="black" points="0,-36.5 0,-61.5 24,-61.5 24,-36.5 0,-36.5"/>
-<text text-anchor="start" x="7" y="-45.3" font-family="Serif" font-size="14.00">g</text>
+<polygon fill="none" stroke="black" points="0,-37.44 0,-64.69 24,-64.69 24,-37.44 0,-37.44"/>
+<text xml:space="preserve" text-anchor="start" x="7.5" y="-46.19" font-family="Serif" font-size="14.00">g</text>
 </g>
 <!-- n1&%2345;&gt;n2 -->
 <!-- B -->
 <g id="e2" class="edge">
 <title>n1:s&%2345;&gt;n2:n</title>
-<path fill="none" stroke="black" d="M12,-98C12,-83.88 12,-79.1 12,-67.17"/>
-<polygon fill="black" stroke="black" points="13.75,-67 12,-62 10.25,-67 13.75,-67"/>
+<path fill="none" stroke="black" d="M12,-100.69C12,-87.06 12,-82.14 12,-71.1"/>
+<polygon fill="black" stroke="black" points="13.75,-71.2 12,-66.2 10.25,-71.2 13.75,-71.2"/>
 </g>
 <!-- n2&%2345;&gt;n0out1 -->
 <!-- A -->
 <g id="e3" class="edge">
 <title>n2:s&%2345;&gt;n0out1:n</title>
-<path fill="none" stroke="black" d="M12,-37C12,-22.88 12,-18.1 12,-6.17"/>
-<polygon fill="black" stroke="black" points="13.75,-6 12,-1 10.25,-6 13.75,-6"/>
+<path fill="none" stroke="black" d="M12,-37.44C12,-23.81 12,-18.89 12,-7.85"/>
+<polygon fill="black" stroke="black" points="13.75,-7.95 12,-2.95 10.25,-7.95 13.75,-7.95"/>
 </g>
 </g>
 </svg>
 '/><pre><code class="language-julia hljs">to_graphviz(otimes(f,g))</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<!-- Generated by graphviz version 2.43.0 (0)
+<!-- Generated by graphviz version 15.1.0 (20260618.0150)
  -->
 <!-- Title: G Pages: 1 -->
-<svg width="74pt" height="107pt"
- viewBox="0.00 0.00 74.00 107.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 103)">
+<svg width="74pt" height="110pt"
+ viewBox="0.00 0.00 74.00 110.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 106.13)">
 <title>G</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-103 70,-103 70,4 -4,4"/>
+<polygon fill="white" stroke="none" points="-4,4 -4,-106.13 70,-106.13 70,4 -4,4"/>
 <!-- n0in1 -->
 <!-- n0in2 -->
 <!-- n0in1&%2345;&gt;n0in2 -->
@@ -108,29 +108,29 @@ h = Hom(:h, otimes(A,B), otimes(A,B));</code></pre><p>To start, here are a few v
 <!-- f -->
 <g id="n1" class="node">
 <title>n1</title>
-<polygon fill="none" stroke="black" points="0,-36.5 0,-61.5 24,-61.5 24,-36.5 0,-36.5"/>
-<text text-anchor="start" x="9" y="-45.3" font-family="Serif" font-size="14.00">f</text>
+<polygon fill="none" stroke="black" points="0,-37.44 0,-64.69 24,-64.69 24,-37.44 0,-37.44"/>
+<text xml:space="preserve" text-anchor="start" x="9.38" y="-46.19" font-family="Serif" font-size="14.00">f</text>
 </g>
 <!-- n0in1&%2345;&gt;n1 -->
 <!-- A -->
 <g id="e1" class="edge">
 <title>n0in1:s&%2345;&gt;n1:n</title>
-<path fill="none" stroke="black" d="M12,-98C12,-83.88 12,-79.1 12,-67.17"/>
-<polygon fill="black" stroke="black" points="13.75,-67 12,-62 10.25,-67 13.75,-67"/>
+<path fill="none" stroke="black" d="M12,-100.69C12,-87.06 12,-82.14 12,-71.1"/>
+<polygon fill="black" stroke="black" points="13.75,-71.2 12,-66.2 10.25,-71.2 13.75,-71.2"/>
 </g>
 <!-- n2 -->
 <!-- g -->
 <g id="n2" class="node">
 <title>n2</title>
-<polygon fill="none" stroke="black" points="42,-36.5 42,-61.5 66,-61.5 66,-36.5 42,-36.5"/>
-<text text-anchor="start" x="49" y="-45.3" font-family="Serif" font-size="14.00">g</text>
+<polygon fill="none" stroke="black" points="42,-37.44 42,-64.69 66,-64.69 66,-37.44 42,-37.44"/>
+<text xml:space="preserve" text-anchor="start" x="49.5" y="-46.19" font-family="Serif" font-size="14.00">g</text>
 </g>
 <!-- n0in2&%2345;&gt;n2 -->
 <!-- B -->
 <g id="e2" class="edge">
 <title>n0in2:s&%2345;&gt;n2:n</title>
-<path fill="none" stroke="black" d="M54,-98C54,-83.88 54,-79.1 54,-67.17"/>
-<polygon fill="black" stroke="black" points="55.75,-67 54,-62 52.25,-67 55.75,-67"/>
+<path fill="none" stroke="black" d="M54,-100.69C54,-87.06 54,-82.14 54,-71.1"/>
+<polygon fill="black" stroke="black" points="55.75,-71.2 54,-66.2 52.25,-71.2 55.75,-71.2"/>
 </g>
 <!-- n0out1 -->
 <!-- n0out2 -->
@@ -139,29 +139,29 @@ h = Hom(:h, otimes(A,B), otimes(A,B));</code></pre><p>To start, here are a few v
 <!-- B -->
 <g id="e3" class="edge">
 <title>n1:s&%2345;&gt;n0out1:n</title>
-<path fill="none" stroke="black" d="M12,-37C12,-22.88 12,-18.1 12,-6.17"/>
-<polygon fill="black" stroke="black" points="13.75,-6 12,-1 10.25,-6 13.75,-6"/>
+<path fill="none" stroke="black" d="M12,-37.44C12,-23.81 12,-18.89 12,-7.85"/>
+<polygon fill="black" stroke="black" points="13.75,-7.95 12,-2.95 10.25,-7.95 13.75,-7.95"/>
 </g>
 <!-- n2&%2345;&gt;n0out2 -->
 <!-- A -->
 <g id="e4" class="edge">
 <title>n2:s&%2345;&gt;n0out2:n</title>
-<path fill="none" stroke="black" d="M54,-37C54,-22.88 54,-18.1 54,-6.17"/>
-<polygon fill="black" stroke="black" points="55.75,-6 54,-1 52.25,-6 55.75,-6"/>
+<path fill="none" stroke="black" d="M54,-37.44C54,-23.81 54,-18.89 54,-7.85"/>
+<polygon fill="black" stroke="black" points="55.75,-7.95 54,-2.95 52.25,-7.95 55.75,-7.95"/>
 </g>
 </g>
 </svg>
 '/><p>In the next example, notice how Graphviz automatically &quot;untwists&quot; the double braiding to minimize edge crossings.</p><pre><code class="language-julia hljs">to_graphviz(compose(braid(A,A), otimes(f,f), braid(B,B)))</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<!-- Generated by graphviz version 2.43.0 (0)
+<!-- Generated by graphviz version 15.1.0 (20260618.0150)
  -->
 <!-- Title: G Pages: 1 -->
-<svg width="74pt" height="107pt"
- viewBox="0.00 0.00 74.00 107.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 103)">
+<svg width="74pt" height="110pt"
+ viewBox="0.00 0.00 74.00 110.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 106.13)">
 <title>G</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-103 70,-103 70,4 -4,4"/>
+<polygon fill="white" stroke="none" points="-4,4 -4,-106.13 70,-106.13 70,4 -4,4"/>
 <!-- n0in1 -->
 <!-- n0in2 -->
 <!-- n0in1&%2345;&gt;n0in2 -->
@@ -169,29 +169,29 @@ h = Hom(:h, otimes(A,B), otimes(A,B));</code></pre><p>To start, here are a few v
 <!-- f -->
 <g id="n2" class="node">
 <title>n2</title>
-<polygon fill="none" stroke="black" points="0,-36.5 0,-61.5 24,-61.5 24,-36.5 0,-36.5"/>
-<text text-anchor="start" x="9" y="-45.3" font-family="Serif" font-size="14.00">f</text>
+<polygon fill="none" stroke="black" points="0,-37.44 0,-64.69 24,-64.69 24,-37.44 0,-37.44"/>
+<text xml:space="preserve" text-anchor="start" x="9.38" y="-46.19" font-family="Serif" font-size="14.00">f</text>
 </g>
 <!-- n0in1&%2345;&gt;n2 -->
 <!-- A -->
 <g id="e2" class="edge">
 <title>n0in1:s&%2345;&gt;n2:n</title>
-<path fill="none" stroke="black" d="M12,-98C12,-83.88 12,-79.1 12,-67.17"/>
-<polygon fill="black" stroke="black" points="13.75,-67 12,-62 10.25,-67 13.75,-67"/>
+<path fill="none" stroke="black" d="M12,-100.69C12,-87.06 12,-82.14 12,-71.1"/>
+<polygon fill="black" stroke="black" points="13.75,-71.2 12,-66.2 10.25,-71.2 13.75,-71.2"/>
 </g>
 <!-- n1 -->
 <!-- f -->
 <g id="n1" class="node">
 <title>n1</title>
-<polygon fill="none" stroke="black" points="42,-36.5 42,-61.5 66,-61.5 66,-36.5 42,-36.5"/>
-<text text-anchor="start" x="51" y="-45.3" font-family="Serif" font-size="14.00">f</text>
+<polygon fill="none" stroke="black" points="42,-37.44 42,-64.69 66,-64.69 66,-37.44 42,-37.44"/>
+<text xml:space="preserve" text-anchor="start" x="51.38" y="-46.19" font-family="Serif" font-size="14.00">f</text>
 </g>
 <!-- n0in2&%2345;&gt;n1 -->
 <!-- A -->
 <g id="e1" class="edge">
 <title>n0in2:s&%2345;&gt;n1:n</title>
-<path fill="none" stroke="black" d="M54,-98C54,-83.88 54,-79.1 54,-67.17"/>
-<polygon fill="black" stroke="black" points="55.75,-67 54,-62 52.25,-67 55.75,-67"/>
+<path fill="none" stroke="black" d="M54,-100.69C54,-87.06 54,-82.14 54,-71.1"/>
+<polygon fill="black" stroke="black" points="55.75,-71.2 54,-66.2 52.25,-71.2 55.75,-71.2"/>
 </g>
 <!-- n0out1 -->
 <!-- n0out2 -->
@@ -200,15 +200,15 @@ h = Hom(:h, otimes(A,B), otimes(A,B));</code></pre><p>To start, here are a few v
 <!-- B -->
 <g id="e4" class="edge">
 <title>n1:s&%2345;&gt;n0out2:n</title>
-<path fill="none" stroke="black" d="M54,-37C54,-22.88 54,-18.1 54,-6.17"/>
-<polygon fill="black" stroke="black" points="55.75,-6 54,-1 52.25,-6 55.75,-6"/>
+<path fill="none" stroke="black" d="M54,-37.44C54,-23.81 54,-18.89 54,-7.85"/>
+<polygon fill="black" stroke="black" points="55.75,-7.95 54,-2.95 52.25,-7.95 55.75,-7.95"/>
 </g>
 <!-- n2&%2345;&gt;n0out1 -->
 <!-- B -->
 <g id="e3" class="edge">
 <title>n2:s&%2345;&gt;n0out1:n</title>
-<path fill="none" stroke="black" d="M12,-37C12,-22.88 12,-18.1 12,-6.17"/>
-<polygon fill="black" stroke="black" points="13.75,-6 12,-1 10.25,-6 13.75,-6"/>
+<path fill="none" stroke="black" d="M12,-37.44C12,-23.81 12,-18.89 12,-7.85"/>
+<polygon fill="black" stroke="black" points="13.75,-7.95 12,-2.95 10.25,-7.95 13.75,-7.95"/>
 </g>
 </g>
 </svg>
@@ -216,14 +216,14 @@ h = Hom(:h, otimes(A,B), otimes(A,B));</code></pre><p>To start, here are a few v
 to_graphviz(composite)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<!-- Generated by graphviz version 2.43.0 (0)
+<!-- Generated by graphviz version 15.1.0 (20260618.0150)
  -->
 <!-- Title: G Pages: 1 -->
-<svg width="74pt" height="229pt"
- viewBox="0.00 0.00 74.00 229.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 225)">
+<svg width="74pt" height="237pt"
+ viewBox="0.00 0.00 74.00 237.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 232.63)">
 <title>G</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-225 70,-225 70,4 -4,4"/>
+<polygon fill="white" stroke="none" points="-4,4 -4,-232.63 70,-232.63 70,4 -4,4"/>
 <!-- n0in1 -->
 <!-- n0in2 -->
 <!-- n0in1&%2345;&gt;n0in2 -->
@@ -231,29 +231,29 @@ to_graphviz(composite)</code></pre><img src='data:image/svg+xml;utf-8,<?xml vers
 <!-- g -->
 <g id="n1" class="node">
 <title>n1</title>
-<polygon fill="none" stroke="black" points="0,-158.5 0,-183.5 24,-183.5 24,-158.5 0,-158.5"/>
-<text text-anchor="start" x="7" y="-167.3" font-family="Serif" font-size="14.00">g</text>
+<polygon fill="none" stroke="black" points="0,-163.94 0,-191.19 24,-191.19 24,-163.94 0,-163.94"/>
+<text xml:space="preserve" text-anchor="start" x="7.5" y="-172.69" font-family="Serif" font-size="14.00">g</text>
 </g>
 <!-- n0in1&%2345;&gt;n1 -->
 <!-- B -->
 <g id="e1" class="edge">
 <title>n0in1:s&%2345;&gt;n1:n</title>
-<path fill="none" stroke="black" d="M12,-220C12,-205.88 12,-201.1 12,-189.17"/>
-<polygon fill="black" stroke="black" points="13.75,-189 12,-184 10.25,-189 13.75,-189"/>
+<path fill="none" stroke="black" d="M12,-227.19C12,-213.56 12,-208.64 12,-197.6"/>
+<polygon fill="black" stroke="black" points="13.75,-197.7 12,-192.7 10.25,-197.7 13.75,-197.7"/>
 </g>
 <!-- n2 -->
 <!-- f -->
 <g id="n2" class="node">
 <title>n2</title>
-<polygon fill="none" stroke="black" points="42,-158.5 42,-183.5 66,-183.5 66,-158.5 42,-158.5"/>
-<text text-anchor="start" x="51" y="-167.3" font-family="Serif" font-size="14.00">f</text>
+<polygon fill="none" stroke="black" points="42,-163.94 42,-191.19 66,-191.19 66,-163.94 42,-163.94"/>
+<text xml:space="preserve" text-anchor="start" x="51.38" y="-172.69" font-family="Serif" font-size="14.00">f</text>
 </g>
 <!-- n0in2&%2345;&gt;n2 -->
 <!-- A -->
 <g id="e2" class="edge">
 <title>n0in2:s&%2345;&gt;n2:n</title>
-<path fill="none" stroke="black" d="M54,-220C54,-205.88 54,-201.1 54,-189.17"/>
-<polygon fill="black" stroke="black" points="55.75,-189 54,-184 52.25,-189 55.75,-189"/>
+<path fill="none" stroke="black" d="M54,-227.19C54,-213.56 54,-208.64 54,-197.6"/>
+<polygon fill="black" stroke="black" points="55.75,-197.7 54,-192.7 52.25,-197.7 55.75,-197.7"/>
 </g>
 <!-- n0out1 -->
 <!-- n0out2 -->
@@ -262,78 +262,78 @@ to_graphviz(composite)</code></pre><img src='data:image/svg+xml;utf-8,<?xml vers
 <!-- h -->
 <g id="n3" class="node">
 <title>n3</title>
-<polygon fill="none" stroke="black" points="9,-97.5 9,-122.5 57,-122.5 57,-97.5 9,-97.5"/>
-<text text-anchor="start" x="28" y="-106.3" font-family="Serif" font-size="14.00">h</text>
+<polygon fill="none" stroke="black" points="9,-100.69 9,-127.94 57,-127.94 57,-100.69 9,-100.69"/>
+<text xml:space="preserve" text-anchor="start" x="28.5" y="-109.44" font-family="Serif" font-size="14.00">h</text>
 </g>
 <!-- n1&%2345;&gt;n3 -->
 <!-- A -->
 <g id="e6" class="edge">
 <title>n1:s&%2345;&gt;n3:n</title>
-<path fill="none" stroke="black" d="M12,-159C12,-144.44 19.01,-140.38 20.66,-128.29"/>
-<polygon fill="black" stroke="black" points="22.42,-128.1 21,-123 18.93,-127.88 22.42,-128.1"/>
+<path fill="none" stroke="black" d="M12,-163.94C12,-149.77 18.65,-145.55 20.52,-134.17"/>
+<polygon fill="black" stroke="black" points="22.24,-134.57 20.88,-129.45 18.75,-134.3 22.24,-134.57"/>
 </g>
 <!-- n2&%2345;&gt;n3 -->
 <!-- B -->
 <g id="e5" class="edge">
 <title>n2:s&%2345;&gt;n3:n</title>
-<path fill="none" stroke="black" d="M54,-159C54,-144.44 46.99,-140.38 45.34,-128.29"/>
-<polygon fill="black" stroke="black" points="47.07,-127.88 45,-123 43.58,-128.1 47.07,-127.88"/>
+<path fill="none" stroke="black" d="M54,-163.94C54,-149.77 47.35,-145.55 45.48,-134.17"/>
+<polygon fill="black" stroke="black" points="47.25,-134.3 45.12,-129.45 43.76,-134.57 47.25,-134.3"/>
 </g>
 <!-- n4 -->
 <!-- f -->
 <g id="n4" class="node">
 <title>n4</title>
-<polygon fill="none" stroke="black" points="0,-36.5 0,-61.5 24,-61.5 24,-36.5 0,-36.5"/>
-<text text-anchor="start" x="9" y="-45.3" font-family="Serif" font-size="14.00">f</text>
+<polygon fill="none" stroke="black" points="0,-37.44 0,-64.69 24,-64.69 24,-37.44 0,-37.44"/>
+<text xml:space="preserve" text-anchor="start" x="9.38" y="-46.19" font-family="Serif" font-size="14.00">f</text>
 </g>
 <!-- n3&%2345;&gt;n4 -->
 <!-- A -->
 <g id="e4" class="edge">
 <title>n3:s&%2345;&gt;n4:n</title>
-<path fill="none" stroke="black" d="M21,-98C21,-83.44 13.99,-79.38 12.34,-67.29"/>
-<polygon fill="black" stroke="black" points="14.07,-66.88 12,-62 10.58,-67.1 14.07,-66.88"/>
+<path fill="none" stroke="black" d="M21,-100.69C21,-86.52 14.35,-82.3 12.48,-70.92"/>
+<polygon fill="black" stroke="black" points="14.25,-71.05 12.12,-66.2 10.76,-71.32 14.25,-71.05"/>
 </g>
 <!-- n5 -->
 <!-- g -->
 <g id="n5" class="node">
 <title>n5</title>
-<polygon fill="none" stroke="black" points="42,-36.5 42,-61.5 66,-61.5 66,-36.5 42,-36.5"/>
-<text text-anchor="start" x="49" y="-45.3" font-family="Serif" font-size="14.00">g</text>
+<polygon fill="none" stroke="black" points="42,-37.44 42,-64.69 66,-64.69 66,-37.44 42,-37.44"/>
+<text xml:space="preserve" text-anchor="start" x="49.5" y="-46.19" font-family="Serif" font-size="14.00">g</text>
 </g>
 <!-- n3&%2345;&gt;n5 -->
 <!-- B -->
 <g id="e3" class="edge">
 <title>n3:s&%2345;&gt;n5:n</title>
-<path fill="none" stroke="black" d="M45,-98C45,-83.44 52.01,-79.38 53.66,-67.29"/>
-<polygon fill="black" stroke="black" points="55.42,-67.1 54,-62 51.93,-66.88 55.42,-67.1"/>
+<path fill="none" stroke="black" d="M45,-100.69C45,-86.52 51.65,-82.3 53.52,-70.92"/>
+<polygon fill="black" stroke="black" points="55.24,-71.32 53.88,-66.2 51.75,-71.05 55.24,-71.32"/>
 </g>
 <!-- n4&%2345;&gt;n0out1 -->
 <!-- B -->
 <g id="e7" class="edge">
 <title>n4:s&%2345;&gt;n0out1:n</title>
-<path fill="none" stroke="black" d="M12,-37C12,-22.88 12,-18.1 12,-6.17"/>
-<polygon fill="black" stroke="black" points="13.75,-6 12,-1 10.25,-6 13.75,-6"/>
+<path fill="none" stroke="black" d="M12,-37.44C12,-23.81 12,-18.89 12,-7.85"/>
+<polygon fill="black" stroke="black" points="13.75,-7.95 12,-2.95 10.25,-7.95 13.75,-7.95"/>
 </g>
 <!-- n5&%2345;&gt;n0out2 -->
 <!-- A -->
 <g id="e8" class="edge">
 <title>n5:s&%2345;&gt;n0out2:n</title>
-<path fill="none" stroke="black" d="M54,-37C54,-22.88 54,-18.1 54,-6.17"/>
-<polygon fill="black" stroke="black" points="55.75,-6 54,-1 52.25,-6 55.75,-6"/>
+<path fill="none" stroke="black" d="M54,-37.44C54,-23.81 54,-18.89 54,-7.85"/>
+<polygon fill="black" stroke="black" points="55.75,-7.95 54,-2.95 52.25,-7.95 55.75,-7.95"/>
 </g>
 </g>
 </svg>
 '/><p>By default, the wiring diagram is laid out from top to bottom. Other layout orientations can be requested, such as left-to-right or bottom-to-top:</p><pre><code class="language-julia hljs">to_graphviz(composite, orientation=LeftToRight)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<!-- Generated by graphviz version 2.43.0 (0)
+<!-- Generated by graphviz version 15.1.0 (20260618.0150)
  -->
 <!-- Title: G Pages: 1 -->
-<svg width="214pt" height="76pt"
- viewBox="0.00 0.00 214.00 76.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 72)">
+<svg width="210pt" height="80pt"
+ viewBox="0.00 0.00 210.00 80.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 76.25)">
 <title>G</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-72 210,-72 210,4 -4,4"/>
+<polygon fill="white" stroke="none" points="-4,4 -4,-76.25 206.44,-76.25 206.44,4 -4,4"/>
 <!-- n0in1 -->
 <!-- n0in2 -->
 <!-- n0in1&%2345;&gt;n0in2 -->
@@ -341,29 +341,29 @@ to_graphviz(composite)</code></pre><img src='data:image/svg+xml;utf-8,<?xml vers
 <!-- g -->
 <g id="n1" class="node">
 <title>n1</title>
-<polygon fill="none" stroke="black" points="37,-42.5 37,-67.5 57,-67.5 57,-42.5 37,-42.5"/>
-<text text-anchor="start" x="42" y="-51.3" font-family="Serif" font-size="14.00">g</text>
+<polygon fill="none" stroke="black" points="36.72,-45 36.72,-72.25 55.72,-72.25 55.72,-45 36.72,-45"/>
+<text xml:space="preserve" text-anchor="start" x="41.72" y="-53.75" font-family="Serif" font-size="14.00">g</text>
 </g>
 <!-- n0in1&%2345;&gt;n1 -->
 <!-- B -->
 <g id="e1" class="edge">
 <title>n0in1:e&%2345;&gt;n1:w</title>
-<path fill="none" stroke="black" d="M1,-54.5C15.12,-54.5 19.9,-54.5 31.83,-54.5"/>
-<polygon fill="black" stroke="black" points="32,-56.25 37,-54.5 32,-52.75 32,-56.25"/>
+<path fill="none" stroke="black" d="M0.72,-57.62C14.35,-57.62 19.27,-58.35 30.31,-58.57"/>
+<polygon fill="black" stroke="black" points="30.19,-60.31 35.21,-58.61 30.22,-56.81 30.19,-60.31"/>
 </g>
 <!-- n2 -->
 <!-- f -->
 <g id="n2" class="node">
 <title>n2</title>
-<polygon fill="none" stroke="black" points="39,0.5 39,-24.5 55,-24.5 55,0.5 39,0.5"/>
-<text text-anchor="start" x="44" y="-8.3" font-family="Serif" font-size="14.00">f</text>
+<polygon fill="none" stroke="black" points="38.59,0 38.59,-27.25 53.84,-27.25 53.84,0 38.59,0"/>
+<text xml:space="preserve" text-anchor="start" x="43.59" y="-8.75" font-family="Serif" font-size="14.00">f</text>
 </g>
 <!-- n0in2&%2345;&gt;n2 -->
 <!-- A -->
 <g id="e2" class="edge">
 <title>n0in2:e&%2345;&gt;n2:w</title>
-<path fill="none" stroke="black" d="M1,-12.5C15.52,-12.5 20.42,-11.72 32.69,-11.54"/>
-<polygon fill="black" stroke="black" points="33.01,-13.29 38,-11.5 32.99,-9.79 33.01,-13.29"/>
+<path fill="none" stroke="black" d="M0.72,-14.62C14.81,-14.62 19.81,-13.89 31.34,-13.68"/>
+<polygon fill="black" stroke="black" points="31.1,-15.43 36.08,-13.64 31.07,-11.93 31.1,-15.43"/>
 </g>
 <!-- n0out1 -->
 <!-- n0out2 -->
@@ -372,78 +372,78 @@ to_graphviz(composite)</code></pre><img src='data:image/svg+xml;utf-8,<?xml vers
 <!-- h -->
 <g id="n3" class="node">
 <title>n3</title>
-<polygon fill="none" stroke="black" points="93,-8.5 93,-56.5 113,-56.5 113,-8.5 93,-8.5"/>
-<text text-anchor="start" x="98" y="-28.8" font-family="Serif" font-size="14.00">h</text>
+<polygon fill="none" stroke="black" points="91.72,-11.62 91.72,-59.62 110.72,-59.62 110.72,-11.62 91.72,-11.62"/>
+<text xml:space="preserve" text-anchor="start" x="96.72" y="-30.75" font-family="Serif" font-size="14.00">h</text>
 </g>
 <!-- n1&%2345;&gt;n3 -->
 <!-- A -->
 <g id="e6" class="edge">
 <title>n1:e&%2345;&gt;n3:w</title>
-<path fill="none" stroke="black" d="M57,-54.5C71.79,-54.5 75.62,-46.57 88.01,-44.83"/>
-<polygon fill="black" stroke="black" points="88.13,-46.58 93,-44.5 87.89,-43.09 88.13,-46.58"/>
+<path fill="none" stroke="black" d="M55.72,-58.62C70.1,-58.62 73.99,-50.5 85.42,-48.22"/>
+<polygon fill="black" stroke="black" points="85.4,-49.98 90.21,-47.77 85.07,-46.49 85.4,-49.98"/>
 </g>
 <!-- n2&%2345;&gt;n3 -->
 <!-- B -->
 <g id="e5" class="edge">
 <title>n2:e&%2345;&gt;n3:w</title>
-<path fill="none" stroke="black" d="M56,-11.5C71.07,-11.5 75.22,-18.64 87.91,-20.2"/>
-<polygon fill="black" stroke="black" points="87.91,-21.95 93,-20.5 88.11,-18.46 87.91,-21.95"/>
+<path fill="none" stroke="black" d="M54.84,-13.62C69.44,-13.62 73.64,-21.01 85.31,-23.09"/>
+<polygon fill="black" stroke="black" points="85.08,-24.82 90.21,-23.5 85.38,-21.34 85.08,-24.82"/>
 </g>
 <!-- n4 -->
 <!-- f -->
 <g id="n4" class="node">
 <title>n4</title>
-<polygon fill="none" stroke="black" points="151,-42.5 151,-67.5 167,-67.5 167,-42.5 151,-42.5"/>
-<text text-anchor="start" x="156" y="-51.3" font-family="Serif" font-size="14.00">f</text>
+<polygon fill="none" stroke="black" points="148.59,-45 148.59,-72.25 163.84,-72.25 163.84,-45 148.59,-45"/>
+<text xml:space="preserve" text-anchor="start" x="153.59" y="-53.75" font-family="Serif" font-size="14.00">f</text>
 </g>
 <!-- n3&%2345;&gt;n4 -->
 <!-- A -->
 <g id="e4" class="edge">
 <title>n3:e&%2345;&gt;n4:w</title>
-<path fill="none" stroke="black" d="M113,-44.5C128.17,-44.5 132.16,-52.43 144.88,-54.17"/>
-<polygon fill="black" stroke="black" points="144.9,-55.92 150,-54.5 145.12,-52.43 144.9,-55.92"/>
+<path fill="none" stroke="black" d="M110.72,-47.62C125.42,-47.62 129.46,-55.75 141.16,-58.03"/>
+<polygon fill="black" stroke="black" points="140.95,-59.77 146.09,-58.49 141.27,-56.29 140.95,-59.77"/>
 </g>
 <!-- n5 -->
 <!-- g -->
 <g id="n5" class="node">
 <title>n5</title>
-<polygon fill="none" stroke="black" points="149,0.5 149,-24.5 169,-24.5 169,0.5 149,0.5"/>
-<text text-anchor="start" x="154" y="-8.3" font-family="Serif" font-size="14.00">g</text>
+<polygon fill="none" stroke="black" points="146.72,0 146.72,-27.25 165.72,-27.25 165.72,0 146.72,0"/>
+<text xml:space="preserve" text-anchor="start" x="151.72" y="-8.75" font-family="Serif" font-size="14.00">g</text>
 </g>
 <!-- n3&%2345;&gt;n5 -->
 <!-- B -->
 <g id="e3" class="edge">
 <title>n3:e&%2345;&gt;n5:w</title>
-<path fill="none" stroke="black" d="M113,-20.5C127.56,-20.5 131.62,-13.49 143.71,-11.84"/>
-<polygon fill="black" stroke="black" points="144.12,-13.57 149,-11.5 143.9,-10.08 144.12,-13.57"/>
+<path fill="none" stroke="black" d="M110.72,-23.62C124.99,-23.62 129.06,-16.24 140.46,-14.16"/>
+<polygon fill="black" stroke="black" points="140.38,-15.93 145.21,-13.75 140.08,-12.44 140.38,-15.93"/>
 </g>
 <!-- n4&%2345;&gt;n0out1 -->
 <!-- B -->
 <g id="e7" class="edge">
 <title>n4:e&%2345;&gt;n0out1:w</title>
-<path fill="none" stroke="black" d="M168,-54.5C182.52,-54.5 187.42,-54.5 199.69,-54.5"/>
-<polygon fill="black" stroke="black" points="200,-56.25 205,-54.5 200,-52.75 200,-56.25"/>
+<path fill="none" stroke="black" d="M164.84,-58.62C178.93,-58.62 183.93,-57.89 195.47,-57.68"/>
+<polygon fill="black" stroke="black" points="195.22,-59.43 200.21,-57.64 195.19,-55.93 195.22,-59.43"/>
 </g>
 <!-- n5&%2345;&gt;n0out2 -->
 <!-- A -->
 <g id="e8" class="edge">
 <title>n5:e&%2345;&gt;n0out2:w</title>
-<path fill="none" stroke="black" d="M169,-11.5C183.13,-11.5 187.89,-12.28 199.83,-12.46"/>
-<polygon fill="black" stroke="black" points="199.99,-14.21 205,-12.5 200.01,-10.71 199.99,-14.21"/>
+<path fill="none" stroke="black" d="M165.72,-13.62C179.35,-13.62 184.27,-14.35 195.31,-14.57"/>
+<polygon fill="black" stroke="black" points="195.19,-16.31 200.21,-14.61 195.22,-12.81 195.19,-16.31"/>
 </g>
 </g>
 </svg>
 '/><pre><code class="language-julia hljs">to_graphviz(composite, orientation=BottomToTop)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<!-- Generated by graphviz version 2.43.0 (0)
+<!-- Generated by graphviz version 15.1.0 (20260618.0150)
  -->
 <!-- Title: G Pages: 1 -->
-<svg width="74pt" height="229pt"
- viewBox="0.00 0.00 74.00 229.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 225)">
+<svg width="74pt" height="237pt"
+ viewBox="0.00 0.00 74.00 237.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 232.63)">
 <title>G</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-225 70,-225 70,4 -4,4"/>
+<polygon fill="white" stroke="none" points="-4,4 -4,-232.63 70,-232.63 70,4 -4,4"/>
 <!-- n0in1 -->
 <!-- n0in2 -->
 <!-- n0in1&%2345;&gt;n0in2 -->
@@ -451,29 +451,29 @@ to_graphviz(composite)</code></pre><img src='data:image/svg+xml;utf-8,<?xml vers
 <!-- g -->
 <g id="n1" class="node">
 <title>n1</title>
-<polygon fill="none" stroke="black" points="0,-36.5 0,-61.5 24,-61.5 24,-36.5 0,-36.5"/>
-<text text-anchor="start" x="7" y="-45.3" font-family="Serif" font-size="14.00">g</text>
+<polygon fill="none" stroke="black" points="0,-37.44 0,-64.69 24,-64.69 24,-37.44 0,-37.44"/>
+<text xml:space="preserve" text-anchor="start" x="7.5" y="-46.19" font-family="Serif" font-size="14.00">g</text>
 </g>
 <!-- n0in1&%2345;&gt;n1 -->
 <!-- B -->
 <g id="e1" class="edge">
 <title>n0in1:n&%2345;&gt;n1:s</title>
-<path fill="none" stroke="black" d="M12,-1C12,-15.12 12,-19.9 12,-31.83"/>
-<polygon fill="black" stroke="black" points="10.25,-32 12,-37 13.75,-32 10.25,-32"/>
+<path fill="none" stroke="black" d="M12,-1.44C12,-15.06 12,-19.99 12,-31.03"/>
+<polygon fill="black" stroke="black" points="10.25,-30.93 12,-35.93 13.75,-30.93 10.25,-30.93"/>
 </g>
 <!-- n2 -->
 <!-- f -->
 <g id="n2" class="node">
 <title>n2</title>
-<polygon fill="none" stroke="black" points="42,-36.5 42,-61.5 66,-61.5 66,-36.5 42,-36.5"/>
-<text text-anchor="start" x="51" y="-45.3" font-family="Serif" font-size="14.00">f</text>
+<polygon fill="none" stroke="black" points="42,-37.44 42,-64.69 66,-64.69 66,-37.44 42,-37.44"/>
+<text xml:space="preserve" text-anchor="start" x="51.38" y="-46.19" font-family="Serif" font-size="14.00">f</text>
 </g>
 <!-- n0in2&%2345;&gt;n2 -->
 <!-- A -->
 <g id="e2" class="edge">
 <title>n0in2:n&%2345;&gt;n2:s</title>
-<path fill="none" stroke="black" d="M54,-1C54,-15.12 54,-19.9 54,-31.83"/>
-<polygon fill="black" stroke="black" points="52.25,-32 54,-37 55.75,-32 52.25,-32"/>
+<path fill="none" stroke="black" d="M54,-1.44C54,-15.06 54,-19.99 54,-31.03"/>
+<polygon fill="black" stroke="black" points="52.25,-30.93 54,-35.93 55.75,-30.93 52.25,-30.93"/>
 </g>
 <!-- n0out1 -->
 <!-- n0out2 -->
@@ -482,140 +482,140 @@ to_graphviz(composite)</code></pre><img src='data:image/svg+xml;utf-8,<?xml vers
 <!-- h -->
 <g id="n3" class="node">
 <title>n3</title>
-<polygon fill="none" stroke="black" points="9,-97.5 9,-122.5 57,-122.5 57,-97.5 9,-97.5"/>
-<text text-anchor="start" x="28" y="-106.3" font-family="Serif" font-size="14.00">h</text>
+<polygon fill="none" stroke="black" points="9,-100.69 9,-127.94 57,-127.94 57,-100.69 9,-100.69"/>
+<text xml:space="preserve" text-anchor="start" x="28.5" y="-109.44" font-family="Serif" font-size="14.00">h</text>
 </g>
 <!-- n1&%2345;&gt;n3 -->
 <!-- A -->
 <g id="e6" class="edge">
 <title>n1:n&%2345;&gt;n3:s</title>
-<path fill="none" stroke="black" d="M12,-62C12,-76.56 19.01,-80.62 20.66,-92.71"/>
-<polygon fill="black" stroke="black" points="18.93,-93.12 21,-98 22.42,-92.9 18.93,-93.12"/>
+<path fill="none" stroke="black" d="M12,-64.69C12,-78.86 18.65,-83.08 20.52,-94.46"/>
+<polygon fill="black" stroke="black" points="18.75,-94.33 20.88,-99.18 22.24,-94.06 18.75,-94.33"/>
 </g>
 <!-- n2&%2345;&gt;n3 -->
 <!-- B -->
 <g id="e5" class="edge">
 <title>n2:n&%2345;&gt;n3:s</title>
-<path fill="none" stroke="black" d="M54,-62C54,-76.56 46.99,-80.62 45.34,-92.71"/>
-<polygon fill="black" stroke="black" points="43.58,-92.9 45,-98 47.07,-93.12 43.58,-92.9"/>
+<path fill="none" stroke="black" d="M54,-64.69C54,-78.86 47.35,-83.08 45.48,-94.46"/>
+<polygon fill="black" stroke="black" points="43.76,-94.06 45.12,-99.18 47.25,-94.33 43.76,-94.06"/>
 </g>
 <!-- n4 -->
 <!-- f -->
 <g id="n4" class="node">
 <title>n4</title>
-<polygon fill="none" stroke="black" points="0,-158.5 0,-183.5 24,-183.5 24,-158.5 0,-158.5"/>
-<text text-anchor="start" x="9" y="-167.3" font-family="Serif" font-size="14.00">f</text>
+<polygon fill="none" stroke="black" points="0,-163.94 0,-191.19 24,-191.19 24,-163.94 0,-163.94"/>
+<text xml:space="preserve" text-anchor="start" x="9.38" y="-172.69" font-family="Serif" font-size="14.00">f</text>
 </g>
 <!-- n3&%2345;&gt;n4 -->
 <!-- A -->
 <g id="e4" class="edge">
 <title>n3:n&%2345;&gt;n4:s</title>
-<path fill="none" stroke="black" d="M21,-123C21,-137.56 13.99,-141.62 12.34,-153.71"/>
-<polygon fill="black" stroke="black" points="10.58,-153.9 12,-159 14.07,-154.12 10.58,-153.9"/>
+<path fill="none" stroke="black" d="M21,-127.94C21,-142.11 14.35,-146.33 12.48,-157.71"/>
+<polygon fill="black" stroke="black" points="10.76,-157.31 12.12,-162.43 14.25,-157.58 10.76,-157.31"/>
 </g>
 <!-- n5 -->
 <!-- g -->
 <g id="n5" class="node">
 <title>n5</title>
-<polygon fill="none" stroke="black" points="42,-158.5 42,-183.5 66,-183.5 66,-158.5 42,-158.5"/>
-<text text-anchor="start" x="49" y="-167.3" font-family="Serif" font-size="14.00">g</text>
+<polygon fill="none" stroke="black" points="42,-163.94 42,-191.19 66,-191.19 66,-163.94 42,-163.94"/>
+<text xml:space="preserve" text-anchor="start" x="49.5" y="-172.69" font-family="Serif" font-size="14.00">g</text>
 </g>
 <!-- n3&%2345;&gt;n5 -->
 <!-- B -->
 <g id="e3" class="edge">
 <title>n3:n&%2345;&gt;n5:s</title>
-<path fill="none" stroke="black" d="M45,-123C45,-137.56 52.01,-141.62 53.66,-153.71"/>
-<polygon fill="black" stroke="black" points="51.93,-154.12 54,-159 55.42,-153.9 51.93,-154.12"/>
+<path fill="none" stroke="black" d="M45,-127.94C45,-142.11 51.65,-146.33 53.52,-157.71"/>
+<polygon fill="black" stroke="black" points="51.75,-157.58 53.88,-162.43 55.24,-157.31 51.75,-157.58"/>
 </g>
 <!-- n4&%2345;&gt;n0out1 -->
 <!-- B -->
 <g id="e7" class="edge">
 <title>n4:n&%2345;&gt;n0out1:s</title>
-<path fill="none" stroke="black" d="M12,-184C12,-198.12 12,-202.9 12,-214.83"/>
-<polygon fill="black" stroke="black" points="10.25,-215 12,-220 13.75,-215 10.25,-215"/>
+<path fill="none" stroke="black" d="M12,-191.19C12,-204.81 12,-209.74 12,-220.78"/>
+<polygon fill="black" stroke="black" points="10.25,-220.68 12,-225.68 13.75,-220.68 10.25,-220.68"/>
 </g>
 <!-- n5&%2345;&gt;n0out2 -->
 <!-- A -->
 <g id="e8" class="edge">
 <title>n5:n&%2345;&gt;n0out2:s</title>
-<path fill="none" stroke="black" d="M54,-184C54,-198.12 54,-202.9 54,-214.83"/>
-<polygon fill="black" stroke="black" points="52.25,-215 54,-220 55.75,-215 52.25,-215"/>
+<path fill="none" stroke="black" d="M54,-191.19C54,-204.81 54,-209.74 54,-220.78"/>
+<polygon fill="black" stroke="black" points="52.25,-220.68 54,-225.68 55.75,-220.68 52.25,-220.68"/>
 </g>
 </g>
 </svg>
 '/><p>When working with very large diagrams (larger than the ones shown here), it is sometimes convenient to omit the ports of the outer box and any wires attached to them.</p><pre><code class="language-julia hljs">to_graphviz(composite, outer_ports=false)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<!-- Generated by graphviz version 2.43.0 (0)
+<!-- Generated by graphviz version 15.1.0 (20260618.0150)
  -->
 <!-- Title: G Pages: 1 -->
-<svg width="74pt" height="155pt"
- viewBox="0.00 0.00 74.00 155.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 151)">
+<svg width="74pt" height="162pt"
+ viewBox="0.00 0.00 74.00 162.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 157.75)">
 <title>G</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-151 70,-151 70,4 -4,4"/>
+<polygon fill="white" stroke="none" points="-4,4 -4,-157.75 70,-157.75 70,4 -4,4"/>
 <!-- n1 -->
 <!-- g -->
 <g id="n1" class="node">
 <title>n1</title>
-<polygon fill="none" stroke="black" points="0,-121.5 0,-146.5 24,-146.5 24,-121.5 0,-121.5"/>
-<text text-anchor="start" x="7" y="-130.3" font-family="Serif" font-size="14.00">g</text>
+<polygon fill="none" stroke="black" points="0,-126.5 0,-153.75 24,-153.75 24,-126.5 0,-126.5"/>
+<text xml:space="preserve" text-anchor="start" x="7.5" y="-135.25" font-family="Serif" font-size="14.00">g</text>
 </g>
 <!-- n3 -->
 <!-- h -->
 <g id="n3" class="node">
 <title>n3</title>
-<polygon fill="none" stroke="black" points="9,-60.5 9,-85.5 57,-85.5 57,-60.5 9,-60.5"/>
-<text text-anchor="start" x="28" y="-69.3" font-family="Serif" font-size="14.00">h</text>
+<polygon fill="none" stroke="black" points="9,-63.25 9,-90.5 57,-90.5 57,-63.25 9,-63.25"/>
+<text xml:space="preserve" text-anchor="start" x="28.5" y="-72" font-family="Serif" font-size="14.00">h</text>
 </g>
 <!-- n1&%2345;&gt;n3 -->
 <!-- A -->
 <g id="e6" class="edge">
 <title>n1:s&%2345;&gt;n3:n</title>
-<path fill="none" stroke="black" d="M12,-122C12,-107.44 19.01,-103.38 20.66,-91.29"/>
-<polygon fill="black" stroke="black" points="22.42,-91.1 21,-86 18.93,-90.88 22.42,-91.1"/>
+<path fill="none" stroke="black" d="M12,-126.5C12,-112.33 18.65,-108.11 20.52,-96.73"/>
+<polygon fill="black" stroke="black" points="22.24,-97.13 20.88,-92.01 18.75,-96.86 22.24,-97.13"/>
 </g>
 <!-- n2 -->
 <!-- f -->
 <g id="n2" class="node">
 <title>n2</title>
-<polygon fill="none" stroke="black" points="42,-121.5 42,-146.5 66,-146.5 66,-121.5 42,-121.5"/>
-<text text-anchor="start" x="51" y="-130.3" font-family="Serif" font-size="14.00">f</text>
+<polygon fill="none" stroke="black" points="42,-126.5 42,-153.75 66,-153.75 66,-126.5 42,-126.5"/>
+<text xml:space="preserve" text-anchor="start" x="51.38" y="-135.25" font-family="Serif" font-size="14.00">f</text>
 </g>
 <!-- n2&%2345;&gt;n3 -->
 <!-- B -->
 <g id="e5" class="edge">
 <title>n2:s&%2345;&gt;n3:n</title>
-<path fill="none" stroke="black" d="M54,-122C54,-107.44 46.99,-103.38 45.34,-91.29"/>
-<polygon fill="black" stroke="black" points="47.07,-90.88 45,-86 43.58,-91.1 47.07,-90.88"/>
+<path fill="none" stroke="black" d="M54,-126.5C54,-112.33 47.35,-108.11 45.48,-96.73"/>
+<polygon fill="black" stroke="black" points="47.25,-96.86 45.12,-92.01 43.76,-97.13 47.25,-96.86"/>
 </g>
 <!-- n4 -->
 <!-- f -->
 <g id="n4" class="node">
 <title>n4</title>
-<polygon fill="none" stroke="black" points="0,0.5 0,-24.5 24,-24.5 24,0.5 0,0.5"/>
-<text text-anchor="start" x="9" y="-8.3" font-family="Serif" font-size="14.00">f</text>
+<polygon fill="none" stroke="black" points="0,0 0,-27.25 24,-27.25 24,0 0,0"/>
+<text xml:space="preserve" text-anchor="start" x="9.38" y="-8.75" font-family="Serif" font-size="14.00">f</text>
 </g>
 <!-- n3&%2345;&gt;n4 -->
 <!-- A -->
 <g id="e4" class="edge">
 <title>n3:s&%2345;&gt;n4:n</title>
-<path fill="none" stroke="black" d="M21,-61C21,-46.44 13.99,-42.38 12.34,-30.29"/>
-<polygon fill="black" stroke="black" points="14.07,-29.88 12,-25 10.58,-30.1 14.07,-29.88"/>
+<path fill="none" stroke="black" d="M21,-63.25C21,-49.08 14.35,-44.86 12.48,-33.48"/>
+<polygon fill="black" stroke="black" points="14.25,-33.61 12.12,-28.76 10.76,-33.88 14.25,-33.61"/>
 </g>
 <!-- n5 -->
 <!-- g -->
 <g id="n5" class="node">
 <title>n5</title>
-<polygon fill="none" stroke="black" points="42,0.5 42,-24.5 66,-24.5 66,0.5 42,0.5"/>
-<text text-anchor="start" x="49" y="-8.3" font-family="Serif" font-size="14.00">g</text>
+<polygon fill="none" stroke="black" points="42,0 42,-27.25 66,-27.25 66,0 42,0"/>
+<text xml:space="preserve" text-anchor="start" x="49.5" y="-8.75" font-family="Serif" font-size="14.00">g</text>
 </g>
 <!-- n3&%2345;&gt;n5 -->
 <!-- B -->
 <g id="e3" class="edge">
 <title>n3:s&%2345;&gt;n5:n</title>
-<path fill="none" stroke="black" d="M45,-61C45,-46.44 52.01,-42.38 53.66,-30.29"/>
-<polygon fill="black" stroke="black" points="55.42,-30.1 54,-25 51.93,-29.88 55.42,-30.1"/>
+<path fill="none" stroke="black" d="M45,-63.25C45,-49.08 51.65,-44.86 53.52,-33.48"/>
+<polygon fill="black" stroke="black" points="55.24,-33.88 53.88,-28.76 51.75,-33.61 55.24,-33.88"/>
 </g>
 </g>
 </svg>
@@ -625,42 +625,42 @@ g = Hom(:g, B, A);</code></pre><p>By default, copies and merges are drawn the wa
 to_graphviz(f1)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<!-- Generated by graphviz version 2.43.0 (0)
+<!-- Generated by graphviz version 15.1.0 (20260618.0150)
  -->
 <!-- Title: G Pages: 1 -->
-<svg width="74pt" height="107pt"
- viewBox="0.00 0.00 74.00 107.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 103)">
+<svg width="74pt" height="110pt"
+ viewBox="0.00 0.00 74.00 110.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 106.13)">
 <title>G</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-103 70,-103 70,4 -4,4"/>
+<polygon fill="white" stroke="none" points="-4,4 -4,-106.13 70,-106.13 70,4 -4,4"/>
 <!-- n0in1 -->
 <!-- n1 -->
 <!-- f -->
 <g id="n1" class="node">
 <title>n1</title>
-<polygon fill="none" stroke="black" points="0,-36.5 0,-61.5 24,-61.5 24,-36.5 0,-36.5"/>
-<text text-anchor="start" x="9" y="-45.3" font-family="Serif" font-size="14.00">f</text>
+<polygon fill="none" stroke="black" points="0,-37.44 0,-64.69 24,-64.69 24,-37.44 0,-37.44"/>
+<text xml:space="preserve" text-anchor="start" x="9.38" y="-46.19" font-family="Serif" font-size="14.00">f</text>
 </g>
 <!-- n0in1&%2345;&gt;n1 -->
 <!-- A -->
 <g id="e2" class="edge">
 <title>n0in1:s&%2345;&gt;n1:n</title>
-<path fill="none" stroke="black" d="M33,-98C33,-81.36 16.05,-80.51 12.61,-67.08"/>
-<polygon fill="black" stroke="black" points="14.33,-66.76 12,-62 10.85,-67.17 14.33,-66.76"/>
+<path fill="none" stroke="black" d="M33,-100.69C33,-84.48 16.92,-83.26 12.9,-70.8"/>
+<polygon fill="black" stroke="black" points="14.68,-70.88 12.22,-66.19 11.22,-71.39 14.68,-70.88"/>
 </g>
 <!-- n2 -->
 <!-- f -->
 <g id="n2" class="node">
 <title>n2</title>
-<polygon fill="none" stroke="black" points="42,-36.5 42,-61.5 66,-61.5 66,-36.5 42,-36.5"/>
-<text text-anchor="start" x="51" y="-45.3" font-family="Serif" font-size="14.00">f</text>
+<polygon fill="none" stroke="black" points="42,-37.44 42,-64.69 66,-64.69 66,-37.44 42,-37.44"/>
+<text xml:space="preserve" text-anchor="start" x="51.38" y="-46.19" font-family="Serif" font-size="14.00">f</text>
 </g>
 <!-- n0in1&%2345;&gt;n2 -->
 <!-- A -->
 <g id="e1" class="edge">
 <title>n0in1:s&%2345;&gt;n2:n</title>
-<path fill="none" stroke="black" d="M33,-98C33,-81.36 49.95,-80.51 53.39,-67.08"/>
-<polygon fill="black" stroke="black" points="55.15,-67.17 54,-62 51.67,-66.76 55.15,-67.17"/>
+<path fill="none" stroke="black" d="M33,-100.69C33,-84.48 49.08,-83.26 53.1,-70.8"/>
+<polygon fill="black" stroke="black" points="54.78,-71.39 53.78,-66.19 51.32,-70.88 54.78,-71.39"/>
 </g>
 <!-- n0out1 -->
 <!-- n0out2 -->
@@ -669,15 +669,15 @@ to_graphviz(f1)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.
 <!-- B -->
 <g id="e3" class="edge">
 <title>n1:s&%2345;&gt;n0out1:n</title>
-<path fill="none" stroke="black" d="M12,-37C12,-22.88 12,-18.1 12,-6.17"/>
-<polygon fill="black" stroke="black" points="13.75,-6 12,-1 10.25,-6 13.75,-6"/>
+<path fill="none" stroke="black" d="M12,-37.44C12,-23.81 12,-18.89 12,-7.85"/>
+<polygon fill="black" stroke="black" points="13.75,-7.95 12,-2.95 10.25,-7.95 13.75,-7.95"/>
 </g>
 <!-- n2&%2345;&gt;n0out2 -->
 <!-- B -->
 <g id="e4" class="edge">
 <title>n2:s&%2345;&gt;n0out2:n</title>
-<path fill="none" stroke="black" d="M54,-37C54,-22.88 54,-18.1 54,-6.17"/>
-<polygon fill="black" stroke="black" points="55.75,-6 54,-1 52.25,-6 55.75,-6"/>
+<path fill="none" stroke="black" d="M54,-37.44C54,-23.81 54,-18.89 54,-7.85"/>
+<polygon fill="black" stroke="black" points="55.75,-7.95 54,-2.95 52.25,-7.95 55.75,-7.95"/>
 </g>
 </g>
 </svg>
@@ -685,84 +685,84 @@ to_graphviz(f1)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.
 to_graphviz(f2)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<!-- Generated by graphviz version 2.43.0 (0)
+<!-- Generated by graphviz version 15.1.0 (20260618.0150)
  -->
 <!-- Title: G Pages: 1 -->
-<svg width="74pt" height="107pt"
- viewBox="0.00 0.00 74.00 107.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 103)">
+<svg width="74pt" height="110pt"
+ viewBox="0.00 0.00 74.00 110.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 106.13)">
 <title>G</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-103 70,-103 70,4 -4,4"/>
+<polygon fill="white" stroke="none" points="-4,4 -4,-106.13 70,-106.13 70,4 -4,4"/>
 <!-- n0in1 -->
 <!-- n1 -->
 <!-- f -->
 <g id="n1" class="node">
 <title>n1</title>
-<polygon fill="none" stroke="black" points="0,-36.5 0,-61.5 24,-61.5 24,-36.5 0,-36.5"/>
-<text text-anchor="start" x="9" y="-45.3" font-family="Serif" font-size="14.00">f</text>
+<polygon fill="none" stroke="black" points="0,-37.44 0,-64.69 24,-64.69 24,-37.44 0,-37.44"/>
+<text xml:space="preserve" text-anchor="start" x="9.38" y="-46.19" font-family="Serif" font-size="14.00">f</text>
 </g>
 <!-- n0in1&%2345;&gt;n1 -->
 <!-- A -->
 <g id="e1" class="edge">
 <title>n0in1:s&%2345;&gt;n1:n</title>
-<path fill="none" stroke="black" d="M33,-98C33,-81.36 16.05,-80.51 12.61,-67.08"/>
-<polygon fill="black" stroke="black" points="14.33,-66.76 12,-62 10.85,-67.17 14.33,-66.76"/>
+<path fill="none" stroke="black" d="M33,-100.69C33,-84.48 16.92,-83.26 12.9,-70.8"/>
+<polygon fill="black" stroke="black" points="14.68,-70.88 12.22,-66.19 11.22,-71.39 14.68,-70.88"/>
 </g>
 <!-- n2 -->
 <!-- f -->
 <g id="n2" class="node">
 <title>n2</title>
-<polygon fill="none" stroke="black" points="42,-36.5 42,-61.5 66,-61.5 66,-36.5 42,-36.5"/>
-<text text-anchor="start" x="51" y="-45.3" font-family="Serif" font-size="14.00">f</text>
+<polygon fill="none" stroke="black" points="42,-37.44 42,-64.69 66,-64.69 66,-37.44 42,-37.44"/>
+<text xml:space="preserve" text-anchor="start" x="51.38" y="-46.19" font-family="Serif" font-size="14.00">f</text>
 </g>
 <!-- n0in1&%2345;&gt;n2 -->
 <!-- A -->
 <g id="e2" class="edge">
 <title>n0in1:s&%2345;&gt;n2:n</title>
-<path fill="none" stroke="black" d="M33,-98C33,-81.36 49.95,-80.51 53.39,-67.08"/>
-<polygon fill="black" stroke="black" points="55.15,-67.17 54,-62 51.67,-66.76 55.15,-67.17"/>
+<path fill="none" stroke="black" d="M33,-100.69C33,-84.48 49.08,-83.26 53.1,-70.8"/>
+<polygon fill="black" stroke="black" points="54.78,-71.39 53.78,-66.19 51.32,-70.88 54.78,-71.39"/>
 </g>
 <!-- n0out1 -->
 <!-- n1&%2345;&gt;n0out1 -->
 <!-- B -->
 <g id="e3" class="edge">
 <title>n1:s&%2345;&gt;n0out1:n</title>
-<path fill="none" stroke="black" d="M12,-37C12,-20.36 28.95,-19.51 32.39,-6.08"/>
-<polygon fill="black" stroke="black" points="34.15,-6.17 33,-1 30.67,-5.76 34.15,-6.17"/>
+<path fill="none" stroke="black" d="M12,-37.44C12,-21.23 28.08,-20.01 32.1,-7.55"/>
+<polygon fill="black" stroke="black" points="33.78,-8.14 32.78,-2.94 30.32,-7.63 33.78,-8.14"/>
 </g>
 <!-- n2&%2345;&gt;n0out1 -->
 <!-- B -->
 <g id="e4" class="edge">
 <title>n2:s&%2345;&gt;n0out1:n</title>
-<path fill="none" stroke="black" d="M54,-37C54,-20.36 37.05,-19.51 33.61,-6.08"/>
-<polygon fill="black" stroke="black" points="35.33,-5.76 33,-1 31.85,-6.17 35.33,-5.76"/>
+<path fill="none" stroke="black" d="M54,-37.44C54,-21.23 37.92,-20.01 33.9,-7.55"/>
+<polygon fill="black" stroke="black" points="35.68,-7.63 33.22,-2.94 32.22,-8.14 35.68,-7.63"/>
 </g>
 </g>
 </svg>
 '/><p>To draw nodes for copies and merges, we need to add junctions to the wiring diagram.</p><pre><code class="language-julia hljs">to_graphviz(add_junctions!(to_wiring_diagram(f1)))</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<!-- Generated by graphviz version 2.43.0 (0)
+<!-- Generated by graphviz version 15.1.0 (20260618.0150)
  -->
 <!-- Title: G Pages: 1 -->
-<svg width="74pt" height="147pt"
- viewBox="0.00 0.00 74.00 147.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 143)">
+<svg width="74pt" height="150pt"
+ viewBox="0.00 0.00 74.00 150.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 145.73)">
 <title>G</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-143 70,-143 70,4 -4,4"/>
+<polygon fill="white" stroke="none" points="-4,4 -4,-145.73 70,-145.73 70,4 -4,4"/>
 <!-- n0in1 -->
 <!-- n3 -->
 <!-- junction -->
 <g id="n3" class="node">
 <title>n3</title>
-<ellipse fill="black" stroke="black" cx="33" cy="-100" rx="2" ry="2"/>
+<ellipse fill="black" stroke="black" cx="33" cy="-102.49" rx="1.8" ry="1.8"/>
 </g>
 <!-- n0in1&%2345;&gt;n3 -->
 <!-- A -->
 <g id="e1" class="edge">
 <title>n0in1:s&%2345;&gt;n3</title>
-<path fill="none" stroke="black" d="M33,-138C33,-127.18 33,-114.58 33,-107.23"/>
-<polygon fill="black" stroke="black" points="34.75,-107.15 33,-102.15 31.25,-107.15 34.75,-107.15"/>
+<path fill="none" stroke="black" d="M33,-140.29C33,-130.19 33,-118.53 33,-111.08"/>
+<polygon fill="black" stroke="black" points="34.75,-111.15 33,-106.15 31.25,-111.15 34.75,-111.15"/>
 </g>
 <!-- n0out1 -->
 <!-- n0out2 -->
@@ -771,126 +771,126 @@ to_graphviz(f2)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.
 <!-- f -->
 <g id="n1" class="node">
 <title>n1</title>
-<polygon fill="none" stroke="black" points="0,-36.5 0,-61.5 24,-61.5 24,-36.5 0,-36.5"/>
-<text text-anchor="start" x="9" y="-45.3" font-family="Serif" font-size="14.00">f</text>
+<polygon fill="none" stroke="black" points="0,-37.44 0,-64.69 24,-64.69 24,-37.44 0,-37.44"/>
+<text xml:space="preserve" text-anchor="start" x="9.38" y="-46.19" font-family="Serif" font-size="14.00">f</text>
 </g>
 <!-- n1&%2345;&gt;n0out1 -->
 <!-- B -->
 <g id="e4" class="edge">
 <title>n1:s&%2345;&gt;n0out1:n</title>
-<path fill="none" stroke="black" d="M12,-37C12,-22.88 12,-18.1 12,-6.17"/>
-<polygon fill="black" stroke="black" points="13.75,-6 12,-1 10.25,-6 13.75,-6"/>
+<path fill="none" stroke="black" d="M12,-37.44C12,-23.81 12,-18.89 12,-7.85"/>
+<polygon fill="black" stroke="black" points="13.75,-7.95 12,-2.95 10.25,-7.95 13.75,-7.95"/>
 </g>
 <!-- n2 -->
 <!-- f -->
 <g id="n2" class="node">
 <title>n2</title>
-<polygon fill="none" stroke="black" points="42,-36.5 42,-61.5 66,-61.5 66,-36.5 42,-36.5"/>
-<text text-anchor="start" x="51" y="-45.3" font-family="Serif" font-size="14.00">f</text>
+<polygon fill="none" stroke="black" points="42,-37.44 42,-64.69 66,-64.69 66,-37.44 42,-37.44"/>
+<text xml:space="preserve" text-anchor="start" x="51.38" y="-46.19" font-family="Serif" font-size="14.00">f</text>
 </g>
 <!-- n2&%2345;&gt;n0out2 -->
 <!-- B -->
 <g id="e5" class="edge">
 <title>n2:s&%2345;&gt;n0out2:n</title>
-<path fill="none" stroke="black" d="M54,-37C54,-22.88 54,-18.1 54,-6.17"/>
-<polygon fill="black" stroke="black" points="55.75,-6 54,-1 52.25,-6 55.75,-6"/>
+<path fill="none" stroke="black" d="M54,-37.44C54,-23.81 54,-18.89 54,-7.85"/>
+<polygon fill="black" stroke="black" points="55.75,-7.95 54,-2.95 52.25,-7.95 55.75,-7.95"/>
 </g>
 <!-- n3&%2345;&gt;n1 -->
 <!-- A -->
 <g id="e2" class="edge">
 <title>n3&%2345;&gt;n1:n</title>
-<path fill="none" stroke="black" d="M32.1,-98.19C28.49,-94.84 15.14,-81.65 12.47,-67.01"/>
-<polygon fill="black" stroke="black" points="14.21,-66.82 12,-62 10.72,-67.14 14.21,-66.82"/>
+<path fill="none" stroke="black" d="M32.1,-100.68C28.58,-97.45 15.83,-84.93 12.7,-70.82"/>
+<polygon fill="black" stroke="black" points="14.48,-70.96 12.17,-66.19 11,-71.36 14.48,-70.96"/>
 </g>
 <!-- n3&%2345;&gt;n2 -->
 <!-- A -->
 <g id="e3" class="edge">
 <title>n3&%2345;&gt;n2:n</title>
-<path fill="none" stroke="black" d="M33.9,-98.19C37.51,-94.84 50.86,-81.65 53.53,-67.01"/>
-<polygon fill="black" stroke="black" points="55.28,-67.14 54,-62 51.79,-66.82 55.28,-67.14"/>
+<path fill="none" stroke="black" d="M33.9,-100.68C37.42,-97.45 50.17,-84.93 53.3,-70.82"/>
+<polygon fill="black" stroke="black" points="55,-71.36 53.83,-66.19 51.52,-70.96 55,-71.36"/>
 </g>
 </g>
 </svg>
 '/><pre><code class="language-julia hljs">to_graphviz(add_junctions!(to_wiring_diagram(f2)))</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<!-- Generated by graphviz version 2.43.0 (0)
+<!-- Generated by graphviz version 15.1.0 (20260618.0150)
  -->
 <!-- Title: G Pages: 1 -->
-<svg width="74pt" height="187pt"
- viewBox="0.00 0.00 74.00 187.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 183)">
+<svg width="74pt" height="189pt"
+ viewBox="0.00 0.00 74.00 189.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 185.33)">
 <title>G</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-183 70,-183 70,4 -4,4"/>
+<polygon fill="white" stroke="none" points="-4,4 -4,-185.33 70,-185.33 70,4 -4,4"/>
 <!-- n0in1 -->
 <!-- n3 -->
 <!-- junction -->
 <g id="n3" class="node">
 <title>n3</title>
-<ellipse fill="black" stroke="black" cx="33" cy="-140" rx="2" ry="2"/>
+<ellipse fill="black" stroke="black" cx="33" cy="-142.09" rx="1.8" ry="1.8"/>
 </g>
 <!-- n0in1&%2345;&gt;n3 -->
 <!-- A -->
 <g id="e1" class="edge">
 <title>n0in1:s&%2345;&gt;n3</title>
-<path fill="none" stroke="black" d="M33,-178C33,-167.18 33,-154.58 33,-147.23"/>
-<polygon fill="black" stroke="black" points="34.75,-147.15 33,-142.15 31.25,-147.15 34.75,-147.15"/>
+<path fill="none" stroke="black" d="M33,-179.89C33,-169.79 33,-158.13 33,-150.68"/>
+<polygon fill="black" stroke="black" points="34.75,-150.75 33,-145.75 31.25,-150.75 34.75,-150.75"/>
 </g>
 <!-- n0out1 -->
 <!-- n1 -->
 <!-- f -->
 <g id="n1" class="node">
 <title>n1</title>
-<polygon fill="none" stroke="black" points="0,-76.5 0,-101.5 24,-101.5 24,-76.5 0,-76.5"/>
-<text text-anchor="start" x="9" y="-85.3" font-family="Serif" font-size="14.00">f</text>
+<polygon fill="none" stroke="black" points="0,-77.04 0,-104.29 24,-104.29 24,-77.04 0,-77.04"/>
+<text xml:space="preserve" text-anchor="start" x="9.38" y="-85.79" font-family="Serif" font-size="14.00">f</text>
 </g>
 <!-- n4 -->
 <!-- junction -->
 <g id="n4" class="node">
 <title>n4</title>
-<ellipse fill="black" stroke="black" cx="33" cy="-39" rx="2" ry="2"/>
+<ellipse fill="black" stroke="black" cx="33" cy="-39.24" rx="1.8" ry="1.8"/>
 </g>
 <!-- n1&%2345;&gt;n4 -->
 <!-- B -->
 <g id="e4" class="edge">
 <title>n1:s&%2345;&gt;n4</title>
-<path fill="none" stroke="black" d="M12,-77C12,-63.82 22.21,-51.03 28.39,-44.49"/>
-<polygon fill="black" stroke="black" points="29.78,-45.58 32.1,-40.81 27.32,-43.1 29.78,-45.58"/>
+<path fill="none" stroke="black" d="M12,-77.04C12,-64.42 21.42,-52.2 27.65,-45.5"/>
+<polygon fill="black" stroke="black" points="28.73,-46.89 31.03,-42.12 26.25,-44.42 28.73,-46.89"/>
 </g>
 <!-- n2 -->
 <!-- f -->
 <g id="n2" class="node">
 <title>n2</title>
-<polygon fill="none" stroke="black" points="42,-76.5 42,-101.5 66,-101.5 66,-76.5 42,-76.5"/>
-<text text-anchor="start" x="51" y="-85.3" font-family="Serif" font-size="14.00">f</text>
+<polygon fill="none" stroke="black" points="42,-77.04 42,-104.29 66,-104.29 66,-77.04 42,-77.04"/>
+<text xml:space="preserve" text-anchor="start" x="51.38" y="-85.79" font-family="Serif" font-size="14.00">f</text>
 </g>
 <!-- n2&%2345;&gt;n4 -->
 <!-- B -->
 <g id="e5" class="edge">
 <title>n2:s&%2345;&gt;n4</title>
-<path fill="none" stroke="black" d="M54,-77C54,-63.82 43.79,-51.03 37.61,-44.49"/>
-<polygon fill="black" stroke="black" points="38.68,-43.1 33.9,-40.81 36.22,-45.58 38.68,-43.1"/>
+<path fill="none" stroke="black" d="M54,-77.04C54,-64.42 44.58,-52.2 38.35,-45.5"/>
+<polygon fill="black" stroke="black" points="39.75,-44.42 34.97,-42.12 37.27,-46.89 39.75,-44.42"/>
 </g>
 <!-- n3&%2345;&gt;n1 -->
 <!-- A -->
 <g id="e2" class="edge">
 <title>n3&%2345;&gt;n1:n</title>
-<path fill="none" stroke="black" d="M32.1,-138.19C28.49,-134.84 15.14,-121.65 12.47,-107.01"/>
-<polygon fill="black" stroke="black" points="14.21,-106.82 12,-102 10.72,-107.14 14.21,-106.82"/>
+<path fill="none" stroke="black" d="M32.1,-140.28C28.58,-137.05 15.83,-124.53 12.7,-110.42"/>
+<polygon fill="black" stroke="black" points="14.48,-110.56 12.17,-105.79 11,-110.96 14.48,-110.56"/>
 </g>
 <!-- n3&%2345;&gt;n2 -->
 <!-- A -->
 <g id="e3" class="edge">
 <title>n3&%2345;&gt;n2:n</title>
-<path fill="none" stroke="black" d="M33.9,-138.19C37.51,-134.84 50.86,-121.65 53.53,-107.01"/>
-<polygon fill="black" stroke="black" points="55.28,-107.14 54,-102 51.79,-106.82 55.28,-107.14"/>
+<path fill="none" stroke="black" d="M33.9,-140.28C37.42,-137.05 50.17,-124.53 53.3,-110.42"/>
+<polygon fill="black" stroke="black" points="55,-110.96 53.83,-105.79 51.52,-110.56 55,-110.96"/>
 </g>
 <!-- n4&%2345;&gt;n0out1 -->
 <!-- B -->
 <g id="e6" class="edge">
 <title>n4&%2345;&gt;n0out1:n</title>
-<path fill="none" stroke="black" d="M33,-36.85C33,-32.83 33,-18.98 33,-6.07"/>
-<polygon fill="black" stroke="black" points="34.75,-6 33,-1 31.25,-6 34.75,-6"/>
+<path fill="none" stroke="black" d="M33,-37.1C33,-33.24 33,-20.29 33,-7.85"/>
+<polygon fill="black" stroke="black" points="34.75,-7.95 33,-2.95 31.25,-7.95 34.75,-7.95"/>
 </g>
 </g>
 </svg>
@@ -900,86 +900,86 @@ f = Hom(:f, otimes(X,A), otimes(X,B))
 to_graphviz(trace(X, A, B, f))</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<!-- Generated by graphviz version 2.43.0 (0)
+<!-- Generated by graphviz version 15.1.0 (20260618.0150)
  -->
 <!-- Title: G Pages: 1 -->
-<svg width="74pt" height="107pt"
- viewBox="0.00 0.00 74.00 107.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 103)">
+<svg width="74pt" height="110pt"
+ viewBox="0.00 0.00 74.00 110.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 106.13)">
 <title>G</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-103 70,-103 70,4 -4,4"/>
+<polygon fill="white" stroke="none" points="-4,4 -4,-106.13 70,-106.13 70,4 -4,4"/>
 <!-- n0in1 -->
 <!-- n1 -->
 <!-- f -->
 <g id="n1" class="node">
 <title>n1</title>
-<polygon fill="none" stroke="black" points="0,-36.5 0,-61.5 48,-61.5 48,-36.5 0,-36.5"/>
-<text text-anchor="start" x="21" y="-45.3" font-family="Serif" font-size="14.00">f</text>
+<polygon fill="none" stroke="black" points="0,-37.44 0,-64.69 48,-64.69 48,-37.44 0,-37.44"/>
+<text xml:space="preserve" text-anchor="start" x="21.38" y="-46.19" font-family="Serif" font-size="14.00">f</text>
 </g>
 <!-- n0in1&%2345;&gt;n1 -->
 <!-- A -->
 <g id="e1" class="edge">
 <title>n0in1:s&%2345;&gt;n1:n</title>
-<path fill="none" stroke="black" d="M36,-98C36,-83.88 36,-79.1 36,-67.17"/>
-<polygon fill="black" stroke="black" points="37.75,-67 36,-62 34.25,-67 37.75,-67"/>
+<path fill="none" stroke="black" d="M36,-100.69C36,-87.06 36,-82.14 36,-71.1"/>
+<polygon fill="black" stroke="black" points="37.75,-71.2 36,-66.2 34.25,-71.2 37.75,-71.2"/>
 </g>
 <!-- n0out1 -->
 <!-- n1&%2345;&gt;n0out1 -->
 <!-- B -->
 <g id="e3" class="edge">
 <title>n1:s&%2345;&gt;n0out1:n</title>
-<path fill="none" stroke="black" d="M36,-37C36,-22.88 36,-18.1 36,-6.17"/>
-<polygon fill="black" stroke="black" points="37.75,-6 36,-1 34.25,-6 37.75,-6"/>
+<path fill="none" stroke="black" d="M36,-37.44C36,-23.81 36,-18.89 36,-7.85"/>
+<polygon fill="black" stroke="black" points="37.75,-7.95 36,-2.95 34.25,-7.95 37.75,-7.95"/>
 </g>
 <!-- n1&%2345;&gt;n1 -->
 <!-- X -->
 <g id="e2" class="edge">
 <title>n1:s&%2345;&gt;n1:n</title>
-<path fill="none" stroke="black" d="M12,-36.5C26,-24.5 66,-24.5 66,-49 66,-71.39 32.58,-73.32 16.14,-64.32"/>
-<polygon fill="black" stroke="black" points="17.12,-62.87 12,-61.5 15.15,-65.76 17.12,-62.87"/>
+<path fill="none" stroke="black" d="M12,-37.44C26,-24.85 66,-24.85 66,-51.06 66,-74.61 33.71,-77.01 17,-68.12"/>
+<polygon fill="black" stroke="black" points="18.36,-66.93 13.25,-65.55 16.38,-69.82 18.36,-66.93"/>
 </g>
 </g>
 </svg>
 '/><pre><code class="language-julia hljs">to_graphviz(trace(X, A, B, f), orientation=LeftToRight)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<!-- Generated by graphviz version 2.43.0 (0)
+<!-- Generated by graphviz version 15.1.0 (20260618.0150)
  -->
 <!-- Title: G Pages: 1 -->
-<svg width="98pt" height="74pt"
- viewBox="0.00 0.00 98.00 74.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<svg width="97pt" height="74pt"
+ viewBox="0.00 0.00 97.00 74.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
 <g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 70)">
 <title>G</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-70 94,-70 94,4 -4,4"/>
+<polygon fill="white" stroke="none" points="-4,4 -4,-70 92.69,-70 92.69,4 -4,4"/>
 <!-- n0in1 -->
 <!-- n1 -->
 <!-- f -->
 <g id="n1" class="node">
 <title>n1</title>
-<polygon fill="none" stroke="black" points="37,0 37,-48 53,-48 53,0 37,0"/>
-<text text-anchor="start" x="42" y="-20.3" font-family="Serif" font-size="14.00">f</text>
+<polygon fill="none" stroke="black" points="36.72,0 36.72,-48 51.97,-48 51.97,0 36.72,0"/>
+<text xml:space="preserve" text-anchor="start" x="41.72" y="-19.12" font-family="Serif" font-size="14.00">f</text>
 </g>
 <!-- n0in1&%2345;&gt;n1 -->
 <!-- A -->
 <g id="e1" class="edge">
 <title>n0in1:e&%2345;&gt;n1:w</title>
-<path fill="none" stroke="black" d="M1,-12C15.12,-12 19.9,-12 31.83,-12"/>
-<polygon fill="black" stroke="black" points="32,-13.75 37,-12 32,-10.25 32,-13.75"/>
+<path fill="none" stroke="black" d="M0.72,-12C14.34,-12 19.27,-12 30.31,-12"/>
+<polygon fill="black" stroke="black" points="30.21,-13.75 35.21,-12 30.21,-10.25 30.21,-13.75"/>
 </g>
 <!-- n0out1 -->
 <!-- n1&%2345;&gt;n0out1 -->
 <!-- B -->
 <g id="e3" class="edge">
 <title>n1:e&%2345;&gt;n0out1:w</title>
-<path fill="none" stroke="black" d="M53,-12C67.12,-12 71.9,-12 83.83,-12"/>
-<polygon fill="black" stroke="black" points="84,-13.75 89,-12 84,-10.25 84,-13.75"/>
+<path fill="none" stroke="black" d="M51.97,-12C65.59,-12 70.52,-12 81.56,-12"/>
+<polygon fill="black" stroke="black" points="81.46,-13.75 86.46,-12 81.46,-10.25 81.46,-13.75"/>
 </g>
 <!-- n1&%2345;&gt;n1 -->
 <!-- X -->
 <g id="e2" class="edge">
 <title>n1:e&%2345;&gt;n1:w</title>
-<path fill="none" stroke="black" d="M53,-36C64,-50 64,-66 45,-66 27.93,-66 26.2,-53.08 34,-40.31"/>
-<polygon fill="black" stroke="black" points="35.58,-41.1 37,-36 32.71,-39.1 35.58,-41.1"/>
+<path fill="none" stroke="black" d="M51.97,-36C62.97,-50 62.97,-66 44.34,-66 28.05,-66 26.01,-53.75 33.13,-41.31"/>
+<polygon fill="black" stroke="black" points="34.52,-42.38 35.87,-37.25 31.62,-40.41 34.52,-42.38"/>
 </g>
 </g>
 </svg>
@@ -989,71 +989,71 @@ trace_naturality = trace(X, A, B, compose(otimes(id(X),g), f, otimes(id(X),h)))
 to_graphviz(trace_naturality, orientation=LeftToRight)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<!-- Generated by graphviz version 2.43.0 (0)
+<!-- Generated by graphviz version 15.1.0 (20260618.0150)
  -->
 <!-- Title: G Pages: 1 -->
-<svg width="210pt" height="74pt"
- viewBox="0.00 0.00 210.00 74.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 70)">
+<svg width="207pt" height="76pt"
+ viewBox="0.00 0.00 207.00 76.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 71.62)">
 <title>G</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-70 206,-70 206,4 -4,4"/>
+<polygon fill="white" stroke="none" points="-4,4 -4,-71.62 202.69,-71.62 202.69,4 -4,4"/>
 <!-- n0in1 -->
 <!-- n1 -->
 <!-- g -->
 <g id="n1" class="node">
 <title>n1</title>
-<polygon fill="none" stroke="black" points="37,0 37,-25 57,-25 57,0 37,0"/>
-<text text-anchor="start" x="42" y="-8.8" font-family="Serif" font-size="14.00">g</text>
+<polygon fill="none" stroke="black" points="36.72,0 36.72,-27.25 55.72,-27.25 55.72,0 36.72,0"/>
+<text xml:space="preserve" text-anchor="start" x="41.72" y="-8.75" font-family="Serif" font-size="14.00">g</text>
 </g>
 <!-- n0in1&%2345;&gt;n1 -->
 <!-- A -->
 <g id="e1" class="edge">
 <title>n0in1:e&%2345;&gt;n1:w</title>
-<path fill="none" stroke="black" d="M1,-12C15.12,-12 19.9,-12 31.83,-12"/>
-<polygon fill="black" stroke="black" points="32,-13.75 37,-12 32,-10.25 32,-13.75"/>
+<path fill="none" stroke="black" d="M0.72,-13.62C14.35,-13.63 19.27,-13.63 30.31,-13.62"/>
+<polygon fill="black" stroke="black" points="30.21,-15.38 35.21,-13.63 30.21,-11.88 30.21,-15.38"/>
 </g>
 <!-- n0out1 -->
 <!-- n2 -->
 <!-- f -->
 <g id="n2" class="node">
 <title>n2</title>
-<polygon fill="none" stroke="black" points="93,0 93,-48 109,-48 109,0 93,0"/>
-<text text-anchor="start" x="98" y="-20.3" font-family="Serif" font-size="14.00">f</text>
+<polygon fill="none" stroke="black" points="91.72,-1.62 91.72,-49.62 106.97,-49.62 106.97,-1.62 91.72,-1.62"/>
+<text xml:space="preserve" text-anchor="start" x="96.72" y="-20.75" font-family="Serif" font-size="14.00">f</text>
 </g>
 <!-- n1&%2345;&gt;n2 -->
 <!-- A -->
 <g id="e4" class="edge">
 <title>n1:e&%2345;&gt;n2:w</title>
-<path fill="none" stroke="black" d="M57,-12C71.12,-12 75.9,-12 87.83,-12"/>
-<polygon fill="black" stroke="black" points="88,-13.75 93,-12 88,-10.25 88,-13.75"/>
+<path fill="none" stroke="black" d="M55.72,-13.62C69.34,-13.63 74.27,-13.63 85.31,-13.62"/>
+<polygon fill="black" stroke="black" points="85.21,-15.38 90.21,-13.63 85.21,-11.88 85.21,-15.38"/>
 </g>
 <!-- n2&%2345;&gt;n2 -->
 <!-- X -->
 <g id="e2" class="edge">
 <title>n2:e&%2345;&gt;n2:w</title>
-<path fill="none" stroke="black" d="M109,-36C122.5,-50 122.5,-66 101,-66 81.52,-66 79.69,-52.86 89.57,-39.98"/>
-<polygon fill="black" stroke="black" points="91.06,-40.93 93,-36 88.41,-38.64 91.06,-40.93"/>
+<path fill="none" stroke="black" d="M106.97,-37.62C120.25,-51.62 120.25,-67.62 99.34,-67.62 80.89,-67.62 78.73,-55.16 87.61,-42.6"/>
+<polygon fill="black" stroke="black" points="88.92,-43.76 90.76,-38.79 86.22,-41.53 88.92,-43.76"/>
 </g>
 <!-- n3 -->
 <!-- h -->
 <g id="n3" class="node">
 <title>n3</title>
-<polygon fill="none" stroke="black" points="145,0 145,-25 165,-25 165,0 145,0"/>
-<text text-anchor="start" x="150" y="-8.8" font-family="Serif" font-size="14.00">h</text>
+<polygon fill="none" stroke="black" points="142.97,0 142.97,-27.25 161.97,-27.25 161.97,0 142.97,0"/>
+<text xml:space="preserve" text-anchor="start" x="147.97" y="-8.75" font-family="Serif" font-size="14.00">h</text>
 </g>
 <!-- n2&%2345;&gt;n3 -->
 <!-- B -->
 <g id="e3" class="edge">
 <title>n2:e&%2345;&gt;n3:w</title>
-<path fill="none" stroke="black" d="M109,-12C123.12,-12 127.9,-12 139.83,-12"/>
-<polygon fill="black" stroke="black" points="140,-13.75 145,-12 140,-10.25 140,-13.75"/>
+<path fill="none" stroke="black" d="M106.97,-13.62C120.59,-13.63 125.52,-13.63 136.56,-13.62"/>
+<polygon fill="black" stroke="black" points="136.46,-15.38 141.46,-13.63 136.46,-11.88 136.46,-15.38"/>
 </g>
 <!-- n3&%2345;&gt;n0out1 -->
 <!-- B -->
 <g id="e5" class="edge">
 <title>n3:e&%2345;&gt;n0out1:w</title>
-<path fill="none" stroke="black" d="M165,-12C179.12,-12 183.9,-12 195.83,-12"/>
-<polygon fill="black" stroke="black" points="196,-13.75 201,-12 196,-10.25 196,-13.75"/>
+<path fill="none" stroke="black" d="M161.97,-13.62C175.59,-13.63 180.52,-13.63 191.56,-13.62"/>
+<polygon fill="black" stroke="black" points="191.46,-15.38 196.46,-13.63 191.46,-11.88 191.46,-15.38"/>
 </g>
 </g>
 </svg>
@@ -1066,75 +1066,75 @@ end
 to_graphviz(diagram, box_labels=:name)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<!-- Generated by graphviz version 2.43.0 (0)
+<!-- Generated by graphviz version 15.1.0 (20260618.0150)
  -->
 <!-- Title: G Pages: 1 -->
 <svg width="57pt" height="220pt"
- viewBox="0.00 0.00 57.00 219.74" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 215.74)">
+ viewBox="0.00 0.00 57.00 220.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 216.05)">
 <title>G</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-215.74 53,-215.74 53,4 -4,4"/>
+<polygon fill="white" stroke="none" points="-4,4 -4,-216.05 52.66,-216.05 52.66,4 -4,4"/>
 <!-- n1 -->
 <g id="box1" class="node">
 <title>n1</title>
-<ellipse fill="none" stroke="black" cx="31" cy="-71.29" rx="18" ry="18"/>
-<text text-anchor="middle" x="31" y="-67.59" font-family="Serif" font-size="14.00">R</text>
+<ellipse fill="none" stroke="black" cx="30.66" cy="-71.45" rx="18" ry="18"/>
+<text xml:space="preserve" text-anchor="middle" x="30.66" y="-66.77" font-family="Serif" font-size="14.00">R</text>
 </g>
 <!-- n5 -->
 <!-- junction -->
 <g id="junction1" class="node">
 <title>n5</title>
-<ellipse fill="black" stroke="black" cx="39.23" cy="-36.16" rx="2.5" ry="2.5"/>
+<ellipse fill="black" stroke="black" cx="39.33" cy="-36.4" rx="2.7" ry="2.7"/>
 </g>
 <!-- n1&%2345;&%2345;n5 -->
 <g id="edge1" class="edge">
 <title>n1&%2345;&%2345;n5</title>
-<path fill="none" stroke="black" d="M35.11,-53.73C36.46,-47.96 37.81,-42.2 38.58,-38.92"/>
+<path fill="none" stroke="black" d="M35.1,-53.51C36.5,-47.85 37.88,-42.25 38.67,-39.07"/>
 </g>
 <!-- n6 -->
 <!-- junction -->
 <g id="junction2" class="node">
 <title>n6</title>
-<ellipse fill="black" stroke="black" cx="29.17" cy="-107.36" rx="2.5" ry="2.5"/>
+<ellipse fill="black" stroke="black" cx="29.29" cy="-107.56" rx="2.7" ry="2.7"/>
 </g>
 <!-- n1&%2345;&%2345;n6 -->
 <g id="edge3" class="edge">
 <title>n1&%2345;&%2345;n6</title>
-<path fill="none" stroke="black" d="M30.08,-89.33C29.78,-95.24 29.48,-101.16 29.31,-104.53"/>
+<path fill="none" stroke="black" d="M29.96,-89.93C29.74,-95.76 29.52,-101.53 29.39,-104.81"/>
 </g>
 <!-- n2 -->
 <g id="box2" class="node">
 <title>n2</title>
-<ellipse fill="none" stroke="black" cx="24.41" cy="-143.16" rx="18" ry="18"/>
-<text text-anchor="middle" x="24.41" y="-139.46" font-family="Serif" font-size="14.00">S</text>
+<ellipse fill="none" stroke="black" cx="24.9" cy="-143.44" rx="18" ry="18"/>
+<text xml:space="preserve" text-anchor="middle" x="24.9" y="-138.76" font-family="Serif" font-size="14.00">S</text>
 </g>
 <!-- n2&%2345;&%2345;n6 -->
 <g id="edge4" class="edge">
 <title>n2&%2345;&%2345;n6</title>
-<path fill="none" stroke="black" d="M26.79,-125.26C27.57,-119.39 28.35,-113.51 28.8,-110.17"/>
+<path fill="none" stroke="black" d="M27.15,-125.08C27.85,-119.29 28.56,-113.56 28.95,-110.3"/>
 </g>
 <!-- n7 -->
 <!-- junction -->
 <g id="junction3" class="node">
 <title>n7</title>
-<ellipse fill="black" stroke="black" cx="13.69" cy="-177.66" rx="2.5" ry="2.5"/>
+<ellipse fill="black" stroke="black" cx="13.71" cy="-177.81" rx="2.7" ry="2.7"/>
 </g>
 <!-- n2&%2345;&%2345;n7 -->
 <g id="edge5" class="edge">
 <title>n2&%2345;&%2345;n7</title>
-<path fill="none" stroke="black" d="M19.05,-160.41C17.29,-166.07 15.53,-171.73 14.53,-174.95"/>
+<path fill="none" stroke="black" d="M19.17,-161.03C17.37,-166.58 15.58,-172.07 14.56,-175.19"/>
 </g>
 <!-- n3 -->
 <!-- n3&%2345;&%2345;n5 -->
 <g id="edge2" class="edge">
 <title>n3&%2345;&%2345;n5</title>
-<path fill="none" stroke="black" d="M44.19,-1.38C43.55,-5.84 40.67,-26.01 39.62,-33.42"/>
+<path fill="none" stroke="black" d="M44.27,-1.12C43.82,-4.31 40.84,-25.61 39.74,-33.48"/>
 </g>
 <!-- n4 -->
 <!-- n4&%2345;&%2345;n7 -->
 <g id="edge6" class="edge">
 <title>n4&%2345;&%2345;n7</title>
-<path fill="none" stroke="black" d="M0.83,-210.41C2.48,-206.21 9.94,-187.21 12.68,-180.24"/>
+<path fill="none" stroke="black" d="M0.51,-210.95C1.7,-207.96 9.67,-187.95 12.62,-180.55"/>
 </g>
 </g>
 </svg>
@@ -1146,103 +1146,103 @@ end
 to_graphviz(diagram, box_labels=:name)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<!-- Generated by graphviz version 2.43.0 (0)
+<!-- Generated by graphviz version 15.1.0 (20260618.0150)
  -->
 <!-- Title: G Pages: 1 -->
 <svg width="206pt" height="191pt"
- viewBox="0.00 0.00 206.31 190.88" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 186.88)">
+ viewBox="0.00 0.00 206.00 191.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 187.37)">
 <title>G</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-186.88 202.31,-186.88 202.31,4 -4,4"/>
+<polygon fill="white" stroke="none" points="-4,4 -4,-187.37 202.15,-187.37 202.15,4 -4,4"/>
 <!-- n1 -->
 <g id="box1" class="node">
 <title>n1</title>
-<ellipse fill="none" stroke="black" cx="68.15" cy="-130.83" rx="18" ry="18"/>
-<text text-anchor="middle" x="68.15" y="-127.13" font-family="Serif" font-size="14.00">R</text>
+<ellipse fill="none" stroke="black" cx="68.14" cy="-131.1" rx="18" ry="18"/>
+<text xml:space="preserve" text-anchor="middle" x="68.14" y="-126.43" font-family="Serif" font-size="14.00">R</text>
 </g>
 <!-- n7 -->
 <!-- junction -->
 <g id="junction1" class="node">
 <title>n7</title>
-<ellipse fill="black" stroke="black" cx="105.05" cy="-114.52" rx="2.5" ry="2.5"/>
+<ellipse fill="black" stroke="black" cx="105.04" cy="-114.79" rx="2.7" ry="2.7"/>
 </g>
 <!-- n1&%2345;&%2345;n7 -->
 <g id="edge1" class="edge">
 <title>n1&%2345;&%2345;n7</title>
-<path fill="none" stroke="black" d="M84.87,-123.44C91.59,-120.47 98.61,-117.37 102.34,-115.72"/>
+<path fill="none" stroke="black" d="M84.86,-123.71C91.57,-120.74 98.59,-117.64 102.32,-115.99"/>
 </g>
 <!-- n8 -->
 <!-- junction -->
 <g id="junction2" class="node">
 <title>n8</title>
-<ellipse fill="black" stroke="black" cx="33.49" cy="-145.83" rx="2.5" ry="2.5"/>
+<ellipse fill="black" stroke="black" cx="33.5" cy="-146.14" rx="2.7" ry="2.7"/>
 </g>
 <!-- n1&%2345;&%2345;n8 -->
 <g id="edge4" class="edge">
 <title>n1&%2345;&%2345;n8</title>
-<path fill="none" stroke="black" d="M51.23,-138.15C45.18,-140.77 39.07,-143.42 35.84,-144.82"/>
+<path fill="none" stroke="black" d="M51.22,-138.44C45.45,-140.95 39.62,-143.48 36.29,-144.93"/>
 </g>
 <!-- n2 -->
 <g id="box2" class="node">
 <title>n2</title>
-<ellipse fill="none" stroke="black" cx="137.64" cy="-138.32" rx="18" ry="18"/>
-<text text-anchor="middle" x="137.64" y="-134.62" font-family="Serif" font-size="14.00">S</text>
+<ellipse fill="none" stroke="black" cx="137.61" cy="-138.6" rx="18" ry="18"/>
+<text xml:space="preserve" text-anchor="middle" x="137.61" y="-133.92" font-family="Serif" font-size="14.00">S</text>
 </g>
 <!-- n2&%2345;&%2345;n7 -->
 <g id="edge2" class="edge">
 <title>n2&%2345;&%2345;n7</title>
-<path fill="none" stroke="black" d="M122.87,-127.53C116.94,-123.21 110.74,-118.68 107.45,-116.27"/>
+<path fill="none" stroke="black" d="M122.85,-127.81C116.92,-123.48 110.73,-118.95 107.43,-116.54"/>
 </g>
 <!-- n9 -->
 <!-- junction -->
 <g id="junction3" class="node">
 <title>n9</title>
-<ellipse fill="black" stroke="black" cx="168.15" cy="-160.58" rx="2.5" ry="2.5"/>
+<ellipse fill="black" stroke="black" cx="168.12" cy="-160.86" rx="2.7" ry="2.7"/>
 </g>
 <!-- n2&%2345;&%2345;n9 -->
 <g id="edge6" class="edge">
 <title>n2&%2345;&%2345;n9</title>
-<path fill="none" stroke="black" d="M152.53,-149.19C157.86,-153.07 163.24,-157 166.09,-159.07"/>
+<path fill="none" stroke="black" d="M152.51,-149.47C157.59,-153.18 162.72,-156.93 165.65,-159.07"/>
 </g>
 <!-- n3 -->
 <g id="box3" class="node">
 <title>n3</title>
-<ellipse fill="none" stroke="black" cx="109.35" cy="-74.41" rx="18" ry="18"/>
-<text text-anchor="middle" x="109.35" y="-70.71" font-family="Serif" font-size="14.00">T</text>
+<ellipse fill="none" stroke="black" cx="109.36" cy="-74.68" rx="18" ry="18"/>
+<text xml:space="preserve" text-anchor="middle" x="109.36" y="-70.01" font-family="Serif" font-size="14.00">T</text>
 </g>
 <!-- n3&%2345;&%2345;n7 -->
 <g id="edge3" class="edge">
 <title>n3&%2345;&%2345;n7</title>
-<path fill="none" stroke="black" d="M107.4,-92.59C106.6,-100.05 105.77,-107.86 105.34,-111.85"/>
+<path fill="none" stroke="black" d="M107.4,-92.86C106.61,-100.16 105.79,-107.79 105.35,-111.84"/>
 </g>
 <!-- n10 -->
 <!-- junction -->
 <g id="junction4" class="node">
 <title>n10</title>
-<ellipse fill="black" stroke="black" cx="112.97" cy="-36.81" rx="2.5" ry="2.5"/>
+<ellipse fill="black" stroke="black" cx="113.06" cy="-37.1" rx="2.7" ry="2.7"/>
 </g>
 <!-- n3&%2345;&%2345;n10 -->
 <g id="edge8" class="edge">
 <title>n3&%2345;&%2345;n10</title>
-<path fill="none" stroke="black" d="M111.07,-56.49C111.72,-49.83 112.37,-43.03 112.72,-39.43"/>
+<path fill="none" stroke="black" d="M111.16,-56.33C111.78,-50.07 112.4,-43.74 112.76,-40.13"/>
 </g>
 <!-- n4 -->
 <!-- n4&%2345;&%2345;n8 -->
 <g id="edge5" class="edge">
 <title>n4&%2345;&%2345;n8</title>
-<path fill="none" stroke="black" d="M1.32,-161.76C5.44,-159.72 24.11,-150.48 30.96,-147.09"/>
+<path fill="none" stroke="black" d="M0.46,-162.13C2.06,-161.35 23.67,-150.9 31.05,-147.33"/>
 </g>
 <!-- n5 -->
 <!-- n5&%2345;&%2345;n9 -->
 <g id="edge7" class="edge">
 <title>n5&%2345;&%2345;n9</title>
-<path fill="none" stroke="black" d="M197.07,-181.84C193.36,-179.12 176.59,-166.78 170.43,-162.25"/>
+<path fill="none" stroke="black" d="M197.46,-182.41C194.81,-180.46 177.1,-167.46 170.55,-162.65"/>
 </g>
 <!-- n6 -->
 <!-- n6&%2345;&%2345;n10 -->
 <g id="edge9" class="edge">
 <title>n6&%2345;&%2345;n10</title>
-<path fill="none" stroke="black" d="M118.93,-1.4C118.17,-5.94 114.71,-26.48 113.44,-34.02"/>
+<path fill="none" stroke="black" d="M118.68,-1.13C118.17,-4.38 114.78,-26.09 113.52,-34.12"/>
 </g>
 </g>
 </svg>
@@ -1250,107 +1250,107 @@ to_graphviz(diagram, box_labels=:name)</code></pre><img src='data:image/svg+xml;
             port_labels=false, junction_labels=:variable)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<!-- Generated by graphviz version 2.43.0 (0)
+<!-- Generated by graphviz version 15.1.0 (20260618.0150)
  -->
 <!-- Title: G Pages: 1 -->
 <svg width="206pt" height="191pt"
- viewBox="0.00 0.00 206.31 190.88" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 186.88)">
+ viewBox="0.00 0.00 206.00 191.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 187.37)">
 <title>G</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-186.88 202.31,-186.88 202.31,4 -4,4"/>
+<polygon fill="white" stroke="none" points="-4,4 -4,-187.37 202.15,-187.37 202.15,4 -4,4"/>
 <!-- n1 -->
 <g id="box1" class="node">
 <title>n1</title>
-<ellipse fill="none" stroke="black" cx="68.15" cy="-130.83" rx="18" ry="18"/>
-<text text-anchor="middle" x="68.15" y="-127.13" font-family="Serif" font-size="14.00">R</text>
+<ellipse fill="none" stroke="black" cx="68.14" cy="-131.1" rx="18" ry="18"/>
+<text xml:space="preserve" text-anchor="middle" x="68.14" y="-126.43" font-family="Serif" font-size="14.00">R</text>
 </g>
 <!-- n7 -->
 <!-- junction -->
 <g id="junction1" class="node">
 <title>n7</title>
-<ellipse fill="black" stroke="black" cx="105.05" cy="-114.52" rx="2.5" ry="2.5"/>
-<text text-anchor="middle" x="96.05" y="-120.82" font-family="Serif" font-size="14.00">w</text>
+<ellipse fill="black" stroke="black" cx="105.04" cy="-114.79" rx="2.7" ry="2.7"/>
+<text xml:space="preserve" text-anchor="middle" x="96.34" y="-121.44" font-family="Serif" font-size="14.00">w</text>
 </g>
 <!-- n1&%2345;&%2345;n7 -->
 <g id="edge1" class="edge">
 <title>n1&%2345;&%2345;n7</title>
-<path fill="none" stroke="black" d="M84.87,-123.44C91.59,-120.47 98.61,-117.37 102.34,-115.72"/>
+<path fill="none" stroke="black" d="M84.86,-123.71C91.57,-120.74 98.59,-117.64 102.32,-115.99"/>
 </g>
 <!-- n8 -->
 <!-- junction -->
 <g id="junction2" class="node">
 <title>n8</title>
-<ellipse fill="black" stroke="black" cx="33.49" cy="-145.83" rx="2.5" ry="2.5"/>
-<text text-anchor="middle" x="26.49" y="-152.13" font-family="Serif" font-size="14.00">x</text>
+<ellipse fill="black" stroke="black" cx="33.5" cy="-146.14" rx="2.7" ry="2.7"/>
+<text xml:space="preserve" text-anchor="middle" x="26.67" y="-152.79" font-family="Serif" font-size="14.00">x</text>
 </g>
 <!-- n1&%2345;&%2345;n8 -->
 <g id="edge4" class="edge">
 <title>n1&%2345;&%2345;n8</title>
-<path fill="none" stroke="black" d="M51.23,-138.15C45.18,-140.77 39.07,-143.42 35.84,-144.82"/>
+<path fill="none" stroke="black" d="M51.22,-138.44C45.45,-140.95 39.62,-143.48 36.29,-144.93"/>
 </g>
 <!-- n2 -->
 <g id="box2" class="node">
 <title>n2</title>
-<ellipse fill="none" stroke="black" cx="137.64" cy="-138.32" rx="18" ry="18"/>
-<text text-anchor="middle" x="137.64" y="-134.62" font-family="Serif" font-size="14.00">S</text>
+<ellipse fill="none" stroke="black" cx="137.61" cy="-138.6" rx="18" ry="18"/>
+<text xml:space="preserve" text-anchor="middle" x="137.61" y="-133.92" font-family="Serif" font-size="14.00">S</text>
 </g>
 <!-- n2&%2345;&%2345;n7 -->
 <g id="edge2" class="edge">
 <title>n2&%2345;&%2345;n7</title>
-<path fill="none" stroke="black" d="M122.87,-127.53C116.94,-123.21 110.74,-118.68 107.45,-116.27"/>
+<path fill="none" stroke="black" d="M122.85,-127.81C116.92,-123.48 110.73,-118.95 107.43,-116.54"/>
 </g>
 <!-- n9 -->
 <!-- junction -->
 <g id="junction3" class="node">
 <title>n9</title>
-<ellipse fill="black" stroke="black" cx="168.15" cy="-160.58" rx="2.5" ry="2.5"/>
-<text text-anchor="middle" x="161.15" y="-166.88" font-family="Serif" font-size="14.00">y</text>
+<ellipse fill="black" stroke="black" cx="168.12" cy="-160.86" rx="2.7" ry="2.7"/>
+<text xml:space="preserve" text-anchor="middle" x="161.29" y="-167.51" font-family="Serif" font-size="14.00">y</text>
 </g>
 <!-- n2&%2345;&%2345;n9 -->
 <g id="edge6" class="edge">
 <title>n2&%2345;&%2345;n9</title>
-<path fill="none" stroke="black" d="M152.53,-149.19C157.86,-153.07 163.24,-157 166.09,-159.07"/>
+<path fill="none" stroke="black" d="M152.51,-149.47C157.59,-153.18 162.72,-156.93 165.65,-159.07"/>
 </g>
 <!-- n3 -->
 <g id="box3" class="node">
 <title>n3</title>
-<ellipse fill="none" stroke="black" cx="109.35" cy="-74.41" rx="18" ry="18"/>
-<text text-anchor="middle" x="109.35" y="-70.71" font-family="Serif" font-size="14.00">T</text>
+<ellipse fill="none" stroke="black" cx="109.36" cy="-74.68" rx="18" ry="18"/>
+<text xml:space="preserve" text-anchor="middle" x="109.36" y="-70.01" font-family="Serif" font-size="14.00">T</text>
 </g>
 <!-- n3&%2345;&%2345;n7 -->
 <g id="edge3" class="edge">
 <title>n3&%2345;&%2345;n7</title>
-<path fill="none" stroke="black" d="M107.4,-92.59C106.6,-100.05 105.77,-107.86 105.34,-111.85"/>
+<path fill="none" stroke="black" d="M107.4,-92.86C106.61,-100.16 105.79,-107.79 105.35,-111.84"/>
 </g>
 <!-- n10 -->
 <!-- junction -->
 <g id="junction4" class="node">
 <title>n10</title>
-<ellipse fill="black" stroke="black" cx="112.97" cy="-36.81" rx="2.5" ry="2.5"/>
-<text text-anchor="middle" x="106.47" y="-43.11" font-family="Serif" font-size="14.00">z</text>
+<ellipse fill="black" stroke="black" cx="113.06" cy="-37.1" rx="2.7" ry="2.7"/>
+<text xml:space="preserve" text-anchor="middle" x="106.61" y="-43.75" font-family="Serif" font-size="14.00">z</text>
 </g>
 <!-- n3&%2345;&%2345;n10 -->
 <g id="edge8" class="edge">
 <title>n3&%2345;&%2345;n10</title>
-<path fill="none" stroke="black" d="M111.07,-56.49C111.72,-49.83 112.37,-43.03 112.72,-39.43"/>
+<path fill="none" stroke="black" d="M111.16,-56.33C111.78,-50.07 112.4,-43.74 112.76,-40.13"/>
 </g>
 <!-- n4 -->
 <!-- n4&%2345;&%2345;n8 -->
 <g id="edge5" class="edge">
 <title>n4&%2345;&%2345;n8</title>
-<path fill="none" stroke="black" d="M1.32,-161.76C5.44,-159.72 24.11,-150.48 30.96,-147.09"/>
+<path fill="none" stroke="black" d="M0.46,-162.13C2.06,-161.35 23.67,-150.9 31.05,-147.33"/>
 </g>
 <!-- n5 -->
 <!-- n5&%2345;&%2345;n9 -->
 <g id="edge7" class="edge">
 <title>n5&%2345;&%2345;n9</title>
-<path fill="none" stroke="black" d="M197.07,-181.84C193.36,-179.12 176.59,-166.78 170.43,-162.25"/>
+<path fill="none" stroke="black" d="M197.46,-182.41C194.81,-180.46 177.1,-167.46 170.55,-162.65"/>
 </g>
 <!-- n6 -->
 <!-- n6&%2345;&%2345;n10 -->
 <g id="edge9" class="edge">
 <title>n6&%2345;&%2345;n10</title>
-<path fill="none" stroke="black" d="M118.93,-1.4C118.17,-5.94 114.71,-26.48 113.44,-34.02"/>
+<path fill="none" stroke="black" d="M118.68,-1.13C118.17,-4.38 114.78,-26.09 113.52,-34.12"/>
 </g>
 </g>
 </svg>
@@ -1358,70 +1358,70 @@ to_graphviz(diagram, box_labels=:name)</code></pre><img src='data:image/svg+xml;
             port_labels=false, implicit_junctions=true)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<!-- Generated by graphviz version 2.43.0 (0)
+<!-- Generated by graphviz version 15.1.0 (20260618.0150)
  -->
 <!-- Title: G Pages: 1 -->
 <svg width="139pt" height="135pt"
- viewBox="0.00 0.00 139.34 134.56" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 130.56)">
+ viewBox="0.00 0.00 139.00 135.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 130.99)">
 <title>G</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-130.56 135.34,-130.56 135.34,4 -4,4"/>
+<polygon fill="white" stroke="none" points="-4,4 -4,-130.99 135.05,-130.99 135.05,4 -4,4"/>
 <!-- n1 -->
 <g id="box1" class="node">
 <title>n1</title>
-<ellipse fill="none" stroke="black" cx="35.42" cy="-88.53" rx="18" ry="18"/>
-<text text-anchor="middle" x="35.42" y="-84.83" font-family="Serif" font-size="14.00">R</text>
+<ellipse fill="none" stroke="black" cx="35.27" cy="-88.74" rx="18" ry="18"/>
+<text xml:space="preserve" text-anchor="middle" x="35.27" y="-84.06" font-family="Serif" font-size="14.00">R</text>
 </g>
 <!-- n4 -->
 <!-- n1&%2345;&%2345;n4 -->
 <g id="edge4" class="edge">
 <title>n1&%2345;&%2345;n4</title>
-<path fill="none" stroke="black" d="M18.37,-94.74C11.17,-97.36 3.87,-100.02 1.39,-100.92"/>
+<path fill="none" stroke="black" d="M18.22,-94.97C9.92,-98 1.48,-101.08 0.46,-101.46"/>
 </g>
 <!-- n7 -->
 <!-- junction -->
 <g id="junction1" class="node">
 <title>n7</title>
-<ellipse fill="black" stroke="black" cx="72.89" cy="-75.73" rx="2.5" ry="2.5"/>
+<ellipse fill="black" stroke="black" cx="72.73" cy="-75.94" rx="2.7" ry="2.7"/>
 </g>
 <!-- n1&%2345;&%2345;n7 -->
 <g id="edge1" class="edge">
 <title>n1&%2345;&%2345;n7</title>
-<path fill="none" stroke="black" d="M52.84,-82.58C59.56,-80.28 66.52,-77.9 70.21,-76.64"/>
+<path fill="none" stroke="black" d="M52.69,-82.79C59.26,-80.54 66.05,-78.22 69.8,-76.94"/>
 </g>
 <!-- n2 -->
 <g id="box2" class="node">
 <title>n2</title>
-<ellipse fill="none" stroke="black" cx="102.77" cy="-101.68" rx="18" ry="18"/>
-<text text-anchor="middle" x="102.77" y="-97.98" font-family="Serif" font-size="14.00">S</text>
+<ellipse fill="none" stroke="black" cx="102.62" cy="-101.89" rx="18" ry="18"/>
+<text xml:space="preserve" text-anchor="middle" x="102.62" y="-97.22" font-family="Serif" font-size="14.00">S</text>
 </g>
 <!-- n5 -->
 <!-- n2&%2345;&%2345;n5 -->
 <g id="edge5" class="edge">
 <title>n2&%2345;&%2345;n5</title>
-<path fill="none" stroke="black" d="M116.48,-113.58C122.27,-118.61 128.13,-123.7 130.13,-125.44"/>
+<path fill="none" stroke="black" d="M116.33,-113.8C122.56,-119.21 128.88,-124.7 130.36,-125.98"/>
 </g>
 <!-- n2&%2345;&%2345;n7 -->
 <g id="edge2" class="edge">
 <title>n2&%2345;&%2345;n7</title>
-<path fill="none" stroke="black" d="M88.88,-89.62C83.51,-84.96 77.97,-80.14 75.02,-77.58"/>
+<path fill="none" stroke="black" d="M88.73,-89.83C83.36,-85.17 77.82,-80.35 74.87,-77.8"/>
 </g>
 <!-- n3 -->
 <g id="box3" class="node">
 <title>n3</title>
-<ellipse fill="none" stroke="black" cx="80.29" cy="-36.83" rx="18" ry="18"/>
-<text text-anchor="middle" x="80.29" y="-33.13" font-family="Serif" font-size="14.00">T</text>
+<ellipse fill="none" stroke="black" cx="80.13" cy="-37.04" rx="18" ry="18"/>
+<text xml:space="preserve" text-anchor="middle" x="80.13" y="-32.37" font-family="Serif" font-size="14.00">T</text>
 </g>
 <!-- n6 -->
 <!-- n3&%2345;&%2345;n6 -->
 <g id="edge6" class="edge">
 <title>n3&%2345;&%2345;n6</title>
-<path fill="none" stroke="black" d="M84.12,-19.09C85.8,-11.31 87.5,-3.42 87.99,-1.15"/>
+<path fill="none" stroke="black" d="M83.98,-19.31C85.67,-11.53 87.38,-3.64 87.87,-1.37"/>
 </g>
 <!-- n3&%2345;&%2345;n7 -->
 <g id="edge3" class="edge">
 <title>n3&%2345;&%2345;n7</title>
-<path fill="none" stroke="black" d="M76.85,-54.91C75.49,-62.05 74.08,-69.44 73.37,-73.2"/>
+<path fill="none" stroke="black" d="M76.69,-55.12C75.4,-61.95 74.06,-69 73.31,-72.89"/>
 </g>
 </g>
 </svg>
@@ -1444,55 +1444,55 @@ to_graphviz(compose(f,g),
 )</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<!-- Generated by graphviz version 2.43.0 (0)
+<!-- Generated by graphviz version 15.1.0 (20260618.0150)
  -->
 <!-- Title: G Pages: 1 -->
-<svg width="33pt" height="168pt"
- viewBox="0.00 0.00 32.95 168.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 164)">
+<svg width="33pt" height="173pt"
+ viewBox="0.00 0.00 33.00 173.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 169.38)">
 <title>G</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-164 28.95,-164 28.95,4 -4,4"/>
+<polygon fill="white" stroke="none" points="-4,4 -4,-169.38 28.58,-169.38 28.58,4 -4,4"/>
 <!-- n0in1 -->
 <!-- n1 -->
 <!-- f -->
 <g id="n1" class="node">
 <title>n1</title>
-<polygon fill="lavender" stroke="transparent" points="0.95,-97.5 0.95,-122.5 24.95,-122.5 24.95,-97.5 0.95,-97.5"/>
-<polygon fill="none" stroke="black" points="0.95,-97.5 0.95,-122.5 24.95,-122.5 24.95,-97.5 0.95,-97.5"/>
-<text text-anchor="start" x="8.45" y="-106.3" font-family="Courier,monospace" font-size="14.00">f</text>
+<polygon fill="lavender" stroke="none" points="0.58,-100.69 0.58,-127.94 24.58,-127.94 24.58,-100.69 0.58,-100.69"/>
+<polygon fill="none" stroke="black" points="0.58,-100.69 0.58,-127.94 24.58,-127.94 24.58,-100.69 0.58,-100.69"/>
+<text xml:space="preserve" text-anchor="start" x="8.45" y="-109.44" font-family="Courier,monospace" font-size="14.00">f</text>
 </g>
 <!-- n0in1&%2345;&gt;n1 -->
 <!-- A -->
 <g id="e1" class="edge">
 <title>n0in1:s&%2345;&gt;n1:n</title>
-<path fill="none" stroke="black" d="M12.95,-159C12.95,-144.88 12.95,-140.1 12.95,-128.17"/>
-<polygon fill="black" stroke="black" points="14.7,-128 12.95,-123 11.2,-128 14.7,-128"/>
-<text text-anchor="middle" x="4.5" y="-137.43" font-family="Courier,monospace" font-size="14.00">A</text>
+<path fill="none" stroke="black" d="M12.58,-163.94C12.58,-150.31 12.58,-145.39 12.58,-134.35"/>
+<polygon fill="black" stroke="black" points="14.33,-134.45 12.58,-129.45 10.83,-134.45 14.33,-134.45"/>
+<text xml:space="preserve" text-anchor="middle" x="4.12" y="-141.39" font-family="Courier,monospace" font-size="14.00">A</text>
 </g>
 <!-- n0out1 -->
 <!-- n2 -->
 <!-- g -->
 <g id="n2" class="node">
 <title>n2</title>
-<polygon fill="lavender" stroke="transparent" points="0.95,-36.5 0.95,-61.5 24.95,-61.5 24.95,-36.5 0.95,-36.5"/>
-<polygon fill="none" stroke="black" points="0.95,-36.5 0.95,-61.5 24.95,-61.5 24.95,-36.5 0.95,-36.5"/>
-<text text-anchor="start" x="8.45" y="-45.3" font-family="Courier,monospace" font-size="14.00">g</text>
+<polygon fill="lavender" stroke="none" points="0.58,-37.44 0.58,-64.69 24.58,-64.69 24.58,-37.44 0.58,-37.44"/>
+<polygon fill="none" stroke="black" points="0.58,-37.44 0.58,-64.69 24.58,-64.69 24.58,-37.44 0.58,-37.44"/>
+<text xml:space="preserve" text-anchor="start" x="8.45" y="-46.19" font-family="Courier,monospace" font-size="14.00">g</text>
 </g>
 <!-- n1&%2345;&gt;n2 -->
 <!-- B -->
 <g id="e2" class="edge">
 <title>n1:s&%2345;&gt;n2:n</title>
-<path fill="none" stroke="black" d="M12.95,-98C12.95,-83.88 12.95,-79.1 12.95,-67.17"/>
-<polygon fill="black" stroke="black" points="14.7,-67 12.95,-62 11.2,-67 14.7,-67"/>
-<text text-anchor="middle" x="4.5" y="-76.43" font-family="Courier,monospace" font-size="14.00">B</text>
+<path fill="none" stroke="black" d="M12.58,-100.69C12.58,-87.06 12.58,-82.14 12.58,-71.1"/>
+<polygon fill="black" stroke="black" points="14.33,-71.2 12.58,-66.2 10.83,-71.2 14.33,-71.2"/>
+<text xml:space="preserve" text-anchor="middle" x="4.12" y="-78.14" font-family="Courier,monospace" font-size="14.00">B</text>
 </g>
 <!-- n2&%2345;&gt;n0out1 -->
 <!-- C -->
 <g id="e3" class="edge">
 <title>n2:s&%2345;&gt;n0out1:n</title>
-<path fill="none" stroke="black" d="M12.95,-37C12.95,-22.88 12.95,-18.1 12.95,-6.17"/>
-<polygon fill="black" stroke="black" points="14.7,-6 12.95,-1 11.2,-6 14.7,-6"/>
-<text text-anchor="middle" x="4.5" y="-15.43" font-family="Courier,monospace" font-size="14.00">C</text>
+<path fill="none" stroke="black" d="M12.58,-37.44C12.58,-23.81 12.58,-18.89 12.58,-7.85"/>
+<polygon fill="black" stroke="black" points="14.33,-7.95 12.58,-2.95 10.83,-7.95 14.33,-7.95"/>
+<text xml:space="preserve" text-anchor="middle" x="4.12" y="-14.89" font-family="Courier,monospace" font-size="14.00">C</text>
 </g>
 </g>
 </svg>
@@ -1534,9 +1534,9 @@ JSON3.read(Graphviz.run_graphviz(graph, format=&quot;json0&quot;))</code></pre><
   :name          =&gt; &quot;G&quot;
   :directed      =&gt; true
   :strict        =&gt; false
-  :bb            =&gt; &quot;0,0,24,160&quot;
+  :bb            =&gt; &quot;0,0,24,165.38&quot;
   :fontname      =&gt; &quot;Serif&quot;
   :rankdir       =&gt; &quot;TB&quot;
   :_subgraph_cnt =&gt; 2
   :objects       =&gt; Object[{…
-  :edges         =&gt; Object[{…</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../graphviz_graphs/">« Drawing graphs in Graphviz</a><a class="docs-footer-nextpage" href="../composejl_wiring_diagrams/">Drawing wiring diagrams in Compose.jl »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Thursday 2 July 2026 15:37">Thursday 2 July 2026</span>. Using Julia version 1.12.6.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+  :edges         =&gt; Object[{…</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../graphviz_graphs/">« Drawing graphs in Graphviz</a><a class="docs-footer-nextpage" href="../composejl_wiring_diagrams/">Drawing wiring diagrams in Compose.jl »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.20.0 on <span class="colophon-date" title="Monday 23 November 2026 22:51">Monday 23 November 2026</span>. Using Julia version 1.13.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

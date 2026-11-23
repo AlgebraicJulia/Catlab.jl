@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Symmetric Monoidal Categories · Catlab.jl</title><meta name="title" content="Symmetric Monoidal Categories · Catlab.jl"/><meta property="og:title" content="Symmetric Monoidal Categories · Catlab.jl"/><meta property="twitter:title" content="Symmetric Monoidal Categories · Catlab.jl"/><meta name="description" content="Documentation for Catlab.jl."/><meta property="og:description" content="Documentation for Catlab.jl."/><meta property="twitter:description" content="Documentation for Catlab.jl."/><script data-outdated-warner src="../../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../search_index.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../assets/themeswap.js"></script><script src="../../../assets/analytics.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../../"><img src="../../../assets/logo.svg" alt="Catlab.jl logo"/></a><div class="docs-package-name"><span class="docs-autofit"><a href="../../../">Catlab.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../../">Catlab.jl</a></li><li><span class="tocitem">Vignettes</span><ul><li><input class="collapse-toggle" id="menuitem-2-1" type="checkbox" checked/><label class="tocitem" for="menuitem-2-1"><span class="docs-label">Seven Sketches in Compositionality</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../partitions/">Partitions</a></li><li><a class="tocitem" href="../preorders/">Preorders</a></li><li><a class="tocitem" href="../meets/">Meets in Preorders</a></li><li class="is-active"><a class="tocitem" href>Symmetric Monoidal Categories</a><ul class="internal"><li><a class="tocitem" href="#Definition"><span>Definition</span></a></li><li><a class="tocitem" href="#Presentations"><span>Presentations</span></a></li><li><a class="tocitem" href="#The-Program-Macro"><span>The Program Macro</span></a></li></ul></li><li><a class="tocitem" href="../cat_elements/">The Category of Elements</a></li><li><a class="tocitem" href="../sheaves/">Basic Sheaf Constructions</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-2" type="checkbox"/><label class="tocitem" for="menuitem-2-2"><span class="docs-label">Graphs</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../graphs/graphs/">The Category of Graphs</a></li><li><a class="tocitem" href="../../graphs/graphs_label/">Labeled Graphs</a></li><li><a class="tocitem" href="../../graphs/subgraphs/">Algebra of subgraphs</a></li></ul></li><li><span class="tocitem">Categorical Algebra</span></li><li><input class="collapse-toggle" id="menuitem-2-4" type="checkbox"/><label class="tocitem" for="menuitem-2-4"><span class="docs-label">Wiring Diagrams</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../wiring_diagrams/wiring_diagram_basics/">Basics of wiring diagrams</a></li><li><a class="tocitem" href="../../wiring_diagrams/diagrams_and_expressions/">Wiring diagrams and syntactic expressions</a></li><li><a class="tocitem" href="../../wiring_diagrams/wd_cset/">Wiring Diagrams as Attributed C-Sets</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-5" type="checkbox"/><label class="tocitem" for="menuitem-2-5"><span class="docs-label">Graphics</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../graphics/graphviz_graphs/">Drawing graphs in Graphviz</a></li><li><a class="tocitem" href="../../graphics/graphviz_wiring_diagrams/">Drawing wiring diagrams in Graphviz</a></li><li><a class="tocitem" href="../../graphics/composejl_wiring_diagrams/">Drawing wiring diagrams in Compose.jl</a></li><li><a class="tocitem" href="../../graphics/tikz_wiring_diagrams/">Drawing wiring diagrams in TikZ</a></li><li><a class="tocitem" href="../../graphics/layouts_vs_drawings/">Layouts versus drawings of wiring diagrams</a></li></ul></li></ul></li><li><span class="tocitem">Modules</span><ul><li><a class="tocitem" href="../../../apis/theories/">Standard library of theories</a></li><li><a class="tocitem" href="../../../apis/categorical_algebra/">Categorical algebra</a></li><li><a class="tocitem" href="../../../apis/graphs/">Graphs</a></li><li><a class="tocitem" href="../../../apis/wiring_diagrams/">Wiring diagrams</a></li><li><a class="tocitem" href="../../../apis/graphics/">Graphics</a></li><li><a class="tocitem" href="../../../apis/programs/">Programs</a></li><li><a class="tocitem" href="../../../apis/sheaves/">Sheaves</a></li></ul></li><li><span class="tocitem">Developer Docs</span><ul><li><a class="tocitem" href="../../../devdocs/release/">Release Notes</a></li><li><a class="tocitem" href="../../../devdocs/style/">Style Guide for AlgebraicJulia</a></li><li><a class="tocitem" href="../../peg-parser/dsl_peg_tutorial/">Domain Specific Parsing Expression Grammars</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Vignettes</a></li><li><a class="is-disabled">Seven Sketches in Compositionality</a></li><li class="is-active"><a href>Symmetric Monoidal Categories</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Symmetric Monoidal Categories</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/Catlab.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/Catlab.jl/blob/main/docs/literate/sketches/smc.jl" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Symmetric-Monoidal-Categories"><a class="docs-heading-anchor" href="#Symmetric-Monoidal-Categories">Symmetric Monoidal Categories</a><a id="Symmetric-Monoidal-Categories-1"></a><a class="docs-heading-anchor-permalink" href="#Symmetric-Monoidal-Categories" title="Permalink"></a></h1><p><a href="https://nbviewer.jupyter.org/github/AlgebraicJulia/Catlab.jl/blob/gh-pages/dev/generated/sketches/smc.ipynb"><img src="https://img.shields.io/badge/show-nbviewer-579ACA.svg" alt/></a></p><p>This vignette supports section 4.4.3 of Seven Sketches in Compositionality, which introduces the definition of symmetric monoidal categories (SMCs). SMCs are a core concept in applied category theory and are a workhorse of Catlab&#39;s utility in computing applications. We will discuss the definition as a GAT, see examples of working with formulas, and conversions to wiring diagrams (sometimes called string diagrams). SMCs are useful for modeling mathematical structures like programs or processes where the objects represent data or things and the morphisms represent processes that happen to those things.</p><pre><code class="language-julia hljs">using GATlab, Catlab.Theories
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><meta name="referrer" content="no-referrer"/><title>Symmetric Monoidal Categories · Catlab.jl</title><meta name="title" content="Symmetric Monoidal Categories · Catlab.jl"/><meta property="og:title" content="Symmetric Monoidal Categories · Catlab.jl"/><meta property="twitter:title" content="Symmetric Monoidal Categories · Catlab.jl"/><meta name="description" content="Documentation for Catlab.jl."/><meta property="og:description" content="Documentation for Catlab.jl."/><meta property="twitter:description" content="Documentation for Catlab.jl."/><script data-outdated-warner src="../../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.63.2/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../search_index.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../assets/themeswap.js"></script><script src="../../../assets/analytics.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../../"><img src="../../../assets/logo.svg" alt="Catlab.jl logo"/></a><div class="docs-package-name"><span class="docs-autofit"><a href="../../../">Catlab.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../../">Catlab.jl</a></li><li><span class="tocitem">Vignettes</span><ul><li><input class="collapse-toggle" id="menuitem-2-1" type="checkbox" checked/><label class="tocitem" for="menuitem-2-1"><span class="docs-label">Seven Sketches in Compositionality</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../partitions/">Partitions</a></li><li><a class="tocitem" href="../preorders/">Preorders</a></li><li><a class="tocitem" href="../meets/">Meets in Preorders</a></li><li class="is-active"><a class="tocitem" href>Symmetric Monoidal Categories</a><ul class="internal"><li><a class="tocitem" href="#Definition"><span>Definition</span></a></li><li><a class="tocitem" href="#Presentations"><span>Presentations</span></a></li><li><a class="tocitem" href="#The-Program-Macro"><span>The Program Macro</span></a></li></ul></li><li><a class="tocitem" href="../cat_elements/">The Category of Elements</a></li><li><a class="tocitem" href="../sheaves/">Basic Sheaf Constructions</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-2" type="checkbox"/><label class="tocitem" for="menuitem-2-2"><span class="docs-label">Graphs</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../graphs/graphs/">The Category of Graphs</a></li><li><a class="tocitem" href="../../graphs/graphs_label/">Labeled Graphs</a></li><li><a class="tocitem" href="../../graphs/subgraphs/">Algebra of subgraphs</a></li></ul></li><li><span class="tocitem">Categorical Algebra</span></li><li><input class="collapse-toggle" id="menuitem-2-4" type="checkbox"/><label class="tocitem" for="menuitem-2-4"><span class="docs-label">Wiring Diagrams</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../wiring_diagrams/wiring_diagram_basics/">Basics of wiring diagrams</a></li><li><a class="tocitem" href="../../wiring_diagrams/diagrams_and_expressions/">Wiring diagrams and syntactic expressions</a></li><li><a class="tocitem" href="../../wiring_diagrams/wd_cset/">Wiring Diagrams as Attributed C-Sets</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-5" type="checkbox"/><label class="tocitem" for="menuitem-2-5"><span class="docs-label">Graphics</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../graphics/graphviz_graphs/">Drawing graphs in Graphviz</a></li><li><a class="tocitem" href="../../graphics/graphviz_wiring_diagrams/">Drawing wiring diagrams in Graphviz</a></li><li><a class="tocitem" href="../../graphics/composejl_wiring_diagrams/">Drawing wiring diagrams in Compose.jl</a></li><li><a class="tocitem" href="../../graphics/tikz_wiring_diagrams/">Drawing wiring diagrams in TikZ</a></li><li><a class="tocitem" href="../../graphics/layouts_vs_drawings/">Layouts versus drawings of wiring diagrams</a></li></ul></li></ul></li><li><span class="tocitem">Modules</span><ul><li><a class="tocitem" href="../../../apis/theories/">Standard library of theories</a></li><li><a class="tocitem" href="../../../apis/categorical_algebra/">Categorical algebra</a></li><li><a class="tocitem" href="../../../apis/graphs/">Graphs</a></li><li><a class="tocitem" href="../../../apis/wiring_diagrams/">Wiring diagrams</a></li><li><a class="tocitem" href="../../../apis/graphics/">Graphics</a></li><li><a class="tocitem" href="../../../apis/programs/">Programs</a></li><li><a class="tocitem" href="../../../apis/sheaves/">Sheaves</a></li></ul></li><li><span class="tocitem">Developer Docs</span><ul><li><a class="tocitem" href="../../../devdocs/release/">Release Notes</a></li><li><a class="tocitem" href="../../../devdocs/style/">Style Guide for AlgebraicJulia</a></li><li><a class="tocitem" href="../../peg-parser/dsl_peg_tutorial/">Domain Specific Parsing Expression Grammars</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Vignettes</a></li><li><a class="is-disabled">Seven Sketches in Compositionality</a></li><li class="is-active"><a href>Symmetric Monoidal Categories</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Symmetric Monoidal Categories</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/Catlab.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/Catlab.jl/blob/main/docs/literate/sketches/smc.jl" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Symmetric-Monoidal-Categories"><a class="docs-heading-anchor" href="#Symmetric-Monoidal-Categories">Symmetric Monoidal Categories</a><a id="Symmetric-Monoidal-Categories-1"></a><a class="docs-heading-anchor-permalink" href="#Symmetric-Monoidal-Categories" title="Permalink"></a></h1><p><a href="https://nbviewer.jupyter.org/github/AlgebraicJulia/Catlab.jl/blob/gh-pages/dev/generated/sketches/smc.ipynb"><img src="https://img.shields.io/badge/show-nbviewer-579ACA.svg" alt/></a></p><p>This vignette supports section 4.4.3 of Seven Sketches in Compositionality, which introduces the definition of symmetric monoidal categories (SMCs). SMCs are a core concept in applied category theory and are a workhorse of Catlab&#39;s utility in computing applications. We will discuss the definition as a GAT, see examples of working with formulas, and conversions to wiring diagrams (sometimes called string diagrams). SMCs are useful for modeling mathematical structures like programs or processes where the objects represent data or things and the morphisms represent processes that happen to those things.</p><pre><code class="language-julia hljs">using GATlab, Catlab.Theories
 using Catlab.CategoricalAlgebra
 using Catlab.WiringDiagrams
 using Catlab.Programs
@@ -99,14 +99,14 @@ end
 draw(recipe)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<!-- Generated by graphviz version 2.43.0 (0)
+<!-- Generated by graphviz version 15.1.0 (20260618.0150)
  -->
 <!-- Title: G Pages: 1 -->
-<svg width="259pt" height="116pt"
- viewBox="0.00 0.00 259.13 116.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 112)">
+<svg width="257pt" height="116pt"
+ viewBox="0.00 0.00 257.00 116.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 111.98)">
 <title>G</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-112 255.13,-112 255.13,4 -4,4"/>
+<polygon fill="white" stroke="none" points="-4,4 -4,-111.98 252.75,-111.98 252.75,4 -4,4"/>
 <!-- n0in1 -->
 <!-- n0in2 -->
 <!-- n0in1&%2345;&gt;n0in2 -->
@@ -114,31 +114,31 @@ draw(recipe)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" 
 <!-- crack -->
 <g id="n1" class="node">
 <title>n1</title>
-<polygon fill="none" stroke="black" points="85.1,-58 85.1,-106 137.1,-106 137.1,-58 85.1,-58"/>
-<text text-anchor="start" x="90.1" y="-78.3" font-family="Courier,monospace" font-size="14.00">crack</text>
+<polygon fill="none" stroke="black" points="83.83,-57.99 83.83,-105.99 135.08,-105.99 135.08,-57.99 83.83,-57.99"/>
+<text xml:space="preserve" text-anchor="start" x="88.83" y="-77.11" font-family="Courier,monospace" font-size="14.00">crack</text>
 </g>
 <!-- n0in1&%2345;&gt;n1 -->
 <!-- WholeEgg -->
 <g id="e1" class="edge">
 <title>n0in1:e&%2345;&gt;n1:w</title>
-<path fill="none" stroke="black" d="M49.1,-79C63.28,-79 67.97,-81.34 79.92,-81.89"/>
-<polygon fill="black" stroke="black" points="80.06,-83.64 85.1,-82 80.14,-80.14 80.06,-83.64"/>
-<text text-anchor="middle" x="33.5" y="-84.28" font-family="Courier,monospace" font-size="14.00">WholeEgg</text>
+<path fill="none" stroke="black" d="M47.83,-78.99C61.5,-78.99 66.35,-81.16 77.41,-81.81"/>
+<polygon fill="black" stroke="black" points="77.27,-83.56 82.32,-81.95 77.37,-80.06 77.27,-83.56"/>
+<text xml:space="preserve" text-anchor="middle" x="33" y="-67.21" font-family="Courier,monospace" font-size="14.00">WholeEgg</text>
 </g>
 <!-- n2 -->
 <!-- fry -->
 <g id="n2" class="node">
 <title>n2</title>
-<polygon fill="none" stroke="black" points="173.6,-18 173.6,-66 208.6,-66 208.6,-18 173.6,-18"/>
-<text text-anchor="start" x="178.6" y="-38.3" font-family="Courier,monospace" font-size="14.00">fry</text>
+<polygon fill="none" stroke="black" points="171.08,-17.99 171.08,-65.99 205.83,-65.99 205.83,-17.99 171.08,-17.99"/>
+<text xml:space="preserve" text-anchor="start" x="176.08" y="-37.11" font-family="Courier,monospace" font-size="14.00">fry</text>
 </g>
 <!-- n0in2&%2345;&gt;n2 -->
 <!-- Pan -->
 <g id="e2" class="edge">
 <title>n0in2:e&%2345;&gt;n2:w</title>
-<path fill="none" stroke="black" d="M49.1,-35C102.53,-35 117.05,-30.31 168.05,-30.01"/>
-<polygon fill="black" stroke="black" points="168.11,-31.76 173.1,-30 168.1,-28.26 168.11,-31.76"/>
-<text text-anchor="middle" x="98.55" y="-21.3" font-family="Courier,monospace" font-size="14.00">Pan</text>
+<path fill="none" stroke="black" d="M47.83,-34.99C100.51,-34.99 115.13,-30.37 164.84,-30.01"/>
+<polygon fill="black" stroke="black" points="164.57,-31.76 169.57,-29.99 164.56,-28.26 164.57,-31.76"/>
+<text xml:space="preserve" text-anchor="middle" x="97.39" y="-19.17" font-family="Courier,monospace" font-size="14.00">Pan</text>
 </g>
 <!-- n0out1 -->
 <!-- n0out2 -->
@@ -149,33 +149,33 @@ draw(recipe)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" 
 <!-- Shell -->
 <g id="e4" class="edge">
 <title>n1:e&%2345;&gt;n0out1:w</title>
-<path fill="none" stroke="black" d="M137.1,-70C184.32,-70 194.47,-94.2 239.08,-95.91"/>
-<polygon fill="black" stroke="black" points="239.07,-97.66 244.1,-96 239.14,-94.16 239.07,-97.66"/>
-<text text-anchor="middle" x="211.71" y="-71.85" font-family="Courier,monospace" font-size="14.00">Shell</text>
+<path fill="none" stroke="black" d="M135.08,-69.99C181.72,-69.99 192.1,-93.7 235.48,-95.84"/>
+<polygon fill="black" stroke="black" points="235.28,-97.58 240.32,-95.95 235.36,-94.08 235.28,-97.58"/>
+<text xml:space="preserve" text-anchor="middle" x="209.08" y="-69.69" font-family="Courier,monospace" font-size="14.00">Shell</text>
 </g>
 <!-- n1&%2345;&gt;n2 -->
 <!-- RawEgg -->
 <g id="e3" class="edge">
 <title>n1:e&%2345;&gt;n2:w</title>
-<path fill="none" stroke="black" d="M137.1,-94C159.15,-94 150.82,-60.01 168.12,-54.69"/>
-<polygon fill="black" stroke="black" points="168.39,-56.42 173.1,-54 167.91,-52.96 168.39,-56.42"/>
-<text text-anchor="middle" x="180.18" y="-77.55" font-family="Courier,monospace" font-size="14.00">RawEgg</text>
+<path fill="none" stroke="black" d="M135.08,-93.99C156.57,-93.99 149.2,-61.7 164.83,-55.14"/>
+<polygon fill="black" stroke="black" points="164.99,-56.89 169.59,-54.26 164.36,-53.45 164.99,-56.89"/>
+<text xml:space="preserve" text-anchor="middle" x="177.8" y="-78.04" font-family="Courier,monospace" font-size="14.00">RawEgg</text>
 </g>
 <!-- n2&%2345;&gt;n0out2 -->
 <!-- Egg -->
 <g id="e5" class="edge">
 <title>n2:e&%2345;&gt;n0out2:w</title>
-<path fill="none" stroke="black" d="M208.1,-54C222.23,-54 227,-54 238.93,-54"/>
-<polygon fill="black" stroke="black" points="239.1,-55.75 244.1,-54 239.1,-52.25 239.1,-55.75"/>
-<text text-anchor="middle" x="238.5" y="-42.8" font-family="Courier,monospace" font-size="14.00">Egg</text>
+<path fill="none" stroke="black" d="M205.83,-53.99C219.46,-53.99 224.38,-53.99 235.42,-53.99"/>
+<polygon fill="black" stroke="black" points="235.32,-55.74 240.32,-53.99 235.32,-52.24 235.32,-55.74"/>
+<text xml:space="preserve" text-anchor="middle" x="236.38" y="-40.69" font-family="Courier,monospace" font-size="14.00">Egg</text>
 </g>
 <!-- n2&%2345;&gt;n0out3 -->
 <!-- Pan -->
 <g id="e6" class="edge">
 <title>n2:e&%2345;&gt;n0out3:w</title>
-<path fill="none" stroke="black" d="M208.1,-30C224.03,-30 225.95,-15.72 238.82,-12.6"/>
-<polygon fill="black" stroke="black" points="239.33,-14.3 244.1,-12 238.94,-10.82 239.33,-14.3"/>
-<text text-anchor="middle" x="238.63" y="-24.77" font-family="Courier,monospace" font-size="14.00">Pan</text>
+<path fill="none" stroke="black" d="M205.83,-29.99C221.34,-29.99 223.57,-16.45 235.56,-12.86"/>
+<polygon fill="black" stroke="black" points="235.62,-14.61 240.33,-12.2 235.14,-11.15 235.62,-14.61"/>
+<text xml:space="preserve" text-anchor="middle" x="236.24" y="-20.59" font-family="Courier,monospace" font-size="14.00">Pan</text>
 </g>
 </g>
 </svg>
@@ -186,14 +186,14 @@ end
 draw(recipe)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<!-- Generated by graphviz version 2.43.0 (0)
+<!-- Generated by graphviz version 15.1.0 (20260618.0150)
  -->
 <!-- Title: G Pages: 1 -->
-<svg width="259pt" height="91pt"
- viewBox="0.00 0.00 259.00 91.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 87)">
+<svg width="256pt" height="91pt"
+ viewBox="0.00 0.00 256.00 91.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 86.99)">
 <title>G</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-87 255,-87 255,4 -4,4"/>
+<polygon fill="white" stroke="none" points="-4,4 -4,-86.99 252.49,-86.99 252.49,4 -4,4"/>
 <!-- n0in1 -->
 <!-- n0in2 -->
 <!-- n0in1&%2345;&gt;n0in2 -->
@@ -201,31 +201,31 @@ draw(recipe)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" 
 <!-- crack -->
 <g id="n1" class="node">
 <title>n1</title>
-<polygon fill="none" stroke="black" points="85.1,-35 85.1,-83 137.1,-83 137.1,-35 85.1,-35"/>
-<text text-anchor="start" x="90.1" y="-55.3" font-family="Courier,monospace" font-size="14.00">crack</text>
+<polygon fill="none" stroke="black" points="83.83,-34.99 83.83,-82.99 135.08,-82.99 135.08,-34.99 83.83,-34.99"/>
+<text xml:space="preserve" text-anchor="start" x="88.83" y="-54.11" font-family="Courier,monospace" font-size="14.00">crack</text>
 </g>
 <!-- n0in1&%2345;&gt;n1 -->
 <!-- WholeEgg -->
 <g id="e1" class="edge">
 <title>n0in1:e&%2345;&gt;n1:w</title>
-<path fill="none" stroke="black" d="M49.1,-56C63.28,-56 67.97,-58.34 79.92,-58.89"/>
-<polygon fill="black" stroke="black" points="80.06,-60.64 85.1,-59 80.14,-57.14 80.06,-60.64"/>
-<text text-anchor="middle" x="33.5" y="-61.28" font-family="Courier,monospace" font-size="14.00">WholeEgg</text>
+<path fill="none" stroke="black" d="M47.83,-55.99C61.5,-55.99 66.35,-58.16 77.41,-58.81"/>
+<polygon fill="black" stroke="black" points="77.27,-60.56 82.32,-58.95 77.37,-57.06 77.27,-60.56"/>
+<text xml:space="preserve" text-anchor="middle" x="33" y="-44.21" font-family="Courier,monospace" font-size="14.00">WholeEgg</text>
 </g>
 <!-- n2 -->
 <!-- fry -->
 <g id="n2" class="node">
 <title>n2</title>
-<polygon fill="none" stroke="black" points="173.6,-15 173.6,-63 208.6,-63 208.6,-15 173.6,-15"/>
-<text text-anchor="start" x="178.6" y="-35.3" font-family="Courier,monospace" font-size="14.00">fry</text>
+<polygon fill="none" stroke="black" points="171.08,-14.99 171.08,-62.99 205.83,-62.99 205.83,-14.99 171.08,-14.99"/>
+<text xml:space="preserve" text-anchor="start" x="176.08" y="-34.11" font-family="Courier,monospace" font-size="14.00">fry</text>
 </g>
 <!-- n0in2&%2345;&gt;n2 -->
 <!-- Pan -->
 <g id="e2" class="edge">
 <title>n0in2:e&%2345;&gt;n2:w</title>
-<path fill="none" stroke="black" d="M49.1,-12C102.88,-12 116.74,-26.08 168.02,-26.96"/>
-<polygon fill="black" stroke="black" points="168.09,-28.71 173.1,-27 168.12,-25.21 168.09,-28.71"/>
-<text text-anchor="middle" x="98.55" y="-8.29" font-family="Courier,monospace" font-size="14.00">Pan</text>
+<path fill="none" stroke="black" d="M47.83,-11.99C100.86,-11.99 114.83,-25.84 164.8,-26.92"/>
+<polygon fill="black" stroke="black" points="164.55,-28.67 169.57,-26.97 164.59,-25.17 164.55,-28.67"/>
+<text xml:space="preserve" text-anchor="middle" x="97.39" y="-6.26" font-family="Courier,monospace" font-size="14.00">Pan</text>
 </g>
 <!-- n0out1 -->
 <!-- n0out2 -->
@@ -234,25 +234,25 @@ draw(recipe)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" 
 <!-- RawEgg -->
 <g id="e3" class="edge">
 <title>n1:e&%2345;&gt;n2:w</title>
-<path fill="none" stroke="black" d="M137.1,-71C153.55,-71 154.73,-54.86 168.07,-51.58"/>
-<polygon fill="black" stroke="black" points="168.33,-53.31 173.1,-51 167.94,-49.83 168.33,-53.31"/>
-<text text-anchor="middle" x="179.87" y="-65.06" font-family="Courier,monospace" font-size="14.00">RawEgg</text>
+<path fill="none" stroke="black" d="M135.08,-70.99C150.95,-70.99 152.61,-55.95 164.7,-51.95"/>
+<polygon fill="black" stroke="black" points="164.9,-53.69 169.59,-51.21 164.38,-50.23 164.9,-53.69"/>
+<text xml:space="preserve" text-anchor="middle" x="177.87" y="-64.9" font-family="Courier,monospace" font-size="14.00">RawEgg</text>
 </g>
 <!-- n2&%2345;&gt;n0out1 -->
 <!-- Egg -->
 <g id="e4" class="edge">
 <title>n2:e&%2345;&gt;n0out1:w</title>
-<path fill="none" stroke="black" d="M208.1,-51C222.66,-51 226.72,-58.01 238.82,-59.66"/>
-<polygon fill="black" stroke="black" points="239,-61.42 244.1,-60 239.23,-57.93 239,-61.42"/>
-<text text-anchor="middle" x="238.5" y="-44.25" font-family="Courier,monospace" font-size="14.00">Egg</text>
+<path fill="none" stroke="black" d="M205.83,-50.99C220.01,-50.99 224.23,-57.63 235.6,-59.5"/>
+<polygon fill="black" stroke="black" points="235.2,-61.23 240.32,-59.87 235.47,-57.74 235.2,-61.23"/>
+<text xml:space="preserve" text-anchor="middle" x="236.11" y="-42.15" font-family="Courier,monospace" font-size="14.00">Egg</text>
 </g>
 <!-- n2&%2345;&gt;n0out2 -->
 <!-- Pan -->
 <g id="e5" class="edge">
 <title>n2:e&%2345;&gt;n0out2:w</title>
-<path fill="none" stroke="black" d="M208.1,-27C222.66,-27 226.72,-19.99 238.82,-18.34"/>
-<polygon fill="black" stroke="black" points="239.23,-20.07 244.1,-18 239,-16.58 239.23,-20.07"/>
-<text text-anchor="middle" x="238.5" y="-26.35" font-family="Courier,monospace" font-size="14.00">Pan</text>
+<path fill="none" stroke="black" d="M205.83,-26.99C220.01,-26.99 224.23,-20.34 235.6,-18.47"/>
+<polygon fill="black" stroke="black" points="235.47,-20.24 240.32,-18.11 235.2,-16.75 235.47,-20.24"/>
+<text xml:space="preserve" text-anchor="middle" x="236.11" y="-22.17" font-family="Courier,monospace" font-size="14.00">Pan</text>
 </g>
 </g>
 </svg>
@@ -267,14 +267,14 @@ end
 draw(recipe)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<!-- Generated by graphviz version 2.43.0 (0)
+<!-- Generated by graphviz version 15.1.0 (20260618.0150)
  -->
 <!-- Title: G Pages: 1 -->
-<svg width="259pt" height="182pt"
- viewBox="0.00 0.00 259.10 182.30" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 178.3)">
+<svg width="257pt" height="185pt"
+ viewBox="0.00 0.00 257.00 185.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 180.5)">
 <title>G</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-178.3 255.1,-178.3 255.1,4 -4,4"/>
+<polygon fill="white" stroke="none" points="-4,4 -4,-180.5 253.01,-180.5 253.01,4 -4,4"/>
 <!-- n0in1 -->
 <!-- n0in2 -->
 <!-- n0in1&%2345;&gt;n0in2 -->
@@ -282,16 +282,16 @@ draw(recipe)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" 
 <!-- crack -->
 <g id="n1" class="node">
 <title>n1</title>
-<polygon fill="none" stroke="black" points="85.1,-126.3 85.1,-174.3 137.1,-174.3 137.1,-126.3 85.1,-126.3"/>
-<text text-anchor="start" x="90.1" y="-146.6" font-family="Courier,monospace" font-size="14.00">crack</text>
+<polygon fill="none" stroke="black" points="84.09,-128.5 84.09,-176.5 135.34,-176.5 135.34,-128.5 84.09,-128.5"/>
+<text xml:space="preserve" text-anchor="start" x="89.09" y="-147.63" font-family="Courier,monospace" font-size="14.00">crack</text>
 </g>
 <!-- n0in1&%2345;&gt;n1 -->
 <!-- WholeEgg -->
 <g id="e1" class="edge">
 <title>n0in1:e&%2345;&gt;n1:w</title>
-<path fill="none" stroke="black" d="M49.1,-138.3C64.12,-138.3 67.57,-147.82 80.05,-149.9"/>
-<polygon fill="black" stroke="black" points="79.98,-151.65 85.1,-150.3 80.26,-148.16 79.98,-151.65"/>
-<text text-anchor="middle" x="33.63" y="-148.12" font-family="Courier,monospace" font-size="14.00">WholeEgg</text>
+<path fill="none" stroke="black" d="M48.09,-140.5C62.58,-140.5 66.3,-149.36 77.76,-151.85"/>
+<polygon fill="black" stroke="black" points="77.43,-153.58 82.59,-152.35 77.79,-150.1 77.43,-153.58"/>
+<text xml:space="preserve" text-anchor="middle" x="33" y="-133.14" font-family="Courier,monospace" font-size="14.00">WholeEgg</text>
 </g>
 <!-- n0in3 -->
 <!-- n0in2&%2345;&gt;n0in3 -->
@@ -299,46 +299,46 @@ draw(recipe)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" 
 <!-- crack -->
 <g id="n3" class="node">
 <title>n3</title>
-<polygon fill="none" stroke="black" points="85.1,-60.3 85.1,-108.3 137.1,-108.3 137.1,-60.3 85.1,-60.3"/>
-<text text-anchor="start" x="90.1" y="-80.6" font-family="Courier,monospace" font-size="14.00">crack</text>
+<polygon fill="none" stroke="black" points="84.09,-62.5 84.09,-110.5 135.34,-110.5 135.34,-62.5 84.09,-62.5"/>
+<text xml:space="preserve" text-anchor="start" x="89.09" y="-81.63" font-family="Courier,monospace" font-size="14.00">crack</text>
 </g>
 <!-- n0in2&%2345;&gt;n3 -->
 <!-- WholeEgg -->
 <g id="e3" class="edge">
 <title>n0in2:e&%2345;&gt;n3:w</title>
-<path fill="none" stroke="black" d="M49.1,-84.3C63.23,-84.3 68,-84.3 79.93,-84.3"/>
-<polygon fill="black" stroke="black" points="80.1,-86.05 85.1,-84.3 80.1,-82.55 80.1,-86.05"/>
-<text text-anchor="middle" x="33.5" y="-73.1" font-family="Courier,monospace" font-size="14.00">WholeEgg</text>
+<path fill="none" stroke="black" d="M48.09,-86.5C61.72,-86.5 66.64,-86.5 77.68,-86.5"/>
+<polygon fill="black" stroke="black" points="77.58,-88.25 82.58,-86.5 77.58,-84.75 77.58,-88.25"/>
+<text xml:space="preserve" text-anchor="middle" x="33.26" y="-73.2" font-family="Courier,monospace" font-size="14.00">WholeEgg</text>
 </g>
 <!-- n2 -->
 <!-- fry -->
 <g id="n2" class="node">
 <title>n2</title>
-<polygon fill="none" stroke="black" points="173.6,-87.3 173.6,-135.3 208.6,-135.3 208.6,-87.3 173.6,-87.3"/>
-<text text-anchor="start" x="178.6" y="-107.6" font-family="Courier,monospace" font-size="14.00">fry</text>
+<polygon fill="none" stroke="black" points="171.34,-89.5 171.34,-137.5 206.09,-137.5 206.09,-89.5 171.34,-89.5"/>
+<text xml:space="preserve" text-anchor="start" x="176.34" y="-108.63" font-family="Courier,monospace" font-size="14.00">fry</text>
 </g>
 <!-- n0in3&%2345;&gt;n2 -->
 <!-- Pan -->
 <g id="e2" class="edge">
 <title>n0in3:e&%2345;&gt;n2:w</title>
-<path fill="none" stroke="black" d="M49.1,-32.3C89.11,-32.3 103.42,-29.71 137.1,-51.3 157.98,-64.68 148.1,-94.67 168.04,-98.82"/>
-<polygon fill="black" stroke="black" points="167.96,-100.57 173.1,-99.3 168.29,-97.08 167.96,-100.57"/>
-<text text-anchor="middle" x="124.61" y="-40.1" font-family="Courier,monospace" font-size="14.00">Pan</text>
+<path fill="none" stroke="black" d="M48.09,-34.5C87.78,-34.5 101.95,-32.06 135.34,-53.5 155.85,-66.67 146.66,-95.87 165.3,-100.79"/>
+<polygon fill="black" stroke="black" points="164.67,-102.48 169.84,-101.32 165.08,-99 164.67,-102.48"/>
+<text xml:space="preserve" text-anchor="middle" x="122.98" y="-40.21" font-family="Courier,monospace" font-size="14.00">Pan</text>
 </g>
 <!-- n4 -->
 <!-- fry -->
 <g id="n4" class="node">
 <title>n4</title>
-<polygon fill="none" stroke="black" points="173.6,-21.3 173.6,-69.3 208.6,-69.3 208.6,-21.3 173.6,-21.3"/>
-<text text-anchor="start" x="178.6" y="-41.6" font-family="Courier,monospace" font-size="14.00">fry</text>
+<polygon fill="none" stroke="black" points="171.34,-23.5 171.34,-71.5 206.09,-71.5 206.09,-23.5 171.34,-23.5"/>
+<text xml:space="preserve" text-anchor="start" x="176.34" y="-42.63" font-family="Courier,monospace" font-size="14.00">fry</text>
 </g>
 <!-- n0in3&%2345;&gt;n4 -->
 <!-- Pan -->
 <g id="e4" class="edge">
 <title>n0in3:e&%2345;&gt;n4:w</title>
-<path fill="none" stroke="black" d="M49.1,-32.3C66.27,-32.3 68.23,-21.46 85.1,-18.3 107.82,-14.04 114.44,-13.77 137.1,-18.3 152.24,-21.33 155.22,-30.86 167.94,-32.91"/>
-<polygon fill="black" stroke="black" points="167.98,-34.67 173.1,-33.3 168.25,-31.18 167.98,-34.67"/>
-<text text-anchor="middle" x="98.62" y="-3.8" font-family="Courier,monospace" font-size="14.00">Pan</text>
+<path fill="none" stroke="black" d="M48.09,-34.5C65.26,-34.5 67.22,-23.67 84.09,-20.5 106.48,-16.3 113.01,-16.03 135.34,-20.5 149.95,-23.42 153.23,-32.4 164.87,-34.87"/>
+<polygon fill="black" stroke="black" points="164.69,-36.61 169.83,-35.35 165.03,-33.12 164.69,-36.61"/>
+<text xml:space="preserve" text-anchor="middle" x="97.36" y="-3.95" font-family="Courier,monospace" font-size="14.00">Pan</text>
 </g>
 <!-- n0out1 -->
 <!-- n0out2 -->
@@ -349,50 +349,50 @@ draw(recipe)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" 
 <!-- RawEgg -->
 <g id="e5" class="edge">
 <title>n1:e&%2345;&gt;n2:w</title>
-<path fill="none" stroke="black" d="M137.1,-162.3C158.66,-162.3 151.18,-129.71 167.75,-124.11"/>
-<polygon fill="black" stroke="black" points="168.42,-125.78 173.1,-123.3 167.9,-122.32 168.42,-125.78"/>
-<text text-anchor="middle" x="180.1" y="-146.6" font-family="Courier,monospace" font-size="14.00">RawEgg</text>
+<path fill="none" stroke="black" d="M135.34,-164.5C156.53,-164.5 149.66,-133.02 165.16,-126.63"/>
+<polygon fill="black" stroke="black" points="165.25,-128.39 169.85,-125.77 164.62,-124.94 165.25,-128.39"/>
+<text xml:space="preserve" text-anchor="middle" x="178.06" y="-149.05" font-family="Courier,monospace" font-size="14.00">RawEgg</text>
 </g>
 <!-- n2&%2345;&gt;n0out1 -->
 <!-- Egg -->
 <g id="e7" class="edge">
 <title>n2:e&%2345;&gt;n0out1:w</title>
-<path fill="none" stroke="black" d="M208.1,-123.3C222.28,-123.3 226.97,-120.96 238.92,-120.41"/>
-<polygon fill="black" stroke="black" points="239.14,-122.16 244.1,-120.3 239.07,-118.66 239.14,-122.16"/>
-<text text-anchor="middle" x="238.5" y="-125.61" font-family="Courier,monospace" font-size="14.00">Egg</text>
+<path fill="none" stroke="black" d="M206.09,-125.5C219.74,-125.5 224.63,-124.05 235.67,-123.62"/>
+<polygon fill="black" stroke="black" points="235.61,-125.37 240.58,-123.53 235.55,-121.87 235.61,-125.37"/>
+<text xml:space="preserve" text-anchor="middle" x="236.63" y="-128.43" font-family="Courier,monospace" font-size="14.00">Egg</text>
 </g>
 <!-- n2&%2345;&gt;n0out3 -->
 <!-- Pan -->
 <g id="e8" class="edge">
 <title>n2:e&%2345;&gt;n0out3:w</title>
-<path fill="none" stroke="black" d="M208.1,-99.3C238.83,-99.3 214.68,-42.58 238.98,-35.93"/>
-<polygon fill="black" stroke="black" points="239.36,-37.65 244.1,-35.3 238.93,-34.17 239.36,-37.65"/>
-<text text-anchor="middle" x="238.6" y="-56.09" font-family="Courier,monospace" font-size="14.00">Pan</text>
+<path fill="none" stroke="black" d="M206.09,-101.5C235.95,-101.5 213.74,-47.5 235.86,-39.49"/>
+<polygon fill="black" stroke="black" points="235.93,-41.25 240.6,-38.74 235.38,-37.79 235.93,-41.25"/>
+<text xml:space="preserve" text-anchor="middle" x="236.46" y="-56.79" font-family="Courier,monospace" font-size="14.00">Pan</text>
 </g>
 <!-- n3&%2345;&gt;n4 -->
 <!-- RawEgg -->
 <g id="e6" class="edge">
 <title>n3:e&%2345;&gt;n4:w</title>
-<path fill="none" stroke="black" d="M137.1,-96.3C158.66,-96.3 151.18,-63.71 167.75,-58.11"/>
-<polygon fill="black" stroke="black" points="168.42,-59.78 173.1,-57.3 167.9,-56.32 168.42,-59.78"/>
-<text text-anchor="middle" x="180.1" y="-76.85" font-family="Courier,monospace" font-size="14.00">RawEgg</text>
+<path fill="none" stroke="black" d="M135.34,-98.5C156.53,-98.5 149.66,-67.02 165.16,-60.63"/>
+<polygon fill="black" stroke="black" points="165.25,-62.39 169.85,-59.77 164.62,-58.94 165.25,-62.39"/>
+<text xml:space="preserve" text-anchor="middle" x="178.06" y="-74.42" font-family="Courier,monospace" font-size="14.00">RawEgg</text>
 </g>
 <!-- n4&%2345;&gt;n0out2 -->
 <!-- Egg -->
 <g id="e9" class="edge">
 <title>n4:e&%2345;&gt;n0out2:w</title>
-<path fill="none" stroke="black" d="M208.1,-57.3C224.55,-57.3 225.73,-73.44 239.07,-76.72"/>
-<polygon fill="black" stroke="black" points="238.94,-78.47 244.1,-77.3 239.33,-74.99 238.94,-78.47"/>
-<text text-anchor="middle" x="238.37" y="-70.84" font-family="Courier,monospace" font-size="14.00">Egg</text>
+<path fill="none" stroke="black" d="M206.09,-59.5C222.3,-59.5 223.52,-75.58 235.99,-79.6"/>
+<polygon fill="black" stroke="black" points="235.39,-81.28 240.59,-80.28 235.9,-77.82 235.39,-81.28"/>
+<text xml:space="preserve" text-anchor="middle" x="236.62" y="-74.13" font-family="Courier,monospace" font-size="14.00">Egg</text>
 </g>
 <!-- n4&%2345;&gt;n0out3 -->
 <!-- Pan -->
 <g id="e10" class="edge">
 <title>n4:e&%2345;&gt;n0out3:w</title>
-<path fill="none" stroke="black" d="M208.1,-33.3C222.25,-33.3 226.99,-34.86 238.93,-35.22"/>
-<polygon fill="black" stroke="black" points="239.08,-36.97 244.1,-35.3 239.13,-33.47 239.08,-36.97"/>
-<text text-anchor="middle" x="238.5" y="-23.09" font-family="Courier,monospace" font-size="14.00">Pan</text>
+<path fill="none" stroke="black" d="M206.09,-35.5C219.76,-35.5 224.61,-37.68 235.67,-38.32"/>
+<polygon fill="black" stroke="black" points="235.53,-40.07 240.58,-38.46 235.63,-36.57 235.53,-40.07"/>
+<text xml:space="preserve" text-anchor="middle" x="236.63" y="-23.73" font-family="Courier,monospace" font-size="14.00">Pan</text>
 </g>
 </g>
 </svg>
-'/><p>You can visualize the copy and delete morphisms explicitly with the <code>add_junctions</code> function. The dots with one wire input and multiple outputs are copying values and dots with no wires out are deletions (discarding values). Not all instances of a <code>SymmetricMonoidalCategory</code> support copy and delete, for example, in manufacturing you can&#39;t duplicate a resource, and in chemistry you can&#39;t discard species. Catlab would enforce that when you tried to interpret the wiring diagram in a specific SMC.</p><pre><code class="language-julia hljs">draw(add_junctions(recipe))</code></pre><img src="0ee43d16.svg" alt="Example block output"/><p>For more details about working with wiring diagrams in Catlab, you should look at the vignettes under wiring_diagrams which explain how wiring diagrams interact with SMC expressions and the basics of constructing and manipulation wiring diagrams.</p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../meets/">« Meets in Preorders</a><a class="docs-footer-nextpage" href="../cat_elements/">The Category of Elements »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Thursday 2 July 2026 15:37">Thursday 2 July 2026</span>. Using Julia version 1.12.6.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+'/><p>You can visualize the copy and delete morphisms explicitly with the <code>add_junctions</code> function. The dots with one wire input and multiple outputs are copying values and dots with no wires out are deletions (discarding values). Not all instances of a <code>SymmetricMonoidalCategory</code> support copy and delete, for example, in manufacturing you can&#39;t duplicate a resource, and in chemistry you can&#39;t discard species. Catlab would enforce that when you tried to interpret the wiring diagram in a specific SMC.</p><pre><code class="language-julia hljs">draw(add_junctions(recipe))</code></pre><img src="70caec9c.svg" alt="Example block output"/><p>For more details about working with wiring diagrams in Catlab, you should look at the vignettes under wiring_diagrams which explain how wiring diagrams interact with SMC expressions and the basics of constructing and manipulation wiring diagrams.</p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../meets/">« Meets in Preorders</a><a class="docs-footer-nextpage" href="../cat_elements/">The Category of Elements »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.20.0 on <span class="colophon-date" title="Monday 23 November 2026 22:51">Monday 23 November 2026</span>. Using Julia version 1.13.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
