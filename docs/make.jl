@@ -7,6 +7,11 @@ const generated_dir = joinpath(@__DIR__, "src", "generated")
 @info "Loading Catlab.jl"
 using Catlab
 
+# Render Graphviz figures with the bundled Graphviz_jll binaries rather than
+# whatever Graphviz the build machine has installed. For example, Ubuntu 26.04's
+# `graphviz` package ships without the neato/fdp/circo/twopi layout plugins.
+using Graphviz_jll
+
 const no_literate = "--no-literate" in ARGS
 if !no_literate
   @info "Building Literate.jl docs"

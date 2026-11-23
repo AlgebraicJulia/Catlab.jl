@@ -21,8 +21,9 @@
 # 
 # In this notebook, we introduce both interfaces. We do not explicitly cover the
 # visualization API, although for illustrative purposes we will draw wiring
-# diagrams using Graphviz. Thus, you should install
-# [Graphviz](https://www.graphviz.org/) if you wish to run this notebook.
+# diagrams using Graphviz. Thus, to run this notebook you should either install
+# [Graphviz](https://www.graphviz.org/) or install and load the Julia package
+# `Graphviz_jll`, which Catlab will then use automatically.
 
 using Catlab.WiringDiagrams
 

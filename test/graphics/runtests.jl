@@ -9,6 +9,7 @@ end
   include("GraphvizGraphs.jl")
   include("GraphvizCategories.jl")
   include("GraphvizWiringDiagrams.jl")
+  include("GraphvizJLL.jl")
 end
 
 @testset "Compose" begin
