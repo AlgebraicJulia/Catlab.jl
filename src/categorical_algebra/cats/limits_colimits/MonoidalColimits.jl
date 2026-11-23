@@ -53,13 +53,11 @@ ThCocartesianCategory.Meta.@typed_wrapper CocartesianMonoidal
 end
 
 function copair(m::WithModel{<:TypedCatWithCoproducts}, hs::AbstractVector; context=nothing)
-  h, hrest... = hs 
-  foldl((x,y)->copair(m, x,y; context), hrest; init=h)
+  foldl((x,y)->copair(m, x,y; context), hs)
 end
 
 function oplus(m::WithModel{<:TypedCatWithCoproducts}, hs::AbstractVector; context=nothing)
-  h, hrest... = hs 
-  foldl((x,y)->oplus(m, x,y; context), hrest; init=h)
+  foldl((x,y)->oplus(m, x,y; context), hs)
 end
 
 

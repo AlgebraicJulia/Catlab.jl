@@ -36,24 +36,24 @@ clim = colimit[Bipartite](s)
 ##########
 # Limits #
 ##########
-"""
-A product in a slice category is equivalent to a pullback. Here we work with
-discrete graphs:
 
-PB     B=2
-        ↓ id
-A=2 ⟶ C=3
-   swap
+# A product in a slice category is equivalent to a pullback. Here we work with
+# discrete graphs:
 
-The pullback of A and B has two elements:
-- one element mapping to (a₂,b₁) - which both map to c₁
-- one element mapping to (a₁,b₂) - which both map to c₂
+# PB     B=2
+#         ↓ id
+# A=2 ⟶ C=3
+#    swap
 
-Given slice morphisms into A and B (say, a single element set which maps to c₁,
-which forces its map to A to point to a₂ and its map to B to point to b₁), the
-universal property gives a map into the limit object, so it picks the element
-that maps to (a₂,b₁).
-"""
+# The pullback of A and B has two elements:
+# - one element mapping to (a₂,b₁) - which both map to c₁
+# - one element mapping to (a₁,b₂) - which both map to c₂
+
+# Given slice morphisms into A and B (say, a single element set which maps to c₁,
+# which forces its map to A to point to a₂ and its map to B to point to b₁), the
+# universal property gives a map into the limit object, so it picks the element
+# that maps to (a₂,b₁).
+
 G2,G1,G3 = Graph.([2,1,3])
 𝒞3 = SliceC(𝒞′, G3) # objects are sets with labels {1,2,3}
 

@@ -6,7 +6,7 @@ using Random: seed!
 # Setup
 #######
 
-seed!(10)
+seed!(11)
 
 # Graphs
 ########

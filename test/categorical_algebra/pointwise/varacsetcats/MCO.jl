@@ -89,6 +89,7 @@ results = first(is_iso1) ? results : reverse(results)
 
 # If we demand equality on attributes, max overlap is one false edge and all vertices.
 exp = @acset WG begin V=3; E=1; src=1; tgt=2; weight=[false] end
-@test first(first(maximum_common_subobject(g1, g2; abstract=false))) == exp
+result = first(first(maximum_common_subobject(g1, g2; abstract=false)))
+@test is_isomorphic(exp, result)
 
 end # module

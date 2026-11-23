@@ -20,48 +20,45 @@ const ℒ = ACSetCategory(MADVarACSetCat(LoneAttr()))
 X = @acset LoneAttr begin X = 4 end
 Y = @acset LoneAttr begin X = 4 end
 
-"""
-                      g              f
-                Y  <-----  X   ---->  Y 
-               ---        ---        ---
-               [3] <----- [1]  ----> [1]
-                                     
-                ⊥  <----- [2]  ---->  ⊥     
-      [1] [2]                                 [2]  [4]
-                ⊤  <----- [3]  ----> [3]
-                                   
-               [4] <----- [4]  ---->  [4]
-"""
+
+#                 g              f
+#           Y  <-----  X   ---->  Y 
+#          ---        ---        ---
+#          [3] <----- [1]  ----> [1]
+                                
+#           ⊥  <----- [2]  ---->  ⊥     
+# [1] [2]                                 [2]  [4]
+#           ⊤  <----- [3]  ----> [3]
+                              
+#          [4] <----- [4]  ---->  [4]
+
 f = ACSetTransformation(X, Y; 
                         X=[AttrVar(1), false, AttrVar(3), AttrVar(4)], cat=ℒ)
 g = ACSetTransformation(X, Y; 
                         X=[AttrVar(3), false, true, AttrVar(4)], cat=ℒ)
 
-"""
-Coequalization merges [1] and [3] and ⊥ as well as [4] and ⊤ 
 
-Y: [1]  [3]  [2]  [4]
-    ↘  ↙      ↓    ↓
-Q:   ⊤       [1]  [2]       <-- these variables represent eq classes 
-                                 of variables in Y
-"""
+# Y: [1]  [3]  [2]  [4]
+#     ↘  ↙      ↓    ↓
+# Q:   ⊤       [1]  [2]       <-- these variables represent eq classes 
+#                                  of variables in Y
+
 q, = coeq = coequalizer[ℒ](f,g);
 
 A = @acset LoneAttr begin X = 3 end
 
-"""
-Y: [1] [2] [3] [4]
-    ↓   ↓   ↓   ↓
-A:  ⊥   ⊤   ⊥  [3]  [1]  [2]
-"""
-YA = ACSetTransformation(Y, A; X=[true, true, false, AttrVar(3)], cat=ℒ)
 
-"""
-So a map out of Y which sends {1,3} to ⊥, {2} to ⊤, and {4} to {3}
-can be transported to a map out of the equivalence classes:
-"""
+# Y: [1] [2] [3] [4]
+#     ↓   ↓   ↓   ↓
+# A:  ⊤   ⊤   ⊤  [3]  [1]  [2]
 
-@test factorize[ℒ](coeq, YA)[:X].val.val.val == Dict(1=> Right(true), 2=>Left(3))
+YA = ACSetTransformation(Y, A; X=[true, true, true, AttrVar(3)], cat=ℒ)
+@test compose[ℒ](f, YA) == compose[ℒ](g, YA)
+
+# So a map out of Y which sends {1,3} to ⊤, {2} to ⊤, and {4} to [3]
+# can be transported to a map out of the equivalence classes.
+
+@test compose[ℒ](q, factorize[ℒ](coeq, YA)) == YA
 
 ####################
 # VE-labeled Graph #
@@ -149,10 +146,9 @@ colim = pushout[𝒱](α, β);
 const 𝒞 = ACSetCategory(MADVarACSetCat(WG()))
 
 
-"""
-A graph with two loops:      ⊤↻•↺[1]       [2]
-and an unbound Weight attrvar
-"""
+
+# A graph with two loops:      ⊤↻•↺[1]       [2]
+# and an unbound Weight attrvar
 A = @acset WG begin 
   V=1; E=2; Weight=2; src=1; tgt=1; weight=[AttrVar(1),true] 
 end
@@ -174,10 +170,9 @@ end
 # COPRODUCT
 ###########
 
-"""
-A graph with two copies of two loops:      ⊤↻•↺[2]   ⊤↻•↺[4]     [1]  [3]
-and two unbound Weight attrvars
-"""
+
+# A graph with two copies of two loops:      ⊤↻•↺[2]   ⊤↻•↺[4]     [1]  [3]
+# and two unbound Weight attrvars
 expected = @acset WG begin 
   V=2; E=4; Weight=4; src=[1,1,2,2]; tgt=[1,1,2,2]; 
   weight=[true,AttrVar(2), true, AttrVar(4)]
@@ -188,11 +183,12 @@ end
 @test is_isomorphic(ob(AA), expected)
 
 
-"""
-Two maps from A+A to a graph X:  ⊤↻•   [1]  [2]
-These only have one choice for their vertex and edge and first weight variable, however they have freedom over their second weight variable.
-f sends it to [1], g sends it to [2]
-"""
+
+# Two maps from A+A to a graph X:  ⊤↻•   [1]  [2]
+# These only have one choice for their vertex and edge and first weight 
+# variable, however they have freedom over their second weight variable.
+# f sends it to [1], g sends it to [2]
+
 X = @acset WG begin V=1;E=1;Weight=2;src=1;tgt=1;weight=[true] end
 f′ = homomorphism(A, X; initial=(Weight=[true,AttrVar(1)],), cat=𝒞)
 g′ = homomorphism(A, X; initial=(Weight=[true,AttrVar(2)],), cat=𝒞)
@@ -222,8 +218,9 @@ q, = coeq = coequalizer[𝒞](f, g);
 @test nparts(ob(coeq), :Weight) == 1
 
 
-""" If we just coproducted A, we'd get two pairs of loops and two 
-floating variables. But by pushing out with the above maps we merge the free variable from one of the copies of A with the loop variable of the other """
+# If we just coproducted A, we'd get two pairs of loops and two 
+# floating variables. But by pushing out with the above maps we merge the free 
+# variable from one of the copies of A with the loop variable of the other
 ι₁,ι₂ = clim = colimit[𝒞](Span(f,g));
 
 @test nparts(ob(clim), :Weight) == 3
