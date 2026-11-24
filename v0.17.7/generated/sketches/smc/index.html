@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><meta name="referrer" content="no-referrer"/><title>Symmetric Monoidal Categories · Catlab.jl</title><meta name="title" content="Symmetric Monoidal Categories · Catlab.jl"/><meta property="og:title" content="Symmetric Monoidal Categories · Catlab.jl"/><meta property="twitter:title" content="Symmetric Monoidal Categories · Catlab.jl"/><meta name="description" content="Documentation for Catlab.jl."/><meta property="og:description" content="Documentation for Catlab.jl."/><meta property="twitter:description" content="Documentation for Catlab.jl."/><script data-outdated-warner src="../../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.63.2/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../search_index.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../assets/themeswap.js"></script><script src="../../../assets/analytics.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../../"><img src="../../../assets/logo.svg" alt="Catlab.jl logo"/></a><div class="docs-package-name"><span class="docs-autofit"><a href="../../../">Catlab.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../../">Catlab.jl</a></li><li><span class="tocitem">Vignettes</span><ul><li><input class="collapse-toggle" id="menuitem-2-1" type="checkbox" checked/><label class="tocitem" for="menuitem-2-1"><span class="docs-label">Seven Sketches in Compositionality</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../partitions/">Partitions</a></li><li><a class="tocitem" href="../preorders/">Preorders</a></li><li><a class="tocitem" href="../meets/">Meets in Preorders</a></li><li class="is-active"><a class="tocitem" href>Symmetric Monoidal Categories</a><ul class="internal"><li><a class="tocitem" href="#Definition"><span>Definition</span></a></li><li><a class="tocitem" href="#Presentations"><span>Presentations</span></a></li><li><a class="tocitem" href="#The-Program-Macro"><span>The Program Macro</span></a></li></ul></li><li><a class="tocitem" href="../cat_elements/">The Category of Elements</a></li><li><a class="tocitem" href="../sheaves/">Basic Sheaf Constructions</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-2" type="checkbox"/><label class="tocitem" for="menuitem-2-2"><span class="docs-label">Graphs</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../graphs/graphs/">The Category of Graphs</a></li><li><a class="tocitem" href="../../graphs/graphs_label/">Labeled Graphs</a></li><li><a class="tocitem" href="../../graphs/subgraphs/">Algebra of subgraphs</a></li></ul></li><li><span class="tocitem">Categorical Algebra</span></li><li><input class="collapse-toggle" id="menuitem-2-4" type="checkbox"/><label class="tocitem" for="menuitem-2-4"><span class="docs-label">Wiring Diagrams</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../wiring_diagrams/wiring_diagram_basics/">Basics of wiring diagrams</a></li><li><a class="tocitem" href="../../wiring_diagrams/diagrams_and_expressions/">Wiring diagrams and syntactic expressions</a></li><li><a class="tocitem" href="../../wiring_diagrams/wd_cset/">Wiring Diagrams as Attributed C-Sets</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-2-5" type="checkbox"/><label class="tocitem" for="menuitem-2-5"><span class="docs-label">Graphics</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../graphics/graphviz_graphs/">Drawing graphs in Graphviz</a></li><li><a class="tocitem" href="../../graphics/graphviz_wiring_diagrams/">Drawing wiring diagrams in Graphviz</a></li><li><a class="tocitem" href="../../graphics/composejl_wiring_diagrams/">Drawing wiring diagrams in Compose.jl</a></li><li><a class="tocitem" href="../../graphics/tikz_wiring_diagrams/">Drawing wiring diagrams in TikZ</a></li><li><a class="tocitem" href="../../graphics/layouts_vs_drawings/">Layouts versus drawings of wiring diagrams</a></li></ul></li></ul></li><li><span class="tocitem">Modules</span><ul><li><a class="tocitem" href="../../../apis/theories/">Standard library of theories</a></li><li><a class="tocitem" href="../../../apis/categorical_algebra/">Categorical algebra</a></li><li><a class="tocitem" href="../../../apis/graphs/">Graphs</a></li><li><a class="tocitem" href="../../../apis/wiring_diagrams/">Wiring diagrams</a></li><li><a class="tocitem" href="../../../apis/graphics/">Graphics</a></li><li><a class="tocitem" href="../../../apis/programs/">Programs</a></li><li><a class="tocitem" href="../../../apis/sheaves/">Sheaves</a></li></ul></li><li><span class="tocitem">Developer Docs</span><ul><li><a class="tocitem" href="../../../devdocs/release/">Release Notes</a></li><li><a class="tocitem" href="../../../devdocs/style/">Style Guide for AlgebraicJulia</a></li><li><a class="tocitem" href="../../peg-parser/dsl_peg_tutorial/">Domain Specific Parsing Expression Grammars</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Vignettes</a></li><li><a class="is-disabled">Seven Sketches in Compositionality</a></li><li class="is-active"><a href>Symmetric Monoidal Categories</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Symmetric Monoidal Categories</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/Catlab.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/AlgebraicJulia/Catlab.jl/blob/main/docs/literate/sketches/smc.jl" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Symmetric-Monoidal-Categories"><a class="docs-heading-anchor" href="#Symmetric-Monoidal-Categories">Symmetric Monoidal Categories</a><a id="Symmetric-Monoidal-Categories-1"></a><a class="docs-heading-anchor-permalink" href="#Symmetric-Monoidal-Categories" title="Permalink"></a></h1><p><a href="https://nbviewer.jupyter.org/github/AlgebraicJulia/Catlab.jl/blob/gh-pages/v0.17.7/generated/sketches/smc.ipynb"><img src="https://img.shields.io/badge/show-nbviewer-579ACA.svg" alt/></a></p><p>This vignette supports section 4.4.3 of Seven Sketches in Compositionality, which introduces the definition of symmetric monoidal categories (SMCs). SMCs are a core concept in applied category theory and are a workhorse of Catlab&#39;s utility in computing applications. We will discuss the definition as a GAT, see examples of working with formulas, and conversions to wiring diagrams (sometimes called string diagrams). SMCs are useful for modeling mathematical structures like programs or processes where the objects represent data or things and the morphisms represent processes that happen to those things.</p><pre><code class="language-julia hljs">using GATlab, Catlab.Theories
+using Catlab.CategoricalAlgebra
+using Catlab.WiringDiagrams
+using Catlab.Programs
+using Catlab.Graphics
+using Catlab.Graphics: Graphviz
+
+draw(d::WiringDiagram) = to_graphviz(d,
+  orientation=LeftToRight,
+  labels=true, label_attr=:xlabel,
+  node_attrs=Graphviz.Attributes(
+    :fontname =&gt; &quot;Courier&quot;,
+  ),
+  edge_attrs=Graphviz.Attributes(
+    :fontname =&gt; &quot;Courier&quot;,
+  )
+)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">draw (generic function with 1 method)</code></pre><h2 id="Definition"><a class="docs-heading-anchor" href="#Definition">Definition</a><a id="Definition-1"></a><a class="docs-heading-anchor-permalink" href="#Definition" title="Permalink"></a></h2><p>Let 𝒞 be a category, then a strict symmetric monoidal structure on 𝒞 has as data:</p><ol><li>An object I called the monoidal unit</li><li>A functor ⊗: 𝒞×𝒞 → 𝒞 called the monoidal product.</li><li>A natural isomorphism σᵃᵇ: A⊗B → B⊗A</li></ol><p>It has as axioms:</p><ol><li>Left identity) I⊗C = C for all objects C in 𝒞</li><li>Right identity) C⊗I = C for all objects C in 𝒞</li><li>Associativity) (A⊗B)⊗C = A⊗(B⊗C) for all objects A,B,C in 𝒞</li><li>Involutivity) σ(σ(A,B)) = id(A⊗B)</li></ol><p>In a category, you have a composition operation that captures the sequential kind of composition. For example in Set, you compose two functions f⋅g by first applying f and then applying g. In monoidal categories, you also have the parallel composition ⊗ which you can think of as representing the simultaneous exectution of two processes. We are familiar with the cartesian product in Set which takes two sets and forms the cartesian product. The cartesian product acts on functions in a similar way, f×g is the function that takes a tuple (x:dom(f),y:dom(g)) and applies them <em>in parallel</em> and returns (f(x), g(y)):(codom(f)×codom(g)). The axioms of an SMC require that these two operations work together. The Seven Sketches book suppresses an interesting axiom called the <em>interchange law</em> for brevity, but it is worth calling some attention to it. In order for the sequential and parallel composition operators to capture our intuition, we need to assert that for any functions with compatible domains we can interchange parallel and sequential operators. Formally, ((f ⊗ g) ⋅ (h ⊗ k) == (f ⋅ h) ⊗ (g ⋅ k) where (A::Ob, B::Ob, C::Ob, X::Ob, Y::Ob, Z::Ob, f::(A → B), h::(B → C), g::(X → Y), k::(Y → Z))). This axiom says that doing f and g in parallel and then h and k in parallel is the same as doing (f then h) and (g then k) in parallel. When using SMCs to model processes, this axiom is critical to making sure that scheduling those processes is coherent.</p><p>If the SMC is not strict, then the equations are replaced by natural isomorphisms. The choice of natural isomorphisms then becomes part of the data of the SMC. With MacLane&#39;s coherence theorem for SMCs mathematicians can think about strict SMCs and not really worry too much about the natural isomorphisms. As programmers, those chickens come home to roost and implementing an SMC requires making some choices about about how to do that strictification.</p><p>The Catlab definitions of SMC are repeated here for convenience. Catlab allows you to implement mathematical definitions in the language of Generalized Algebraic Theories (GATs), which are a good fit for the kind of natural language definitions that mathematicians will write. Because Catlab does relatively little type inference, the GAT version of a definition can be more verbose than you would get in natural language. For example, we have to be careful about spelling out the object for an identity morphism <code>id(A):A → A</code>. The notation  <code>@theory MonoidalCategory{Ob,Hom} &lt;: Category{Ob,Hom}</code> says that a Monoidal Category is a type of Category with additional components and axioms. Catlab has only rudimentary support for Monoidal Categories that are not Symmetric Monoidal Categories. But we separate out the definitions for completeness.</p><pre><code class="language-julia hljs">@theory MonoidalCategory{Ob,Hom} &lt;: Category{Ob,Hom} begin
+  otimes(A::Ob, B::Ob)::Ob
+  otimes(f::(A → B), g::(C → D))::((A ⊗ C) → (B ⊗ D)) ⊣
+    (A::Ob, B::Ob, C::Ob, D::Ob)
+  @op (⊗) := otimes
+  munit()::Ob
+  # Monoid axioms.
+  #
+  # The last two axioms are the naturality equations associated with the left
+  # and right unitors, in the strict case where they are identities.
+  (A ⊗ B) ⊗ C == A ⊗ (B ⊗ C) ⊣ (A::Ob, B::Ob, C::Ob)
+  munit() ⊗ A == A ⊣ (A::Ob)
+  A ⊗ munit() == A ⊣ (A::Ob)
+  (f ⊗ g) ⊗ h == f ⊗ (g ⊗ h) ⊣ (A::Ob, B::Ob, C::Ob, X::Ob, Y::Ob, Z::Ob,
+                                f::(A → X), g::(B → Y), h::(C → Z))
+  id(munit()) ⊗ f == f ⊣ (A::Ob, B::Ob, f::(A → B))
+  f ⊗ id(munit()) == f ⊣ (A::Ob, B::Ob, f::(A → B))
+  # Functorality axioms.
+  ((f ⊗ g) ⋅ (h ⊗ k) == (f ⋅ h) ⊗ (g ⋅ k)
+    ⊣ (A::Ob, B::Ob, C::Ob, X::Ob, Y::Ob, Z::Ob,
+       f::(A → B), h::(B → C), g::(X → Y), k::(Y → Z)))
+  id(A ⊗ B) == id(A) ⊗ id(B) ⊣ (A::Ob, B::Ob)
+end</code></pre><p>To the definition of a monoidal category, we need to add the symmetry component. Catlab calls the swap morphism a braid, because that is how you visualize it in wiring diagrams, but we stick with the conventional σ unicode name. The macro <code>@op</code> tells Catlab that you want to use a unicode operator as an alias for you term constructor. If you are familiar with type theory, you might be wondering why we write the context after the terms. This is because human brains are pretty good at type inference based on notational convention and we want to mimic the English idiom &quot;f⋅g, where f:A→B and g:B→C are functions&quot;.</p><pre><code class="language-julia hljs">@theory SymmetricMonoidalCategory{Ob,Hom} &lt;: MonoidalCategory{Ob,Hom} begin
+  braid(A::Ob, B::Ob)::((A ⊗ B) → (B ⊗ A))
+  @op (σ) := braid
+  # Involutivity axiom.
+  σ(A,B) ⋅ σ(B,A) == id(A ⊗ B) ⊣ (A::Ob, B::Ob)
+  # Coherence axioms.
+  #
+  # Note: The last two axioms are deducible from the first two axioms together
+  # with the naturality equations for the left/right unitors. We record them for
+  # the sake of clarity and uniformity.
+  σ(A,B⊗C) == (σ(A,B) ⊗ id(C)) ⋅ (id(B) ⊗ σ(A,C)) ⊣ (A::Ob, B::Ob, C::Ob)
+  σ(A⊗B,C) == (id(A) ⊗ σ(B,C)) ⋅ (σ(A,C) ⊗ id(B)) ⊣ (A::Ob, B::Ob, C::Ob)
+  σ(A,munit()) == id(A) ⊣ (A::Ob)
+  σ(munit(),A) == id(A) ⊣ (A::Ob)
+  # Naturality axiom.
+  (f ⊗ g) ⋅ σ(B,D) == σ(A,C) ⋅ (g ⊗ f) ⊣ (A::Ob, B::Ob, C::Ob, D::Ob,
+                                          f::(A → B), g::(C → D))
+end</code></pre><h2 id="Presentations"><a class="docs-heading-anchor" href="#Presentations">Presentations</a><a id="Presentations-1"></a><a class="docs-heading-anchor-permalink" href="#Presentations" title="Permalink"></a></h2><p>Just like how a preorder can be presented with Hasse Diagram or a free category can be presented by a Graph, SMCs can be presented syntactically or combinatorially. We first start with the syntactic presentation using <code>@present</code>.</p><pre><code class="language-julia hljs">@present Cooking(FreeSymmetricMonoidalCategory) begin
+  (WholeEgg, RawEgg, Shell, Egg, Pan, Cheese, Scramble)::Ob
+  crack::Hom(WholeEgg, RawEgg⊗Shell)
+  fry::Hom(RawEgg⊗Pan, Egg⊗Pan)
+  scramble::Hom(RawEgg⊗Cheese⊗Pan, Scramble⊗Pan)
+end
+generators(Cooking)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">10-element Vector{CategoryExpr{:generator}}:
+ WholeEgg
+ RawEgg
+ Shell
+ Egg
+ Pan
+ Cheese
+ Scramble
+ crack: WholeEgg → RawEgg⊗Shell
+ fry: RawEgg⊗Pan → Egg⊗Pan
+ scramble: RawEgg⊗Cheese⊗Pan → Scramble⊗Pan</code></pre><p>One interpretation of an SMC is that the objects are resources and the Homs are processes the domain of the Hom is the list of resources that you need to perform the process and the codomain is the list of resources that the process produces. You can think of the SMC presentation as a namespace containing all the terms in the SMC.</p><p>The objects and morphisms are accessible by name</p><pre><code class="language-julia hljs">Cooking[:Egg]
+Cooking[:fry]</code></pre><p class="math-container">\[\mathrm{fry} : \mathrm{RawEgg} \otimes \mathrm{Pan} \to \mathrm{Egg} \otimes \mathrm{Pan}\]</p><p>Then you can make complex terms using the unicode operators</p><pre><code class="language-julia hljs">((Cooking[:crack]⋅σ(Cooking[:RawEgg], Cooking[:Shell])) ⊗id(Cooking[:Pan])) ⋅ (id(Cooking[:Shell])⊗Cooking[:fry])</code></pre><p class="math-container">\[\left(\left(\mathrm{crack} \cdot \sigma_{\mathrm{RawEgg},\mathrm{Shell}}\right) \otimes \mathrm{id}_{\mathrm{Pan}}\right) \cdot \left(\mathrm{id}_{\mathrm{Shell}} \otimes \mathrm{fry}\right) : \mathrm{WholeEgg} \otimes \mathrm{Pan} \to \mathrm{Shell} \otimes \mathrm{Egg} \otimes \mathrm{Pan}\]</p><p>Notice that Catlab will display the expected domain and codomain.</p><p>This is called point-free notation an it is very popular in the functional programming literature where it is used to mean implicit universal quantification over the function arguments. You can think of a morphism like a function that takes an element of each domain object as input and produces an element of each codomain object as output. Not all SMCs have interpretations as functions over sets, but just like groups can be viewed as a generalization of the symmetries of geometric shapes, SMCs can be viewed as a generalization of multivariate functions.</p><p>These presentations are very syntactic objects and expose an API for manipulating expressions.</p><pre><code class="language-julia hljs">for g in generators(Cooking)
+  &quot;$g is a $(gat_typeof(g)) with arguments $(gat_type_args(g))&quot;
+end</code></pre><p>The <code>gat_typeof</code> function computes the algebraic type of a term by analogy to <code>Base.typeof</code> which computes the Julia type of a value.</p><pre><code class="language-julia hljs">homs = filter(generators(Cooking)) do g
+  gat_typeof(g) == :Hom
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">3-element Vector{CategoryExpr{:generator}}:
+ crack: WholeEgg → RawEgg⊗Shell
+ fry: RawEgg⊗Pan → Egg⊗Pan
+ scramble: RawEgg⊗Cheese⊗Pan → Scramble⊗Pan</code></pre><p>When the term is a Hom, you can get the domain and codomain of the morphism with the <code>dom</code> and <code>codom</code> functions.</p><pre><code class="language-julia hljs">map(homs) do f
+  &quot;$f: $(dom(f)) → $(codom(f))&quot;
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">3-element Vector{String}:
+ &quot;crack: WholeEgg → otimes(RawEgg,Shell)&quot;
+ &quot;fry: otimes(RawEgg,Pan) → otimes(Egg,Pan)&quot;
+ &quot;scramble: otimes(RawEgg,Cheese,Pan) → otimes(Scramble,Pan)&quot;</code></pre><p>The terms in a <code>FreeSymmetricMonoidalCategory</code> are trees that you can navigate with <code>head</code> and <code>args</code>. The <code>head</code> of an expression is the term constructor that created it. For SMCs, this can be <code>:generator</code>, <code>:otimes</code>, <code>:compose</code>, <code>:id</code>, or <code>:braid</code>. Then <code>args</code> will give you the list of arguments to the term constructor. For terms of type Object, this will just be the list of objects that went into constructing the object. For example A⊗B⊗C will have as its head <code>:otimes</code> and as the args <code>[A,B,C]</code>. Note that the head is a symbol, but the args are objects. For a term of type <code>Hom</code>, you have the same structure, but for Homs with the head <code>:generator</code>, you get the name of the morphism as a symbol as the first argument.</p><p>We can look at the head and args of object expressions.</p><pre><code class="language-julia hljs">headargs(x) = (head(x),args(x))
+σ(Cooking[:Egg], Cooking[:Pan]) |&gt; headargs</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(:braid, Catlab.Theories.FreeSymmetricMonoidalCategory.Ob{:generator}[Egg, Pan])</code></pre><p>And, morphsims</p><pre><code class="language-julia hljs">headargs(Cooking[:crack]⊗Cooking[:fry])</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(:otimes, Catlab.Theories.FreeSymmetricMonoidalCategory.Hom{:generator}[crack, fry])</code></pre><p>The base case is generators</p><pre><code class="language-julia hljs">headargs(Cooking[:Egg])</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(:generator, [:Egg])</code></pre><p>And, morphisms</p><pre><code class="language-julia hljs">headargs(Cooking[:crack])</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(:generator, Any[:crack, WholeEgg, otimes(RawEgg,Shell)])</code></pre><p>For a more complete introspection of the expression trees, you can call <code>dump(ex)</code> which will print a very verbose representation of the entire expression tree.</p><p>In order to compose morphisms sequentially, you have to make sure that the domains match up. In a typical SMC expression this can require padding with the identity morphism and braiding monoidal products into the right order.</p><pre><code class="language-julia hljs">compose(Cooking[:crack]⊗id(Cooking[:Pan]),
+        (id(Cooking[:RawEgg])⊗ σ(Cooking[:Shell], Cooking[:Pan])),
+        (Cooking[:fry]⊗id(Cooking[:Shell])))</code></pre><p class="math-container">\[\left(\mathrm{crack} \otimes \mathrm{id}_{\mathrm{Pan}}\right) \cdot \left(\mathrm{id}_{\mathrm{RawEgg}} \otimes \sigma_{\mathrm{Shell},\mathrm{Pan}}\right) \cdot \left(\mathrm{fry} \otimes \mathrm{id}_{\mathrm{Shell}}\right) : \mathrm{WholeEgg} \otimes \mathrm{Pan} \to \mathrm{Egg} \otimes \mathrm{Pan} \otimes \mathrm{Shell}\]</p><p>At some point, prefix notation is more scalable than infix notation, so you might write this as a LISP programmer would.</p><pre><code class="language-julia hljs">compose(
+  otimes(Cooking[:crack],
+         id(Cooking[:Pan])),
+  otimes(id(Cooking[:RawEgg]),
+         σ(Cooking[:Shell], Cooking[:Pan])),
+  otimes(Cooking[:fry],
+         id(Cooking[:Shell])))</code></pre><p class="math-container">\[\left(\mathrm{crack} \otimes \mathrm{id}_{\mathrm{Pan}}\right) \cdot \left(\mathrm{id}_{\mathrm{RawEgg}} \otimes \sigma_{\mathrm{Shell},\mathrm{Pan}}\right) \cdot \left(\mathrm{fry} \otimes \mathrm{id}_{\mathrm{Shell}}\right) : \mathrm{WholeEgg} \otimes \mathrm{Pan} \to \mathrm{Egg} \otimes \mathrm{Pan} \otimes \mathrm{Shell}\]</p><p>You can view this padding as requiring explicit instructions to do noting with all the objects you aren&#39;t using. In this example, we have to tell our chef</p><ol><li>Crack the egg and do nothing with the pan.</li><li>Do nothing with the egg and swap the shell with the pan.</li><li>Fry the egg and do nothing with the shell.</li></ol><p>Obviously, this is a very tedious way to write recipes. You need to have some syntactic sugar for all this padding and swapping.</p><h2 id="The-Program-Macro"><a class="docs-heading-anchor" href="#The-Program-Macro">The Program Macro</a><a id="The-Program-Macro-1"></a><a class="docs-heading-anchor-permalink" href="#The-Program-Macro" title="Permalink"></a></h2><p>The syntactic API above is useful for manipulating terms in an arbitrary GAT and is the formal language of Catlab for representing and manipulating algebraic structures. However, when we want to work with big expressions in an SMC, the tree structure inherent to formulas is too verbose, and we want to move to a port-graph structure called <code>DirectedWiringDiagrams</code>. This gives us the benefits of combinatorial data structures like graphs with the right expressional power for representing the morphisms in an SMC.</p><pre><code class="language-julia hljs">recipe = @program Cooking (e::WholeEgg, p::Pan) begin
+  e′, shell = crack(e)
+  return shell, fry(e′, p)
+end
+draw(recipe)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 15.1.0 (20260618.0150)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="257pt" height="116pt"
+ viewBox="0.00 0.00 257.00 116.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 111.98)">
+<title>G</title>
+<polygon fill="white" stroke="none" points="-4,4 -4,-111.98 252.75,-111.98 252.75,4 -4,4"/>
+<!-- n0in1 -->
+<!-- n0in2 -->
+<!-- n0in1&%2345;&gt;n0in2 -->
+<!-- n1 -->
+<!-- crack -->
+<g id="n1" class="node">
+<title>n1</title>
+<polygon fill="none" stroke="black" points="83.83,-57.99 83.83,-105.99 135.08,-105.99 135.08,-57.99 83.83,-57.99"/>
+<text xml:space="preserve" text-anchor="start" x="88.83" y="-77.11" font-family="Courier,monospace" font-size="14.00">crack</text>
+</g>
+<!-- n0in1&%2345;&gt;n1 -->
+<!-- WholeEgg -->
+<g id="e1" class="edge">
+<title>n0in1:e&%2345;&gt;n1:w</title>
+<path fill="none" stroke="black" d="M47.83,-78.99C61.5,-78.99 66.35,-81.16 77.41,-81.81"/>
+<polygon fill="black" stroke="black" points="77.27,-83.56 82.32,-81.95 77.37,-80.06 77.27,-83.56"/>
+<text xml:space="preserve" text-anchor="middle" x="33" y="-67.21" font-family="Courier,monospace" font-size="14.00">WholeEgg</text>
+</g>
+<!-- n2 -->
+<!-- fry -->
+<g id="n2" class="node">
+<title>n2</title>
+<polygon fill="none" stroke="black" points="171.08,-17.99 171.08,-65.99 205.83,-65.99 205.83,-17.99 171.08,-17.99"/>
+<text xml:space="preserve" text-anchor="start" x="176.08" y="-37.11" font-family="Courier,monospace" font-size="14.00">fry</text>
+</g>
+<!-- n0in2&%2345;&gt;n2 -->
+<!-- Pan -->
+<g id="e2" class="edge">
+<title>n0in2:e&%2345;&gt;n2:w</title>
+<path fill="none" stroke="black" d="M47.83,-34.99C100.51,-34.99 115.13,-30.37 164.84,-30.01"/>
+<polygon fill="black" stroke="black" points="164.57,-31.76 169.57,-29.99 164.56,-28.26 164.57,-31.76"/>
+<text xml:space="preserve" text-anchor="middle" x="97.39" y="-19.17" font-family="Courier,monospace" font-size="14.00">Pan</text>
+</g>
+<!-- n0out1 -->
+<!-- n0out2 -->
+<!-- n0out1&%2345;&gt;n0out2 -->
+<!-- n0out3 -->
+<!-- n0out2&%2345;&gt;n0out3 -->
+<!-- n1&%2345;&gt;n0out1 -->
+<!-- Shell -->
+<g id="e4" class="edge">
+<title>n1:e&%2345;&gt;n0out1:w</title>
+<path fill="none" stroke="black" d="M135.08,-69.99C181.72,-69.99 192.1,-93.7 235.48,-95.84"/>
+<polygon fill="black" stroke="black" points="235.28,-97.58 240.32,-95.95 235.36,-94.08 235.28,-97.58"/>
+<text xml:space="preserve" text-anchor="middle" x="209.08" y="-69.69" font-family="Courier,monospace" font-size="14.00">Shell</text>
+</g>
+<!-- n1&%2345;&gt;n2 -->
+<!-- RawEgg -->
+<g id="e3" class="edge">
+<title>n1:e&%2345;&gt;n2:w</title>
+<path fill="none" stroke="black" d="M135.08,-93.99C156.57,-93.99 149.2,-61.7 164.83,-55.14"/>
+<polygon fill="black" stroke="black" points="164.99,-56.89 169.59,-54.26 164.36,-53.45 164.99,-56.89"/>
+<text xml:space="preserve" text-anchor="middle" x="177.8" y="-78.04" font-family="Courier,monospace" font-size="14.00">RawEgg</text>
+</g>
+<!-- n2&%2345;&gt;n0out2 -->
+<!-- Egg -->
+<g id="e5" class="edge">
+<title>n2:e&%2345;&gt;n0out2:w</title>
+<path fill="none" stroke="black" d="M205.83,-53.99C219.46,-53.99 224.38,-53.99 235.42,-53.99"/>
+<polygon fill="black" stroke="black" points="235.32,-55.74 240.32,-53.99 235.32,-52.24 235.32,-55.74"/>
+<text xml:space="preserve" text-anchor="middle" x="236.38" y="-40.69" font-family="Courier,monospace" font-size="14.00">Egg</text>
+</g>
+<!-- n2&%2345;&gt;n0out3 -->
+<!-- Pan -->
+<g id="e6" class="edge">
+<title>n2:e&%2345;&gt;n0out3:w</title>
+<path fill="none" stroke="black" d="M205.83,-29.99C221.34,-29.99 223.57,-16.45 235.56,-12.86"/>
+<polygon fill="black" stroke="black" points="235.62,-14.61 240.33,-12.2 235.14,-11.15 235.62,-14.61"/>
+<text xml:space="preserve" text-anchor="middle" x="236.24" y="-20.59" font-family="Courier,monospace" font-size="14.00">Pan</text>
+</g>
+</g>
+</svg>
+'/><p>Catlab gives you the tools for drawing wiring diagrams. Visualization of wiring diagrams is the oldest part of Catlab and the original motivation for its development. The <code>@program</code> macro allows you to define wiring diagrams using a syntax that feels like Julia code.</p><p>The input wires are declared as <em>arguments</em> to the program, and the output wires are declared as <em>returns</em> from the function. Variables that are not consumed or by another function or returned by the program are automatically dropped.</p><pre><code class="language-julia hljs">recipe = @program Cooking (e::WholeEgg, p::Pan) begin
+  e′, shell = crack(e)
+  return fry(e′, p)
+end
+draw(recipe)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 15.1.0 (20260618.0150)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="256pt" height="91pt"
+ viewBox="0.00 0.00 256.00 91.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 86.99)">
+<title>G</title>
+<polygon fill="white" stroke="none" points="-4,4 -4,-86.99 252.49,-86.99 252.49,4 -4,4"/>
+<!-- n0in1 -->
+<!-- n0in2 -->
+<!-- n0in1&%2345;&gt;n0in2 -->
+<!-- n1 -->
+<!-- crack -->
+<g id="n1" class="node">
+<title>n1</title>
+<polygon fill="none" stroke="black" points="83.83,-34.99 83.83,-82.99 135.08,-82.99 135.08,-34.99 83.83,-34.99"/>
+<text xml:space="preserve" text-anchor="start" x="88.83" y="-54.11" font-family="Courier,monospace" font-size="14.00">crack</text>
+</g>
+<!-- n0in1&%2345;&gt;n1 -->
+<!-- WholeEgg -->
+<g id="e1" class="edge">
+<title>n0in1:e&%2345;&gt;n1:w</title>
+<path fill="none" stroke="black" d="M47.83,-55.99C61.5,-55.99 66.35,-58.16 77.41,-58.81"/>
+<polygon fill="black" stroke="black" points="77.27,-60.56 82.32,-58.95 77.37,-57.06 77.27,-60.56"/>
+<text xml:space="preserve" text-anchor="middle" x="33" y="-44.21" font-family="Courier,monospace" font-size="14.00">WholeEgg</text>
+</g>
+<!-- n2 -->
+<!-- fry -->
+<g id="n2" class="node">
+<title>n2</title>
+<polygon fill="none" stroke="black" points="171.08,-14.99 171.08,-62.99 205.83,-62.99 205.83,-14.99 171.08,-14.99"/>
+<text xml:space="preserve" text-anchor="start" x="176.08" y="-34.11" font-family="Courier,monospace" font-size="14.00">fry</text>
+</g>
+<!-- n0in2&%2345;&gt;n2 -->
+<!-- Pan -->
+<g id="e2" class="edge">
+<title>n0in2:e&%2345;&gt;n2:w</title>
+<path fill="none" stroke="black" d="M47.83,-11.99C100.86,-11.99 114.83,-25.84 164.8,-26.92"/>
+<polygon fill="black" stroke="black" points="164.55,-28.67 169.57,-26.97 164.59,-25.17 164.55,-28.67"/>
+<text xml:space="preserve" text-anchor="middle" x="97.39" y="-6.26" font-family="Courier,monospace" font-size="14.00">Pan</text>
+</g>
+<!-- n0out1 -->
+<!-- n0out2 -->
+<!-- n0out1&%2345;&gt;n0out2 -->
+<!-- n1&%2345;&gt;n2 -->
+<!-- RawEgg -->
+<g id="e3" class="edge">
+<title>n1:e&%2345;&gt;n2:w</title>
+<path fill="none" stroke="black" d="M135.08,-70.99C150.95,-70.99 152.61,-55.95 164.7,-51.95"/>
+<polygon fill="black" stroke="black" points="164.9,-53.69 169.59,-51.21 164.38,-50.23 164.9,-53.69"/>
+<text xml:space="preserve" text-anchor="middle" x="177.87" y="-64.9" font-family="Courier,monospace" font-size="14.00">RawEgg</text>
+</g>
+<!-- n2&%2345;&gt;n0out1 -->
+<!-- Egg -->
+<g id="e4" class="edge">
+<title>n2:e&%2345;&gt;n0out1:w</title>
+<path fill="none" stroke="black" d="M205.83,-50.99C220.01,-50.99 224.23,-57.63 235.6,-59.5"/>
+<polygon fill="black" stroke="black" points="235.2,-61.23 240.32,-59.87 235.47,-57.74 235.2,-61.23"/>
+<text xml:space="preserve" text-anchor="middle" x="236.11" y="-42.15" font-family="Courier,monospace" font-size="14.00">Egg</text>
+</g>
+<!-- n2&%2345;&gt;n0out2 -->
+<!-- Pan -->
+<g id="e5" class="edge">
+<title>n2:e&%2345;&gt;n0out2:w</title>
+<path fill="none" stroke="black" d="M205.83,-26.99C220.01,-26.99 224.23,-20.34 235.6,-18.47"/>
+<polygon fill="black" stroke="black" points="235.47,-20.24 240.32,-18.11 235.2,-16.75 235.47,-20.24"/>
+<text xml:space="preserve" text-anchor="middle" x="236.11" y="-22.17" font-family="Courier,monospace" font-size="14.00">Pan</text>
+</g>
+</g>
+</svg>
+'/><p>You can copy a value by using it more than once. This is visualized as a wire being split into two wires. Square brackets let you assert equality again. For material goods, you might not want to allow this merging and splitting.</p><pre><code class="language-julia hljs">recipe = @program Cooking (e₁::WholeEgg, e₂::WholeEgg, p::Pan) begin
+  e, shell = crack(e₁)
+  r₁, p₁ = fry(e, p)
+  e, shell = crack(e₂)
+  r₂, p₂ = fry(e, p)
+  return r₁, r₂, [p₁,p₂]
+end
+
+draw(recipe)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 15.1.0 (20260618.0150)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="257pt" height="185pt"
+ viewBox="0.00 0.00 257.00 185.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 180.5)">
+<title>G</title>
+<polygon fill="white" stroke="none" points="-4,4 -4,-180.5 253.01,-180.5 253.01,4 -4,4"/>
+<!-- n0in1 -->
+<!-- n0in2 -->
+<!-- n0in1&%2345;&gt;n0in2 -->
+<!-- n1 -->
+<!-- crack -->
+<g id="n1" class="node">
+<title>n1</title>
+<polygon fill="none" stroke="black" points="84.09,-128.5 84.09,-176.5 135.34,-176.5 135.34,-128.5 84.09,-128.5"/>
+<text xml:space="preserve" text-anchor="start" x="89.09" y="-147.63" font-family="Courier,monospace" font-size="14.00">crack</text>
+</g>
+<!-- n0in1&%2345;&gt;n1 -->
+<!-- WholeEgg -->
+<g id="e1" class="edge">
+<title>n0in1:e&%2345;&gt;n1:w</title>
+<path fill="none" stroke="black" d="M48.09,-140.5C62.58,-140.5 66.3,-149.36 77.76,-151.85"/>
+<polygon fill="black" stroke="black" points="77.43,-153.58 82.59,-152.35 77.79,-150.1 77.43,-153.58"/>
+<text xml:space="preserve" text-anchor="middle" x="33" y="-133.14" font-family="Courier,monospace" font-size="14.00">WholeEgg</text>
+</g>
+<!-- n0in3 -->
+<!-- n0in2&%2345;&gt;n0in3 -->
+<!-- n3 -->
+<!-- crack -->
+<g id="n3" class="node">
+<title>n3</title>
+<polygon fill="none" stroke="black" points="84.09,-62.5 84.09,-110.5 135.34,-110.5 135.34,-62.5 84.09,-62.5"/>
+<text xml:space="preserve" text-anchor="start" x="89.09" y="-81.63" font-family="Courier,monospace" font-size="14.00">crack</text>
+</g>
+<!-- n0in2&%2345;&gt;n3 -->
+<!-- WholeEgg -->
+<g id="e3" class="edge">
+<title>n0in2:e&%2345;&gt;n3:w</title>
+<path fill="none" stroke="black" d="M48.09,-86.5C61.72,-86.5 66.64,-86.5 77.68,-86.5"/>
+<polygon fill="black" stroke="black" points="77.58,-88.25 82.58,-86.5 77.58,-84.75 77.58,-88.25"/>
+<text xml:space="preserve" text-anchor="middle" x="33.26" y="-73.2" font-family="Courier,monospace" font-size="14.00">WholeEgg</text>
+</g>
+<!-- n2 -->
+<!-- fry -->
+<g id="n2" class="node">
+<title>n2</title>
+<polygon fill="none" stroke="black" points="171.34,-89.5 171.34,-137.5 206.09,-137.5 206.09,-89.5 171.34,-89.5"/>
+<text xml:space="preserve" text-anchor="start" x="176.34" y="-108.63" font-family="Courier,monospace" font-size="14.00">fry</text>
+</g>
+<!-- n0in3&%2345;&gt;n2 -->
+<!-- Pan -->
+<g id="e2" class="edge">
+<title>n0in3:e&%2345;&gt;n2:w</title>
+<path fill="none" stroke="black" d="M48.09,-34.5C87.78,-34.5 101.95,-32.06 135.34,-53.5 155.85,-66.67 146.66,-95.87 165.3,-100.79"/>
+<polygon fill="black" stroke="black" points="164.67,-102.48 169.84,-101.32 165.08,-99 164.67,-102.48"/>
+<text xml:space="preserve" text-anchor="middle" x="122.98" y="-40.21" font-family="Courier,monospace" font-size="14.00">Pan</text>
+</g>
+<!-- n4 -->
+<!-- fry -->
+<g id="n4" class="node">
+<title>n4</title>
+<polygon fill="none" stroke="black" points="171.34,-23.5 171.34,-71.5 206.09,-71.5 206.09,-23.5 171.34,-23.5"/>
+<text xml:space="preserve" text-anchor="start" x="176.34" y="-42.63" font-family="Courier,monospace" font-size="14.00">fry</text>
+</g>
+<!-- n0in3&%2345;&gt;n4 -->
+<!-- Pan -->
+<g id="e4" class="edge">
+<title>n0in3:e&%2345;&gt;n4:w</title>
+<path fill="none" stroke="black" d="M48.09,-34.5C65.26,-34.5 67.22,-23.67 84.09,-20.5 106.48,-16.3 113.01,-16.03 135.34,-20.5 149.95,-23.42 153.23,-32.4 164.87,-34.87"/>
+<polygon fill="black" stroke="black" points="164.69,-36.61 169.83,-35.35 165.03,-33.12 164.69,-36.61"/>
+<text xml:space="preserve" text-anchor="middle" x="97.36" y="-3.95" font-family="Courier,monospace" font-size="14.00">Pan</text>
+</g>
+<!-- n0out1 -->
+<!-- n0out2 -->
+<!-- n0out1&%2345;&gt;n0out2 -->
+<!-- n0out3 -->
+<!-- n0out2&%2345;&gt;n0out3 -->
+<!-- n1&%2345;&gt;n2 -->
+<!-- RawEgg -->
+<g id="e5" class="edge">
+<title>n1:e&%2345;&gt;n2:w</title>
+<path fill="none" stroke="black" d="M135.34,-164.5C156.53,-164.5 149.66,-133.02 165.16,-126.63"/>
+<polygon fill="black" stroke="black" points="165.25,-128.39 169.85,-125.77 164.62,-124.94 165.25,-128.39"/>
+<text xml:space="preserve" text-anchor="middle" x="178.06" y="-149.05" font-family="Courier,monospace" font-size="14.00">RawEgg</text>
+</g>
+<!-- n2&%2345;&gt;n0out1 -->
+<!-- Egg -->
+<g id="e7" class="edge">
+<title>n2:e&%2345;&gt;n0out1:w</title>
+<path fill="none" stroke="black" d="M206.09,-125.5C219.74,-125.5 224.63,-124.05 235.67,-123.62"/>
+<polygon fill="black" stroke="black" points="235.61,-125.37 240.58,-123.53 235.55,-121.87 235.61,-125.37"/>
+<text xml:space="preserve" text-anchor="middle" x="236.63" y="-128.43" font-family="Courier,monospace" font-size="14.00">Egg</text>
+</g>
+<!-- n2&%2345;&gt;n0out3 -->
+<!-- Pan -->
+<g id="e8" class="edge">
+<title>n2:e&%2345;&gt;n0out3:w</title>
+<path fill="none" stroke="black" d="M206.09,-101.5C235.95,-101.5 213.74,-47.5 235.86,-39.49"/>
+<polygon fill="black" stroke="black" points="235.93,-41.25 240.6,-38.74 235.38,-37.79 235.93,-41.25"/>
+<text xml:space="preserve" text-anchor="middle" x="236.46" y="-56.79" font-family="Courier,monospace" font-size="14.00">Pan</text>
+</g>
+<!-- n3&%2345;&gt;n4 -->
+<!-- RawEgg -->
+<g id="e6" class="edge">
+<title>n3:e&%2345;&gt;n4:w</title>
+<path fill="none" stroke="black" d="M135.34,-98.5C156.53,-98.5 149.66,-67.02 165.16,-60.63"/>
+<polygon fill="black" stroke="black" points="165.25,-62.39 169.85,-59.77 164.62,-58.94 165.25,-62.39"/>
+<text xml:space="preserve" text-anchor="middle" x="178.06" y="-74.42" font-family="Courier,monospace" font-size="14.00">RawEgg</text>
+</g>
+<!-- n4&%2345;&gt;n0out2 -->
+<!-- Egg -->
+<g id="e9" class="edge">
+<title>n4:e&%2345;&gt;n0out2:w</title>
+<path fill="none" stroke="black" d="M206.09,-59.5C222.3,-59.5 223.52,-75.58 235.99,-79.6"/>
+<polygon fill="black" stroke="black" points="235.39,-81.28 240.59,-80.28 235.9,-77.82 235.39,-81.28"/>
+<text xml:space="preserve" text-anchor="middle" x="236.62" y="-74.13" font-family="Courier,monospace" font-size="14.00">Egg</text>
+</g>
+<!-- n4&%2345;&gt;n0out3 -->
+<!-- Pan -->
+<g id="e10" class="edge">
+<title>n4:e&%2345;&gt;n0out3:w</title>
+<path fill="none" stroke="black" d="M206.09,-35.5C219.76,-35.5 224.61,-37.68 235.67,-38.32"/>
+<polygon fill="black" stroke="black" points="235.53,-40.07 240.58,-38.46 235.63,-36.57 235.53,-40.07"/>
+<text xml:space="preserve" text-anchor="middle" x="236.63" y="-23.73" font-family="Courier,monospace" font-size="14.00">Pan</text>
+</g>
+</g>
+</svg>
+'/><p>You can visualize the copy and delete morphisms explicitly with the <code>add_junctions</code> function. The dots with one wire input and multiple outputs are copying values and dots with no wires out are deletions (discarding values). Not all instances of a <code>SymmetricMonoidalCategory</code> support copy and delete, for example, in manufacturing you can&#39;t duplicate a resource, and in chemistry you can&#39;t discard species. Catlab would enforce that when you tried to interpret the wiring diagram in a specific SMC.</p><pre><code class="language-julia hljs">draw(add_junctions(recipe))</code></pre><img src="70caec9c.svg" alt="Example block output"/><p>For more details about working with wiring diagrams in Catlab, you should look at the vignettes under wiring_diagrams which explain how wiring diagrams interact with SMC expressions and the basics of constructing and manipulation wiring diagrams.</p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../meets/">« Meets in Preorders</a><a class="docs-footer-nextpage" href="../cat_elements/">The Category of Elements »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.20.0 on <span class="colophon-date" title="Tuesday 24 November 2026 08:37">Tuesday 24 November 2026</span>. Using Julia version 1.13.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
