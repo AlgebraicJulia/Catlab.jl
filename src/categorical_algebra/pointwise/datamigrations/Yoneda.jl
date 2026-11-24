@@ -102,6 +102,9 @@ Given a map f: a->b, we compute that f(Aᵢ) = Bⱼ by constructing the followin
     B × G 
 
 where f* is given by `yoneda`.
+
+For each object c of the schema, `maps[c]` holds all homomorphisms y(c) × G → F. 
+Part i of `Fᴳ` at c is the map `maps[c][i]`.
 """
 function internal_hom(G::T, F::T; cat=nothing, kw...) where T<:ACSet
   cat = isnothing(cat) ? infer_acset_cat(G) : cat
@@ -127,7 +130,7 @@ function internal_hom(G::T, F::T; cat=nothing, kw...) where T<:ACSet
     end
   end
 
-  return Fᴳ, homs
+  return Fᴳ, maps
 end
 
 """ Compute the Yoneda embedding of a category C in the category of C-sets.

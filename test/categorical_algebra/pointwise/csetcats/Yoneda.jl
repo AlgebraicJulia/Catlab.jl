@@ -55,12 +55,17 @@ CRGrph = TypedCatWithCoproducts(RGrph)
 
 G = ReflexiveGraph(2)
 F = path_graph(ReflexiveGraph, 2)
-Fᴳ,_ = internal_hom(G, F)
+Fᴳ, maps = internal_hom(G, F)
 Z = @withmodel CRGrph (⊕) begin 
   apex(terminal[RGrph]()) ⊕ path_graph(ReflexiveGraph, 3)
 end
 ZG = ob(product[RGrph](Z,G))
 @test length(homomorphisms(Z, Fᴳ)) == length(homomorphisms(ZG, F)) # 64
+@test all(m -> codom(m) == F, maps[V])
+@test all(m -> codom(m) == F, maps[E])
+@test length(maps[V]) == nparts(Fᴳ, :V)
+@test length(maps[E]) == nparts(Fᴳ, :E)
+
 
 G = @acset DDS42 begin X=3; Φ=[2,3,3] end
 F = @acset DDS42 begin X=4; Φ=[2,2,4,4] end
